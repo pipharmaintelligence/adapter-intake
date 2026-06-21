@@ -9,7 +9,8 @@
   ],
   "execution": {
     "allowed_substrates": [
-      "local"
+      "local",
+      "local_worker"
     ],
     "default_substrate": "local",
     "timeout_seconds": 300
@@ -21,7 +22,7 @@
       "inputs": {
         "agents": {
           "required": true,
-          "source": "binding",
+          "source": "either",
           "shape": "object"
         }
       },
