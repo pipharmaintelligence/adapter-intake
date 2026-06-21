@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 from collections import Counter
@@ -174,5 +174,3 @@ class DumpAgentsAdapter(Adapter):
                 counter[value] += 1
 
         return dict(counter)
-
-

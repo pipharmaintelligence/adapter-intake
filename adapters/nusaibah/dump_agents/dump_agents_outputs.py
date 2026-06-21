@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any
 
@@ -86,4 +86,3 @@ def build_dump_agents_full(records: list[dict[str, Any]]) -> dict[str, Any]:
         "fields": AGENT_FIELDS,
         "records": normalized_records,
     }
-
