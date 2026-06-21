@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from typing import Any
 
@@ -16,14 +16,6 @@ AGENT_FIELDS: list[str] = [
     "updated_at",
 ]
 
-REFERENCE_DATA_FIELDS: list[str] = [
-    "website",
-    "url",
-    "path",
-    "storage_path",
-    "object_key",
-    "bucket",
-]
 
 
 def normalize_agent_record(record: dict[str, Any]) -> dict[str, Any]:
@@ -32,9 +24,6 @@ def normalize_agent_record(record: dict[str, Any]) -> dict[str, Any]:
     The record is already delivered by the governed runtime input path. This
     helper does not fetch from DLM Core, OBS, storage, or a database.
 
-    Reference-looking columns such as ``website`` are kept as data. Adapter
-    code may clean or normalize the string, but must not dereference it or use
-    it as HTTP/storage authority.
     """
 
     return {field: record.get(field) for field in AGENT_FIELDS}
@@ -97,3 +86,4 @@ def build_dump_agents_full(records: list[dict[str, Any]]) -> dict[str, Any]:
         "fields": AGENT_FIELDS,
         "records": normalized_records,
     }
+

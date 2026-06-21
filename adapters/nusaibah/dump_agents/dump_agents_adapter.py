@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 from collections import Counter
@@ -8,9 +8,9 @@ from adapters.base import Adapter
 from system import CALLABLE_VARIABLES_INPUT_ROLE, CallableAssetVariables
 
 try:
-    from .dump_agents_outputs import REFERENCE_DATA_FIELDS, build_dump_agents_by_agent_id
+    from .dump_agents_outputs import build_dump_agents_by_agent_id
 except ImportError:  # pragma: no cover - local adapter-root execution path
-    from dump_agents_outputs import REFERENCE_DATA_FIELDS, build_dump_agents_by_agent_id
+    from dump_agents_outputs import build_dump_agents_by_agent_id
 
 
 class DumpAgentsAdapter(Adapter):
@@ -41,7 +41,6 @@ class DumpAgentsAdapter(Adapter):
             "field_types": schema["field_types"],
             "missing_counts": schema["missing_counts"],
             "stats": stats,
-            "reference_data_fields_observed": self._reference_data_fields(agents),
             "callable_variables_present": bool(variables),
             "callable_variable_keys": sorted(variables.keys()),
         }
@@ -162,13 +161,6 @@ class DumpAgentsAdapter(Adapter):
             "by_headquarter": cls._count_by_field(records, "headquarter"),
         }
 
-    @staticmethod
-    def _reference_data_fields(records: list[dict[str, Any]]) -> list[str]:
-        """Return reference-looking fields observed as ordinary row data."""
-
-        observed = {key for record in records for key in record}
-
-        return [field for field in REFERENCE_DATA_FIELDS if field in observed]
 
     @staticmethod
     def _count_by_field(records: list[dict[str, Any]], field_name: str) -> dict[str, int]:
@@ -182,3 +174,5 @@ class DumpAgentsAdapter(Adapter):
                 counter[value] += 1
 
         return dict(counter)
+
+

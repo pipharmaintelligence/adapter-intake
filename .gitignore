@@ -1,0 +1,83 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+
+# Python / test tooling
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# DataSpell / JetBrains local IDE files
+.idea/
+*.iml
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+
+# Local adapter runtime outputs
+outputs/
+*.response.json
+*.findings.md
+*.log
+
+# Local scratch files
+tmp/
+temp/
+scratch/
+
+# OS noise
+.DS_Store
+Thumbs.db
+desktop.ini
+# Notebook local development
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+notebooks/scratch/
+*.nbconvert.ipynb
+# Local crawler/download scratch artifacts
+.crawler-downloads/
+.runtime-downloads/
+.downloaded/
+.adapter-scratch/
+**/.crawler-downloads/
+**/.runtime-downloads/
+**/.downloaded/
+**/.adapter-scratch/
+*.crdownload
+*.part
+*.tmpdownload
+
+# Local OBS/DLM diagnostics and caches
+.obs-cache/
+.obs-reports/
+.quarantine/
+**/.obs-cache/
+**/.obs-reports/
+**/.quarantine/
+
+# DataSpell / Jupyter local notebooks
+local_notebooks/
+notebooks/
+**/.ipynb_checkpoints/
+
+
+
+# Generated adapter diagnostic JSON files anywhere in the project
+**/*.remote_preflight.json
+**/*.registration.json
+**/*.node_info.json
+**/*.save_preflight.json
+**/*.final_diagnostic.json
