@@ -1,0 +1,40 @@
+{
+  "key": "nusaibah.dump_agents",
+  "default": "0.1.0",
+  "allowed_surfaces": [
+    "v1_asset_execute"
+  ],
+  "allowed_modes": [
+    "balanced"
+  ],
+  "execution": {
+    "allowed_substrates": [
+      "local"
+    ],
+    "default_substrate": "local",
+    "timeout_seconds": 300
+  },
+  "versions": {
+    "0.1.0": {
+      "state": "active",
+      "allow_resume": true,
+      "inputs": {
+        "agents": {
+          "required": true,
+          "source": "binding",
+          "shape": "object"
+        }
+      },
+      "outputs": {
+        "schema_summary": {
+          "required": true,
+          "shape": "object"
+        },
+        "dump_agents_by_agent_id": {
+          "required": true,
+          "shape": "object"
+        }
+      }
+    }
+  }
+}
