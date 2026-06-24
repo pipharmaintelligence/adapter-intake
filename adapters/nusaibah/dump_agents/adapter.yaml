@@ -1,4 +1,4 @@
-﻿asset_key: nusaibah.dump_agents
+asset_key: nusaibah.dump_agents
 asset_version: 0.1.0
 package_target: python_runtime/adapters/intake/nusaibah/dump_agents
 manifest: dump_agents.asset.json
@@ -11,4 +11,4 @@ forbidden:
   allow_values: false
   allow_raw_fixtures: false
   allow_reports: false
-  allow_notebooks: false
+  allow_notebooks: false
