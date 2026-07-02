@@ -1,19 +1,19 @@
-asset_key: nusaibah.abstract_mcp_dlm
-asset_version: 0.1.0
-
-package_target: python_runtime/adapters/intake/nusaibah/abstract_mcp_dlm
-
-manifest: abstract_mcp_dlm.asset.json
-adapter_module: abstract_mcp_dlm_adapter.py
-
-reviewed_helpers:
-  - abstract_mcp_capabilities.py
-
-optional_files:
-  - README.md
-
-forbidden:
-  allow_values: false
-  allow_raw_fixtures: false
-  allow_reports: false
+asset_key: nusaibah.abstract_mcp_dlm
+asset_version: 0.1.0
+
+package_target: python_runtime/adapters/intake/nusaibah/abstract_mcp_dlm
+
+manifest: abstract_mcp_dlm.asset.json
+adapter_module: abstract_mcp_dlm_adapter.py
+
+reviewed_helpers:
+  - abstract_mcp_capabilities.py
+
+optional_files:
+  - README.md
+
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
   allow_notebooks: false
