@@ -1,0 +1,67 @@
+{
+  "key": "nusaibah.abstract_mcp_dlm",
+  "default": "0.1.0",
+  "allowed_surfaces": [
+    "v1_asset_execute"
+  ],
+  "allowed_modes": [
+    "balanced"
+  ],
+  "execution": {
+    "default_substrate": "local_worker",
+    "allowed_substrates": [
+      "local_worker",
+      "ecs"
+    ]
+  },
+  "versions": {
+    "0.1.0": {
+      "state": "active",
+      "inputs": {
+        "tool_request": {
+          "required": true,
+          "shape": "object"
+        }
+      },
+      "outputs": {
+        "tool_results": {
+          "required": true,
+          "shape": "object"
+        }
+      },
+      "output_contracts": {
+        "tool_results": {
+          "target_kind": "diagnostic_json_output",
+          "write_mode": "dry_run",
+          "format_policy": {
+            "source": "developer_selected",
+            "developer_selected_format": "json",
+            "server_admission_required": false
+          },
+          "validation": {
+            "self_inspection": {
+              "enforce": true,
+              "on_fail": "fail"
+            }
+          }
+        }
+      },
+      "runtime_tools": {
+        "dlm_lakes_list": {
+          "tool_handle": "@tool.abstract_mcp_dlm",
+          "tool_server_ref": "mcp.abstract_dlm",
+          "capability_ref": "dlm.lakes.list",
+          "consumer_type": "agent_runtime",
+          "consumer_ref": "agent-run-abstract-mcp-dlm",
+          "allowed_api_handles": [
+            "@tool.abstract_mcp_dlm"
+          ],
+          "operation": "invoke",
+          "execution_mode": "enforced",
+          "cache": true,
+          "on_error": "raise"
+        }
+      }
+    }
+  }
+}
