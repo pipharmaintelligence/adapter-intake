@@ -7,5 +7,10 @@ ABSTRACT_MCP_DLM_CAPABILITIES: Final[dict[str, dict[str, str]]] = {
         "tool": "list_lakes",
         "response_format": "json",
         "authority": "server_authorized",
-    }
+    },
+    "dlm.nodes.list": {
+        "tool": "list_nodes",
+        "response_format": "json",
+        "authority": "server_authorized",
+    },
 }

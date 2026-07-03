@@ -60,6 +60,20 @@
           "execution_mode": "enforced",
           "cache": true,
           "on_error": "raise"
+        },
+        "dlm_nodes_list": {
+          "tool_handle": "@tool.abstract_mcp_dlm",
+          "tool_server_ref": "mcp.abstract_dlm",
+          "capability_ref": "dlm.nodes.list",
+          "consumer_type": "agent_runtime",
+          "consumer_ref": "agent-run-abstract-mcp-dlm",
+          "allowed_api_handles": [
+            "@tool.abstract_mcp_dlm"
+          ],
+          "operation": "invoke",
+          "execution_mode": "enforced",
+          "cache": true,
+          "on_error": "raise"
         }
       }
     }

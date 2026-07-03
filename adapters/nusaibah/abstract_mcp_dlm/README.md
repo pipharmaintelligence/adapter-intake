@@ -142,3 +142,9 @@ inputs.invoke_tool("dlm_lakes_list", input={"text": "list DLM lakes; limit 25"})
 Local fixture/profile runs without a bridge remain intent-only and return `authority=server_authorized_intent_only`. In governed `local_worker` or ECS execution, Assets should inject the bridge, consume the Core MCP authorization just in time, and the result should return `authority=assets_core_runtime_lease`.
 
 If the DLM UI readiness drawer says the authorization is ready but no runtime lease exists, that is expected before execution. Run workflow doctor; `mcp_runtime_lease_pending` means continue to governed runtime execution, not adapter edits.
+
+## Verified Local Worker Proof
+
+The source workspace has been verified with `obs-asset-runtime-smoke` using `local_worker`, `dlm.lakes.list`, and `dlm.nodes.list`. Keep this intake copy secret-free: do not include local_worker key ids, shared secrets, auth tokens, URLs beyond public documentation placeholders, raw MCP responses, or runtime reports.
+
+For live proof, run from the developer workspace using the wheel command and a separate local inputs file, not from intake package files.

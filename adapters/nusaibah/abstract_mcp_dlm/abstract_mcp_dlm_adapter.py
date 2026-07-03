@@ -9,14 +9,17 @@ try:
 except ImportError:  # Local external adapter root mode.
     from abstract_mcp_capabilities import ABSTRACT_MCP_DLM_CAPABILITIES
 
-SUPPORTED_CAPABILITY = "dlm.lakes.list"
+CAPABILITY_TO_TOOL_ROLE = {
+    "dlm.lakes.list": "dlm_lakes_list",
+    "dlm.nodes.list": "dlm_nodes_list",
+}
 SUPPORTED_RESPONSE_FORMATS = {"json", "application/json"}
 DEFAULT_LIMIT = 25
 MAX_DIAGNOSTIC_LIMIT = 100
 
 
 class AbstractMcpDlmAdapter(Adapter):
-    """Lakes-only abstract MCP/DLM local test adapter.
+    """Abstract MCP/DLM local test adapter for safe runtime tool-call intent.
 
     This adapter proves the local authoring shape for agent tool-call intent. It
     does not call DLM Core, OBS, storage, MCP servers, providers, or HTTP APIs.
@@ -53,7 +56,7 @@ class AbstractMcpDlmAdapter(Adapter):
             "logs": [
                 {
                     "level": "info",
-                    "message": "Evaluated lakes-only abstract MCP tool-call intent locally.",
+                    "message": "Evaluated abstract MCP tool-call intent locally.",
                 }
             ],
             "metrics": {
@@ -73,11 +76,11 @@ class AbstractMcpDlmAdapter(Adapter):
         requested_format = str(record.get("response_format") or "json").strip().lower()
         request_input = record.get("input", {})
 
-        if capability_ref != SUPPORTED_CAPABILITY:
+        if not isinstance(capability_ref, str) or capability_ref not in CAPABILITY_TO_TOOL_ROLE:
             return {
                 "status": "failed",
                 "reason_code": "capability_not_available",
-                "message": "Only dlm.lakes.list is enabled in abstract_mcp_dlm.",
+                "message": "Only declared abstract DLM MCP capabilities are enabled.",
                 "capability_ref": capability_ref if isinstance(capability_ref, str) else None,
             }
 
@@ -86,7 +89,7 @@ class AbstractMcpDlmAdapter(Adapter):
                 "status": "failed",
                 "reason_code": "response_format_not_supported",
                 "message": "abstract_mcp_dlm supports JSON responses only.",
-                "capability_ref": SUPPORTED_CAPABILITY,
+                "capability_ref": capability_ref,
                 "response_format": requested_format,
             }
 
@@ -95,76 +98,105 @@ class AbstractMcpDlmAdapter(Adapter):
                 "status": "failed",
                 "reason_code": "tool_request_input_invalid",
                 "message": "tool_request.records[].input must be an object.",
-                "capability_ref": SUPPORTED_CAPABILITY,
+                "capability_ref": capability_ref,
             }
 
         limit = self._safe_limit(request_input.get("limit"))
         page = self._safe_page(request_input.get("page"))
         q = request_input.get("q") if isinstance(request_input.get("q"), str) else None
-        capability = ABSTRACT_MCP_DLM_CAPABILITIES[SUPPORTED_CAPABILITY]
+        lake_id = self._safe_optional_identifier(request_input.get("lake_id"))
+        capability = ABSTRACT_MCP_DLM_CAPABILITIES[capability_ref]
+        tool_role = CAPABILITY_TO_TOOL_ROLE[capability_ref]
 
         invoke_tool = getattr(inputs, "invoke_tool", None)
         if callable(invoke_tool):
-            tool_text = self._tool_text(limit=limit, page=page, q=q)
+            tool_input = self._tool_input(capability_ref=capability_ref, limit=limit, page=page, q=q, lake_id=lake_id)
             tool_result = invoke_tool(
-                "dlm_lakes_list",
-                input={"text": tool_text},
-                on_error="raise",
+                tool_role,
+                input=tool_input,
+                on_error="null",
             )
             if isinstance(tool_result, dict):
+                records = tool_result.get("records", [])
                 return {
                     "status": tool_result.get("status", "completed"),
-                    "capability_ref": SUPPORTED_CAPABILITY,
+                    "capability_ref": capability_ref,
                     "tool": capability["tool"],
                     "response_format": "json",
                     "authority": "assets_core_runtime_lease",
-                    "binding": {
-                        "tool_handle": "@tool.abstract_mcp_dlm",
-                        "tool_server_ref": "mcp.abstract_dlm",
-                        "binding_ref": "mcp.abstract_dlm",
-                        "capability_ref": SUPPORTED_CAPABILITY,
-                    },
-                    "request_summary": {
-                        "limit": limit,
-                        "page": page,
-                        "has_query": q is not None,
-                    },
+                    "binding": self._binding(capability_ref),
+                    "request_summary": self._request_summary(limit=limit, page=page, q=q, lake_id=lake_id),
                     "result": {
                         "summary": tool_result.get("summary", ""),
-                        "records": tool_result.get("records", []),
-                        "record_count": len(tool_result.get("records", []))
-                        if isinstance(tool_result.get("records"), list)
-                        else 0,
+                        "records": records,
+                        "record_count": len(records) if isinstance(records, list) else 0,
                         "provenance": tool_result.get("provenance", {}),
                     },
                 }
 
         return {
             "status": "completed",
-            "capability_ref": SUPPORTED_CAPABILITY,
+            "capability_ref": capability_ref,
             "tool": capability["tool"],
             "response_format": "json",
             "authority": "server_authorized_intent_only",
-            "binding": {
-                "tool_handle": "@tool.abstract_mcp_dlm",
-                "tool_server_ref": "mcp.abstract_dlm",
-                "binding_ref": "mcp.abstract_dlm",
-                "capability_ref": SUPPORTED_CAPABILITY,
-            },
-            "request_summary": {
-                "limit": limit,
-                "page": page,
-                "has_query": q is not None,
-            },
+            "binding": self._binding(capability_ref),
+            "request_summary": self._request_summary(limit=limit, page=page, q=q, lake_id=lake_id),
             "result": {
-                "lakes": [],
+                "records": [],
                 "record_count": 0,
                 "note": "Local proof only. Core/Assets owns any live DLM MCP execution.",
             },
         }
 
-    def _tool_text(self, *, limit: int, page: int | None, q: str | None) -> str:
-        parts = ["list DLM lakes", f"limit {limit}"]
+    def _binding(self, capability_ref: str) -> dict[str, str]:
+        return {
+            "tool_handle": "@tool.abstract_mcp_dlm",
+            "tool_server_ref": "mcp.abstract_dlm",
+            "binding_ref": "mcp.abstract_dlm",
+            "capability_ref": capability_ref,
+        }
+
+    def _request_summary(self, *, limit: int, page: int | None, q: str | None, lake_id: str | None) -> dict[str, Any]:
+        return {
+            "limit": limit,
+            "page": page,
+            "has_query": q is not None,
+            "has_lake_id": lake_id is not None,
+        }
+
+    def _tool_input(
+        self,
+        *,
+        capability_ref: str,
+        limit: int,
+        page: int | None,
+        q: str | None,
+        lake_id: str | None,
+    ) -> dict[str, Any]:
+        text = self._tool_text(capability_ref=capability_ref, limit=limit, page=page, q=q, lake_id=lake_id)
+        tool_input: dict[str, Any] = {"text": text, "limit": limit}
+
+        if page is not None:
+            tool_input["page"] = page
+
+        if q is not None:
+            tool_input["q"] = q[:120]
+
+        if lake_id is not None:
+            tool_input["lake_id"] = lake_id
+
+        return tool_input
+
+    def _tool_text(self, *, capability_ref: str, limit: int, page: int | None, q: str | None, lake_id: str | None) -> str:
+        if capability_ref == "dlm.nodes.list":
+            parts = ["list DLM nodes"]
+            if lake_id is not None:
+                parts.append(f"lake {lake_id}")
+        else:
+            parts = ["list DLM lakes"]
+
+        parts.append(f"limit {limit}")
 
         if page is not None:
             parts.append(f"page {page}")
@@ -188,3 +220,14 @@ class AbstractMcpDlmAdapter(Adapter):
             return min(max(value, 1), 100000)
         return None
 
+    def _safe_optional_identifier(self, value: Any) -> str | None:
+        if not isinstance(value, str):
+            return None
+        normalized = value.strip()
+        if not normalized:
+            return None
+        if len(normalized) > 80:
+            return None
+        if not all(char.isalnum() or char in {"_", "-", ".", ":"} for char in normalized):
+            return None
+        return normalized

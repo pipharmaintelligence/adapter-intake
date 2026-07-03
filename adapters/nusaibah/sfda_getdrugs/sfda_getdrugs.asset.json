@@ -1,0 +1,62 @@
+{
+  "key": "sfda.getdrugs",
+  "default": "0.1.0",
+  "allowed_surfaces": [
+    "v1_asset_execute"
+  ],
+  "allowed_modes": [
+    "balanced"
+  ],
+  "execution": {
+    "adapter": "sfda.getdrugs"
+  },
+  "versions": {
+    "0.1.0": {
+      "state": "active",
+      "inputs": {
+        "sfda_response": {
+          "required": true,
+          "shape": "object"
+        }
+      },
+      "outputs": {
+        "drugs": {
+          "required": true,
+          "shape": "object"
+        }
+      },
+      "output_contracts": {
+        "drugs": {
+          "target_kind": "dlm_file_artifact_output",
+          "write_mode": "dry_run",
+          "format_policy": {
+            "source": "node_allowlist",
+            "developer_selected_format": "json",
+            "server_admission_required": true
+          },
+          "schema": {
+            "source": "explicit",
+            "fields": [
+              {
+                "name": "records",
+                "type": "array",
+                "required": true
+              },
+              {
+                "name": "page_summary",
+                "type": "object",
+                "required": true
+              }
+            ]
+          },
+          "validation": {
+            "self_inspection": {
+              "enforce": true,
+              "on_fail": "fail"
+            }
+          }
+        }
+      }
+    }
+  }
+}

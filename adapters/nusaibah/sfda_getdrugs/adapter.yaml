@@ -1,0 +1,5 @@
+asset_key: sfda.getdrugs
+asset_version: 0.1.0
+adapter_module: sfda_getdrugs_adapter.py
+manifest: sfda_getdrugs.asset.json
+package_target: python_runtime/adapters/intake/nusaibah/sfda_getdrugs
