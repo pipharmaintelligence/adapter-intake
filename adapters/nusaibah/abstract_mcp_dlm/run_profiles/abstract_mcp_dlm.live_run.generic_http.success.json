@@ -1,0 +1,65 @@
+{
+    "data":  {
+                 "run_uuid":  "0739ec4b-ebc2-4c44-a093-72526d4139c1",
+                 "status":  "completed",
+                 "current_state":  "completed",
+                 "outputs":  {
+                                 "tool_results":  {
+                                                      "format":  "json",
+                                                      "records":  [
+                                                                      {
+                                                                          "authority":  "assets_core_runtime_lease",
+                                                                          "binding":  {
+                                                                                          "binding_ref":  "mcp.abstract_dlm",
+                                                                                          "capability_ref":  "dlm.lakes.list",
+                                                                                          "tool_handle":  "@tool.abstract_mcp_dlm",
+                                                                                          "tool_server_ref":  "mcp.abstract_dlm"
+                                                                                      },
+                                                                          "capability_ref":  "dlm.lakes.list",
+                                                                          "request_summary":  {
+                                                                                                  "has_query":  false,
+                                                                                                  "limit":  5
+                                                                                              },
+                                                                          "response_format":  "json",
+                                                                          "result":  {
+                                                                                         "provenance":  {
+                                                                                                            "cache_hit":  false,
+                                                                                                            "duration_ms":  1181,
+                                                                                                            "invocation_id":  "mti_37c57246-ee4b-4a59-ae0e-352ea401cead",
+                                                                                                            "lease_status":  "used",
+                                                                                                            "record_count":  1,
+                                                                                                            "role":  "dlm_lakes_list",
+                                                                                                            "runtime_mcp_tool":  true
+                                                                                                        },
+                                                                                         "record_count":  1,
+                                                                                         "records":  [
+                                                                                                         {
+                                                                                                             "external_id":  "GENERIC-JSON-1",
+                                                                                                             "source":  "mcp.abstract_dlm",
+                                                                                                             "title":  "Generic JSON tool result",
+                                                                                                             "year":  "2026"
+                                                                                                         }
+                                                                                                     ],
+                                                                                         "summary":  "MCP runtime operation completed by generic HTTP tool adapter."
+                                                                                     },
+                                                                          "status":  "completed",
+                                                                          "tool":  "list_lakes"
+                                                                      }
+                                                                  ]
+                                                  }
+                             },
+                 "workflow_output_refs":  [
+
+                                          ],
+                 "workflow_output_save_status":  {
+                                                     "count":  1,
+                                                     "rows":  [
+                                                                  {
+                                                                      "run_uuid":  "0739ec4b-ebc2-4c44-a093-72526d4139c1",
+                                                                      "status":  "unknown"
+                                                                  }
+                                                              ]
+                                                 },
+                 "failure":  null
+             }
+}

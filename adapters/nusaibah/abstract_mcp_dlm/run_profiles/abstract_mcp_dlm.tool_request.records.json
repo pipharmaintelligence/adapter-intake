@@ -1,0 +1,21 @@
+{
+  "records": [
+    {
+      "tool_handle": "@tool.abstract_mcp_dlm",
+      "tool_server_ref": "mcp.abstract_dlm",
+      "capability_ref": "dlm.lakes.list",
+      "execution_mode": "advisory",
+      "response_format": "json",
+      "input": {
+        "limit": 5,
+        "q": "lake"
+      }
+    }
+  ],
+  "provenance": {
+    "source": "local_fixture",
+    "scope": "adapter_dev",
+    "tool_handle": "@tool.abstract_mcp_dlm",
+    "tool_server_ref": "mcp.abstract_dlm"
+  }
+}

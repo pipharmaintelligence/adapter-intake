@@ -1,0 +1,13 @@
+{
+  "run_uuid": "4651382a-0ecd-4efb-8c02-c1818e9be578",
+  "final_status": "failed",
+  "current_state": "failed",
+  "result_status": "failed",
+  "failure": {
+    "status": "failed",
+    "current_state": "failed",
+    "summary": null,
+    "reason": null,
+    "message": "failed"
+  }
+}

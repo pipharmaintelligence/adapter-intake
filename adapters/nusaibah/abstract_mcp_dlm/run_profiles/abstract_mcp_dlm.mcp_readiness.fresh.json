@@ -1,0 +1,26 @@
+{
+  "code": "ok",
+  "message": "MCP tool authorization runtime readiness retrieved.",
+  "data": {
+    "schema_version": "mcp_runtime_readiness.v1",
+    "safe": true,
+    "values_included": false,
+    "status": "blocked",
+    "category": "mcp_runtime_lease_missing",
+    "reason_code": "mcp_runtime_lease_missing",
+    "tool_contract": {
+      "authorization_id": "mtaz_02701a21422d4817b68d0c503ae92f0b",
+      "status": "active",
+      "tool_handle": "@tool.abstract_mcp_dlm",
+      "tool_server_ref": "mcp.abstract_dlm",
+      "capability_ref": "dlm.lakes.list",
+      "client_id": "1",
+      "lake_id": null,
+      "allowed_api_handles": [
+        "@tool.abstract_mcp_dlm"
+      ]
+    },
+    "lease": null
+  },
+  "meta": []
+}

@@ -1,0 +1,25 @@
+{
+  "schema_version": "mcp_runtime_readiness.v1",
+  "safe": true,
+  "values_included": false,
+  "status": "blocked",
+  "category": "mcp_runtime_lease_missing",
+  "data": {
+    "status": "blocked",
+    "category": "mcp_runtime_lease_missing",
+    "connector_registered": false,
+    "profile_present": false,
+    "permission_present": false,
+    "lease_active": false,
+    "contract_checked": true,
+    "contract_ready": true,
+    "lease_report_checked": false,
+    "lease_report_present": false,
+    "tool_handle_present": true,
+    "tool_server_ref_present": true,
+    "capability_ref_present": true,
+    "allowed_handle_present": false,
+    "matches_contract": false,
+    "network_calls_made": false
+  }
+}

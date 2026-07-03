@@ -1,0 +1,153 @@
+{
+    "data":  {
+                 "run_uuid":  "69d90eea-0296-4556-8008-308c1f94d667",
+                 "status":  "completed",
+                 "current_state":  "completed",
+                 "outputs":  {
+                                 "tool_results":  {
+                                                      "format":  "json",
+                                                      "records":  [
+                                                                      {
+                                                                          "authority":  "assets_core_runtime_lease",
+                                                                          "binding":  {
+                                                                                          "binding_ref":  "mcp.abstract_dlm",
+                                                                                          "capability_ref":  "dlm.lakes.list",
+                                                                                          "tool_handle":  "@tool.abstract_mcp_dlm",
+                                                                                          "tool_server_ref":  "mcp.abstract_dlm"
+                                                                                      },
+                                                                          "capability_ref":  "dlm.lakes.list",
+                                                                          "request_summary":  {
+                                                                                                  "has_query":  false,
+                                                                                                  "limit":  5,
+                                                                                                  "page":  1
+                                                                                              },
+                                                                          "response_format":  "json",
+                                                                          "result":  {
+                                                                                         "provenance":  {
+                                                                                                            "cache_hit":  false,
+                                                                                                            "duration_ms":  1316,
+                                                                                                            "invocation_id":  "mti_de625647-25f0-4b8e-807c-d3488ebe4c05",
+                                                                                                            "lease_status":  "used",
+                                                                                                            "record_count":  5,
+                                                                                                            "role":  "dlm_lakes_list",
+                                                                                                            "runtime_mcp_tool":  true
+                                                                                                        },
+                                                                                         "record_count":  5,
+                                                                                         "records":  [
+                                                                                                         {
+                                                                                                             "external_id":  "dump_database_google",
+                                                                                                             "source":  "mcp.abstract_dlm",
+                                                                                                             "title":  "dump_database_google",
+                                                                                                             "year":  "2026"
+                                                                                                         },
+                                                                                                         {
+                                                                                                             "external_id":  "googl123",
+                                                                                                             "source":  "mcp.abstract_dlm",
+                                                                                                             "title":  "googl123",
+                                                                                                             "year":  "2026"
+                                                                                                         },
+                                                                                                         {
+                                                                                                             "external_id":  "google_new",
+                                                                                                             "source":  "mcp.abstract_dlm",
+                                                                                                             "title":  "google_new",
+                                                                                                             "year":  "2026"
+                                                                                                         },
+                                                                                                         {
+                                                                                                             "external_id":  "google_new_2",
+                                                                                                             "source":  "mcp.abstract_dlm",
+                                                                                                             "title":  "google_new_2",
+                                                                                                             "year":  "2026"
+                                                                                                         },
+                                                                                                         {
+                                                                                                             "external_id":  "google_test_2_3",
+                                                                                                             "source":  "mcp.abstract_dlm",
+                                                                                                             "title":  "google_test_2_3",
+                                                                                                             "year":  "2026"
+                                                                                                         }
+                                                                                                     ],
+                                                                                         "summary":  "MCP runtime operation completed by generic HTTP tool adapter."
+                                                                                     },
+                                                                          "status":  "completed",
+                                                                          "tool":  "list_lakes"
+                                                                      },
+                                                                      {
+                                                                          "authority":  "assets_core_runtime_lease",
+                                                                          "binding":  {
+                                                                                          "binding_ref":  "mcp.abstract_dlm",
+                                                                                          "capability_ref":  "dlm.lakes.list",
+                                                                                          "tool_handle":  "@tool.abstract_mcp_dlm",
+                                                                                          "tool_server_ref":  "mcp.abstract_dlm"
+                                                                                      },
+                                                                          "capability_ref":  "dlm.lakes.list",
+                                                                          "request_summary":  {
+                                                                                                  "has_query":  false,
+                                                                                                  "limit":  5,
+                                                                                                  "page":  2
+                                                                                              },
+                                                                          "response_format":  "json",
+                                                                          "result":  {
+                                                                                         "provenance":  {
+                                                                                                            "cache_hit":  false,
+                                                                                                            "duration_ms":  1046,
+                                                                                                            "invocation_id":  "mti_37c9ddcd-0526-4e5b-8785-82f141f8cff2",
+                                                                                                            "lease_status":  "used",
+                                                                                                            "record_count":  5,
+                                                                                                            "role":  "dlm_lakes_list",
+                                                                                                            "runtime_mcp_tool":  true
+                                                                                                        },
+                                                                                         "record_count":  5,
+                                                                                         "records":  [
+                                                                                                         {
+                                                                                                             "external_id":  "google321",
+                                                                                                             "source":  "mcp.abstract_dlm",
+                                                                                                             "title":  "google321",
+                                                                                                             "year":  "2026"
+                                                                                                         },
+                                                                                                         {
+                                                                                                             "external_id":  "hykshdasds",
+                                                                                                             "source":  "mcp.abstract_dlm",
+                                                                                                             "title":  "hykshdasds",
+                                                                                                             "year":  "2026"
+                                                                                                         },
+                                                                                                         {
+                                                                                                             "external_id":  "ndfiijgd",
+                                                                                                             "source":  "mcp.abstract_dlm",
+                                                                                                             "title":  "ndfiijgd",
+                                                                                                             "year":  "2026"
+                                                                                                         },
+                                                                                                         {
+                                                                                                             "external_id":  "nusaibah_8012",
+                                                                                                             "source":  "mcp.abstract_dlm",
+                                                                                                             "title":  "NUSAIBAH_8012",
+                                                                                                             "year":  "2026"
+                                                                                                         },
+                                                                                                         {
+                                                                                                             "external_id":  "nusaibah1234",
+                                                                                                             "source":  "mcp.abstract_dlm",
+                                                                                                             "title":  "nusaibah1234",
+                                                                                                             "year":  "2026"
+                                                                                                         }
+                                                                                                     ],
+                                                                                         "summary":  "MCP runtime operation completed by generic HTTP tool adapter."
+                                                                                     },
+                                                                          "status":  "completed",
+                                                                          "tool":  "list_lakes"
+                                                                      }
+                                                                  ]
+                                                  }
+                             },
+                 "workflow_output_refs":  [
+
+                                          ],
+                 "workflow_output_save_status":  {
+                                                     "count":  1,
+                                                     "rows":  [
+                                                                  {
+                                                                      "run_uuid":  "69d90eea-0296-4556-8008-308c1f94d667",
+                                                                      "status":  "unknown"
+                                                                  }
+                                                              ]
+                                                 },
+                 "failure":  null
+             }
+}

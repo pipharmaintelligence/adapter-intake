@@ -1,0 +1,17 @@
+{
+  "run_uuid": "1386d02c-f679-45b1-9d12-ca9c5d2f4b1e",
+  "final_status": "completed",
+  "current_state": "completed",
+  "result_status": "completed",
+  "output_roles": [
+    "tool_results"
+  ],
+  "tool_result_keys": [
+    "format",
+    "records"
+  ],
+  "tool_result_record_count": 1,
+  "first_tool_status": "completed",
+  "first_tool_authority": "server_authorized_intent_only",
+  "first_tool_note": null
+}

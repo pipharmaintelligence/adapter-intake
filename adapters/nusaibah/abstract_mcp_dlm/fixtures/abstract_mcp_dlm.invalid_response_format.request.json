@@ -1,0 +1,44 @@
+{
+  "request_version": "1",
+  "run": {
+    "workflow_run_uuid": "local-abstract-mcp-dlm-run-002",
+    "workflow_key": "local-abstract-mcp-dlm-debug",
+    "workflow_config_id": null,
+    "workflow_surface": "local_worker",
+    "step_key": "abstract_mcp_dlm",
+    "mode": "local_worker"
+  },
+  "adapter": {
+    "key": "nusaibah.abstract_mcp_dlm",
+    "version": "0.1.0"
+  },
+  "inputs": {
+    "tool_request": {
+      "records": [
+        {
+          "tool_handle": "@tool.abstract_mcp_dlm",
+          "tool_server_ref": "mcp.abstract_dlm",
+          "capability_ref": "dlm.lakes.list",
+          "execution_mode": "advisory",
+          "response_format": "xml",
+          "input": {
+            "limit": 5
+          }
+        }
+      ],
+      "provenance": {
+        "source": "local_fixture",
+        "scope": "adapter_dev",
+        "tool_handle": "@tool.abstract_mcp_dlm",
+        "tool_server_ref": "mcp.abstract_dlm"
+      }
+    }
+  },
+  "context": {
+    "local_mimic": true,
+    "abstract_mcp_dlm": {
+      "mode": "fixture",
+      "credential_boundary": "runtime_owned"
+    }
+  }
+}

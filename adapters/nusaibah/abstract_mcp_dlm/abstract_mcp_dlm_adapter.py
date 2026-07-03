@@ -99,12 +99,13 @@ class AbstractMcpDlmAdapter(Adapter):
             }
 
         limit = self._safe_limit(request_input.get("limit"))
+        page = self._safe_page(request_input.get("page"))
         q = request_input.get("q") if isinstance(request_input.get("q"), str) else None
         capability = ABSTRACT_MCP_DLM_CAPABILITIES[SUPPORTED_CAPABILITY]
 
         invoke_tool = getattr(inputs, "invoke_tool", None)
         if callable(invoke_tool):
-            tool_text = self._tool_text(limit=limit, q=q)
+            tool_text = self._tool_text(limit=limit, page=page, q=q)
             tool_result = invoke_tool(
                 "dlm_lakes_list",
                 input={"text": tool_text},
@@ -125,6 +126,7 @@ class AbstractMcpDlmAdapter(Adapter):
                     },
                     "request_summary": {
                         "limit": limit,
+                        "page": page,
                         "has_query": q is not None,
                     },
                     "result": {
@@ -151,6 +153,7 @@ class AbstractMcpDlmAdapter(Adapter):
             },
             "request_summary": {
                 "limit": limit,
+                "page": page,
                 "has_query": q is not None,
             },
             "result": {
@@ -160,10 +163,15 @@ class AbstractMcpDlmAdapter(Adapter):
             },
         }
 
-    def _tool_text(self, *, limit: int, q: str | None) -> str:
+    def _tool_text(self, *, limit: int, page: int | None, q: str | None) -> str:
         parts = ["list DLM lakes", f"limit {limit}"]
+
+        if page is not None:
+            parts.append(f"page {page}")
+
         if q is not None:
             parts.append(f"query {q[:120]}")
+
         return "; ".join(parts)
 
     def _safe_limit(self, value: Any) -> int:
@@ -172,4 +180,11 @@ class AbstractMcpDlmAdapter(Adapter):
         if isinstance(value, int):
             return min(max(value, 1), MAX_DIAGNOSTIC_LIMIT)
         return DEFAULT_LIMIT
+
+    def _safe_page(self, value: Any) -> int | None:
+        if isinstance(value, bool) or value is None:
+            return None
+        if isinstance(value, int):
+            return min(max(value, 1), 100000)
+        return None
 

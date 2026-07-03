@@ -1,0 +1,66 @@
+{
+  "schema_version": "agent_descriptor.v1",
+  "name": "abstract_mcp_dlm_lakes_agent",
+  "description": "Local agent descriptor proof for a lakes-only MCP/DLM tool-call intent with JSON output.",
+  "prompt": {
+    "role": "analyst",
+    "objective": "Prepare a JSON-only summary from the server-authorized dlm.lakes.list tool intent.",
+    "instructions": [
+      "Use the declared @tool.abstract_mcp_dlm handle only.",
+      "Request dlm.lakes.list with JSON response format.",
+      "Do not call DLM Core, OBS, storage, providers, MCP servers, or HTTP APIs directly from Python.",
+      "Return JSON-shaped tool_results only."
+    ],
+    "constraints": [
+      "No credentials, headers, tokens, URLs, buckets, object keys, storage paths, raw provider payloads, raw tool responses, or raw DLM/Core responses.",
+      "The descriptor is intent only until Assets/Core authorizes live execution."
+    ],
+    "output_expectation": "Return tool_results as a JSON object containing safe status, capability_ref, response_format, and result summary."
+  },
+  "form": {
+    "fields": [
+      {
+        "name": "limit",
+        "type": "integer",
+        "required": false,
+        "default": 5,
+        "description": "Diagnostic maximum for the local lakes-list intent."
+      }
+    ]
+  },
+  "search": {
+    "enabled": false,
+    "mode": "disabled",
+    "capability_handles": []
+  },
+  "tool_call": {
+    "enabled": true,
+    "mode": "server_authorized",
+    "allowed_handles": [
+      "@tool.abstract_mcp_dlm"
+    ],
+    "max_calls": 1
+  },
+  "bindings": [
+    {
+      "name": "abstract_dlm_lakes_list",
+      "handle": "@tool.abstract_mcp_dlm",
+      "kind": "mcp",
+      "mode": "server_authorized",
+      "auth": {
+        "mode": "runtime_authority",
+        "binding_ref": "mcp.abstract_dlm",
+        "capability_ref": "dlm.lakes.list",
+        "required": true
+      },
+      "required": true,
+      "description": "Safe lakes-list tool intent only. Assets/Core own live MCP/DLM execution."
+    }
+  ],
+  "input_roles": [
+    "tool_request"
+  ],
+  "output_roles": [
+    "tool_results"
+  ]
+}
