@@ -138,7 +138,6 @@ class LinkedinPostExtractAdapter(Adapter):
             }
 
         # Only the bounded business reference crosses the generic MCP bridge.
-        # Core remains responsible for connector selection, credentials, request
         # transport, provider execution, and response sanitization.
         tool_result = invoke_tool(
             TOOL_ROLE,
