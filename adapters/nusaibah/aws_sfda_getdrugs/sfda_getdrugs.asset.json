@@ -1,5 +1,5 @@
 {
-    "key":  "sfda.getdrugs",
+    "key":  "aws.sfda.getdrugs",
     "default":  "0.1.0",
     "allowed_surfaces":  [
                              "v1_asset_execute"

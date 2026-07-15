@@ -10,9 +10,10 @@
   "execution": {
     "allowed_substrates": [
       "local",
-      "local_worker"
+      "local_worker",
+      "ecs"
     ],
-    "default_substrate": "local",
+    "default_substrate": "local_worker",
     "timeout_seconds": 300
   },
   "versions": {

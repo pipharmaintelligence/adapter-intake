@@ -25,7 +25,7 @@ class SfdaGetDrugsAdapter(Adapter):
     provider publication.
     """
 
-    key = "sfda.getdrugs"
+    key = "aws.sfda.getdrugs"
     version = "0.1.0"
 
     def self_inspect(

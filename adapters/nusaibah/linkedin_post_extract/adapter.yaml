@@ -1,0 +1,22 @@
+﻿asset_key: nusaibah.linkedin_post_extract
+asset_version: 0.1.0
+
+package_target: python_runtime/adapters/intake/nusaibah/linkedin_post_extract
+
+manifest: linkedin_post_extract.asset.json
+adapter_module: linkedin_post_extract_adapter.py
+dependency_manifest: adapter.dependencies.json
+
+reviewed_helpers:
+  - linkedin_post_capabilities.py
+
+optional_files:
+  - README.md
+
+release_stage: development
+
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false

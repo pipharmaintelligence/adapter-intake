@@ -13,4 +13,9 @@ ABSTRACT_MCP_DLM_CAPABILITIES: Final[dict[str, dict[str, str]]] = {
         "response_format": "json",
         "authority": "server_authorized",
     },
+    "dlm.nodes.schema": {
+        "tool": "node_schema",
+        "response_format": "json",
+        "authority": "server_authorized",
+    },
 }

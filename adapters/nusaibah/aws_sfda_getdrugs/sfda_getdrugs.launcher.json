@@ -1,0 +1,156 @@
+{
+    "schema_version":  "asset_launcher.v2",
+    "entrypoint":  "sfda_full_crawl_publish.py",
+    "description":  "SFDA GetDrugs Assets-queued local_worker/ECS launch contract.",
+    "boundary":  {
+                     "helper_role":  "operator_orchestration",
+                     "adapter_role":  "normalize_and_self_inspect",
+                     "authority":  "assets_publish_policy_prepare",
+                     "ecs_entrypoint":  "obs-runtime-worker",
+                     "publisher":  "assets_queue_runtime",
+                     "core_payload_transfer_enabled":  false
+                 },
+    "execution":  {
+                      "allowed_substrates":  [
+                                                 "local_worker",
+                                                 "ecs"
+                                             ],
+                      "default_substrate":  "local_worker"
+                  },
+    "authority":  {
+                      "policy_id":  "app_aws_sfda_getdrugs_daily_snapshot",
+                      "output_role":  "drugs",
+                      "output_name":  "aws_sfda_getdrugs_daily_snapshot",
+                      "artifact_type":  "json",
+                      "content_type":  "application/json",
+                      "schema_version":  "sfda_getdrugs.records.v1",
+                      "publish_mode":  "assets_queued_self_inspected_provider_dataset",
+                      "core_control_plane_enabled":  true,
+                      "core_payload_transfer_enabled":  false
+                  },
+    "variables":  {
+                      "env_file":  {
+                                       "type":  "path",
+                                       "cli_arg":  "--env-file",
+                                       "required_for_commands":  [
+                                                                     "run"
+                                                                 ]
+                                   },
+                      "intake_yaml":  {
+                                          "type":  "path",
+                                          "cli_arg":  "--intake-yaml"
+                                      },
+                      "execution_substrate":  {
+                                                  "type":  "string",
+                                                  "cli_arg":  "--execution-substrate"
+                                              },
+                      "request_file":  {
+                                           "type":  "path",
+                                           "cli_arg":  "--request-file"
+                                       },
+                      "runtime_source_inputs_file":  {
+                                                         "type":  "path",
+                                                         "cli_arg":  "--runtime-source-inputs-file",
+                                                         "required_for_substrates":  [
+                                                                                         "ecs"
+                                                                                     ]
+                                                     },
+                      "extraction_date":  {
+                                              "type":  "date",
+                                              "cli_arg":  "--extraction-date"
+                                          },
+                      "max_pages":  {
+                                        "type":  "integer",
+                                        "cli_arg":  "--max-pages",
+                                        "required_for_commands":  [
+                                                                      "run"
+                                                                  ]
+                                    },
+                      "minimum_pages":  {
+                                            "type":  "integer",
+                                            "cli_arg":  "--minimum-pages"
+                                        },
+                      "minimum_records":  {
+                                              "type":  "integer",
+                                              "cli_arg":  "--minimum-records"
+                                          },
+                      "cooldown_seconds":  {
+                                               "type":  "number",
+                                               "cli_arg":  "--cooldown-seconds"
+                                           },
+                      "timeout_seconds":  {
+                                              "type":  "number",
+                                              "cli_arg":  "--timeout-seconds"
+                                          },
+                      "retry_attempts":  {
+                                             "type":  "integer",
+                                             "cli_arg":  "--retry-attempts"
+                                         },
+                      "retry_backoff_seconds":  {
+                                                    "type":  "number",
+                                                    "cli_arg":  "--retry-backoff-seconds"
+                                                },
+                      "prepared_output_wait_seconds":  {
+                                                           "type":  "integer",
+                                                           "cli_arg":  "--prepared-output-wait-seconds"
+                                                       },
+                      "prepared_output_poll_seconds":  {
+                                                           "type":  "integer",
+                                                           "cli_arg":  "--prepared-output-poll-seconds"
+                                                       }
+                  },
+    "passthrough_flags":  [
+                              "--diagnostics-only",
+                              "--runtime-check-only",
+                              "--skip-publish",
+                              "--skip-diagnostics"
+                          ],
+    "output_lifecycle":  {
+                             "mode":  "assets_queued_runtime",
+                             "self_inspection":  {
+                                                     "policy":  "required",
+                                                     "owner":  "runtime_worker_adapter_hook",
+                                                     "on_failure":  "blocked"
+                                                 },
+                             "schema_provider":  {
+                                                     "strategy":  "dlm_node_schema_snapshot",
+                                                     "node_key":  "aws_sfda_getdrugs_daily_snapshot",
+                                                     "hash_verification":  "required",
+                                                     "max_schema_bytes":  1048576
+                                                 },
+                             "inspector":  {
+                                               "strategy":  "adapter_self_inspect_exact_file",
+                                               "payload_schema_version":  "sfda_getdrugs.records.v1",
+                                               "validate_all_records":  true,
+                                               "max_errors":  100
+                                           },
+                             "submission":  {
+                                                "authority":  "assets_publish_policy_prepare",
+                                                "execution_owner":  "assets_queue",
+                                                "runtime_publisher":  "runtime_output_publish",
+                                                "provider_transfer":  "presigned_provider_direct",
+                                                "core_payload_transfer_enabled":  false
+                                            }
+                         },
+    "retention":  {
+                       "backup_count":  7,
+                       "backup_days":  30,
+                       "blocked_days":  14,
+                       "quarantine_days":  14,
+                       "staging_hours":  24,
+                       "environment":  {
+                                           "backup_count":  "AWS_SFDA_BACKUP_RETENTION_COUNT",
+                                           "backup_days":  "AWS_SFDA_BACKUP_RETENTION_DAYS",
+                                           "blocked_days":  "AWS_SFDA_BLOCKED_RETENTION_DAYS",
+                                           "quarantine_days":  "AWS_SFDA_QUARANTINE_RETENTION_DAYS",
+                                           "staging_hours":  "AWS_SFDA_STAGING_RETENTION_HOURS"
+                                       }
+                   },
+    "managed_provider_retention":  {
+                                        "policy_declared":  true,
+                                        "metadata_owner":  "dlm_node_retention",
+                                        "physical_cleanup_enabled":  false,
+                                        "reason":  "dataset_backup_quarantine_retention_executor_not_implemented",
+                                        "s3_disposition":  "immutable_objects_plus_commit_pointer"
+                                    }
+}

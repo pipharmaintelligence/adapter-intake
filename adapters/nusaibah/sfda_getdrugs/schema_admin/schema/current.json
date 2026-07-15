@@ -1,0 +1,7 @@
+{
+  "node_key": "sfda_getdrugs_daily_snapshot",
+  "schema_version": "sfda_getdrugs_daily_snapshot.v1",
+  "schema_file": "snapshots/sha256-d43b87ff285c1678ed56a21e5645e1e3b38f6b920ecc696821749a39d0d84ab5.json",
+  "schema_sha256": "d43b87ff285c1678ed56a21e5645e1e3b38f6b920ecc696821749a39d0d84ab5",
+  "validation_mode": "nullable_tolerant"
+}

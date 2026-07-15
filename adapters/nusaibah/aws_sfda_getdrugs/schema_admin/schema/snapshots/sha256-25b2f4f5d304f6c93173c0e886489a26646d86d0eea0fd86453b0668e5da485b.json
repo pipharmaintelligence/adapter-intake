@@ -1,0 +1,2275 @@
+{
+  "metadata": {
+    "document_type": "node_schema",
+    "node_key": "aws_sfda_getdrugs_daily_snapshot",
+    "schema_version": "aws_sfda_getdrugs_daily_snapshot.v1",
+    "generation_mode": "value_free_full_crawl_inventory",
+    "values_included": false,
+    "records_inspected": 8966
+  },
+  "payload_schema_version": "sfda_getdrugs.records.v1",
+  "payload_contract": {
+    "$id": "sfda_getdrugs.records.v1",
+    "type": "object",
+    "properties": {
+      "records": {
+        "type": "array"
+      },
+      "page_summary": {
+        "type": "object"
+      }
+    },
+    "required": [
+      "records",
+      "page_summary"
+    ],
+    "additionalProperties": false
+  },
+  "results": {
+    "schema_type": "json_schema",
+    "format": "json",
+    "contract": {
+      "type": "object",
+      "properties": {
+        "administrationRoute": {
+          "type": "object"
+        },
+        "administrationRouteId": {
+          "type": "integer"
+        },
+        "agent": {
+          "type": "string"
+        },
+        "atcCode1": {
+          "type": "string"
+        },
+        "atcCode2": {
+          "type": "string"
+        },
+        "authorizationStatus": {
+          "type": "object"
+        },
+        "authorizationStatusId": {
+          "type": "integer"
+        },
+        "certificateDate": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "cifPrice": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "company": {
+          "type": "object"
+        },
+        "createDateQR": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "creationTime": {
+          "type": "string"
+        },
+        "creatorUserId": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "deleterUserId": {
+          "type": "null"
+        },
+        "deletionTime": {
+          "type": "null"
+        },
+        "denrUserId": {
+          "type": "integer"
+        },
+        "descriptionCode": {
+          "type": "string"
+        },
+        "distributionArea": {
+          "type": "object"
+        },
+        "distributionAreaId": {
+          "type": "integer"
+        },
+        "domain": {
+          "type": [
+            "null",
+            "object"
+          ]
+        },
+        "domainId": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "drugActualStocks": {
+          "type": "null"
+        },
+        "drugAgents": {
+          "type": "array"
+        },
+        "drugAliasId": {
+          "type": "null"
+        },
+        "drugAvailabilities": {
+          "type": "null"
+        },
+        "drugBranch": {
+          "type": [
+            "null",
+            "object"
+          ]
+        },
+        "drugBranchId": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "drugCombinations": {
+          "type": [
+            "null",
+            "array"
+          ]
+        },
+        "drugDelegation": {
+          "type": "null"
+        },
+        "drugImageFolderName": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "drugManufacturers": {
+          "type": "array"
+        },
+        "drugPricing": {
+          "type": "null"
+        },
+        "drugSafetyStocks": {
+          "type": "null"
+        },
+        "drugStocks": {
+          "type": "null"
+        },
+        "drugType": {
+          "type": [
+            "null",
+            "object"
+          ]
+        },
+        "drugTypeId": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "drugWarnings": {
+          "type": "null"
+        },
+        "exportPriceofCountryOrigin": {
+          "type": "null"
+        },
+        "extendedWarranties": {
+          "type": "null"
+        },
+        "gtin": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "hasQR": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "isActive": {
+          "type": "boolean"
+        },
+        "isDeleted": {
+          "type": "boolean"
+        },
+        "isFlagged": {
+          "type": "boolean"
+        },
+        "isRevised": {
+          "type": "boolean"
+        },
+        "isSubmitted": {
+          "type": "boolean"
+        },
+        "lastModificationTime": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "lastModifierUserId": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "lastUpdateReasons": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "legalStatus": {
+          "type": "object"
+        },
+        "legalStatusId": {
+          "type": "integer"
+        },
+        "manufacturer_name": {
+          "type": "string"
+        },
+        "marketCompanyAlias": {
+          "type": "null"
+        },
+        "marketingStatus": {
+          "type": "object"
+        },
+        "marketingStatusId": {
+          "type": "integer"
+        },
+        "oldRegisterNumber": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "packageSize": {
+          "type": "integer"
+        },
+        "packageType": {
+          "type": "object"
+        },
+        "packageTypeId": {
+          "type": "integer"
+        },
+        "pharmaceuticalForm": {
+          "type": "object"
+        },
+        "pharmaceuticalFormId": {
+          "type": "integer"
+        },
+        "price": {
+          "type": "string"
+        },
+        "productControl": {
+          "type": "object"
+        },
+        "productControlId": {
+          "type": "integer"
+        },
+        "publicPricingDate": {
+          "type": "string"
+        },
+        "referenceNumber": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "registerNumber": {
+          "type": "string"
+        },
+        "registerYear": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "registration_number": {
+          "type": "string"
+        },
+        "row_number": {
+          "type": "integer"
+        },
+        "scientificDescriptionCodeRoot": {
+          "type": [
+            "null",
+            "number"
+          ]
+        },
+        "scientificName": {
+          "type": "string"
+        },
+        "scientificNameAr": {
+          "type": "string"
+        },
+        "scientificNameId": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "scientificNames": {
+          "type": [
+            "null",
+            "object"
+          ]
+        },
+        "scientific_name": {
+          "type": "string"
+        },
+        "secondaryPackaging": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "secondaryPackagingId": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "secondaryPackagingManufacturing": {
+          "type": [
+            "null",
+            "object"
+          ]
+        },
+        "shelfLife": {
+          "type": "number"
+        },
+        "size": {
+          "type": [
+            "null",
+            "number"
+          ]
+        },
+        "sizeUnit": {
+          "type": [
+            "null",
+            "object"
+          ]
+        },
+        "sizeUnitId": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "source_page": {
+          "type": "integer"
+        },
+        "storageConditions": {
+          "type": [
+            "null",
+            "object"
+          ]
+        },
+        "storageConditionsId": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "strength": {
+          "type": "string"
+        },
+        "strengthUnit": {
+          "type": [
+            "null",
+            "object"
+          ]
+        },
+        "strengthUnitId": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "tradeName": {
+          "type": "string"
+        },
+        "tradeNameAr": {
+          "type": "string"
+        },
+        "trade_name": {
+          "type": "string"
+        },
+        "wholesalePrice": {
+          "type": "null"
+        }
+      },
+      "required": [],
+      "additionalProperties": true,
+      "inspection": {
+        "keys": [
+          "administrationRoute",
+          "administrationRouteId",
+          "agent",
+          "atcCode1",
+          "atcCode2",
+          "authorizationStatus",
+          "authorizationStatusId",
+          "certificateDate",
+          "cifPrice",
+          "company",
+          "createDateQR",
+          "creationTime",
+          "creatorUserId",
+          "deleterUserId",
+          "deletionTime",
+          "denrUserId",
+          "descriptionCode",
+          "distributionArea",
+          "distributionAreaId",
+          "domain",
+          "domainId",
+          "drugActualStocks",
+          "drugAgents",
+          "drugAliasId",
+          "drugAvailabilities",
+          "drugBranch",
+          "drugBranchId",
+          "drugCombinations",
+          "drugDelegation",
+          "drugImageFolderName",
+          "drugManufacturers",
+          "drugPricing",
+          "drugSafetyStocks",
+          "drugStocks",
+          "drugType",
+          "drugTypeId",
+          "drugWarnings",
+          "exportPriceofCountryOrigin",
+          "extendedWarranties",
+          "gtin",
+          "hasQR",
+          "id",
+          "isActive",
+          "isDeleted",
+          "isFlagged",
+          "isRevised",
+          "isSubmitted",
+          "lastModificationTime",
+          "lastModifierUserId",
+          "lastUpdateReasons",
+          "legalStatus",
+          "legalStatusId",
+          "manufacturer_name",
+          "marketCompanyAlias",
+          "marketingStatus",
+          "marketingStatusId",
+          "oldRegisterNumber",
+          "packageSize",
+          "packageType",
+          "packageTypeId",
+          "pharmaceuticalForm",
+          "pharmaceuticalFormId",
+          "price",
+          "productControl",
+          "productControlId",
+          "publicPricingDate",
+          "referenceNumber",
+          "registerNumber",
+          "registerYear",
+          "registration_number",
+          "row_number",
+          "scientificDescriptionCodeRoot",
+          "scientificName",
+          "scientificNameAr",
+          "scientificNameId",
+          "scientificNames",
+          "scientific_name",
+          "secondaryPackaging",
+          "secondaryPackagingId",
+          "secondaryPackagingManufacturing",
+          "shelfLife",
+          "size",
+          "sizeUnit",
+          "sizeUnitId",
+          "source_page",
+          "storageConditions",
+          "storageConditionsId",
+          "strength",
+          "strengthUnit",
+          "strengthUnitId",
+          "tradeName",
+          "tradeNameAr",
+          "trade_name",
+          "wholesalePrice"
+        ]
+      },
+      "columns": [
+        {
+          "name": "administrationRoute",
+          "type": "object",
+          "types": [
+            "object"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "administrationRouteId",
+          "type": "integer",
+          "types": [
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "agent",
+          "type": "string",
+          "types": [
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "atcCode1",
+          "type": "string",
+          "types": [
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "atcCode2",
+          "type": "string",
+          "types": [
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "authorizationStatus",
+          "type": "object",
+          "types": [
+            "object"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "authorizationStatusId",
+          "type": "integer",
+          "types": [
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "certificateDate",
+          "type": "string",
+          "types": [
+            "null",
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "cifPrice",
+          "type": "string",
+          "types": [
+            "null",
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "company",
+          "type": "object",
+          "types": [
+            "object"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "createDateQR",
+          "type": "string",
+          "types": [
+            "null",
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "creationTime",
+          "type": "string",
+          "types": [
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "creatorUserId",
+          "type": "integer",
+          "types": [
+            "null",
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "deleterUserId",
+          "type": "null",
+          "types": [
+            "null"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "deletionTime",
+          "type": "null",
+          "types": [
+            "null"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "denrUserId",
+          "type": "integer",
+          "types": [
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "descriptionCode",
+          "type": "string",
+          "types": [
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "distributionArea",
+          "type": "object",
+          "types": [
+            "object"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "distributionAreaId",
+          "type": "integer",
+          "types": [
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "domain",
+          "type": "object",
+          "types": [
+            "null",
+            "object"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "domainId",
+          "type": "integer",
+          "types": [
+            "null",
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "drugActualStocks",
+          "type": "null",
+          "types": [
+            "null"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "drugAgents",
+          "type": "array",
+          "types": [
+            "array"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "drugAliasId",
+          "type": "null",
+          "types": [
+            "null"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "drugAvailabilities",
+          "type": "null",
+          "types": [
+            "null"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "drugBranch",
+          "type": "object",
+          "types": [
+            "null",
+            "object"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "drugBranchId",
+          "type": "integer",
+          "types": [
+            "null",
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "drugCombinations",
+          "type": "array",
+          "types": [
+            "null",
+            "array"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "drugDelegation",
+          "type": "null",
+          "types": [
+            "null"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "drugImageFolderName",
+          "type": "string",
+          "types": [
+            "null",
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "drugManufacturers",
+          "type": "array",
+          "types": [
+            "array"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "drugPricing",
+          "type": "null",
+          "types": [
+            "null"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "drugSafetyStocks",
+          "type": "null",
+          "types": [
+            "null"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "drugStocks",
+          "type": "null",
+          "types": [
+            "null"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "drugType",
+          "type": "object",
+          "types": [
+            "null",
+            "object"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "drugTypeId",
+          "type": "integer",
+          "types": [
+            "null",
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "drugWarnings",
+          "type": "null",
+          "types": [
+            "null"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "exportPriceofCountryOrigin",
+          "type": "null",
+          "types": [
+            "null"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "extendedWarranties",
+          "type": "null",
+          "types": [
+            "null"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "gtin",
+          "type": "string",
+          "types": [
+            "null",
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "hasQR",
+          "type": "boolean",
+          "types": [
+            "boolean"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "id",
+          "type": "integer",
+          "types": [
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "isActive",
+          "type": "boolean",
+          "types": [
+            "boolean"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "isDeleted",
+          "type": "boolean",
+          "types": [
+            "boolean"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "isFlagged",
+          "type": "boolean",
+          "types": [
+            "boolean"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "isRevised",
+          "type": "boolean",
+          "types": [
+            "boolean"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "isSubmitted",
+          "type": "boolean",
+          "types": [
+            "boolean"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "lastModificationTime",
+          "type": "string",
+          "types": [
+            "null",
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "lastModifierUserId",
+          "type": "integer",
+          "types": [
+            "null",
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "lastUpdateReasons",
+          "type": "string",
+          "types": [
+            "null",
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "legalStatus",
+          "type": "object",
+          "types": [
+            "object"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "legalStatusId",
+          "type": "integer",
+          "types": [
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "manufacturer_name",
+          "type": "string",
+          "types": [
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "marketCompanyAlias",
+          "type": "null",
+          "types": [
+            "null"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "marketingStatus",
+          "type": "object",
+          "types": [
+            "object"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "marketingStatusId",
+          "type": "integer",
+          "types": [
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "oldRegisterNumber",
+          "type": "string",
+          "types": [
+            "null",
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "packageSize",
+          "type": "integer",
+          "types": [
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "packageType",
+          "type": "object",
+          "types": [
+            "object"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "packageTypeId",
+          "type": "integer",
+          "types": [
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "pharmaceuticalForm",
+          "type": "object",
+          "types": [
+            "object"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "pharmaceuticalFormId",
+          "type": "integer",
+          "types": [
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "price",
+          "type": "string",
+          "types": [
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "productControl",
+          "type": "object",
+          "types": [
+            "object"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "productControlId",
+          "type": "integer",
+          "types": [
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "publicPricingDate",
+          "type": "string",
+          "types": [
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "referenceNumber",
+          "type": "string",
+          "types": [
+            "null",
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "registerNumber",
+          "type": "string",
+          "types": [
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "registerYear",
+          "type": "integer",
+          "types": [
+            "null",
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "registration_number",
+          "type": "string",
+          "types": [
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "row_number",
+          "type": "integer",
+          "types": [
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "scientificDescriptionCodeRoot",
+          "type": "number",
+          "types": [
+            "null",
+            "number"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "scientificName",
+          "type": "string",
+          "types": [
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "scientificNameAr",
+          "type": "string",
+          "types": [
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "scientificNameId",
+          "type": "integer",
+          "types": [
+            "null",
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "scientificNames",
+          "type": "object",
+          "types": [
+            "null",
+            "object"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "scientific_name",
+          "type": "string",
+          "types": [
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "secondaryPackaging",
+          "type": "string",
+          "types": [
+            "null",
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "secondaryPackagingId",
+          "type": "integer",
+          "types": [
+            "null",
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "secondaryPackagingManufacturing",
+          "type": "object",
+          "types": [
+            "null",
+            "object"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "shelfLife",
+          "type": "number",
+          "types": [
+            "number"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "size",
+          "type": "number",
+          "types": [
+            "null",
+            "number"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "sizeUnit",
+          "type": "object",
+          "types": [
+            "null",
+            "object"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "sizeUnitId",
+          "type": "integer",
+          "types": [
+            "null",
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "source_page",
+          "type": "integer",
+          "types": [
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "storageConditions",
+          "type": "object",
+          "types": [
+            "null",
+            "object"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "storageConditionsId",
+          "type": "integer",
+          "types": [
+            "null",
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "strength",
+          "type": "string",
+          "types": [
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "strengthUnit",
+          "type": "object",
+          "types": [
+            "null",
+            "object"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "strengthUnitId",
+          "type": "integer",
+          "types": [
+            "null",
+            "integer"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "tradeName",
+          "type": "string",
+          "types": [
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "tradeNameAr",
+          "type": "string",
+          "types": [
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "trade_name",
+          "type": "string",
+          "types": [
+            "string"
+          ],
+          "nullable": true,
+          "required": false
+        },
+        {
+          "name": "wholesalePrice",
+          "type": "null",
+          "types": [
+            "null"
+          ],
+          "nullable": true,
+          "required": false
+        }
+      ]
+    }
+  },
+  "columns": [
+    {
+      "name": "administrationRoute",
+      "type": "object",
+      "types": [
+        "object"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "administrationRouteId",
+      "type": "integer",
+      "types": [
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "agent",
+      "type": "string",
+      "types": [
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "atcCode1",
+      "type": "string",
+      "types": [
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "atcCode2",
+      "type": "string",
+      "types": [
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "authorizationStatus",
+      "type": "object",
+      "types": [
+        "object"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "authorizationStatusId",
+      "type": "integer",
+      "types": [
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "certificateDate",
+      "type": "string",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "cifPrice",
+      "type": "string",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "company",
+      "type": "object",
+      "types": [
+        "object"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "createDateQR",
+      "type": "string",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "creationTime",
+      "type": "string",
+      "types": [
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "creatorUserId",
+      "type": "integer",
+      "types": [
+        "null",
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "deleterUserId",
+      "type": "null",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "deletionTime",
+      "type": "null",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "denrUserId",
+      "type": "integer",
+      "types": [
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "descriptionCode",
+      "type": "string",
+      "types": [
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "distributionArea",
+      "type": "object",
+      "types": [
+        "object"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "distributionAreaId",
+      "type": "integer",
+      "types": [
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "domain",
+      "type": "object",
+      "types": [
+        "null",
+        "object"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "domainId",
+      "type": "integer",
+      "types": [
+        "null",
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "drugActualStocks",
+      "type": "null",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "drugAgents",
+      "type": "array",
+      "types": [
+        "array"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "drugAliasId",
+      "type": "null",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "drugAvailabilities",
+      "type": "null",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "drugBranch",
+      "type": "object",
+      "types": [
+        "null",
+        "object"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "drugBranchId",
+      "type": "integer",
+      "types": [
+        "null",
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "drugCombinations",
+      "type": "array",
+      "types": [
+        "null",
+        "array"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "drugDelegation",
+      "type": "null",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "drugImageFolderName",
+      "type": "string",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "drugManufacturers",
+      "type": "array",
+      "types": [
+        "array"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "drugPricing",
+      "type": "null",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "drugSafetyStocks",
+      "type": "null",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "drugStocks",
+      "type": "null",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "drugType",
+      "type": "object",
+      "types": [
+        "null",
+        "object"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "drugTypeId",
+      "type": "integer",
+      "types": [
+        "null",
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "drugWarnings",
+      "type": "null",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "exportPriceofCountryOrigin",
+      "type": "null",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "extendedWarranties",
+      "type": "null",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "gtin",
+      "type": "string",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "hasQR",
+      "type": "boolean",
+      "types": [
+        "boolean"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "id",
+      "type": "integer",
+      "types": [
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "isActive",
+      "type": "boolean",
+      "types": [
+        "boolean"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "isDeleted",
+      "type": "boolean",
+      "types": [
+        "boolean"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "isFlagged",
+      "type": "boolean",
+      "types": [
+        "boolean"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "isRevised",
+      "type": "boolean",
+      "types": [
+        "boolean"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "isSubmitted",
+      "type": "boolean",
+      "types": [
+        "boolean"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "lastModificationTime",
+      "type": "string",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "lastModifierUserId",
+      "type": "integer",
+      "types": [
+        "null",
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "lastUpdateReasons",
+      "type": "string",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "legalStatus",
+      "type": "object",
+      "types": [
+        "object"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "legalStatusId",
+      "type": "integer",
+      "types": [
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "manufacturer_name",
+      "type": "string",
+      "types": [
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "marketCompanyAlias",
+      "type": "null",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "marketingStatus",
+      "type": "object",
+      "types": [
+        "object"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "marketingStatusId",
+      "type": "integer",
+      "types": [
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "oldRegisterNumber",
+      "type": "string",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "packageSize",
+      "type": "integer",
+      "types": [
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "packageType",
+      "type": "object",
+      "types": [
+        "object"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "packageTypeId",
+      "type": "integer",
+      "types": [
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "pharmaceuticalForm",
+      "type": "object",
+      "types": [
+        "object"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "pharmaceuticalFormId",
+      "type": "integer",
+      "types": [
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "price",
+      "type": "string",
+      "types": [
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "productControl",
+      "type": "object",
+      "types": [
+        "object"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "productControlId",
+      "type": "integer",
+      "types": [
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "publicPricingDate",
+      "type": "string",
+      "types": [
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "referenceNumber",
+      "type": "string",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "registerNumber",
+      "type": "string",
+      "types": [
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "registerYear",
+      "type": "integer",
+      "types": [
+        "null",
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "registration_number",
+      "type": "string",
+      "types": [
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "row_number",
+      "type": "integer",
+      "types": [
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "scientificDescriptionCodeRoot",
+      "type": "number",
+      "types": [
+        "null",
+        "number"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "scientificName",
+      "type": "string",
+      "types": [
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "scientificNameAr",
+      "type": "string",
+      "types": [
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "scientificNameId",
+      "type": "integer",
+      "types": [
+        "null",
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "scientificNames",
+      "type": "object",
+      "types": [
+        "null",
+        "object"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "scientific_name",
+      "type": "string",
+      "types": [
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "secondaryPackaging",
+      "type": "string",
+      "types": [
+        "null",
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "secondaryPackagingId",
+      "type": "integer",
+      "types": [
+        "null",
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "secondaryPackagingManufacturing",
+      "type": "object",
+      "types": [
+        "null",
+        "object"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "shelfLife",
+      "type": "number",
+      "types": [
+        "number"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "size",
+      "type": "number",
+      "types": [
+        "null",
+        "number"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "sizeUnit",
+      "type": "object",
+      "types": [
+        "null",
+        "object"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "sizeUnitId",
+      "type": "integer",
+      "types": [
+        "null",
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "source_page",
+      "type": "integer",
+      "types": [
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "storageConditions",
+      "type": "object",
+      "types": [
+        "null",
+        "object"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "storageConditionsId",
+      "type": "integer",
+      "types": [
+        "null",
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "strength",
+      "type": "string",
+      "types": [
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "strengthUnit",
+      "type": "object",
+      "types": [
+        "null",
+        "object"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "strengthUnitId",
+      "type": "integer",
+      "types": [
+        "null",
+        "integer"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "tradeName",
+      "type": "string",
+      "types": [
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "tradeNameAr",
+      "type": "string",
+      "types": [
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "trade_name",
+      "type": "string",
+      "types": [
+        "string"
+      ],
+      "nullable": true,
+      "required": false
+    },
+    {
+      "name": "wholesalePrice",
+      "type": "null",
+      "types": [
+        "null"
+      ],
+      "nullable": true,
+      "required": false
+    }
+  ]
+}

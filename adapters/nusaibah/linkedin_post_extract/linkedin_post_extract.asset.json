@@ -1,0 +1,67 @@
+{
+  "key": "nusaibah.linkedin_post_extract",
+  "default": "0.1.0",
+  "allowed_surfaces": [
+    "v1_asset_execute"
+  ],
+  "allowed_modes": [
+    "balanced"
+  ],
+  "execution": {
+    "default_substrate": "local_worker",
+    "allowed_substrates": [
+      "local_worker",
+      "ecs"
+    ]
+  },
+  "versions": {
+    "0.1.0": {
+      "state": "active",
+      "inputs": {
+        "post_request": {
+          "required": true,
+          "shape": "object"
+        }
+      },
+      "outputs": {
+        "post_text": {
+          "required": true,
+          "shape": "object"
+        }
+      },
+      "output_contracts": {
+        "post_text": {
+          "target_kind": "diagnostic_json_output",
+          "write_mode": "dry_run",
+          "format_policy": {
+            "source": "developer_selected",
+            "developer_selected_format": "json",
+            "server_admission_required": false
+          },
+          "validation": {
+            "self_inspection": {
+              "enforce": true,
+              "on_fail": "fail"
+            }
+          }
+        }
+      },
+      "runtime_tools": {
+        "linkedin_post_extract": {
+          "tool_handle": "@tool.linkedin_post_extract",
+          "tool_server_ref": "mcp.linkedin",
+          "capability_ref": "linkedin.posts.extract",
+          "consumer_type": "agent_runtime",
+          "consumer_ref": "agent-run-linkedin-post-extract",
+          "allowed_api_handles": [
+            "@tool.linkedin_post_extract"
+          ],
+          "operation": "invoke",
+          "execution_mode": "enforced",
+          "cache": false,
+          "on_error": "raise"
+        }
+      }
+    }
+  }
+}

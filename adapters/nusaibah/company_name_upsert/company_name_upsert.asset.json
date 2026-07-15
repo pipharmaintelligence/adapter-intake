@@ -1,0 +1,74 @@
+{
+    "key":  "nusaibah.company_name_upsert",
+    "default":  "0.1.0",
+    "allowed_surfaces":  [
+                             "v1_asset_execute"
+                         ],
+    "allowed_modes":  [
+                          "balanced"
+                      ],
+    "execution":  {
+                      "allowed_substrates":  [
+                                                 "local",
+                                                 "local_worker",
+                                                 "ecs"
+                                             ],
+                      "default_substrate":  "local_worker",
+                      "timeout_seconds":  300
+                  },
+    "versions":  {
+                     "0.1.0":  {
+                                   "state":  "active",
+                                   "allow_resume":  true,
+                                   "inputs":  {
+                                                  "companies":  {
+                                                                    "required":  true,
+                                                                    "source":  "either",
+                                                                    "shape":  "object"
+                                                                }
+                                              },
+                                   "outputs":  {
+                                                   "company_name_upsert_summary":  {
+                                                                                       "required":  true,
+                                                                                       "shape":  "object"
+                                                                                   },
+                                                   "company_name_upserts":  {
+                                                                                "required":  true,
+                                                                                "shape":  "object"
+                                                                            }
+                                               },
+                                   "output_contracts":  {
+                                                            "company_name_upserts":  {
+                                                                                         "target_kind":  "model_database_output",
+                                                                                         "write_mode":  "upsert",
+                                                                                         "format_policy":  {
+                                                                                                               "source":  "developer_selected",
+                                                                                                               "developer_selected_format":  "json",
+                                                                                                               "server_admission_required":  true
+                                                                                                           },
+                                                                                         "schema":  {
+                                                                                                        "source":  "explicit",
+                                                                                                        "fields":  [
+                                                                                                                       {
+                                                                                                                           "name":  "id",
+                                                                                                                           "type":  "integer",
+                                                                                                                           "required":  true
+                                                                                                                       },
+                                                                                                                       {
+                                                                                                                           "name":  "company",
+                                                                                                                           "type":  "string",
+                                                                                                                           "required":  true
+                                                                                                                       }
+                                                                                                                   ]
+                                                                                                    },
+                                                                                         "validation":  {
+                                                                                                            "self_inspection":  {
+                                                                                                                                    "enforce":  true,
+                                                                                                                                    "on_fail":  "fail"
+                                                                                                                                }
+                                                                                                        }
+                                                                                     }
+                                                        }
+                               }
+                 }
+}

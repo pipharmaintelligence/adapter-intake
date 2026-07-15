@@ -1,0 +1,13 @@
+asset_key: nusaibah.company_name_upsert
+asset_version: 0.1.0
+package_target: python_runtime/adapters/intake/nusaibah/company_name_upsert
+manifest: company_name_upsert.asset.json
+adapter_module: company_name_upsert_adapter.py
+reviewed_helpers:
+  - company_name_upsert_outputs.py
+release_stage: development
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false
