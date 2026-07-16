@@ -11,9 +11,6 @@ provider failures to value-safe error codes.
 
 Asset identity: `nusaibah.yfinance_market_data:0.2.0`
 
-The historical `0.1.0` snapshot-input contract remains in the manifest. It was
-not silently changed in place.
-
 ## Supported operations
 
 - `history`
