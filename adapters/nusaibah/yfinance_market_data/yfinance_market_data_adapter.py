@@ -93,7 +93,7 @@ class YFinanceMarketDataClient:
         except (ValueError, YFinanceProviderError):
             raise
         except Exception:
-            raise YFinanceProviderError("market_data_provider_request_failed") from None
+            raise YFinanceProviderError("market_data_fetch_failed") from None
 
         snapshot: dict[str, Any] = {
             "records": records,
@@ -258,7 +258,7 @@ class YFinanceMarketDataAdapter(Adapter):
         try:
             snapshot = self._client.fetch_snapshot(symbol, operation, variables)
         except YFinanceProviderError:
-            raise ValueError("market_data_provider_request_failed") from None
+            raise ValueError("market_data_fetch_failed") from None
         _validate_snapshot_identity(snapshot, symbol, operation)
 
         row_count = 0
