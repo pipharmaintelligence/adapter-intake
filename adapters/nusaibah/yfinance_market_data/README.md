@@ -1,13 +1,18 @@
 # yfinance market-data asset
 
-This folder has two separate lanes:
+The registered `0.2.0` adapter accepts bounded variables directly. Its
+injectable `YFinanceMarketDataClient` lazily imports `yfinance==1.5.1` only
+inside an admitted per-dependency environment; no market-data fixture or MCP
+HTTP connector is required.
 
-1. `dev_yfinance_tool.py` is a local developer tool. It uses `yfinance==1.5.1` and generates a safe fixture envelope.
-2. `yfinance_market_data_adapter.py` is the registered adapter. It consumes `market_data_snapshot` plus safe `variables` and performs no provider, OBS, Core, storage, or publishing calls.
+The adapter performs no OBS, Core, storage, queue, publishing, or credential
+work. It returns only the stable `market_data` output contract and converts
+provider failures to value-safe error codes.
 
-The manifest permits `local_worker` and `ecs`, but live remote execution still requires an approved runtime-owned market-data source to inject `market_data_snapshot`. The adapter dependency remains local-only because the registered adapter itself does not import `yfinance`.
+Asset identity: `nusaibah.yfinance_market_data:0.2.0`
 
-Asset identity: `nusaibah.yfinance_market_data:0.1.0`
+The historical `0.1.0` snapshot-input contract remains in the manifest. It was
+not silently changed in place.
 
 ## Supported operations
 
@@ -27,75 +32,93 @@ Financial statements support:
 
 Arbitrary `getattr()` is not supported. The unsafe snapshot field `timezone` is intentionally excluded from adapter output.
 
-## Single-command local launcher
+## Isolated local_worker preparation
 
-Use `run_yfinance_market_data.py` to provide ticker variables directly and receive the final adapter response in one command:
-
-```powershell
-python .\run_yfinance_market_data.py `
-  --symbol NVS `
-  --operation history `
-  --period 5d `
-  --interval 1d `
-  --max-rows 5
-```
-
-The launcher performs only local developer orchestration:
-
-1. validates safe CLI variables,
-2. invokes `dev_yfinance_tool.py`,
-3. writes the resolved fixture under ignored `.adapter-scratch/`,
-4. invokes `obs-adapter-runner`, and
-5. prints the final adapter response.
-
-It does not publish outputs, register the asset, or provide remote `local_worker`/ECS provider authority.
-
-## Financial statement examples
-
-Annual Novartis revenue:
+Runtime `0.1.69` adds a generic dependency cache keyed by the exact lock,
+runtime version, Python version, and platform. After the dependency and network
+policy fields are explicitly approved, prewarm the environment once:
 
 ```powershell
-python .\run_yfinance_market_data.py `
-  --symbol NVS `
-  --operation financial_statement `
-  --statement income_statement `
-  --frequency annual `
-  --line-item total_revenue `
-  --max-periods 4
+E:\nusaibah_projects\demo_asset_project\.venv\Scripts\obs-asset-dependency-prepare.exe `
+  --adapter-root E:\nusaibah_projects\demo_asset_project\adapter-intake-work `
+  --adapter nusaibah.yfinance_market_data:0.2.0 `
+  --runtime-artifact C:\xampp\htdocs\assets\python_runtime\dist\pi_obs_python_runtime-0.1.69-py3-none-any.whl `
+  --pretty
 ```
 
-Annual Novartis cash flow statement:
+The persistent worker does not need to restart after prewarming. On invocation,
+it selects the cached child interpreter for this dependency fingerprint.
+Unrelated adapters continue in the shared lightweight runtime and cannot import
+the child environment through the registry.
+
+Automatic first-use preparation is opt-in with
+`OBS_ASSET_DEPENDENCY_AUTO_PREPARE=1` and remains bounded by
+`OBS_ASSET_DEPENDENCY_INSTALL_TIMEOUT_SECONDS`. Prewarming is preferred for
+production workers.
+
+## ECS package
+
+Build the per-asset ECS bundle with the same lock:
 
 ```powershell
-python .\run_yfinance_market_data.py `
-  --symbol NVS `
-  --operation financial_statement `
-  --statement cash_flow `
-  --frequency annual `
-  --max-periods 4 `
-  --max-line-items 80
+.\python_runtime\tools\build_asset_ecs_runtime.ps1 `
+  -PrimaryAdapter nusaibah.yfinance_market_data:0.2.0 `
+  -DependencyManifest python_runtime\adapters\intake\nusaibah\yfinance_market_data\adapter.dependencies.json `
+  -RuntimeWheel python_runtime\dist\pi_obs_python_runtime-0.1.69-py3-none-any.whl `
+  -ImageTag yfinance-market-data-0.2.0 `
+  -NoBuild
 ```
 
-Quarterly balance sheet:
+The bundle wheel pins the full declared dependency lock. ECS still requires the
+packaged adapter registry entry and an enforced task egress policy.
+
+## Production approval gate
+
+`production_approval` remains `pending` for both the SDK dependency and outbound
+network policy. This is intentional: technical isolation does not establish
+Yahoo data-access permission or an enforced runtime egress allowlist. The
+prewarm and ECS build gates fail closed until those approvals are changed by the
+policy owner.
+
+## Queue invocation
+
+After approval, packaging, runtime installation, and environment prewarming, use
+the normal Assets launcher. No provider URL or fixture file is transferred:
 
 ```powershell
-python .\run_yfinance_market_data.py `
-  --symbol NVS `
-  --operation financial_statement `
-  --statement balance_sheet `
-  --frequency quarterly `
-  --max-periods 4
+E:\nusaibah_projects\demo_asset_project\.venv\Scripts\obs-asset-launch.exe run `
+  --adapter-yaml E:\nusaibah_projects\demo_asset_project\adapter-intake-work\adapters\nusaibah\yfinance_market_data\adapter.yaml `
+  --env-file E:\nusaibah_projects\demo_asset_project\.env `
+  --execution-substrate local_worker `
+  --set symbol=NVS `
+  --set operation=history `
+  --set period=5d `
+  --set interval=1d `
+  --set max_rows=5 `
+  --pretty
 ```
 
-Other examples:
+Financial statement:
 
 ```powershell
-# Safe snapshot; timezone is excluded
-python .\run_yfinance_market_data.py --symbol NVS --operation snapshot
-
-# Swiss-listed Novartis share
-python .\run_yfinance_market_data.py --symbol NOVN.SW --operation snapshot
-
-# One allowlisted attribute
-python .\run_yfinance_market_data.py --symbol NVS --operation attribute --attribute market_cap
+E:\nusaibah_projects\demo_asset_project\.venv\Scripts\obs-asset-launch.exe run `
+  --adapter-yaml E:\nusaibah_projects\demo_asset_project\adapter-intake-work\adapters\nusaibah\yfinance_market_data\adapter.yaml `
+  --env-file E:\nusaibah_projects\demo_asset_project\.env `
+  --execution-substrate local_worker `
+  --set symbol=NVS `
+  --set operation=financial_statement `
+  --set statement=income_statement `
+  --set frequency=annual `
+  --set line_item=total_revenue `
+  --set max_periods=4 `
+  --pretty
 ```
+
+Other variable combinations:
+
+- snapshot: `symbol=NVS` and `operation=snapshot`
+- Swiss-listed share: `symbol=NOVN.SW` and `operation=snapshot`
+- allowlisted attribute: `symbol=NVS`, `operation=attribute`,
+  `attribute=market_cap`
+- quarterly balance sheet: `operation=financial_statement`,
+  `statement=balance_sheet`, `frequency=quarterly`

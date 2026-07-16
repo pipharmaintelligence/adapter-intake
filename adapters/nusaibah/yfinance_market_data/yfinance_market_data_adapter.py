@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import math
 import re
 from collections.abc import Mapping
@@ -12,6 +13,29 @@ from adapters.base import Adapter
 _SYMBOL_PATTERN = re.compile(r"^[A-Z0-9.^=-]{1,32}$")
 _LINE_ITEM_PATTERN = re.compile(r"^[a-z0-9_]{1,128}$")
 _ALLOWED_OPERATIONS = {"history", "snapshot", "attribute", "financial_statement"}
+_ALLOWED_PERIODS = {"1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"}
+_ALLOWED_INTERVALS = {"1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "5d", "1wk", "1mo", "3mo"}
+_PROVIDER_FREQUENCIES = {"annual": "yearly", "quarterly": "quarterly"}
+_ATTRIBUTE_SOURCES: dict[str, tuple[str, str]] = {
+    "currency": ("fast_info", "currency"),
+    "exchange": ("fast_info", "exchange"),
+    "quote_type": ("fast_info", "quoteType"),
+    "last_price": ("fast_info", "lastPrice"),
+    "previous_close": ("fast_info", "previousClose"),
+    "open": ("fast_info", "open"),
+    "day_high": ("fast_info", "dayHigh"),
+    "day_low": ("fast_info", "dayLow"),
+    "year_high": ("fast_info", "yearHigh"),
+    "year_low": ("fast_info", "yearLow"),
+    "market_cap": ("fast_info", "marketCap"),
+    "shares": ("fast_info", "shares"),
+    "last_volume": ("fast_info", "lastVolume"),
+    "short_name": ("info", "shortName"),
+    "long_name": ("info", "longName"),
+    "sector": ("info", "sector"),
+    "industry": ("info", "industry"),
+    "country": ("info", "country"),
+}
 _ALLOWED_ATTRIBUTES = {
     "currency",
     "exchange",
@@ -36,16 +60,191 @@ _ALLOWED_STATEMENTS = {"income_statement", "balance_sheet", "cash_flow"}
 _ALLOWED_FREQUENCIES = {"annual", "quarterly"}
 
 
-class YFinanceMarketDataAdapter(Adapter):
-    """Prepare safe market and financial output from a resolved snapshot.
+class YFinanceProviderError(RuntimeError):
+    """Value-safe provider failure raised without response material."""
 
-    The adapter does not call Yahoo Finance, OBS, DLM Core, storage, or HTTP.
-    A local developer tool or an approved runtime-owned source must supply
-    ``market_data_snapshot`` before invocation.
+
+class YFinanceMarketDataClient:
+    """Bounded provider layer for the isolated yfinance dependency."""
+
+    def __init__(self, yfinance_module: Any | None = None) -> None:
+        self._yfinance_module = yfinance_module
+
+    def fetch_snapshot(
+        self,
+        symbol: str,
+        operation: str,
+        variables: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Fetch one bounded SDK result and convert it to a safe snapshot."""
+
+        try:
+            ticker = self._module().Ticker(symbol)
+            if operation == "history":
+                records, query_context = self._history(ticker, variables)
+                data_kind = "history"
+            elif operation == "financial_statement":
+                records, query_context = self._financial_statement(ticker, variables)
+                data_kind = "financial_statement"
+            else:
+                records = [self._attributes(ticker)]
+                query_context = None
+                data_kind = "attributes"
+        except (ValueError, YFinanceProviderError):
+            raise
+        except Exception:
+            raise YFinanceProviderError("market_data_provider_request_failed") from None
+
+        snapshot: dict[str, Any] = {
+            "records": records,
+            "provenance": {
+                "source": "isolated_yfinance_sdk",
+                "record_count": len(records),
+                "data_kind": data_kind,
+                "symbol": symbol,
+            },
+        }
+        if query_context is not None:
+            snapshot["query_context"] = query_context
+        return snapshot
+
+    def _module(self) -> Any:
+        if self._yfinance_module is None:
+            try:
+                self._yfinance_module = importlib.import_module("yfinance")
+            except ImportError:
+                raise YFinanceProviderError("market_data_dependency_unavailable") from None
+        return self._yfinance_module
+
+    def _history(
+        self,
+        ticker: Any,
+        variables: dict[str, Any],
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        period = _read_choice(variables, "period", "1mo", _ALLOWED_PERIODS)
+        interval = _read_choice(variables, "interval", "1d", _ALLOWED_INTERVALS)
+        start = _read_optional_date(variables, "start")
+        end = _read_optional_date(variables, "end")
+        if start is not None and end is not None and start >= end:
+            raise ValueError("variables.start must be earlier than variables.end.")
+        auto_adjust = _read_bool(variables, "auto_adjust", True)
+        prepost = _read_bool(variables, "prepost", False)
+        include_actions = _read_bool(variables, "include_actions", False)
+        max_rows = _read_bounded_int(variables, "max_rows", default=100, minimum=1, maximum=1000)
+        provider_timeout = _read_bounded_int(
+            variables,
+            "provider_timeout_seconds",
+            default=15,
+            minimum=1,
+            maximum=60,
+        )
+        kwargs: dict[str, Any] = {
+            "interval": interval,
+            "auto_adjust": auto_adjust,
+            "prepost": prepost,
+            "actions": include_actions,
+            "timeout": provider_timeout,
+        }
+        if start is not None or end is not None:
+            kwargs["start"] = start
+            kwargs["end"] = end
+        else:
+            kwargs["period"] = period
+        frame = ticker.history(**kwargs)
+        records = (
+            []
+            if frame is None or getattr(frame, "empty", True)
+            else [
+                _json_safe_value(record)
+                for record in frame.tail(max_rows).copy().reset_index().to_dict(orient="records")
+            ]
+        )
+        return records, {
+            "period": None if start is not None or end is not None else period,
+            "interval": interval,
+            "start": start,
+            "end": end,
+            "auto_adjust": auto_adjust,
+            "prepost": prepost,
+            "include_actions": include_actions,
+        }
+
+    def _financial_statement(
+        self,
+        ticker: Any,
+        variables: dict[str, Any],
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        statement = _read_statement(variables)
+        frequency = _read_frequency(variables)
+        max_periods = _read_bounded_int(variables, "max_periods", default=4, minimum=1, maximum=8)
+        max_line_items = _read_bounded_int(variables, "max_line_items", default=80, minimum=1, maximum=200)
+        line_item_filter = _read_line_item_filter(variables)
+        provider_frequency = _PROVIDER_FREQUENCIES[frequency]
+        if statement == "income_statement":
+            frame = ticker.get_income_stmt(freq=provider_frequency, pretty=True)
+        elif statement == "balance_sheet":
+            frame = ticker.get_balance_sheet(freq=provider_frequency, pretty=True)
+        else:
+            frame = ticker.get_cashflow(freq=provider_frequency, pretty=True)
+        if frame is None or getattr(frame, "empty", True):
+            records: list[dict[str, Any]] = []
+        else:
+            columns = list(frame.columns)[:max_periods]
+            records = []
+            for raw_line_item, row in frame.loc[:, columns].iterrows():
+                if line_item_filter is not None and _snake_case(str(raw_line_item)) != line_item_filter:
+                    continue
+                records.append(
+                    {
+                        "line_item": str(raw_line_item),
+                        "values": [
+                            {
+                                "period_end": _json_safe_value(period),
+                                "value": _json_safe_value(row.get(period)),
+                            }
+                            for period in columns
+                        ],
+                    }
+                )
+                if len(records) >= max_line_items:
+                    break
+        return records, {
+            "statement": statement,
+            "frequency": frequency,
+            "max_periods": max_periods,
+            "max_line_items": max_line_items,
+        }
+
+    def _attributes(self, ticker: Any) -> dict[str, Any]:
+        fast_info = ticker.fast_info
+        info_cache: dict[str, Any] | None = None
+        attributes: dict[str, Any] = {}
+        for public_name, (source_name, source_key) in _ATTRIBUTE_SOURCES.items():
+            if source_name == "fast_info":
+                value = fast_info.get(source_key) if hasattr(fast_info, "get") else None
+            else:
+                if info_cache is None:
+                    raw_info = ticker.info
+                    info_cache = raw_info if isinstance(raw_info, dict) else {}
+                value = info_cache.get(source_key)
+            attributes[public_name] = _json_safe_value(value)
+        return attributes
+
+
+
+class YFinanceMarketDataAdapter(Adapter):
+    """Fetch and shape bounded market data in an admitted isolated runtime.
+
+    The adapter owns no OBS, Core, storage, queue, publishing, or credential
+    behavior. Provider access is delegated to an injectable client whose SDK
+    dependency and outbound policy are admitted by the runtime.
     """
 
     key = "nusaibah.yfinance_market_data"
-    version = "0.1.0"
+    version = "0.2.0"
+
+    def __init__(self, client: YFinanceMarketDataClient | None = None) -> None:
+        self._client = client or YFinanceMarketDataClient()
 
     def invoke(self, inputs: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
         """Validate one snapshot and return a stable JSON-safe result."""
@@ -54,9 +253,12 @@ class YFinanceMarketDataAdapter(Adapter):
         if not isinstance(variables, dict):
             raise ValueError("variables must be an object when provided.")
 
-        snapshot = _require_object(inputs, "market_data_snapshot")
         symbol = _read_symbol(variables)
         operation = _read_operation(variables)
+        try:
+            snapshot = self._client.fetch_snapshot(symbol, operation, variables)
+        except YFinanceProviderError:
+            raise ValueError("market_data_provider_request_failed") from None
         _validate_snapshot_identity(snapshot, symbol, operation)
 
         row_count = 0
@@ -77,7 +279,7 @@ class YFinanceMarketDataAdapter(Adapter):
             "operation": operation,
             "data": data,
             "metadata": {
-                "source_kind": "runtime_resolved_api_snapshot",
+                "source_kind": "isolated_provider_sdk",
                 "library_family": "yfinance",
                 "row_count": row_count,
                 "line_item_count": line_item_count,
@@ -151,6 +353,40 @@ def _read_frequency(variables: dict[str, Any]) -> str:
     return value
 
 
+
+
+def _read_choice(
+    variables: dict[str, Any],
+    key: str,
+    default: str,
+    allowed: set[str],
+) -> str:
+    value = variables.get(key, default)
+    if not isinstance(value, str) or value not in allowed:
+        choices = ", ".join(sorted(allowed))
+        raise ValueError(f"variables.{key} must be one of: {choices}.")
+    return value
+
+
+def _read_optional_date(variables: dict[str, Any], key: str) -> str | None:
+    value = variables.get(key)
+    if value in (None, ""):
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"variables.{key} must be a YYYY-MM-DD string.")
+    try:
+        return date.fromisoformat(value).isoformat()
+    except ValueError:
+        raise ValueError(
+            f"variables.{key} must be a valid YYYY-MM-DD date."
+        ) from None
+
+
+def _read_bool(variables: dict[str, Any], key: str, default: bool) -> bool:
+    value = variables.get(key, default)
+    if not isinstance(value, bool):
+        raise ValueError(f"variables.{key} must be true or false.")
+    return value
 def _read_line_item_filter(variables: dict[str, Any]) -> str | None:
     value = variables.get("line_item")
     if value in (None, ""):

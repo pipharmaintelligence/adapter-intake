@@ -2,20 +2,67 @@
   "schema_version": "adapter_dependencies.v1",
   "runtime_package": {
     "name": "pi-obs-python-runtime",
-    "minimum_version": "0.1.68"
+    "minimum_version": "0.1.69"
   },
   "python": {
-    "requires": ">=3.10"
+    "requires": ">=3.13"
   },
   "dependencies": {
     "yfinance": {
       "version": "1.5.1",
       "import_name": "yfinance",
       "purpose": "market_data_lookup",
-      "runtime_required": false,
+      "runtime_required": true,
       "native_extensions": false,
-      "fallback": "local_tool_dependency_unavailable_error",
-      "production_approval": "local_only"
+      "fallback": "dependency_environment_unavailable_error",
+      "production_approval": "pending"
     }
+  },
+  "dependency_lock": {
+    "complete": true,
+    "packages": {
+      "beautifulsoup4": "4.15.0",
+      "certifi": "2026.6.17",
+      "cffi": "2.1.0",
+      "charset-normalizer": "3.4.9",
+      "curl_cffi": "0.15.0",
+      "idna": "3.18",
+      "markdown-it-py": "4.2.0",
+      "mdurl": "0.1.2",
+      "multitasking": "0.0.13",
+      "numpy": "2.5.1",
+      "pandas": "3.0.3",
+      "peewee": "4.2.3",
+      "platformdirs": "4.10.0",
+      "protobuf": "7.35.1",
+      "pycparser": "3.0",
+      "Pygments": "2.20.0",
+      "python-dateutil": "2.9.0.post0",
+      "pytz": "2026.2",
+      "requests": "2.34.2",
+      "rich": "15.0.0",
+      "six": "1.17.0",
+      "soupsieve": "2.8.4",
+      "typing_extensions": "4.15.0",
+      "tzdata": "2026.3",
+      "urllib3": "2.7.0",
+      "websockets": "16.1",
+      "yfinance": "1.5.1"
+    },
+    "native_packages": [
+      "cffi",
+      "charset-normalizer",
+      "curl_cffi",
+      "numpy",
+      "pandas",
+      "peewee",
+      "protobuf",
+      "websockets"
+    ]
+  },
+  "network": {
+    "outbound_required": true,
+    "policy": "runtime_egress_allowlist",
+    "production_approval": "pending"
   }
 }

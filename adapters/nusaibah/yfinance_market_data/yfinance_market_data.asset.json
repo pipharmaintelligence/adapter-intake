@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.yfinance_market_data",
-  "default": "0.1.0",
+  "default": "0.2.0",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -21,6 +21,63 @@
       "inputs": {
         "market_data_snapshot": {
           "required": true,
+          "shape": "object"
+        }
+      },
+      "outputs": {
+        "market_data": {
+          "required": true,
+          "shape": "object"
+        }
+      },
+      "output_contracts": {
+        "market_data": {
+          "target_kind": "dlm_file_artifact_output",
+          "write_mode": "dry_run",
+          "format_policy": {
+            "source": "node_allowlist",
+            "developer_selected_format": "json",
+            "server_admission_required": true
+          },
+          "schema": {
+            "source": "explicit",
+            "fields": [
+              {
+                "name": "symbol",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "operation",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "data",
+                "type": "object",
+                "required": true
+              },
+              {
+                "name": "metadata",
+                "type": "object",
+                "required": true
+              }
+            ]
+          },
+          "validation": {
+            "self_inspection": {
+              "enforce": true,
+              "on_fail": "fail"
+            }
+          }
+        }
+      }
+    },
+    "0.2.0": {
+      "state": "active",
+      "inputs": {
+        "variables": {
+          "required": false,
           "shape": "object"
         }
       },
