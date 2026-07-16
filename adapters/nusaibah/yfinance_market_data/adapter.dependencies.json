@@ -15,7 +15,7 @@
       "runtime_required": true,
       "native_extensions": false,
       "fallback": "dependency_environment_unavailable_error",
-      "production_approval": "pending"
+      "production_approval": "approved"
     }
   },
   "dependency_lock": {
@@ -63,6 +63,6 @@
   "network": {
     "outbound_required": true,
     "policy": "runtime_egress_allowlist",
-    "production_approval": "pending"
+    "production_approval": "approved"
   }
 }

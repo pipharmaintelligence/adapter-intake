@@ -241,7 +241,7 @@ class YFinanceMarketDataAdapter(Adapter):
     """
 
     key = "nusaibah.yfinance_market_data"
-    version = "0.2.0"
+    version = "0.2.1"
 
     def __init__(self, client: YFinanceMarketDataClient | None = None) -> None:
         self._client = client or YFinanceMarketDataClient()

@@ -1,6 +1,6 @@
 # yfinance market-data asset
 
-The registered `0.2.0` adapter accepts bounded variables directly. Its
+The registered `0.2.1` adapter accepts bounded variables directly. Its
 injectable `YFinanceMarketDataClient` lazily imports `yfinance==1.5.1` only
 inside an admitted per-dependency environment; no market-data fixture or MCP
 HTTP connector is required.
@@ -9,7 +9,7 @@ The adapter performs no OBS, Core, storage, queue, publishing, or credential
 work. It returns only the stable `market_data` output contract and converts
 provider failures to value-safe error codes.
 
-Asset identity: `nusaibah.yfinance_market_data:0.2.0`
+Asset identity: `nusaibah.yfinance_market_data:0.2.1`
 
 ## Supported operations
 
@@ -38,7 +38,7 @@ policy fields are explicitly approved, prewarm the environment once:
 ```powershell
 E:\nusaibah_projects\demo_asset_project\.venv\Scripts\obs-asset-dependency-prepare.exe `
   --adapter-root E:\nusaibah_projects\demo_asset_project\adapter-intake-work `
-  --adapter nusaibah.yfinance_market_data:0.2.0 `
+  --adapter nusaibah.yfinance_market_data:0.2.1 `
   --runtime-artifact C:\xampp\htdocs\assets\python_runtime\dist\pi_obs_python_runtime-0.1.69-py3-none-any.whl `
   --pretty
 ```
@@ -59,10 +59,10 @@ Build the per-asset ECS bundle with the same lock:
 
 ```powershell
 .\python_runtime\tools\build_asset_ecs_runtime.ps1 `
-  -PrimaryAdapter nusaibah.yfinance_market_data:0.2.0 `
+  -PrimaryAdapter nusaibah.yfinance_market_data:0.2.1 `
   -DependencyManifest python_runtime\adapters\intake\nusaibah\yfinance_market_data\adapter.dependencies.json `
   -RuntimeWheel python_runtime\dist\pi_obs_python_runtime-0.1.69-py3-none-any.whl `
-  -ImageTag yfinance-market-data-0.2.0 `
+  -ImageTag yfinance-market-data-0.2.1 `
   -NoBuild
 ```
 
