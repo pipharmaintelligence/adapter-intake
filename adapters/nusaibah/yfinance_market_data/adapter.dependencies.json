@@ -1,0 +1,21 @@
+{
+  "schema_version": "adapter_dependencies.v1",
+  "runtime_package": {
+    "name": "pi-obs-python-runtime",
+    "minimum_version": "0.1.68"
+  },
+  "python": {
+    "requires": ">=3.10"
+  },
+  "dependencies": {
+    "yfinance": {
+      "version": "1.5.1",
+      "import_name": "yfinance",
+      "purpose": "market_data_lookup",
+      "runtime_required": false,
+      "native_extensions": false,
+      "fallback": "local_tool_dependency_unavailable_error",
+      "production_approval": "local_only"
+    }
+  }
+}
