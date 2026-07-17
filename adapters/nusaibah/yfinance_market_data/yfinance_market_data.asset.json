@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.yfinance_market_data",
-  "default": "0.2.1",
+  "default": "0.2.2",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -16,7 +16,7 @@
     "timeout_seconds": 120
   },
   "versions": {
-    "0.2.1": {
+    "0.2.2": {
       "state": "active",
       "inputs": {
         "variables": {

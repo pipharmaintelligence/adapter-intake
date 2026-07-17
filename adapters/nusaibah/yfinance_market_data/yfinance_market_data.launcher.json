@@ -1,0 +1,135 @@
+{
+  "schema_version": "asset_launcher.v2",
+  "entrypoint": "yfinance_market_data_launch.py",
+  "description": "Reviewed yfinance launcher with lightweight queued summaries and bounded direct results.",
+  "boundary": {
+    "helper_role": "reviewed_queue_or_direct_result_orchestration",
+    "adapter_role": "bounded_provider_fetch_normalize_and_validate",
+    "authority": "assets_server_package_and_runtime_egress_policy"
+  },
+  "execution": {
+    "allowed_substrates": [
+      "local_worker",
+      "ecs"
+    ],
+    "default_substrate": "local_worker",
+    "allowed_profiles": [
+      "queued_summary",
+      "direct_result"
+    ],
+    "default_profile": "queued_summary",
+    "profile_cli_arg": "--execution-profile",
+    "direct_result": {
+      "dependency_environment": "required",
+      "max_result_bytes": 1048576
+    }
+  },
+  "authority": {
+    "core_publish_enabled": false
+  },
+  "output_lifecycle": {
+    "mode": "no_publish",
+    "self_inspection": {
+      "policy": "disabled",
+      "reason": "no_admitted_output"
+    }
+  },
+  "variables": {
+    "env_file": {
+      "type": "path",
+      "cli_arg": "--env-file",
+      "required_for_commands": [
+        "run"
+      ]
+    },
+    "symbol": {
+      "type": "string",
+      "cli_arg": "--symbol",
+      "required_for_commands": [
+        "run"
+      ]
+    },
+    "operation": {
+      "type": "string",
+      "cli_arg": "--operation"
+    },
+    "period": {
+      "type": "string",
+      "cli_arg": "--period"
+    },
+    "interval": {
+      "type": "string",
+      "cli_arg": "--interval"
+    },
+    "start": {
+      "type": "date",
+      "cli_arg": "--start"
+    },
+    "end": {
+      "type": "date",
+      "cli_arg": "--end"
+    },
+    "max_rows": {
+      "type": "integer",
+      "cli_arg": "--max-rows"
+    },
+    "round_digits": {
+      "type": "integer",
+      "cli_arg": "--round-digits"
+    },
+    "attribute": {
+      "type": "string",
+      "cli_arg": "--attribute"
+    },
+    "statement": {
+      "type": "string",
+      "cli_arg": "--statement"
+    },
+    "frequency": {
+      "type": "string",
+      "cli_arg": "--frequency"
+    },
+    "max_periods": {
+      "type": "integer",
+      "cli_arg": "--max-periods"
+    },
+    "max_line_items": {
+      "type": "integer",
+      "cli_arg": "--max-line-items"
+    },
+    "line_item": {
+      "type": "string",
+      "cli_arg": "--line-item"
+    },
+    "timeout_seconds": {
+      "type": "integer",
+      "cli_arg": "--timeout-seconds"
+    },
+    "disable_auto_adjust": {
+      "type": "boolean",
+      "cli_arg": "--no-auto-adjust"
+    },
+    "prepost": {
+      "type": "boolean",
+      "cli_arg": "--prepost"
+    },
+    "include_actions": {
+      "type": "boolean",
+      "cli_arg": "--include-actions"
+    },
+    "poll_interval": {
+      "type": "number",
+      "cli_arg": "--poll-interval"
+    },
+    "poll_timeout": {
+      "type": "number",
+      "cli_arg": "--poll-timeout"
+    }
+  },
+  "passthrough_flags": [
+    "--diagnostics-only",
+    "--runtime-check-only",
+    "--skip-publish",
+    "--skip-diagnostics"
+  ]
+}
