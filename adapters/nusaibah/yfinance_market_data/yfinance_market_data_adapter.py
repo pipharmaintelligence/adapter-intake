@@ -95,6 +95,8 @@ class YFinanceMarketDataClient:
         except Exception:
             raise YFinanceProviderError("market_data_fetch_failed") from None
 
+        quote_currency = self._read_quote_currency(ticker, records)
+
         snapshot: dict[str, Any] = {
             "records": records,
             "provenance": {
@@ -102,11 +104,44 @@ class YFinanceMarketDataClient:
                 "record_count": len(records),
                 "data_kind": data_kind,
                 "symbol": symbol,
+                "quote_currency": quote_currency,
             },
         }
         if query_context is not None:
             snapshot["query_context"] = query_context
         return snapshot
+
+    def _read_quote_currency(
+            self,
+            ticker: Any,
+            records: list[dict[str, Any]],
+    ) -> str | None:
+        """Return the security's normalized quote currency when available."""
+
+        # Snapshot and attribute operations already include the safe currency field.
+        if records:
+            record_currency = records[0].get("currency")
+            if isinstance(record_currency, str) and record_currency.strip():
+                return record_currency.strip().upper()
+
+        # History and financial-statement records do not normally contain currency.
+        # Read only the bounded fast_info currency field.
+        try:
+            fast_info = ticker.fast_info
+            raw_currency = (
+                fast_info.get("currency")
+                if hasattr(fast_info, "get")
+                else None
+            )
+        except Exception:
+            # Currency is useful metadata, but its absence must not break the result.
+            return None
+
+        if not isinstance(raw_currency, str):
+            return None
+
+        normalized = raw_currency.strip().upper()
+        return normalized or None
 
     def _module(self) -> Any:
         if self._yfinance_module is None:
@@ -131,9 +166,9 @@ class YFinanceMarketDataClient:
         prepost = _read_bool(variables, "prepost", False)
         include_actions = _read_bool(variables, "include_actions", False)
         max_rows = _read_bounded_int(variables, "max_rows", default=100, minimum=1, maximum=1000)
-        provider_timeout = _read_bounded_int(
+        request_timeout = _read_bounded_int(
             variables,
-            "provider_timeout_seconds",
+            "timeout_seconds",
             default=15,
             minimum=1,
             maximum=60,
@@ -143,7 +178,7 @@ class YFinanceMarketDataClient:
             "auto_adjust": auto_adjust,
             "prepost": prepost,
             "actions": include_actions,
-            "timeout": provider_timeout,
+            "timeout": request_timeout,
         }
         if start is not None or end is not None:
             kwargs["start"] = start
@@ -241,7 +276,7 @@ class YFinanceMarketDataAdapter(Adapter):
     """
 
     key = "nusaibah.yfinance_market_data"
-    version = "0.2.1"
+    version = "0.2.2"
 
     def __init__(self, client: YFinanceMarketDataClient | None = None) -> None:
         self._client = client or YFinanceMarketDataClient()
@@ -260,6 +295,7 @@ class YFinanceMarketDataAdapter(Adapter):
         except YFinanceProviderError:
             raise ValueError("market_data_fetch_failed") from None
         _validate_snapshot_identity(snapshot, symbol, operation)
+        quote_currency = _read_quote_currency(snapshot)
 
         row_count = 0
         line_item_count = 0
@@ -281,6 +317,7 @@ class YFinanceMarketDataAdapter(Adapter):
             "metadata": {
                 "source_kind": "isolated_provider_sdk",
                 "library_family": "yfinance",
+                "quote_currency": quote_currency,
                 "row_count": row_count,
                 "line_item_count": line_item_count,
             },
@@ -396,6 +433,34 @@ def _read_line_item_filter(variables: dict[str, Any]) -> str | None:
     normalized = _snake_case(value)
     if not _LINE_ITEM_PATTERN.fullmatch(normalized):
         raise ValueError("variables.line_item contains unsupported characters.")
+    return normalized
+
+def _read_quote_currency(snapshot: dict[str, Any]) -> str | None:
+    """Read and validate optional quote-currency metadata."""
+
+    provenance = snapshot.get("provenance")
+    if not isinstance(provenance, dict):
+        raise ValueError("market_data_snapshot.provenance must be an object.")
+
+    value = provenance.get("quote_currency")
+    if value is None:
+        return None
+
+    if not isinstance(value, str):
+        raise ValueError(
+            "market_data_snapshot provenance quote_currency must be a string."
+        )
+
+    normalized = value.strip().upper()
+    if not normalized:
+        return None
+
+    if not re.fullmatch(r"[A-Z]{3}", normalized):
+        raise ValueError(
+            "market_data_snapshot provenance quote_currency must be a "
+            "three-letter currency code."
+        )
+
     return normalized
 
 

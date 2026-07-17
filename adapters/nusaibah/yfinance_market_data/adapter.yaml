@@ -1,11 +1,15 @@
 asset_key: nusaibah.yfinance_market_data
-asset_version: 0.2.1
+asset_version: 0.2.2
 adapter_module: yfinance_market_data_adapter.py
 manifest: yfinance_market_data.asset.json
 package_target: python_runtime/adapters/intake/nusaibah/yfinance_market_data
+reviewed_helpers:
+  - yfinance_market_data_launch.py
 optional_files:
   - README.md
 release_stage: development
+launcher_entrypoint: yfinance_market_data_launch.py
+launcher_manifest: yfinance_market_data.launcher.json
 dependency_manifest: adapter.dependencies.json
 forbidden:
   allow_values: false

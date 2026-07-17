@@ -42,6 +42,7 @@ class FakeClient:
                     "source": "fake",
                     "symbol": symbol,
                     "data_kind": "history",
+                    "quote_currency": "USD",
                 },
             }
         if operation in {"snapshot", "attribute"}:
@@ -57,6 +58,7 @@ class FakeClient:
                     "source": "fake",
                     "symbol": symbol,
                     "data_kind": "attributes",
+                    "quote_currency": "USD",
                 },
             }
         return {
@@ -81,6 +83,7 @@ class FakeClient:
                 "source": "fake",
                 "symbol": symbol,
                 "data_kind": "financial_statement",
+                "quote_currency": "USD",
             },
         }
 
@@ -102,6 +105,7 @@ def test_history_is_bounded_and_json_safe() -> None:
     )
 
     market_data = result["outputs"]["market_data"]
+    assert market_data["metadata"]["quote_currency"] == "USD"
     assert market_data["data"]["records"] == [
         {"date": "2026-01-02", "close": 2.22},
         {"date": "2026-01-03", "close": 3.33},
@@ -138,6 +142,7 @@ def test_snapshot_and_attribute_use_allowlist() -> None:
         "attribute": "market_cap",
         "value": 123,
     }
+    assert snapshot["outputs"]["market_data"]["metadata"]["quote_currency"] == "USD"
 
 
 def test_financial_statement_filters_and_sanitizes_values() -> None:
@@ -193,13 +198,14 @@ def test_provider_client_converts_history_without_returning_sdk_objects() -> Non
             "period": "5d",
             "interval": "1d",
             "max_rows": 1,
-            "provider_timeout_seconds": 9,
+            "timeout_seconds": 9,
         },
     )
 
     assert snapshot["records"] == [{"Date": "2026-01-02", "Close": 2.0}]
     assert ticker.history_kwargs["timeout"] == 9
     assert "url" not in json.dumps(snapshot).lower()
+    assert snapshot["provenance"]["quote_currency"] == "USD"
 
 
 class FakeYFinance:
@@ -214,7 +220,10 @@ class FakeYFinance:
 class FakeTicker:
     def __init__(self) -> None:
         self.history_kwargs: dict[str, Any] = {}
-        self.fast_info = {"marketCap": 123}
+        self.fast_info = {
+            "marketCap": 123,
+            "currency": "USD",
+        }
         self.info = {}
 
     def history(self, **kwargs: Any) -> Any:
