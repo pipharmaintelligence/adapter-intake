@@ -1,0 +1,520 @@
+{
+  "previous_snapshot": {
+    "records": [
+      {
+        "administrationRoute": {
+          "fixture_field": "administrationRoute",
+          "label": "OLD administrationRoute"
+        },
+        "administrationRouteId": 1001,
+        "agent": "OLD AGENT",
+        "atcCode1": "OLD_atcCode1_A1",
+        "atcCode2": "OLD_atcCode2_A1",
+        "authorizationStatus": {
+          "fixture_field": "authorizationStatus",
+          "label": "OLD authorizationStatus"
+        },
+        "authorizationStatusId": 1001,
+        "certificateDate": "OLD_certificateDate_A1",
+        "cifPrice": "OLD_cifPrice_A1",
+        "company": {
+          "nameEn": "OLD MFG"
+        },
+        "createDateQR": "OLD_createDateQR_A1",
+        "creationTime": "OLD_creationTime_A1",
+        "creatorUserId": 1001,
+        "deleterUserId": null,
+        "deletionTime": null,
+        "denrUserId": 1001,
+        "descriptionCode": "OLD_descriptionCode_A1",
+        "distributionArea": {
+          "fixture_field": "distributionArea",
+          "label": "OLD distributionArea"
+        },
+        "distributionAreaId": 1001,
+        "domain": {
+          "fixture_field": "domain",
+          "label": "OLD domain"
+        },
+        "domainId": 1001,
+        "drugActualStocks": null,
+        "drugAgents": [
+          {
+            "agent": {
+              "nameEn": "OLD AGENT"
+            }
+          }
+        ],
+        "drugAliasId": null,
+        "drugAvailabilities": null,
+        "drugBranch": {
+          "fixture_field": "drugBranch",
+          "label": "OLD drugBranch"
+        },
+        "drugBranchId": 1001,
+        "drugCombinations": [],
+        "drugDelegation": null,
+        "drugImageFolderName": "OLD_drugImageFolderName_A1",
+        "drugManufacturers": [
+          {
+            "manufacture": {
+              "nameEn": "OLD MFG"
+            }
+          }
+        ],
+        "drugPricing": null,
+        "drugSafetyStocks": null,
+        "drugStocks": null,
+        "drugType": {
+          "fixture_field": "drugType",
+          "label": "OLD drugType"
+        },
+        "drugTypeId": 1001,
+        "drugWarnings": null,
+        "exportPriceofCountryOrigin": null,
+        "extendedWarranties": null,
+        "gtin": "OLD_gtin_A1",
+        "hasQR": false,
+        "id": 1001,
+        "isActive": true,
+        "isDeleted": false,
+        "isFlagged": false,
+        "isRevised": false,
+        "isSubmitted": false,
+        "lastModificationTime": "OLD_lastModificationTime_A1",
+        "lastModifierUserId": 1001,
+        "lastUpdateReasons": "OLD_lastUpdateReasons_A1",
+        "legalStatus": {
+          "fixture_field": "legalStatus",
+          "label": "OLD legalStatus"
+        },
+        "legalStatusId": 1001,
+        "manufacturer_name": "OLD MFG",
+        "marketCompanyAlias": null,
+        "marketingStatus": {
+          "fixture_field": "marketingStatus",
+          "label": "OLD marketingStatus"
+        },
+        "marketingStatusId": 1001,
+        "oldRegisterNumber": "OLD_oldRegisterNumber_A1",
+        "packageSize": 1001,
+        "packageType": {
+          "fixture_field": "packageType",
+          "label": "OLD packageType"
+        },
+        "packageTypeId": 1001,
+        "pharmaceuticalForm": {
+          "fixture_field": "pharmaceuticalForm",
+          "label": "OLD pharmaceuticalForm"
+        },
+        "pharmaceuticalFormId": 1001,
+        "price": "OLD_price_A1",
+        "productControl": {
+          "fixture_field": "productControl",
+          "label": "OLD productControl"
+        },
+        "productControlId": 1001,
+        "publicPricingDate": "OLD_publicPricingDate_A1",
+        "referenceNumber": "OLD_referenceNumber_A1",
+        "registerNumber": "A1",
+        "registerYear": 1001,
+        "registration_number": "A1",
+        "row_number": 1001,
+        "scientificDescriptionCodeRoot": 1001.0,
+        "scientificName": "OLD SCI",
+        "scientificNameAr": "OLD_scientificNameAr_A1",
+        "scientificNameId": 1001,
+        "scientificNames": {
+          "fixture_field": "scientificNames",
+          "label": "OLD scientificNames"
+        },
+        "scientific_name": "OLD SCI",
+        "secondaryPackaging": "OLD_secondaryPackaging_A1",
+        "secondaryPackagingId": 1001,
+        "secondaryPackagingManufacturing": {
+          "fixture_field": "secondaryPackagingManufacturing",
+          "label": "OLD secondaryPackagingManufacturing"
+        },
+        "shelfLife": 1001.0,
+        "size": 1001.0,
+        "sizeUnit": {
+          "fixture_field": "sizeUnit",
+          "label": "OLD sizeUnit"
+        },
+        "sizeUnitId": 1001,
+        "source_page": 1001,
+        "storageConditions": {
+          "fixture_field": "storageConditions",
+          "label": "OLD storageConditions"
+        },
+        "storageConditionsId": 1001,
+        "strength": "OLD_strength_A1",
+        "strengthUnit": {
+          "fixture_field": "strengthUnit",
+          "label": "OLD strengthUnit"
+        },
+        "strengthUnitId": 1001,
+        "tradeName": "OLD DRUG",
+        "tradeNameAr": "OLD_tradeNameAr_A1",
+        "trade_name": "OLD DRUG",
+        "wholesalePrice": null
+      }
+    ],
+    "page_summary": {
+      "pages_crawled": 1,
+      "input_record_count": 1,
+      "normalized_record_count": 1
+    },
+    "metadata": {
+      "node_key": "sfda_getdrugs_daily_snapshot",
+      "schema_version": "sfda_getdrugs_daily_snapshot.v1",
+      "payload_schema_version": "sfda_getdrugs.records.v1",
+      "extraction_date": "2026-07-15",
+      "partition_date": "2026-07-15"
+    },
+    "provenance": {
+      "source_kind": "safe_local_schema_generated_fixture",
+      "role": "previous_snapshot",
+      "partition_key": "extraction_date",
+      "partition_date": "2026-07-15"
+    }
+  },
+  "latest_snapshot": {
+    "records": [
+      {
+        "administrationRoute": {
+          "fixture_field": "administrationRoute",
+          "label": "OLD administrationRoute"
+        },
+        "administrationRouteId": 1001,
+        "agent": "OLD AGENT",
+        "atcCode1": "OLD_atcCode1_A1",
+        "atcCode2": "OLD_atcCode2_A1",
+        "authorizationStatus": {
+          "fixture_field": "authorizationStatus",
+          "label": "OLD authorizationStatus"
+        },
+        "authorizationStatusId": 1001,
+        "certificateDate": "OLD_certificateDate_A1",
+        "cifPrice": "OLD_cifPrice_A1",
+        "company": {
+          "nameEn": "OLD MFG"
+        },
+        "createDateQR": "OLD_createDateQR_A1",
+        "creationTime": "OLD_creationTime_A1",
+        "creatorUserId": 1001,
+        "deleterUserId": null,
+        "deletionTime": null,
+        "denrUserId": 1001,
+        "descriptionCode": "OLD_descriptionCode_A1",
+        "distributionArea": {
+          "fixture_field": "distributionArea",
+          "label": "OLD distributionArea"
+        },
+        "distributionAreaId": 1001,
+        "domain": {
+          "fixture_field": "domain",
+          "label": "OLD domain"
+        },
+        "domainId": 1001,
+        "drugActualStocks": null,
+        "drugAgents": [
+          {
+            "agent": {
+              "nameEn": "OLD AGENT"
+            }
+          }
+        ],
+        "drugAliasId": null,
+        "drugAvailabilities": null,
+        "drugBranch": {
+          "fixture_field": "drugBranch",
+          "label": "OLD drugBranch"
+        },
+        "drugBranchId": 1001,
+        "drugCombinations": [],
+        "drugDelegation": null,
+        "drugImageFolderName": "OLD_drugImageFolderName_A1",
+        "drugManufacturers": [
+          {
+            "manufacture": {
+              "nameEn": "OLD MFG"
+            }
+          }
+        ],
+        "drugPricing": null,
+        "drugSafetyStocks": null,
+        "drugStocks": null,
+        "drugType": {
+          "fixture_field": "drugType",
+          "label": "OLD drugType"
+        },
+        "drugTypeId": 1001,
+        "drugWarnings": null,
+        "exportPriceofCountryOrigin": null,
+        "extendedWarranties": null,
+        "gtin": "OLD_gtin_A1",
+        "hasQR": false,
+        "id": 1001,
+        "isActive": true,
+        "isDeleted": false,
+        "isFlagged": false,
+        "isRevised": false,
+        "isSubmitted": false,
+        "lastModificationTime": "OLD_lastModificationTime_A1",
+        "lastModifierUserId": 1001,
+        "lastUpdateReasons": "OLD_lastUpdateReasons_A1",
+        "legalStatus": {
+          "fixture_field": "legalStatus",
+          "label": "OLD legalStatus"
+        },
+        "legalStatusId": 1001,
+        "manufacturer_name": "OLD MFG",
+        "marketCompanyAlias": null,
+        "marketingStatus": {
+          "fixture_field": "marketingStatus",
+          "label": "OLD marketingStatus"
+        },
+        "marketingStatusId": 1001,
+        "oldRegisterNumber": "OLD_oldRegisterNumber_A1",
+        "packageSize": 1001,
+        "packageType": {
+          "fixture_field": "packageType",
+          "label": "OLD packageType"
+        },
+        "packageTypeId": 1001,
+        "pharmaceuticalForm": {
+          "fixture_field": "pharmaceuticalForm",
+          "label": "OLD pharmaceuticalForm"
+        },
+        "pharmaceuticalFormId": 1001,
+        "price": "OLD_price_A1",
+        "productControl": {
+          "fixture_field": "productControl",
+          "label": "OLD productControl"
+        },
+        "productControlId": 1001,
+        "publicPricingDate": "OLD_publicPricingDate_A1",
+        "referenceNumber": "OLD_referenceNumber_A1",
+        "registerNumber": "A1",
+        "registerYear": 1001,
+        "registration_number": "A1",
+        "row_number": 3,
+        "scientificDescriptionCodeRoot": 1001.0,
+        "scientificName": "OLD SCI",
+        "scientificNameAr": "OLD_scientificNameAr_A1",
+        "scientificNameId": 1001,
+        "scientificNames": {
+          "fixture_field": "scientificNames",
+          "label": "OLD scientificNames"
+        },
+        "scientific_name": "OLD SCI",
+        "secondaryPackaging": "OLD_secondaryPackaging_A1",
+        "secondaryPackagingId": 1001,
+        "secondaryPackagingManufacturing": {
+          "fixture_field": "secondaryPackagingManufacturing",
+          "label": "OLD secondaryPackagingManufacturing"
+        },
+        "shelfLife": 1001.0,
+        "size": 1001.0,
+        "sizeUnit": {
+          "fixture_field": "sizeUnit",
+          "label": "OLD sizeUnit"
+        },
+        "sizeUnitId": 1001,
+        "source_page": 3,
+        "storageConditions": {
+          "fixture_field": "storageConditions",
+          "label": "OLD storageConditions"
+        },
+        "storageConditionsId": 1001,
+        "strength": "OLD_strength_A1",
+        "strengthUnit": {
+          "fixture_field": "strengthUnit",
+          "label": "OLD strengthUnit"
+        },
+        "strengthUnitId": 1001,
+        "tradeName": "OLD DRUG",
+        "tradeNameAr": "OLD_tradeNameAr_A1",
+        "trade_name": "OLD DRUG",
+        "wholesalePrice": null
+      },
+      {
+        "administrationRoute": {
+          "fixture_field": "administrationRoute",
+          "label": "NEW administrationRoute"
+        },
+        "administrationRouteId": 1002,
+        "agent": "NEW AGENT",
+        "atcCode1": "NEW_atcCode1_B2",
+        "atcCode2": "NEW_atcCode2_B2",
+        "authorizationStatus": {
+          "fixture_field": "authorizationStatus",
+          "label": "NEW authorizationStatus"
+        },
+        "authorizationStatusId": 1002,
+        "certificateDate": "NEW_certificateDate_B2",
+        "cifPrice": "NEW_cifPrice_B2",
+        "company": {
+          "nameEn": "NEW MFG"
+        },
+        "createDateQR": "NEW_createDateQR_B2",
+        "creationTime": "NEW_creationTime_B2",
+        "creatorUserId": 1002,
+        "deleterUserId": null,
+        "deletionTime": null,
+        "denrUserId": 1002,
+        "descriptionCode": "NEW_descriptionCode_B2",
+        "distributionArea": {
+          "fixture_field": "distributionArea",
+          "label": "NEW distributionArea"
+        },
+        "distributionAreaId": 1002,
+        "domain": {
+          "fixture_field": "domain",
+          "label": "NEW domain"
+        },
+        "domainId": 1002,
+        "drugActualStocks": null,
+        "drugAgents": [
+          {
+            "agent": {
+              "nameEn": "NEW AGENT"
+            }
+          }
+        ],
+        "drugAliasId": null,
+        "drugAvailabilities": null,
+        "drugBranch": {
+          "fixture_field": "drugBranch",
+          "label": "NEW drugBranch"
+        },
+        "drugBranchId": 1002,
+        "drugCombinations": [],
+        "drugDelegation": null,
+        "drugImageFolderName": "NEW_drugImageFolderName_B2",
+        "drugManufacturers": [
+          {
+            "manufacture": {
+              "nameEn": "NEW MFG"
+            }
+          }
+        ],
+        "drugPricing": null,
+        "drugSafetyStocks": null,
+        "drugStocks": null,
+        "drugType": {
+          "fixture_field": "drugType",
+          "label": "NEW drugType"
+        },
+        "drugTypeId": 1002,
+        "drugWarnings": null,
+        "exportPriceofCountryOrigin": null,
+        "extendedWarranties": null,
+        "gtin": "NEW_gtin_B2",
+        "hasQR": false,
+        "id": 1002,
+        "isActive": true,
+        "isDeleted": false,
+        "isFlagged": false,
+        "isRevised": false,
+        "isSubmitted": false,
+        "lastModificationTime": "NEW_lastModificationTime_B2",
+        "lastModifierUserId": 1002,
+        "lastUpdateReasons": "NEW_lastUpdateReasons_B2",
+        "legalStatus": {
+          "fixture_field": "legalStatus",
+          "label": "NEW legalStatus"
+        },
+        "legalStatusId": 1002,
+        "manufacturer_name": "NEW MFG",
+        "marketCompanyAlias": null,
+        "marketingStatus": {
+          "fixture_field": "marketingStatus",
+          "label": "NEW marketingStatus"
+        },
+        "marketingStatusId": 1002,
+        "oldRegisterNumber": "NEW_oldRegisterNumber_B2",
+        "packageSize": 1002,
+        "packageType": {
+          "fixture_field": "packageType",
+          "label": "NEW packageType"
+        },
+        "packageTypeId": 1002,
+        "pharmaceuticalForm": {
+          "fixture_field": "pharmaceuticalForm",
+          "label": "NEW pharmaceuticalForm"
+        },
+        "pharmaceuticalFormId": 1002,
+        "price": "NEW_price_B2",
+        "productControl": {
+          "fixture_field": "productControl",
+          "label": "NEW productControl"
+        },
+        "productControlId": 1002,
+        "publicPricingDate": "NEW_publicPricingDate_B2",
+        "referenceNumber": "NEW_referenceNumber_B2",
+        "registerNumber": "B2",
+        "registerYear": 1002,
+        "registration_number": "B2",
+        "row_number": 4,
+        "scientificDescriptionCodeRoot": 1002.0,
+        "scientificName": "NEW SCI",
+        "scientificNameAr": "NEW_scientificNameAr_B2",
+        "scientificNameId": 1002,
+        "scientificNames": {
+          "fixture_field": "scientificNames",
+          "label": "NEW scientificNames"
+        },
+        "scientific_name": "NEW SCI",
+        "secondaryPackaging": "NEW_secondaryPackaging_B2",
+        "secondaryPackagingId": 1002,
+        "secondaryPackagingManufacturing": {
+          "fixture_field": "secondaryPackagingManufacturing",
+          "label": "NEW secondaryPackagingManufacturing"
+        },
+        "shelfLife": 1002.0,
+        "size": 1002.0,
+        "sizeUnit": {
+          "fixture_field": "sizeUnit",
+          "label": "NEW sizeUnit"
+        },
+        "sizeUnitId": 1002,
+        "source_page": 4,
+        "storageConditions": {
+          "fixture_field": "storageConditions",
+          "label": "NEW storageConditions"
+        },
+        "storageConditionsId": 1002,
+        "strength": "NEW_strength_B2",
+        "strengthUnit": {
+          "fixture_field": "strengthUnit",
+          "label": "NEW strengthUnit"
+        },
+        "strengthUnitId": 1002,
+        "tradeName": "NEW DRUG",
+        "tradeNameAr": "NEW_tradeNameAr_B2",
+        "trade_name": "NEW DRUG",
+        "wholesalePrice": null
+      }
+    ],
+    "page_summary": {
+      "pages_crawled": 1,
+      "input_record_count": 2,
+      "normalized_record_count": 2
+    },
+    "metadata": {
+      "node_key": "sfda_getdrugs_daily_snapshot",
+      "schema_version": "sfda_getdrugs_daily_snapshot.v1",
+      "payload_schema_version": "sfda_getdrugs.records.v1",
+      "extraction_date": "2026-07-16",
+      "partition_date": "2026-07-16"
+    },
+    "provenance": {
+      "source_kind": "safe_local_schema_generated_fixture",
+      "role": "latest_snapshot",
+      "partition_key": "extraction_date",
+      "partition_date": "2026-07-16"
+    }
+  }
+}

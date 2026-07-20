@@ -1,0 +1,30 @@
+{
+  "schema_version": "asset_run_profile.v1",
+  "adapter": {
+    "key": "sfda.getdrugs_daily_changes",
+    "version": "0.1.0"
+  },
+  "mode": "balanced",
+  "inputs": {
+    "latest_snapshot": {
+      "mode": "fixture",
+      "required": true,
+      "shape": "object"
+    },
+    "previous_snapshot": {
+      "mode": "fixture",
+      "required": true,
+      "shape": "object"
+    }
+  },
+  "outputs": {
+    "data": {
+      "mode": "logical",
+      "required": true,
+      "shape": "object"
+    }
+  },
+  "context": {
+    "max_change_rows": 1000
+  }
+}

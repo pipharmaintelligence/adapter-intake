@@ -1,0 +1,7 @@
+{
+  "capabilities": {},
+  "notes": [
+    "This asset compares already-resolved SFDA snapshot inputs.",
+    "No crawler, provider, storage, DLM Core, SQL, or direct output-write authority belongs in adapter code."
+  ]
+}
