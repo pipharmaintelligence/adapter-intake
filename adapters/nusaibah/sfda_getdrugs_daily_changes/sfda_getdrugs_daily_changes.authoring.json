@@ -1,0 +1,74 @@
+{
+  "schema_version": "asset_authoring_contract.v1",
+  "identity": {
+    "asset_key": "sfda.getdrugs_daily_changes",
+    "asset_version": "0.1.0"
+  },
+  "runtime": {
+    "package": "pi-obs-python-runtime",
+    "minimum_version": "0.1.70"
+  },
+  "inputs": {
+    "latest_snapshot": {
+      "handle": "@input.latest_snapshot",
+      "mode": "bounded_query",
+      "schema": {
+        "handle": "@input.latest_snapshot.schema",
+        "source": "governed"
+      },
+      "diagnostics": {
+        "local_roles_required": [
+          "records",
+          "metadata"
+        ]
+      }
+    },
+    "previous_snapshot": {
+      "handle": "@input.previous_snapshot",
+      "mode": "bounded_query",
+      "schema": {
+        "handle": "@input.previous_snapshot.schema",
+        "source": "governed"
+      },
+      "diagnostics": {
+        "local_roles_required": [
+          "records",
+          "metadata"
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "data": {
+      "handle": "@output.data",
+      "mode": "logical",
+      "schema": {
+        "handle": "@output.data.schema",
+        "source": "explicit",
+        "fields": [
+          {
+            "name": "trace",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "summary",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "changes",
+            "type": "array",
+            "required": true
+          }
+        ]
+      },
+      "validation": {
+        "self_inspection": {
+          "enforce": true,
+          "on_fail": "fail"
+        }
+      }
+    }
+  }
+}

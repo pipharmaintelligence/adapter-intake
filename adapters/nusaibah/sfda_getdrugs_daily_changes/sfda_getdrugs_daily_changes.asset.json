@@ -1,0 +1,35 @@
+{
+  "key": "sfda.getdrugs_daily_changes",
+  "default": "0.1.0",
+  "allowed_surfaces": ["v1_asset_execute"],
+  "allowed_modes": ["balanced"],
+  "execution": {
+    "allowed_substrates": ["local_worker","ecs"],
+    "default_substrate": "local_worker",
+    "timeout_seconds": 180
+  },
+  "versions": {
+    "0.1.0": {
+      "state": "active",
+      "allow_resume": true,
+      "inputs": {
+        "latest_snapshot": {
+          "required": true,
+          "source": "binding",
+          "shape": "object"
+        },
+        "previous_snapshot": {
+          "required": true,
+          "source": "binding",
+          "shape": "object"
+        }
+      },
+      "outputs": {
+        "data": {
+          "required": true,
+          "shape": "object"
+        }
+      }
+    }
+  }
+}
