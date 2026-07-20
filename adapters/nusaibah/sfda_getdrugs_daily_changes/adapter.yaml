@@ -1,0 +1,15 @@
+asset_key: sfda.getdrugs_daily_changes
+asset_version: 0.1.0
+adapter_module: sfda_getdrugs_daily_changes_adapter.py
+manifest: sfda_getdrugs_daily_changes.asset.json
+package_target: python_runtime/adapters/intake/nusaibah/sfda_getdrugs_daily_changes
+dependency_manifest: adapter.dependencies.json
+release_stage: development
+reviewed_helpers:
+  - __init__.py
+optional_files:
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false
