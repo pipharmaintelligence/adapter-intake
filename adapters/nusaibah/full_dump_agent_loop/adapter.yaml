@@ -1,0 +1,13 @@
+asset_key: nusaibah.full_dump_agent_loop
+asset_version: 0.1.0
+package_target: python_runtime/adapters/intake/nusaibah/full_dump_agent_loop
+manifest: full_dump_agent_loop.asset.json
+adapter_module: full_dump_agent_loop_adapter.py
+optional_files:
+  - README.md
+release_stage: development
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false
