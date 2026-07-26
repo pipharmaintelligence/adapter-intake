@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ASSET = ROOT / "adapters" / "nusaibah" / "sfda_getdrugs_daily_changes"
 ROLES = ("latest_snapshot", "previous_snapshot")
-CANONICAL_ADAPTER_SHA256 = "d4ebb536189be3aea762712838f0df80b43f7505a680ac66f4f12581be189327"
+CANONICAL_ADAPTER_SHA256 = "79fa9ad34c399bad85d7f7a93db31d1d5178cb330f0dcb4e666e6aacf0e04747"
 
 
 class SfdaFilePreparationContractTest(unittest.TestCase):
