@@ -1,0 +1,48 @@
+name: PI-1710 SFDA file preparation
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "adapters/nusaibah/sfda_getdrugs_daily_changes/adapter.yaml"
+      - "adapters/nusaibah/sfda_getdrugs_daily_changes/README.md"
+      - "adapters/nusaibah/sfda_getdrugs_daily_changes/sfda_getdrugs_daily_changes.authoring.json"
+      - "adapters/nusaibah/sfda_getdrugs_daily_changes/run_profiles/sfda_getdrugs_daily_changes.dlm.json"
+      - "adapters/nusaibah/sfda_getdrugs_daily_changes/sfda_getdrugs_daily_changes_adapter.py"
+      - "tests/test_sfda_file_preparation.py"
+      - ".github/workflows/pi-1710-sfda-file-preparation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  preparation-contract:
+    name: Hosted metadata-only contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - name: Validate preparation packet
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p artifacts
+          python -m unittest discover -s tests -p "test_sfda_file_preparation.py" -v \
+            2>&1 | tee artifacts/pi1710-sfda-file-preparation.log
+
+      - name: Upload validation log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pi1710-sfda-file-preparation-log
+          path: artifacts/pi1710-sfda-file-preparation.log
+          if-no-files-found: error
+          retention-days: 14
