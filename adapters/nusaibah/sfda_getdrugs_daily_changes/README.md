@@ -47,3 +47,25 @@ Do not start the live SFDA cutover until all of the following are true:
 6. Preserve Core, Assets, and worker logs; do not reproduce failures on the protected workstation.
 
 The repository fixture remains local-only diagnostic material. It is not part of the promoted Assets package.
+
+## Local validation evidence
+
+On 2026-07-27, the preparation packet was checked from the reviewed draft
+revision on a Windows workstation without running Artisan, PHPUnit, a Laravel
+suite, migrations, workers, provider downloads, or subprocess diagnostics.
+
+- All four metadata/source-identity contract tests passed after source hashing
+  was made line-ending neutral for Windows CRLF and GitHub LF checkouts.
+- The normalized adapter SHA-256 remained
+  `79fa9ad34c399bad85d7f7a93db31d1d5178cb330f0dcb4e666e6aacf0e04747`,
+  matching canonical Assets.
+- Direct invocation with the local two-snapshot fixture returned `success` with
+  2 latest records, 1 previous record, 1 addition, 0 changes, 0 removals, and
+  no truncation.
+- Authenticated GET-only local candidate discovery reached Assets but returned
+  `runtime_eligible_file_binding_candidate_missing` with zero candidates.
+
+The local fixture run proves only deterministic comparison behavior. It does
+not prove provider-signed GCS hydration, variables-only `local_worker`
+execution, complete two-role production materialization, runtime publication,
+binding cutover, or rollback.

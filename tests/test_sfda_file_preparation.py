@@ -9,13 +9,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ASSET = ROOT / "adapters" / "nusaibah" / "sfda_getdrugs_daily_changes"
 ROLES = ("latest_snapshot", "previous_snapshot")
-CANONICAL_ADAPTER_SHA256 = "79fa9ad34c399bad85d7f7a93db31d1d5178cb330f0dcb4e666e6aacf0e04747"
+CANONICAL_ADAPTER_LF_SHA256 = "79fa9ad34c399bad85d7f7a93db31d1d5178cb330f0dcb4e666e6aacf0e04747"
 
 
 class SfdaFilePreparationContractTest(unittest.TestCase):
-    def test_python_callable_is_unchanged(self) -> None:
+    def test_python_callable_source_is_unchanged(self) -> None:
         payload = (ASSET / "sfda_getdrugs_daily_changes_adapter.py").read_bytes()
-        self.assertEqual(CANONICAL_ADAPTER_SHA256, hashlib.sha256(payload).hexdigest())
+        normalized = payload.replace(b"\r\n", b"\n")
+        self.assertEqual(
+            CANONICAL_ADAPTER_LF_SHA256,
+            hashlib.sha256(normalized).hexdigest(),
+        )
 
     def test_authoring_declares_two_independent_partition_file_roles(self) -> None:
         authoring = self._json("sfda_getdrugs_daily_changes.authoring.json")
