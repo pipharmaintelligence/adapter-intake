@@ -1,0 +1,16 @@
+asset_key: nusaibah.vertex_company_check
+asset_version: 0.1.0
+package_target: python_runtime/adapters/intake/nusaibah/vertex_company_check
+manifest: nusaibah_vertex_company_check.asset.json
+adapter_module: nusaibah_vertex_company_check_adapter.py
+reviewed_helpers:
+  - nusaibah_vertex_company_check_agent.py
+optional_files:
+  - README.md
+dependency_manifest: adapter.dependencies.json
+release_stage: development
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false
