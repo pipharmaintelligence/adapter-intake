@@ -5,7 +5,7 @@ manifest: sfda_getdrugs_daily_changes.asset.json
 package_target: python_runtime/adapters/intake/nusaibah/sfda_getdrugs_daily_changes
 dependency_manifest: adapter.dependencies.json
 optional_files:
-  - sfda_getdrugs_daily_changes.authoring.json
+  - README.md
 release_stage: review
 forbidden:
   allow_values: false
