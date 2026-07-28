@@ -33,6 +33,7 @@ class SfdaFilePreparationContractTest(unittest.TestCase):
                 config["partitioning"]["partition_filters_from_variables"],
             )
             self._assert_materializer(config["materializer"])
+            self.assertEqual("batch", config["execution"]["strategy"])
 
     def test_preparation_profile_uses_only_logical_governed_references(self) -> None:
         profile = self._json("run_profiles/sfda_getdrugs_daily_changes.dlm.json")
@@ -64,6 +65,17 @@ class SfdaFilePreparationContractTest(unittest.TestCase):
         self.assertNotIn("run_profiles/", contract)
         self.assertNotIn("fixtures/", contract)
         self.assertIn("allow_raw_fixtures: false", contract)
+
+    def test_cutover_disables_materialized_binding_before_file_activation(self) -> None:
+        readme = (ASSET / "README.md").read_text(encoding="utf-8")
+        disable = readme.index("Disable the old materialized binding")
+        activate = readme.index("Activate the reviewed file binding")
+
+        self.assertLess(disable, activate)
+        self.assertIn(
+            "must never be runtime-eligible for the same SFDA role at the same time",
+            readme,
+        )
 
     def _json(self, relative: str) -> dict[str, object]:
         value = json.loads((ASSET / relative).read_text(encoding="utf-8"))

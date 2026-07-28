@@ -14,6 +14,8 @@ Both `latest_snapshot` and `previous_snapshot` are declared as `partition_file` 
 
 The preparation profile uses logical `@input.<role>.source` and `@input.<role>.node` references. It contains no retrieval handle, credential, provider URL, storage location, provider payload, or publication target.
 
+Each role keeps `execution.strategy=batch`. Assets rejects `single_call` for partitioned inputs; the independent extraction-date variables still resolve one exact governed object per role for this comparison run.
+
 ## Safety status
 
 This is preparation only. It does not activate or create a production binding, and it is not a live cutover profile. Keep `OBS_ASSET_INPUT_BINDING_FILE_MODES_ENABLED=false`.
@@ -30,12 +32,18 @@ Do not start the live SFDA cutover until all of the following are true:
 
 1. Confirm the existing materialized SFDA binding is active and record its identity as the rollback target.
 2. Confirm the two extraction-date partitions exist and pass Core readiness.
-3. Create the new two-role `partition_file` binding without activating it.
-4. Review lake, node, partition-key, materializer, byte, and record bounds.
-5. Enable file-mode creation only for the controlled window.
-6. Activate the reviewed file binding and run one variables-only remote proof.
-7. Verify both role selections, signed-request freshness, output summary, cleanup, and observability evidence.
-8. Disable the old materialized binding only after the proof is accepted.
+3. Enable file-mode creation only for the controlled lifecycle window.
+4. Create and approve the new two-role `partition_file` binding without activating it.
+5. Review lake, node, partition-key, materializer, byte, and record bounds and capture rollback state.
+6. Verify the old materialized binding still executes while the new binding remains non-eligible.
+7. Disable the old materialized binding and confirm neither SFDA role remains materialized-runtime eligible.
+8. Activate the reviewed file binding only after the disable confirmation succeeds.
+9. Run one variables-only remote proof.
+10. Verify both role selections, signed-request freshness, output summary, cleanup, and observability evidence.
+11. Restore `OBS_ASSET_INPUT_BINDING_FILE_MODES_ENABLED=false` after the controlled lifecycle action.
+12. Keep the materialized binding disabled only after the proof is accepted; otherwise execute the rollback checklist.
+
+The materialized and partition-file bindings must never be runtime-eligible for the same SFDA role at the same time.
 
 ## Rollback checklist
 
