@@ -5,6 +5,7 @@ import importlib.util
 import json
 import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 
@@ -12,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ASSET = ROOT / "adapters" / "nusaibah" / "sfda_getdrugs_daily_changes"
 ROLES = ("latest_snapshot", "previous_snapshot")
-CANONICAL_ADAPTER_LF_SHA256 = "79fa9ad34c399bad85d7f7a93db31d1d5178cb330f0dcb4e666e6aacf0e04747"
+CANONICAL_ADAPTER_LF_SHA256 = "15c8a541258067223d86cfbbe8fcff11ecd9dfb48718a6571ae374e09f523a64"
 INSPECTOR_PATH = ASSET / "daily_changes_self_inspection.py"
 
 
@@ -72,6 +73,70 @@ class SfdaFilePreparationContractTest(unittest.TestCase):
             CANONICAL_ADAPTER_LF_SHA256,
             hashlib.sha256(normalized).hexdigest(),
         )
+
+    def test_reviewed_external_registry_loading_resolves_self_inspector(self) -> None:
+        adapter_path = ASSET / "sfda_getdrugs_daily_changes_adapter.py"
+        module_name = "_obs_external_adapter_sfda_getdrugs_daily_changes_test"
+        spec = importlib.util.spec_from_file_location(module_name, adapter_path)
+        if spec is None or spec.loader is None:
+            self.fail("sfda_daily_changes_adapter_import_failed")
+
+        adapters_package = types.ModuleType("adapters")
+        adapters_package.__path__ = []
+        adapters_base = types.ModuleType("adapters.base")
+
+        class Adapter:
+            pass
+
+        adapters_base.Adapter = Adapter
+        previous_modules = {
+            name: sys.modules.get(name)
+            for name in (
+                "adapters",
+                "adapters.base",
+                "daily_changes_self_inspection",
+                module_name,
+            )
+        }
+        asset_path = str(ASSET)
+        inserted_path = asset_path not in sys.path
+
+        try:
+            sys.modules["adapters"] = adapters_package
+            sys.modules["adapters.base"] = adapters_base
+            sys.modules.pop("daily_changes_self_inspection", None)
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            if inserted_path:
+                sys.path.insert(0, asset_path)
+            spec.loader.exec_module(module)
+
+            payload = {
+                "trace": {"latest_extraction_date": "2026-07-27"},
+                "summary": {"added_count": 1},
+                "changes": [{"change_type": "added", "record_key": "reg:1"}],
+            }
+            with tempfile.TemporaryDirectory() as directory:
+                staged = Path(directory) / "payload.json"
+                staged.write_text(
+                    json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n",
+                    encoding="utf-8",
+                )
+                report = module.SfdaGetDrugsDailyChangesAdapter().self_inspect(
+                    staged,
+                    SCHEMA_CONTRACT,
+                )
+
+            self.assertEqual("passed", report.status)
+            self.assertEqual(1, report.records_inspected)
+        finally:
+            if inserted_path:
+                sys.path.remove(asset_path)
+            for name, previous in previous_modules.items():
+                if previous is None:
+                    sys.modules.pop(name, None)
+                else:
+                    sys.modules[name] = previous
 
     def test_authoring_declares_two_independent_partition_file_roles(self) -> None:
         authoring = self._json("sfda_getdrugs_daily_changes.authoring.json")
