@@ -85,4 +85,3 @@ A provider smoke command alone is not the exact packaged-asset proof.
 Do not add provider credentials, MCP credentials, raw provider/tool responses,
 function calls, request headers, URLs, leases, storage paths, object keys, or
 backend response bodies to this folder.
-
