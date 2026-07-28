@@ -15,9 +15,8 @@ except ImportError:
 
 try:
     from .daily_changes_self_inspection import InspectionReport, inspect_staged_payload
-except ImportError:
-    InspectionReport = Any
-    inspect_staged_payload = None
+except ImportError:  # Loaded as a reviewed standalone adapter module.
+    from daily_changes_self_inspection import InspectionReport, inspect_staged_payload
 
 
 class SfdaGetDrugsDailyChangesAdapter(Adapter):
