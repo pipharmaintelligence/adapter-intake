@@ -1,0 +1,83 @@
+{
+  "key": "nusaibah.vertex_company_check",
+  "default": "0.1.0",
+  "allowed_surfaces": [
+    "v1_asset_execute"
+  ],
+  "allowed_modes": [
+    "balanced"
+  ],
+  "execution": {
+    "allowed_substrates": [
+      "local_worker",
+      "ecs"
+    ],
+    "default_substrate": "local_worker",
+    "timeout_seconds": 120
+  },
+  "versions": {
+    "0.1.0": {
+      "state": "active",
+      "inputs": {
+        "companies": {
+          "required": true,
+          "shape": "list"
+        }
+      },
+      "outputs": {
+        "company_note": {
+          "required": true,
+          "shape": "object"
+        }
+      },
+      "output_contracts": {
+        "company_note": {
+          "target_kind": "dlm_file_artifact_output",
+          "write_mode": "dry_run",
+          "format_policy": {
+            "source": "node_allowlist",
+            "developer_selected_format": "json",
+            "server_admission_required": true
+          },
+          "schema": {
+            "source": "explicit",
+            "fields": [
+              {
+                "name": "company_id",
+                "type": "integer",
+                "required": true
+              },
+              {
+                "name": "company_name",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "generated_note",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "evidence_summary",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "confidence",
+                "type": "string",
+                "required": true
+              }
+            ]
+          },
+          "validation": {
+            "self_inspection": {
+              "enforce": true,
+              "on_fail": "fail"
+            }
+          }
+        }
+      },
+      "allow_resume": true
+    }
+  }
+}
