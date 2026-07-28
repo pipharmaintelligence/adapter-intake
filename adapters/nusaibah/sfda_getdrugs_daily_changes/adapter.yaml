@@ -4,6 +4,8 @@ adapter_module: sfda_getdrugs_daily_changes_adapter.py
 manifest: sfda_getdrugs_daily_changes.asset.json
 package_target: python_runtime/adapters/intake/nusaibah/sfda_getdrugs_daily_changes
 dependency_manifest: adapter.dependencies.json
+reviewed_helpers:
+  - daily_changes_self_inspection.py
 optional_files:
   - README.md
 release_stage: review
