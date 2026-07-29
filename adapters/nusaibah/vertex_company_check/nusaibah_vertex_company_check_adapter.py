@@ -9,7 +9,7 @@ class NusaibahVertexCompanyCheckAdapter(Adapter):
     """Prepare a deterministic local placeholder for governed Vertex execution.
 
     The adapter remains provider- and MCP-blind. Assets and DLM Core own live
-    Vertex grounding, governed MCP authorization, tool execution, and the final
+    Vertex grounding, governed MCP policy admission, tool execution, and the final
     sanitized generated result.
     """
 
