@@ -14,7 +14,7 @@ class NusaibahVertexCompanyCheckAdapter(Adapter):
     """
 
     key = "nusaibah.vertex_company_check"
-    version = "0.1.0"
+    version = "0.1.1"
 
     def invoke(self, inputs: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
         """Return the canonical ``company_note`` shape for local validation."""

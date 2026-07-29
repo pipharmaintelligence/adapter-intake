@@ -1,6 +1,6 @@
 # nusaibah.vertex_company_check
 
-Local adapter package for `nusaibah.vertex_company_check:0.1.0`.
+Local adapter package for `nusaibah.vertex_company_check:0.1.1`.
 
 The package declares two distinct server-owned capabilities:
 
