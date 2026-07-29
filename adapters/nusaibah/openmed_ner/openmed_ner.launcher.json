@@ -1,0 +1,54 @@
+{
+  "schema_version": "asset_launcher.v2",
+  "entrypoint": "openmed_ner_launch.py",
+  "description": "Reviewed bounded direct-result launcher for offline OpenMed biomedical NER.",
+  "boundary": {
+    "helper_role": "reviewed_direct_result_orchestration",
+    "adapter_role": "bounded_offline_biomedical_ner",
+    "authority": "reviewed_local_runtime_package"
+  },
+  "execution": {
+    "allowed_substrates": [
+      "local_worker"
+    ],
+    "default_substrate": "local_worker",
+    "allowed_profiles": [
+      "direct_result"
+    ],
+    "default_profile": "direct_result",
+    "profile_cli_arg": "--execution-profile",
+    "direct_result": {
+      "dependency_environment": "optional",
+      "max_result_bytes": 1048576
+    }
+  },
+  "authority": {
+    "core_publish_enabled": false
+  },
+  "output_lifecycle": {
+    "mode": "no_publish",
+    "self_inspection": {
+      "policy": "disabled",
+      "reason": "no_admitted_output"
+    }
+  },
+  "variables": {
+    "request_file": {
+      "type": "path",
+      "cli_arg": "--request-file",
+      "required_for_profiles": [
+        "direct_result"
+      ]
+    },
+    "execution_substrate": {
+      "type": "string",
+      "cli_arg": "--execution-substrate"
+    }
+  },
+  "passthrough_flags": [
+    "--diagnostics-only",
+    "--runtime-check-only",
+    "--skip-publish",
+    "--skip-diagnostics"
+  ]
+}
