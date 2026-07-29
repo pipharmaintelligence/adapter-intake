@@ -1,0 +1,18 @@
+asset_key: nusaibah.openmed_ner
+asset_version: 0.1.0
+adapter_module: openmed_ner_adapter.py
+manifest: openmed_ner.asset.json
+package_target: python_runtime/adapters/intake/nusaibah/openmed_ner
+reviewed_helpers:
+  - openmed_ner_launch.py
+optional_files:
+  - README.md
+release_stage: development
+launcher_entrypoint: openmed_ner_launch.py
+launcher_manifest: openmed_ner.launcher.json
+dependency_manifest: adapter.dependencies.json
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false

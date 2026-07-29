@@ -1,0 +1,62 @@
+{
+  "schema_version": "adapter_dependencies.v1",
+  "runtime_package": {
+    "name": "pi-obs-python-runtime",
+    "minimum_version": "0.1.72"
+  },
+  "python": {
+    "requires": ">=3.13"
+  },
+  "dependencies": {
+    "torch": {
+      "version": "2.6.0+cu124",
+      "import_name": "torch",
+      "purpose": "pure_nlp_processing",
+      "runtime_required": false,
+      "native_extensions": true,
+      "fallback": "dependency_environment_unavailable_error",
+      "production_approval": "local_only"
+    },
+    "transformers": {
+      "version": "4.56.2",
+      "import_name": "transformers",
+      "purpose": "pure_nlp_processing",
+      "runtime_required": false,
+      "native_extensions": false,
+      "fallback": "dependency_environment_unavailable_error",
+      "production_approval": "local_only"
+    },
+    "numpy": {
+      "version": "2.2.6",
+      "import_name": "numpy",
+      "purpose": "pure_math",
+      "runtime_required": false,
+      "native_extensions": true,
+      "fallback": "dependency_environment_unavailable_error",
+      "production_approval": "local_only"
+    },
+    "sentencepiece": {
+      "version": "0.2.1",
+      "import_name": "sentencepiece",
+      "purpose": "pure_nlp_processing",
+      "runtime_required": false,
+      "native_extensions": true,
+      "fallback": "dependency_environment_unavailable_error",
+      "production_approval": "local_only"
+    },
+    "safetensors": {
+      "version": "0.6.2",
+      "import_name": "safetensors",
+      "purpose": "pure_nlp_processing",
+      "runtime_required": false,
+      "native_extensions": true,
+      "fallback": "dependency_environment_unavailable_error",
+      "production_approval": "local_only"
+    }
+  },
+  "network": {
+    "outbound_required": false,
+    "policy": "none",
+    "production_approval": "approved"
+  }
+}
