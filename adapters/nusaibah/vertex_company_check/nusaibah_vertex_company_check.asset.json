@@ -21,7 +21,7 @@
       "inputs": {
         "companies": {
           "required": true,
-          "shape": "list"
+          "shape": "object"
         }
       },
       "outputs": {
