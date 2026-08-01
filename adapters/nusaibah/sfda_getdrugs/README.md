@@ -6,6 +6,8 @@ This adapter has one production execution path:
 
 The adapter normalizes records and validates the exact serialized staging file. It never calls DLM Core and never receives lake credentials. Assets owns run state, queue execution, retries, and observability. The runtime worker uses DLM Core only as a schema and storage control plane; payload bytes upload directly from the worker to the selected GCP or AWS provider.
 
+In wheel `0.1.77`, SFDA output normalization is incremental and file-backed. Python does not apply the former 10 MiB request/result ceiling; the only SFDA publication boundary is a 3 GiB maximum for one completed output object. The execution-local file is inspected and streamed directly to the provider-issued HTTPS upload URL, so output bytes do not pass through Assets or DLM Core PHP.
+
 ## Runtime flow
 
 1. `obs-asset-launch` validates `asset_launcher.v2` with `output_lifecycle.mode=assets_queued_runtime`.
