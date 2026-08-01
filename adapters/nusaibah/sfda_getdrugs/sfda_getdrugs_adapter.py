@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+import os
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
@@ -39,12 +42,18 @@ class SfdaGetDrugsAdapter(Adapter):
 
     def invoke(self, inputs: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
         records, metadata = _sfda_records_and_metadata(inputs)
+        runtime_output = _runtime_output_config(context)
+        if runtime_output is not None:
+            return self._invoke_runtime_file(records, metadata, *runtime_output)
 
-        normalized_records = [
-            self._normalize_record(record, index=index)
-            for index, record in enumerate(records, start=1)
-            if isinstance(record, dict)
-        ]
+        normalized_records: list[dict[str, Any]] = []
+        input_record_count = 0
+        for index, record in enumerate(records, start=1):
+            input_record_count += 1
+            if isinstance(record, dict):
+                normalized_records.append(
+                    self._normalize_record(record, index=index)
+                )
 
         page_summary = {
             "start_page": _read_optional_int(metadata, "start_page"),
@@ -53,7 +62,7 @@ class SfdaGetDrugsAdapter(Adapter):
             "last_page_detected": _read_bool(metadata, "last_page_detected"),
             "pagination_truncated": _read_bool(metadata, "pagination_truncated"),
             "stop_reason": _clean_text(metadata.get("stop_reason", "")),
-            "input_record_count": len(records),
+            "input_record_count": input_record_count,
             "normalized_record_count": len(normalized_records),
         }
 
@@ -73,9 +82,97 @@ class SfdaGetDrugsAdapter(Adapter):
                 }
             ],
             "metrics": {
-                "input_record_count": len(records),
+                "input_record_count": input_record_count,
                 "normalized_record_count": len(normalized_records),
                 "pages_crawled": page_summary["pages_crawled"] or 0,
+            },
+        }
+
+    def _invoke_runtime_file(
+        self,
+        records: Iterable[Any],
+        metadata: dict[str, Any],
+        output_directory: Path,
+        max_file_bytes: int,
+    ) -> dict[str, Any]:
+        output_path = output_directory / "sfda_getdrugs.drugs.json"
+        input_record_count = 0
+        normalized_record_count = 0
+        keys: set[str] = set()
+        written = 0
+        try:
+            with output_path.open("wb") as handle:
+                written = _write_limited(handle, b'{"records":[', written, max_file_bytes)
+                first = True
+                for index, record in enumerate(records, start=1):
+                    input_record_count += 1
+                    if not isinstance(record, dict):
+                        continue
+                    normalized = self._normalize_record(record, index=index)
+                    keys.update(str(key) for key in normalized)
+                    encoded = json.dumps(
+                        normalized,
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                    if not first:
+                        written = _write_limited(handle, b",", written, max_file_bytes)
+                    written = _write_limited(handle, encoded, written, max_file_bytes)
+                    first = False
+                    normalized_record_count += 1
+
+                page_summary = {
+                    "start_page": _read_optional_int(metadata, "start_page"),
+                    "last_page": _read_optional_int(metadata, "last_page"),
+                    "pages_crawled": _read_optional_int(metadata, "pages_crawled"),
+                    "last_page_detected": _read_bool(metadata, "last_page_detected"),
+                    "pagination_truncated": _read_bool(metadata, "pagination_truncated"),
+                    "stop_reason": _clean_text(metadata.get("stop_reason", "")),
+                    "input_record_count": input_record_count,
+                    "normalized_record_count": normalized_record_count,
+                }
+                tail = (
+                    '],"page_summary":'
+                    + json.dumps(page_summary, ensure_ascii=False, separators=(",", ":"))
+                    + "}\n"
+                ).encode("utf-8")
+                _write_limited(handle, tail, written, max_file_bytes)
+                handle.flush()
+                os.fsync(handle.fileno())
+        except NativeFileInputError as exc:
+            output_path.unlink(missing_ok=True)
+            raise RuntimeError("sfda_native_payload_invalid") from exc
+        except Exception:
+            output_path.unlink(missing_ok=True)
+            raise
+
+        return {
+            "response_version": "1",
+            "status": "success",
+            "outputs": {
+                "drugs": {
+                    "mode": "python_runtime_file_output",
+                    "runtime_file": {
+                        "runtime_location": str(output_path),
+                        "artifact_type": "json",
+                        "content_type": "application/json",
+                    },
+                    "page_summary": page_summary,
+                    "record_count": normalized_record_count,
+                    "keys": sorted(keys),
+                }
+            },
+            "logs": [
+                {
+                    "level": "info",
+                    "message": "SFDA GetDrugs records normalized to an execution-local file",
+                }
+            ],
+            "metrics": {
+                "input_record_count": input_record_count,
+                "normalized_record_count": normalized_record_count,
+                "pages_crawled": page_summary["pages_crawled"] or 0,
+                "runtime_output_file_bytes": output_path.stat().st_size,
             },
         }
 
@@ -120,7 +217,41 @@ class SfdaGetDrugsAdapter(Adapter):
         return preserved
 
 
-def _sfda_records_and_metadata(inputs: dict[str, Any]) -> tuple[list[Any], dict[str, Any]]:
+MAX_SFDA_OUTPUT_FILE_BYTES = 3 * 1024 * 1024 * 1024
+
+
+def _runtime_output_config(context: dict[str, Any]) -> tuple[Path, int] | None:
+    value = context.get("_runtime_output")
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise RuntimeError("sfda_runtime_output_contract_invalid")
+    directory = value.get("directory")
+    max_file_bytes = value.get("max_file_bytes")
+    if not isinstance(directory, str) or not directory.strip():
+        raise RuntimeError("sfda_runtime_output_contract_invalid")
+    if (
+        isinstance(max_file_bytes, bool)
+        or not isinstance(max_file_bytes, int)
+        or max_file_bytes < 1
+        or max_file_bytes > MAX_SFDA_OUTPUT_FILE_BYTES
+    ):
+        raise RuntimeError("sfda_runtime_output_contract_invalid")
+    resolved = Path(directory).expanduser().resolve()
+    if not resolved.is_dir():
+        raise RuntimeError("sfda_runtime_output_contract_invalid")
+    return resolved, max_file_bytes
+
+
+def _write_limited(handle: Any, data: bytes, written: int, maximum: int) -> int:
+    next_size = written + len(data)
+    if next_size > maximum:
+        raise RuntimeError("sfda_runtime_output_file_too_large")
+    handle.write(data)
+    return next_size
+
+
+def _sfda_records_and_metadata(inputs: dict[str, Any]) -> tuple[Iterable[Any], dict[str, Any]]:
     sfda_response = inputs.get("sfda_response", {})
     if not isinstance(sfda_response, dict):
         return [], {}
@@ -147,7 +278,7 @@ def _sfda_records_and_metadata(inputs: dict[str, Any]) -> tuple[list[Any], dict[
                 return decoded, metadata
             return [], metadata
 
-        return [record for record in native.iter_jsonl_objects() if isinstance(record, dict)], metadata
+        return native.iter_jsonl_objects(), metadata
 
     records = sfda_response.get("records", [])
     return records if isinstance(records, list) else [], metadata
