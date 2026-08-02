@@ -1,0 +1,22 @@
+{
+  "variables": {
+    "cik": "0001114448"
+  },
+  "execution": {
+    "provider_path": "runtime_request"
+  },
+  "sec_company_reference_runtime": {
+    "records": [
+      {
+        "cik": "0001114448",
+        "name": "Novartis AG",
+        "tickers": [
+          "NVS"
+        ],
+        "exchanges": [
+          "NYSE"
+        ]
+      }
+    ]
+  }
+}

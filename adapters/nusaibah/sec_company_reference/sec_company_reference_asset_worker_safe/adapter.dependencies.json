@@ -1,0 +1,26 @@
+{
+  "schema_version": "adapter_dependencies.v1",
+  "runtime_package": {
+    "name": "pi-obs-python-runtime",
+    "minimum_version": "0.1.73"
+  },
+  "python": {
+    "requires": ">=3.11"
+  },
+  "dependencies": {
+    "edgartools": {
+      "version": "5.43.0",
+      "import_name": "edgar",
+      "purpose": "market_data_lookup",
+      "runtime_required": false,
+      "native_extensions": false,
+      "fallback": "dependency_environment_unavailable_error",
+      "production_approval": "local_only"
+    }
+  },
+  "network": {
+    "outbound_required": true,
+    "policy": "runtime_egress_allowlist",
+    "production_approval": "local_only"
+  }
+}
