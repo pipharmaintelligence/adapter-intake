@@ -1,0 +1,38 @@
+{
+  "response_version": "1",
+  "status": "success",
+  "outputs": {
+    "company_reference": {
+      "requested_identifier": {
+        "kind": "cik",
+        "value": "0001114448"
+      },
+      "company": {
+        "cik": "0001114448",
+        "company_name": "Novartis AG",
+        "identity_status": "resolved"
+      },
+      "sec_securities": [
+        {
+          "ticker": "NVS",
+          "exchange": "NYSE",
+          "relationship": "direct_sec_symbol"
+        }
+      ],
+      "metadata": {
+        "source_kind": "governed_sec_reference",
+        "security_count": 1
+      }
+    }
+  },
+  "logs": [
+    {
+      "level": "info",
+      "message": "Prepared SEC company reference for CIK 0001114448."
+    }
+  ],
+  "metrics": {
+    "operation_count": 1,
+    "sec_security_count": 1
+  }
+}

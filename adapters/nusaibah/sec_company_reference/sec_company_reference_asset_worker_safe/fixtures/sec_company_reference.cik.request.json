@@ -1,0 +1,14 @@
+{
+  "adapter": {
+    "key": "nusaibah.sec_company_reference",
+    "version": "0.1.1"
+  },
+  "context": {
+    "request_id": "local-sec-company-reference-novartis"
+  },
+  "inputs": {
+    "variables": {
+      "cik": "0001114448"
+    }
+  }
+}

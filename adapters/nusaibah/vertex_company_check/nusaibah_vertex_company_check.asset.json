@@ -24,6 +24,27 @@
           "shape": "object"
         }
       },
+      "agents": {
+        "company_researcher": {
+          "contract_key": "agent.nusaibah.vertex_company_check",
+          "contract_version": "1.0.0",
+          "reference": "agent://contracts/nusaibah.vertex-company-check"
+        }
+      },
+      "agent_input": {
+        "roles": [
+          "companies"
+        ],
+        "variables": [
+          "company_id"
+        ]
+      },
+      "agent_output": {
+        "role": "company_note",
+        "content_field": "generated_note",
+        "evidence_field": "evidence_summary",
+        "confidence_field": "confidence"
+      },
       "outputs": {
         "company_note": {
           "required": true,

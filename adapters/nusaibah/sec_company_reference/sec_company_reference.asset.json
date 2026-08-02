@@ -1,0 +1,42 @@
+{
+  "key": "nusaibah.sec_company_reference",
+  "default": "0.1.0",
+  "allowed_surfaces": [
+    "v1_asset_execute"
+  ],
+  "allowed_modes": [
+    "balanced"
+  ],
+  "execution": {
+    "allowed_substrates": [
+      "local_worker"
+    ],
+    "default_substrate": "local_worker",
+    "timeout_seconds": 120
+  },
+  "versions": {
+    "0.1.0": {
+      "state": "active",
+      "inputs": {
+        "variables": {
+          "required": false,
+          "shape": "object"
+        },
+        "execution": {
+          "required": false,
+          "shape": "object"
+        },
+        "sec_runtime_response": {
+          "required": false,
+          "shape": "object"
+        }
+      },
+      "outputs": {
+        "company_reference": {
+          "required": true,
+          "shape": "object"
+        }
+      }
+    }
+  }
+}
