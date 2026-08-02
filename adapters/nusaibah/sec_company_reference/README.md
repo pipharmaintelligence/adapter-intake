@@ -37,7 +37,7 @@ Asset identity:
 
 ```text
 key: nusaibah.sec_company_reference
-version: 0.1.0
+version: 0.1.1
 ```
 
 Supported identifier:
@@ -94,22 +94,22 @@ Current automated validation:
 
 ```text
 sec_company_reference_asset_worker_safe/
-Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ fixtures/
-Ã¢â€â€š   Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ sec_company_reference.cik.request.json
-Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ sec_company_reference.cik.expected.json
-Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ tests/
-Ã¢â€â€š   Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ test_sec_company_reference_adapter.py
-Ã¢â€â€š   Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ test_sec_company_reference_launch.py
-Ã¢â€â€š   Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ test_sec_company_reference_provider_paths.py
-Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ edgartools_sec_company_reference_client.py
-Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ local_sec_company_reference_client.py
-Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ runtime_sec_company_reference_client.py
-Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ run_sec_company_reference_local.py
-Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ sec_company_reference.asset.json
-Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ sec_company_reference.launcher.json
-Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ sec_company_reference_adapter.py
-Ã¢â€Å“Ã¢â€â‚¬Ã¢â€â‚¬ sec_company_reference_launch.py
-Ã¢â€â€Ã¢â€â‚¬Ã¢â€â‚¬ README.md
+â”œâ”€â”€ fixtures/
+â”‚   â”œâ”€â”€ sec_company_reference.cik.request.json
+â”‚   â””â”€â”€ sec_company_reference.cik.expected.json
+â”œâ”€â”€ tests/
+â”‚   â”œâ”€â”€ test_sec_company_reference_adapter.py
+â”‚   â”œâ”€â”€ test_sec_company_reference_launch.py
+â”‚   â””â”€â”€ test_sec_company_reference_provider_paths.py
+â”œâ”€â”€ edgartools_sec_company_reference_client.py
+â”œâ”€â”€ local_sec_company_reference_client.py
+â”œâ”€â”€ runtime_sec_company_reference_client.py
+â”œâ”€â”€ run_sec_company_reference_local.py
+â”œâ”€â”€ sec_company_reference.asset.json
+â”œâ”€â”€ sec_company_reference.launcher.json
+â”œâ”€â”€ sec_company_reference_adapter.py
+â”œâ”€â”€ sec_company_reference_launch.py
+â””â”€â”€ README.md
 ```
 
 ### File responsibilities
@@ -125,7 +125,7 @@ sec_company_reference_asset_worker_safe/
 
 `runtime_sec_company_reference_client.py`
 
-* consumes only a bounded `sec_runtime_response` projection
+* consumes only bounded, sanitized records from the `sec_company_reference_runtime` Runtime Source role
 * performs no network or lease operations
 * copies runtime-owned input before returning it
 * leaves lease, capability, retry, and request authority with the runtime
@@ -187,18 +187,16 @@ Provider selection belongs in `inputs.execution`, not in business variables.
   "execution": {
     "provider_path": "runtime_request"
   },
-  "sec_runtime_response": {
-    "company": {
-      "cik": "0001114448",
-      "company_name": "Novartis AG"
-    },
-    "sec_securities": [
-      {
-        "ticker": "NVS",
-        "exchange": "NYSE"
-      }
-    ]
-  }
+  "sec_company_reference_runtime": {
+      "records": [
+        {
+          "cik": "0001114448",
+          "name": "Novartis AG",
+          "tickers": ["NVS"],
+          "exchanges": ["NYSE"]
+        }
+      ]
+    }
 }
 ```
 
@@ -208,7 +206,7 @@ Successful output metadata identifies the path:
 
 ```json
 {
-  "source_kind": "governed_sec_runtime_projection",
+  "source_kind": "governed_sec_runtime_source",
   "provider_path": "runtime_request"
 }
 ```
@@ -270,9 +268,9 @@ In DataSpell:
 
 ```text
 File
-Ã¢â€ â€™ Settings
-Ã¢â€ â€™ Project
-Ã¢â€ â€™ Python Interpreter
+â†’ Settings
+â†’ Project
+â†’ Python Interpreter
 ```
 
 Select the existing `.venv` interpreter.
@@ -291,7 +289,7 @@ right-click the project root and select:
 
 ```text
 Mark Directory As
-Ã¢â€ â€™ Sources Root
+â†’ Sources Root
 ```
 
 ### 4. Keep IDE configuration safe

@@ -11,7 +11,7 @@
     "edgartools": {
       "version": "5.43.0",
       "import_name": "edgar",
-      "purpose": "sec_company_reference_lookup",
+      "purpose": "market_data_lookup",
       "runtime_required": false,
       "native_extensions": false,
       "fallback": "dependency_environment_unavailable_error",
