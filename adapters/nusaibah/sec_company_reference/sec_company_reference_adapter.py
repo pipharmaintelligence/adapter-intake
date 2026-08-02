@@ -8,6 +8,7 @@ from adapters.base import Adapter
 
 _SEC_TICKER_PATTERN = re.compile(r"^[A-Z0-9.^=-]{1,32}$")
 _RUNTIME_REQUEST_PATH = "runtime_request"
+_RUNTIME_SOURCE_ROLE = "sec_company_reference_runtime"
 _EDGARTOOLS_INVOKE_PATH = "edgartools_invoke"
 _SUPPORTED_PROVIDER_PATHS = {
     _RUNTIME_REQUEST_PATH,
@@ -41,8 +42,8 @@ class SecCompanyReferenceAdapter(Adapter):
     Two opt-in provider pathways are supported:
 
     ``runtime_request``
-        Consumes a safe projection created by runtime-owned lease/capability
-        execution. Python never receives the lease or raw provider response.
+        Consumes bounded, sanitized records resolved through the
+        ``sec_company_reference_runtime`` Runtime Source role.
 
     ``edgartools_invoke``
         Invokes an approved EdgarTools client using the reviewed adapter-owned identity.
@@ -52,7 +53,7 @@ class SecCompanyReferenceAdapter(Adapter):
     """
 
     key = "nusaibah.sec_company_reference"
-    version = "0.1.0"
+    version = "0.1.1"
 
     def __init__(
         self,
@@ -125,17 +126,20 @@ class SecCompanyReferenceAdapter(Adapter):
             return self._client, "governed_sec_reference"
 
         if provider_path == _RUNTIME_REQUEST_PATH:
-            projection = inputs.get("sec_runtime_response")
-            if projection is None:
-                raise ValueError("runtime_request_projection_required")
+            runtime_input = inputs.get(_RUNTIME_SOURCE_ROLE)
+
+            if runtime_input is None:
+                raise ValueError(
+                    "sec_company_reference_runtime_role_required"
+                )
 
             from runtime_sec_company_reference_client import (
-                RuntimeProjectionSecCompanyReferenceClient,
+                RuntimeSourceSecCompanyReferenceClient,
             )
 
             return (
-                RuntimeProjectionSecCompanyReferenceClient(projection),
-                "governed_sec_runtime_projection",
+                RuntimeSourceSecCompanyReferenceClient(runtime_input),
+                "governed_sec_runtime_source",
             )
 
         if provider_path == _EDGARTOOLS_INVOKE_PATH:

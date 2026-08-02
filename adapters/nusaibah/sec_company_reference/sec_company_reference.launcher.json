@@ -5,7 +5,7 @@
   "boundary": {
     "helper_role": "reviewed_explicit_provider_path_direct_result_orchestration",
     "adapter_role": "select_one_provider_path_validate_normalize_and_project_sec_company_reference",
-    "runtime_request_role": "consume_runtime_owned_safe_projection_only",
+    "runtime_request_role": "consume_runtime_owned_source_records_only",
     "edgartools_invoke_role": "optional_explicit_python_library_provider",
     "authority": "local_adapter_project_and_assets_runtime_contract"
   },
@@ -18,7 +18,7 @@
     "automatic_fallback_enabled": false,
     "runtime_request": {
       "lease_owner": "runtime",
-      "adapter_receives": "bounded_sec_runtime_response",
+      "adapter_receives": "bounded_sec_runtime_source_records",
       "local_launcher_enabled": false
     },
     "edgartools_invoke": {

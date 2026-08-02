@@ -46,7 +46,7 @@ except ImportError:  # Standalone adapter-project execution.
 
 
 ASSET_KEY = "nusaibah.sec_company_reference"
-ASSET_VERSION = "0.1.0"
+ASSET_VERSION = "0.1.1"
 LAUNCH_SCHEMA_VERSION = "sec_company_reference.launch.v1"
 
 LOCAL_FIXTURE_PATH = "local_fixture"
@@ -330,7 +330,7 @@ def main(
 
         if args.provider_path == RUNTIME_REQUEST_PATH:
             raise SecCompanyReferenceLaunchError(
-                "runtime_request_requires_runtime_projection_injection"
+                "runtime_request_requires_runtime_source_injection"
             )
 
         if args.provider_path == LOCAL_FIXTURE_PATH:
