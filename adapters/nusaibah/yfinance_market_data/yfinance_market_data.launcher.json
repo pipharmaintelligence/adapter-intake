@@ -50,10 +50,6 @@
       "type": "string",
       "cli_arg": "--company-name"
     },
-    "max_yahoo_candidates": {
-      "type": "integer",
-      "cli_arg": "--max-yahoo-candidates"
-    },
     "operation": {
       "type": "string",
       "cli_arg": "--operation"
@@ -129,6 +125,10 @@
     "poll_timeout": {
       "type": "number",
       "cli_arg": "--poll-timeout"
+    },
+    "max_results": {
+      "type": "integer",
+      "cli_arg": "--max-results"
     }
   },
   "passthrough_flags": [

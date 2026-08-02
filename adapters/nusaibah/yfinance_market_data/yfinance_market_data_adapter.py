@@ -24,7 +24,7 @@ _ALLOWED_OPERATIONS = {
     "attribute",
     "financial_statement",
     "company_profile",
-    "company_mapping",
+    "company_search",
 }
 _ALLOWED_PERIODS = {"1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "ytd", "max"}
 _ALLOWED_INTERVALS = {"1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "5d", "1wk", "1mo", "3mo"}
@@ -106,65 +106,6 @@ _COMPANY_PROFILE_FIELDS = (
 _ALLOWED_STATEMENTS = {"income_statement", "balance_sheet", "cash_flow"}
 _ALLOWED_FREQUENCIES = {"annual", "quarterly"}
 
-_COMPANY_IDENTIFIER_KEYS = (
-    "cik",
-    "sec_ticker",
-    "yahoo_symbol",
-    "company_name",
-)
-
-
-def _read_company_mapping_identifier(
-    variables: dict[str, Any],
-) -> tuple[str, str]:
-    """Return exactly one validated company-mapping identifier."""
-
-    supplied: list[tuple[str, str]] = []
-
-    for key in _COMPANY_IDENTIFIER_KEYS:
-        value = variables.get(key)
-
-        if value in (None, ""):
-            continue
-
-        if not isinstance(value, str) or not value.strip():
-            raise ValueError(
-                f"variables.{key} must be a non-empty string when provided."
-            )
-
-        supplied.append((key, value.strip()))
-
-    if not supplied:
-        raise ValueError(
-            "company_mapping requires exactly one of variables.cik, "
-            "variables.sec_ticker, variables.yahoo_symbol, or "
-            "variables.company_name."
-        )
-
-    if len(supplied) > 1:
-        raise ValueError(
-            "company_mapping accepts exactly one company identifier."
-        )
-
-    kind, value = supplied[0]
-
-    if kind == "cik":
-        normalized = value.lstrip("0") or "0"
-        if not normalized.isdigit() or len(normalized) > 10:
-            raise ValueError(
-                "variables.cik must contain at most 10 digits."
-            )
-        return kind, normalized.zfill(10)
-
-    if kind in {"sec_ticker", "yahoo_symbol"}:
-        normalized = value.upper()
-        if not _SYMBOL_PATTERN.fullmatch(normalized):
-            raise ValueError(
-                f"variables.{kind} contains unsupported characters."
-            )
-        return kind, normalized
-
-    return kind, _read_company_name(value)
 
 def _read_optional_provider_text(
     source: Mapping[str, Any],
@@ -197,17 +138,17 @@ class YFinanceMarketDataClient:
         self._yfinance_module = yfinance_module
 
     def search_company_candidates(
-            self,
-            company_name: str,
-            *,
-            max_results: int = 8,
-            timeout_seconds: int = 15,
-    ) -> list[dict[str, Any]]:
-        """Return bounded exact-name Yahoo equity candidates.
+        self,
+        company_name: str,
+        *,
+        max_results: int = 10,
+        timeout_seconds: int = 15,
+    ) -> tuple[list[dict[str, Any]], bool]:
+        """Return bounded Yahoo equity candidates in provider rank order.
 
-        The method preserves provider ranking and returns every exact canonical
-        company-name match. It does not select a canonical security and does not
-        claim that any candidate represents a verified SEC registrant.
+        This provider layer performs search and normalization only. It does not
+        score company-name similarity, select a canonical security, resolve a
+        CIK, or claim that a candidate is the same legal entity.
         """
 
         normalized_name = _read_company_name(company_name)
@@ -218,8 +159,8 @@ class YFinanceMarketDataClient:
             raise ValueError("max_results must be between 1 and 25.")
 
         if isinstance(timeout_seconds, bool) or not isinstance(
-                timeout_seconds,
-                int,
+            timeout_seconds,
+            int,
         ):
             raise ValueError("timeout_seconds must be an integer.")
         if timeout_seconds < 1 or timeout_seconds > 60:
@@ -235,70 +176,42 @@ class YFinanceMarketDataClient:
                 include_nav_links=False,
                 include_research=False,
                 include_cultural_assets=False,
-                enable_fuzzy_query=False,
+                enable_fuzzy_query=True,
                 recommended=0,
                 timeout=timeout_seconds,
                 raise_errors=True,
             )
             raw_quotes = search.quotes
         except Exception:
-            raise YFinanceProviderError(
-                "company_candidate_search_failed"
-            ) from None
+            raise YFinanceProviderError("company_candidate_search_failed") from None
 
         if not isinstance(raw_quotes, list):
             raise YFinanceProviderError("company_candidate_search_failed")
 
-        expected_name = _canonical_company_name(normalized_name)
         candidates: list[dict[str, Any]] = []
         seen_listing_keys: set[tuple[str, str | None]] = set()
 
-        for raw_quote in raw_quotes[:max_results]:
+        for provider_rank, raw_quote in enumerate(
+            raw_quotes[:max_results],
+            start=1,
+        ):
             if not isinstance(raw_quote, Mapping):
                 continue
 
             quote_type = str(
                 raw_quote.get("quoteType")
                 or raw_quote.get("quote_type")
+                or raw_quote.get("typeDisp")
                 or ""
             ).strip().upper()
-
-            if quote_type and quote_type != "EQUITY":
+            if quote_type and quote_type not in {"EQUITY", "STOCK"}:
                 continue
 
             raw_symbol = raw_quote.get("symbol")
             if not isinstance(raw_symbol, str):
                 continue
-
             symbol = raw_symbol.strip().upper()
             if not _SYMBOL_PATTERN.fullmatch(symbol):
-                continue
-
-            short_name = _read_optional_provider_text(
-                raw_quote,
-                "shortname",
-                "shortName",
-            )
-            long_name = _read_optional_provider_text(
-                raw_quote,
-                "longname",
-                "longName",
-            )
-            display_name = _read_optional_provider_text(
-                raw_quote,
-                "displayName",
-            )
-
-            candidate_names = (
-                short_name,
-                long_name,
-                display_name,
-            )
-            if not any(
-                    isinstance(name, str)
-                    and _canonical_company_name(name) == expected_name
-                    for name in candidate_names
-            ):
                 continue
 
             exchange_code = _read_optional_provider_text(
@@ -306,13 +219,6 @@ class YFinanceMarketDataClient:
                 "exchange",
                 "exchangeCode",
             )
-            exchange_name = _read_optional_provider_text(
-                raw_quote,
-                "exchDisp",
-                "exchangeDisplay",
-                "fullExchangeName",
-            )
-
             listing_key = (symbol, exchange_code)
             if listing_key in seen_listing_keys:
                 continue
@@ -320,19 +226,35 @@ class YFinanceMarketDataClient:
 
             candidates.append(
                 {
+                    "provider_rank": provider_rank,
                     "symbol": symbol,
-                    "quote_type": quote_type or "EQUITY",
-                    "short_name": short_name,
-                    "long_name": long_name,
-                    "display_name": display_name,
+                    "quote_type": "EQUITY" if quote_type == "STOCK" else (quote_type or "EQUITY"),
+                    "short_name": _read_optional_provider_text(
+                        raw_quote,
+                        "shortname",
+                        "shortName",
+                    ),
+                    "long_name": _read_optional_provider_text(
+                        raw_quote,
+                        "longname",
+                        "longName",
+                    ),
+                    "display_name": _read_optional_provider_text(
+                        raw_quote,
+                        "displayName",
+                    ),
                     "exchange_code": exchange_code,
-                    "exchange_name": exchange_name,
-                    "match_basis": "exact_company_name",
-                    "match_status": "candidate",
+                    "exchange_name": _read_optional_provider_text(
+                        raw_quote,
+                        "exchDisp",
+                        "exchangeDisplay",
+                        "fullExchangeName",
+                    ),
                 }
             )
 
-        return candidates
+        results_truncated = len(raw_quotes) >= max_results
+        return candidates, results_truncated
 
     def resolve_company_name(
         self,
@@ -638,7 +560,7 @@ class YFinanceMarketDataAdapter(Adapter):
     """
 
     key = "nusaibah.yfinance_market_data"
-    version = "0.2.3"
+    version = "0.2.4"
 
     def __init__(self, client: YFinanceMarketDataClient | None = None) -> None:
         self._client = client or YFinanceMarketDataClient()
@@ -651,8 +573,8 @@ class YFinanceMarketDataAdapter(Adapter):
             raise ValueError("variables must be an object when provided.")
 
         operation = _read_operation(variables)
-        if operation == "company_mapping":
-            return self._invoke_company_mapping(
+        if operation == "company_search":
+            return self._invoke_company_search(
                 variables=variables,
                 context=context,
             )
@@ -718,27 +640,26 @@ class YFinanceMarketDataAdapter(Adapter):
                 "company_profile_field_count": profile_field_count,
             },
         }
-    def _invoke_company_mapping(
+    def _invoke_company_search(
         self,
         *,
         variables: dict[str, Any],
         context: dict[str, Any],
     ) -> dict[str, Any]:
-        """Return bounded company-mapping candidates without selecting one listing."""
+        """Return bounded Yahoo candidates without mapping or selection."""
 
-        identifier_kind, identifier_value = (
-            _read_company_mapping_identifier(variables)
-        )
+        del context  # Runtime context does not affect provider search semantics.
 
-        if identifier_kind != "company_name":
-            raise ValueError(
-                "company_mapping_identifier_not_implemented: "
-                f"{identifier_kind}"
-            )
+        for unsupported_key in ("symbol", "cik", "sec_ticker", "yahoo_symbol"):
+            if variables.get(unsupported_key) not in (None, ""):
+                raise ValueError(
+                    "company_search accepts only variables.company_name."
+                )
 
-        max_candidates = _read_bounded_int(
+        company_name = _read_company_name(variables.get("company_name"))
+        max_results = _read_bounded_int(
             variables,
-            "max_yahoo_candidates",
+            "max_results",
             default=10,
             minimum=1,
             maximum=25,
@@ -752,64 +673,48 @@ class YFinanceMarketDataAdapter(Adapter):
         )
 
         try:
-            yahoo_candidates = self._client.search_company_candidates(
-                identifier_value,
-                max_results=max_candidates,
+            candidates, results_truncated = self._client.search_company_candidates(
+                company_name,
+                max_results=max_results,
                 timeout_seconds=timeout_seconds,
             )
         except YFinanceProviderError:
             raise ValueError("company_candidate_search_failed") from None
 
-        candidate_count = len(yahoo_candidates)
-
-        if candidate_count == 0:
-            identity_status = "not_found"
-        elif candidate_count == 1:
-            identity_status = "candidate"
-        else:
-            identity_status = "ambiguous"
-
+        candidate_count = len(candidates)
         market_data = {
-            "operation": "company_mapping",
-            "requested_identifier": {
-                "kind": identifier_kind,
-                "value": identifier_value,
+            "operation": "company_search",
+            "data": {
+                "candidates": candidates,
             },
-            "company": {
-                "cik": None,
-                "company_name": identifier_value,
-                "identity_status": identity_status,
-            },
-            "sec_securities": [],
-            "yahoo_candidates": yahoo_candidates,
             "metadata": {
                 "source_kind": "isolated_provider_sdk",
                 "library_family": "yfinance",
+                "query_kind": "company_name",
                 "candidate_count": candidate_count,
-                "results_truncated": candidate_count >= max_candidates,
+                "results_truncated": results_truncated,
             },
         }
 
         return {
             "response_version": "1",
             "status": "success",
-            "outputs": {
-                "market_data": market_data,
-            },
+            "outputs": {"market_data": market_data},
             "logs": [
                 {
                     "level": "info",
                     "message": (
-                        "Prepared company_mapping candidates for "
-                        f"{identifier_value}."
+                        "Prepared company_search candidates for "
+                        f"{company_name}."
                     ),
                 }
             ],
             "metrics": {
                 "operation_count": 1,
-                "company_mapping_candidate_count": candidate_count,
+                "company_search_candidate_count": candidate_count,
             },
         }
+
 
 def _require_object(inputs: dict[str, Any], role: str) -> dict[str, Any]:
     value = inputs.get(role)
@@ -899,7 +804,7 @@ def _read_operation(variables: dict[str, Any]) -> str:
     if not isinstance(value, str) or value not in _ALLOWED_OPERATIONS:
         raise ValueError(
             "variables.operation must be history, snapshot, attribute, "
-            "financial_statement, company_profile, or company_mapping."
+            "financial_statement, company_profile, or company_search."
         )
     return value
 

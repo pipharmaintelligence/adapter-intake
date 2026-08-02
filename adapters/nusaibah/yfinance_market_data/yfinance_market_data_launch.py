@@ -56,7 +56,7 @@ def build_direct_adapter() -> Any:
 
 
 ASSET_KEY = "nusaibah.yfinance_market_data"
-ASSET_VERSION = "0.2.3"
+ASSET_VERSION = "0.2.4"
 LAUNCHER_MANIFEST = "yfinance_market_data.launcher.json"
 _DIRECT_ENV_NAMES = {
     "CURL_CA_BUNDLE",
@@ -102,12 +102,12 @@ def build_parser() -> argparse.ArgumentParser:
             "attribute",
             "financial_statement",
             "company_profile",
-            "company_mapping",
+            "company_search",
         ),
         default="history",
     )
     parser.add_argument(
-        "--max-yahoo-candidates",
+        "--max-results",
         type=int,
         default=10,
     )
@@ -173,28 +173,28 @@ def build_variables(args: argparse.Namespace) -> dict[str, Any]:
     else:
         variables["company_name"] = company_name
 
-    if args.operation == "company_mapping":
+    if args.operation == "company_search":
         if not company_name:
             raise YFinanceLaunchError(
-                "company_mapping_company_name_required"
+                "company_search_company_name_required"
             )
 
         if symbol:
             raise YFinanceLaunchError(
-                "company_mapping_symbol_not_supported"
+                "company_search_symbol_not_supported"
             )
 
         _bounded(
-            args.max_yahoo_candidates,
+            args.max_results,
             1,
             25,
-            "max_yahoo_candidates_invalid",
+            "max_results_invalid",
         )
 
         return {
-            "operation": "company_mapping",
+            "operation": "company_search",
             "company_name": company_name,
-            "max_yahoo_candidates": args.max_yahoo_candidates,
+            "max_results": args.max_results,
             "timeout_seconds": args.timeout_seconds,
         }
 
