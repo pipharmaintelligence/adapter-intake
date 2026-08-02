@@ -1,0 +1,14 @@
+asset_key: nusaibah.document_download_readiness
+asset_version: 0.1.0
+adapter_module: document_download_readiness_adapter.py
+manifest: document_download_readiness.asset.json
+package_target: python_runtime/adapters/intake/nusaibah/document_download_readiness
+optional_files:
+  - README.md
+release_stage: development
+dependency_manifest: adapter.dependencies.json
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false

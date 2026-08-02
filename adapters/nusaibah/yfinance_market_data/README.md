@@ -1,6 +1,6 @@
 # yfinance market-data asset
 
-The registered `0.2.2` adapter accepts bounded variables directly. Its
+The registered `0.2.3` adapter accepts bounded variables directly. Its
 injectable `YFinanceMarketDataClient` lazily imports `yfinance==1.5.1` only
 inside an admitted per-dependency environment; no market-data fixture or MCP
 HTTP connector is required.
@@ -9,7 +9,7 @@ The adapter performs no OBS, Core, storage, queue, publishing, or credential
 work. It returns only the stable `market_data` output contract and converts
 provider failures to value-safe error codes.
 
-Asset identity: `nusaibah.yfinance_market_data:0.2.2`
+Asset identity: `nusaibah.yfinance_market_data:0.2.3`
 
 ## Supported operations
 
@@ -41,7 +41,7 @@ policy fields are explicitly approved, prewarm the environment once:
 ```powershell
 E:\nusaibah_projects\demo_asset_project\.venv\Scripts\obs-asset-dependency-prepare.exe `
   --adapter-root E:\nusaibah_projects\demo_asset_project\adapter-intake-work `
-  --adapter nusaibah.yfinance_market_data:0.2.2 `
+  --adapter nusaibah.yfinance_market_data:0.2.3 `
   --runtime-artifact C:\xampp\htdocs\assets\python_runtime\dist\pi_obs_python_runtime-0.1.70-py3-none-any.whl `
   --pretty
 ```
@@ -62,10 +62,10 @@ Build the per-asset ECS bundle with the same lock:
 
 ```powershell
 .\python_runtime\tools\build_asset_ecs_runtime.ps1 `
-  -PrimaryAdapter nusaibah.yfinance_market_data:0.2.2 `
+  -PrimaryAdapter nusaibah.yfinance_market_data:0.2.3 `
   -DependencyManifest python_runtime\adapters\intake\nusaibah\yfinance_market_data\adapter.dependencies.json `
   -RuntimeWheel python_runtime\dist\pi_obs_python_runtime-0.1.70-py3-none-any.whl `
-  -ImageTag yfinance-market-data-0.2.2 `
+  -ImageTag yfinance-market-data-0.2.3 `
   -NoBuild
 ```
 
@@ -277,16 +277,16 @@ registration lifecycle fix is deployed.
 
 ## Durable workers and new assets
 
-This launcher does not own worker lifecycle. A durable worker discovers reviewed
-adapters beneath its own target root per request and uses no per-asset
+This launcher does not own worker lifecycle. A durable worker resolves reviewed adapters from its atomic catalog per request and uses no per-asset
 `--allowed-adapter` argument. Adding another asset under the same reviewed root
 requires intake, package admission, optional dependency prewarming, and
 registration; it does not require changing the worker command or restarting the
 worker or Assets queue.
 
-Dependency environments are isolated per asset. The runtime authoring API loads
-the global adapter registry lazily, so a yfinance child does not import SFDA,
-LinkedIn, or any other adapter dependency.
+Dependency environments are isolated per asset. The runtime worker resolves the
+exact yfinance catalog entry without importing a global business-adapter registry.
+The requested module runs in its dependency child interpreter, so it does not
+import SFDA, LinkedIn, OpenMed, or any other adapter dependency.
 
 A developer repository is one target scope, not a platform-wide root. Two
 developers must have two independent target identities and repository roots;

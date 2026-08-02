@@ -1,0 +1,93 @@
+{
+  "schema_version": "asset_launcher.v2",
+  "entrypoint": "sec_company_reference_launch.py",
+  "description": "Reviewed SEC company-reference launcher with diagnostics, input dry-run, fixture-backed direct results, and explicit EdgarTools invocation on local_worker or ecs. runtime_request remains runtime-owned.",
+  "boundary": {
+    "helper_role": "reviewed_explicit_provider_path_direct_result_orchestration",
+    "adapter_role": "select_one_provider_path_validate_normalize_and_project_sec_company_reference",
+    "runtime_request_role": "consume_runtime_owned_safe_projection_only",
+    "edgartools_invoke_role": "optional_explicit_python_library_provider",
+    "authority": "local_adapter_project_and_assets_runtime_contract"
+  },
+  "provider_paths": {
+    "declared": [
+      "runtime_request",
+      "edgartools_invoke"
+    ],
+    "local_launcher_default": "local_fixture",
+    "automatic_fallback_enabled": false,
+    "runtime_request": {
+      "lease_owner": "runtime",
+      "adapter_receives": "bounded_sec_runtime_response",
+      "local_launcher_enabled": false
+    },
+    "edgartools_invoke": {
+      "dependency": "edgartools==5.43.0",
+      "identity_source": "process_environment_EDGAR_IDENTITY",
+      "local_launcher_enabled": true,
+      "allowed_substrates": [
+        "local_worker",
+        "ecs"
+      ]
+    }
+  },
+  "execution": {
+    "allowed_substrates": [
+      "local_worker",
+      "ecs"
+    ],
+    "default_substrate": "local_worker",
+    "allowed_profiles": [
+      "direct_result"
+    ],
+    "default_profile": "direct_result",
+    "profile_cli_arg": "--execution-profile",
+    "direct_result": {
+      "dependency_environment": "optional",
+      "max_result_bytes": 1048576
+    }
+  },
+  "authority": {
+    "core_publish_enabled": false
+  },
+  "output_lifecycle": {
+    "mode": "no_publish",
+    "self_inspection": {
+      "policy": "disabled",
+      "reason": "no_admitted_output"
+    }
+  },
+  "variables": {
+    "cik": {
+      "type": "string",
+      "cli_arg": "--cik",
+      "required_for_commands": [
+        "run"
+      ]
+    },
+    "sec_ticker": {
+      "type": "string",
+      "cli_arg": "--sec-ticker"
+    },
+    "fixture_path": {
+      "type": "path",
+      "cli_arg": "--fixture-path"
+    },
+    "provider_path": {
+      "type": "string",
+      "cli_arg": "--provider-path",
+      "allowed_values": [
+        "local_fixture",
+        "runtime_request",
+        "edgartools_invoke"
+      ],
+      "default": "local_fixture"
+    }
+  },
+  "passthrough_flags": [
+    "--diagnostics-only",
+    "--runtime-check-only",
+    "--skip-publish",
+    "--skip-diagnostics"
+  ]
+}

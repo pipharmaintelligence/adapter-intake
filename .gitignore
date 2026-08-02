@@ -63,6 +63,8 @@ notebooks/scratch/
 # Local OBS/DLM diagnostics and caches
 .obs-cache/
 .obs-reports/
+.obs-adapter-catalog.json
+.obs-adapter-environments.json
 .quarantine/
 **/.obs-cache/
 **/.obs-reports/

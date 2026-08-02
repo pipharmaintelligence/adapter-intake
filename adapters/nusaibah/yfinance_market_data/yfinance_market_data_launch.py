@@ -56,7 +56,7 @@ def build_direct_adapter() -> Any:
 
 
 ASSET_KEY = "nusaibah.yfinance_market_data"
-ASSET_VERSION = "0.2.2"
+ASSET_VERSION = "0.2.3"
 LAUNCHER_MANIFEST = "yfinance_market_data.launcher.json"
 _DIRECT_ENV_NAMES = {
     "CURL_CA_BUNDLE",
@@ -85,11 +85,31 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run yfinance through a reviewed queued or direct execution profile.")
     parser.add_argument("--asset-root", type=Path, default=Path(__file__).resolve().parent)
     parser.add_argument("--env-file", type=Path)
-    parser.add_argument("--symbol")
+    identifier_group = parser.add_mutually_exclusive_group(required=True)
+    identifier_group.add_argument(
+        "--symbol",
+        help="Ticker symbol, for example NVS or NOVN.SW.",
+    )
+    identifier_group.add_argument(
+        "--company-name",
+        help="Company name to resolve, for example Novartis.",
+    )
     parser.add_argument(
         "--operation",
-        choices=("history", "snapshot", "attribute", "financial_statement"),
+        choices=(
+            "history",
+            "snapshot",
+            "attribute",
+            "financial_statement",
+            "company_profile",
+            "company_mapping",
+        ),
         default="history",
+    )
+    parser.add_argument(
+        "--max-yahoo-candidates",
+        type=int,
+        default=10,
     )
     parser.add_argument("--period", choices=_PERIODS, default="5d")
     parser.add_argument("--interval", choices=_INTERVALS, default="1d")
@@ -132,17 +152,51 @@ def build_parser() -> argparse.ArgumentParser:
 
 def build_variables(args: argparse.Namespace) -> dict[str, Any]:
     symbol = str(args.symbol or "").strip().upper()
-    if not _SYMBOL_PATTERN.fullmatch(symbol):
-        raise YFinanceLaunchError("symbol_invalid")
+    company_name = " ".join(str(args.company_name or "").split())
+
+    if symbol:
+        if not _SYMBOL_PATTERN.fullmatch(symbol):
+            raise YFinanceLaunchError("symbol_invalid")
+    elif not company_name or len(company_name) > 160:
+        raise YFinanceLaunchError("company_name_invalid")
+
     _bounded(args.round_digits, 0, 10, "round_digits_invalid")
     _bounded(args.timeout_seconds, 1, 60, "timeout_invalid")
 
     variables: dict[str, Any] = {
-        "symbol": symbol,
         "operation": args.operation,
         "round_digits": args.round_digits,
         "timeout_seconds": args.timeout_seconds,
     }
+    if symbol:
+        variables["symbol"] = symbol
+    else:
+        variables["company_name"] = company_name
+
+    if args.operation == "company_mapping":
+        if not company_name:
+            raise YFinanceLaunchError(
+                "company_mapping_company_name_required"
+            )
+
+        if symbol:
+            raise YFinanceLaunchError(
+                "company_mapping_symbol_not_supported"
+            )
+
+        _bounded(
+            args.max_yahoo_candidates,
+            1,
+            25,
+            "max_yahoo_candidates_invalid",
+        )
+
+        return {
+            "operation": "company_mapping",
+            "company_name": company_name,
+            "max_yahoo_candidates": args.max_yahoo_candidates,
+            "timeout_seconds": args.timeout_seconds,
+        }
 
     if args.operation == "history":
         _bounded(args.max_rows, 1, 1000, "max_rows_invalid")

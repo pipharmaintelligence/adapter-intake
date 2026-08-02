@@ -44,10 +44,15 @@
     },
     "symbol": {
       "type": "string",
-      "cli_arg": "--symbol",
-      "required_for_commands": [
-        "run"
-      ]
+      "cli_arg": "--symbol"
+    },
+    "company_name": {
+      "type": "string",
+      "cli_arg": "--company-name"
+    },
+    "max_yahoo_candidates": {
+      "type": "integer",
+      "cli_arg": "--max-yahoo-candidates"
     },
     "operation": {
       "type": "string",
