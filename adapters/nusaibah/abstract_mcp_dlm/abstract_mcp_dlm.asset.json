@@ -12,7 +12,8 @@
     "allowed_substrates": [
       "local_worker",
       "ecs"
-    ]
+    ],
+    "timeout_seconds": 120
   },
   "versions": {
     "0.1.0": {
