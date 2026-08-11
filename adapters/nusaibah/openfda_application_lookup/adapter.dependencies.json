@@ -1,0 +1,16 @@
+{
+  "schema_version": "adapter_dependencies.v1",
+  "runtime_package": {
+    "name": "pi-obs-python-runtime",
+    "minimum_version": "0.1.81"
+  },
+  "python": {
+    "requires": ">=3.10"
+  },
+  "dependencies": {},
+  "network": {
+    "outbound_required": false,
+    "policy": "none",
+    "production_approval": "approved"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "key": "nusaibah.openfda_application_lookup",
+  "default": "0.1.0",
+  "allowed_surfaces": [
+    "v1_asset_execute"
+  ],
+  "allowed_modes": [
+    "balanced"
+  ],
+  "execution": {
+    "allowed_substrates": [
+      "local_worker",
+      "ecs"
+    ],
+    "default_substrate": "local_worker",
+    "timeout_seconds": 120
+  },
+  "versions": {
+    "0.1.0": {
+      "state": "active",
+      "allow_resume": false,
+      "inputs": {
+        "variables": {
+          "required": true,
+          "source": "direct",
+          "shape": "object"
+        },
+        "openfda_application_runtime": {
+          "required": true,
+          "source": "direct",
+          "shape": "object"
+        }
+      },
+      "outputs": {
+        "application_lookup": {
+          "required": true,
+          "shape": "object"
+        }
+      }
+    }
+  }
+}

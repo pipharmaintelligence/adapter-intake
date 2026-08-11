@@ -1,0 +1,16 @@
+asset_key: nusaibah.openfda_application_lookup
+asset_version: 0.1.0
+adapter_module: openfda_application_lookup_adapter.py
+manifest: openfda_application_lookup.asset.json
+package_target: python_runtime/adapters/intake/nusaibah/openfda_application_lookup
+optional_files:
+  - README.md
+  - START_HERE.md
+  - build_live_inputs.py
+release_stage: development
+dependency_manifest: adapter.dependencies.json
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false
