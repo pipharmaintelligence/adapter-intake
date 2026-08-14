@@ -10,14 +10,14 @@ class EpoBiblioLookupAdapter(Adapter):
     """Summarize normalized EPO bibliographic Runtime Source records.
 
     The adapter is intentionally API-blind. It does not know the EPO request
-    URL, OAuth token URL, credentials, headers, storage location, or raw
-    provider response. On ``local_worker`` or ECS, trusted Runtime Source
+    connection, authentication, transport, storage, or raw-response details.
++    On ``local_worker`` or ECS, trusted Runtime Source
     infrastructure resolves the provider call first and injects normalized
     records into ``inputs["epo_response"]``.
     """
 
     key = "nusaibah.epo_biblio_lookup"
-    version = "0.1.0"
+    version = "0.1.1"
 
     def invoke(self, inputs: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
         """Return a bounded bibliographic summary from resolved records."""
