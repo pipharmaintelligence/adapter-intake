@@ -4,7 +4,10 @@ from typing import Any
 
 from adapters.base import Adapter
 
-from execution_plan import validate_execution_plan
+try:
+    from .execution_plan import validate_execution_plan
+except ImportError:  # pragma: no cover - local adapter-root execution path
+    from execution_plan import validate_execution_plan
 
 
 ALLOWED_PROOF_STAGES = {
