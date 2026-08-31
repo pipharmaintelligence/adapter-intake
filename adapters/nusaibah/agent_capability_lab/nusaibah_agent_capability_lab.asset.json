@@ -1,64 +1,64 @@
 {
-  "key": "nusaibah.agent_capability_lab",
-  "default": "0.1.0",
-  "allowed_surfaces": [
-    "v1_asset_execute"
-  ],
-  "allowed_modes": [
-    "balanced"
-  ],
-  "execution": {
-    "adapter": "nusaibah.agent_capability_lab"
-  },
-  "versions": {
-    "0.1.0": {
-      "state": "active",
-      "inputs": {
-        "companies": {
-          "required": true,
-          "shape": "list"
-        }
-      },
-      "outputs": {
-        "capability_result": {
-          "required": true,
-          "shape": "object"
-        }
-      },
-      "skills": [
-        {
-          "skill_ref": "nusaibah.capability-orchestration",
-          "version": "1.0.0",
-          "digest": "sha256:d60b9fa57f213f104cebc73eb2925842547621d7839e21e78f6afe4903dc7823"
-        }
-      ],
-      "output_contracts": {
-        "capability_result": {
-          "target_kind": "dlm_file_artifact_output",
-          "write_mode": "dry_run",
-          "format_policy": {
-            "source": "node_allowlist",
-            "developer_selected_format": null,
-            "server_admission_required": true
-          },
-          "schema": {
-            "source": "explicit",
-            "fields": [
-              {
-                "name": "record_count",
-                "type": "integer",
-                "required": true
-              }
-            ]
-          },
-          "validation": {
-            "self_inspection": {
-              "enforce": true,
-              "on_fail": "fail"
-            }
-          }
-        }
-      }
-    }
-  }
+    "key":  "nusaibah.agent_capability_lab",
+    "default":  "0.1.0",
+    "allowed_surfaces":  [
+                             "v1_asset_execute"
+                         ],
+    "allowed_modes":  [
+                          "balanced"
+                      ],
+    "execution":  {
+                      "adapter":  "nusaibah.agent_capability_lab"
+                  },
+    "versions":  {
+                     "0.1.0":  {
+                                   "state":  "active",
+                                   "inputs":  {
+                                                  "companies":  {
+                                                                    "required":  true,
+                                                                    "shape":  "list"
+                                                                }
+                                              },
+                                   "outputs":  {
+                                                   "capability_result":  {
+                                                                             "required":  true,
+                                                                             "shape":  "object"
+                                                                         }
+                                               },
+                                   "skills":  [
+                                                  {
+                                                      "skill_ref":  "nusaibah.capability-orchestration",
+                                                      "version":  "1.0.0",
+                                                      "digest":  "sha256:f21420cbffb959e43453c144ee8b78fc4fb98d80c5b017d8c7eecc6a483e5111"
+                                                  }
+                                              ],
+                                   "output_contracts":  {
+                                                            "capability_result":  {
+                                                                                      "target_kind":  "dlm_file_artifact_output",
+                                                                                      "write_mode":  "dry_run",
+                                                                                      "format_policy":  {
+                                                                                                            "source":  "node_allowlist",
+                                                                                                            "developer_selected_format":  null,
+                                                                                                            "server_admission_required":  true
+                                                                                                        },
+                                                                                      "schema":  {
+                                                                                                     "source":  "explicit",
+                                                                                                     "fields":  [
+                                                                                                                    {
+                                                                                                                        "name":  "record_count",
+                                                                                                                        "type":  "integer",
+                                                                                                                        "required":  true
+                                                                                                                    }
+                                                                                                                ]
+                                                                                                 },
+                                                                                      "validation":  {
+                                                                                                         "self_inspection":  {
+                                                                                                                                 "enforce":  true,
+                                                                                                                                 "on_fail":  "fail"
+                                                                                                                             }
+                                                                                                     }
+                                                                                  }
+                                                        }
+                               }
+                 }
 }
