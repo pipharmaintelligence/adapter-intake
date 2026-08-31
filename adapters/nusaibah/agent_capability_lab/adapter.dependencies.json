@@ -1,0 +1,24 @@
+{
+  "schema_version": "adapter_dependencies.v1",
+  "runtime_package": {
+    "name": "pi-obs-python-runtime",
+    "minimum_version": "0.1.7"
+  },
+  "python": {
+    "requires": ">=3.10"
+  },
+  "dependencies": {
+    "spacy": {
+      "version": "3.7.5",
+      "import_name": "spacy",
+      "purpose": "pure_nlp_processing",
+      "runtime_required": true,
+      "native_extensions": true,
+      "model_packages": [
+        "en_core_web_sm==3.7.1"
+      ],
+      "fallback": "dependency_unavailable_error",
+      "production_approval": "pending"
+    }
+  }
+}
