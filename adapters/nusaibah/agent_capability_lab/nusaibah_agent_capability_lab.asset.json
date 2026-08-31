@@ -8,7 +8,10 @@
                           "balanced"
                       ],
     "execution":  {
-                      "adapter":  "nusaibah.agent_capability_lab"
+                    "allowed_substrates": [
+                           "local_worker"
+                      ],
+                    "default_substrate": "local_worker"
                   },
     "versions":  {
                      "0.1.0":  {
