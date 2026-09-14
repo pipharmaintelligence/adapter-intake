@@ -212,7 +212,7 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
 
     This development adapter keeps business logic deterministic except where a
     proof stage explicitly calls an approved runtime-owned capability helper.
-    It never owns credentials, provider endpoints, storage locations, Runtime
+    It never owns credentials, provider connection details, storage locations, Runtime
     Source transport, MCP transport, publication, queues, retries, or Core/OBS
     authority.
     """
