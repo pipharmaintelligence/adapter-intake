@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.agent_capability_lab",
-  "default": "0.1.1",
+  "default": "0.1.2",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -14,7 +14,7 @@
     "default_substrate": "local_worker"
   },
   "versions": {
-    "0.1.1": {
+    "0.1.2": {
       "state": "active",
       "inputs": {
         "companies": {
@@ -35,6 +35,14 @@
           "digest": "sha256:f21420cbffb959e43453c144ee8b78fc4fb98d80c5b017d8c7eecc6a483e5111"
         }
       ],
+      "callable_assets": {
+        "openfda_application_lookup": {
+          "asset_key": "nusaibah.openfda_application_lookup",
+          "asset_version": "0.1.0",
+          "result_key": "application_lookup",
+          "result_shape": "object"
+        }
+      },
       "output_contracts": {
         "capability_result": {
           "target_kind": "dlm_file_artifact_output",

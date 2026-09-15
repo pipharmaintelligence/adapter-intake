@@ -19,9 +19,19 @@ AGENT_ORCHESTRATION_OWNER = "python_adapter"
 
 AGENT_ROLE = "capability_orchestrator"
 
+# Logical callable role declared by this parent asset.
+OPENFDA_CALLABLE_ROLE = "openfda_application_lookup"
+
+# Exact governed callable target expected behind the logical role.
+OPENFDA_CALLABLE_ASSET_KEY = "nusaibah.openfda_application_lookup"
+OPENFDA_CALLABLE_ASSET_VERSION = "0.1.0"
+
+# Safe capability identifier expected from the callable child's bounded result.
+OPENFDA_CAPABILITY = "openfda.application.lookup"
+
 # Defensive local input bound for variables.application_number.
 # This prevents accidentally sending an unexpectedly large semantic identifier
-# into the governed Agent invocation path.
+# into either the governed Agent or callable-asset invocation path.
 MAX_APPLICATION_NUMBER_LENGTH = 128
 
 
@@ -29,6 +39,7 @@ ALLOWED_PROOF_STAGES = {
     "scaffold",
     "agent_invocation",
     "fixed_skill_read",
+    "callable_asset_api",
 }
 
 
@@ -112,7 +123,7 @@ def _resolve_records(inputs: Any) -> list[Any]:
 
 
 def _resolve_application_number(variables: dict[str, Any]) -> str:
-    """Return a bounded OpenFDA application number for the agent proof.
+    """Return a bounded application number for proof stages that require it.
 
     Args:
         variables: Safe runtime variables supplied to the adapter.
@@ -128,7 +139,7 @@ def _resolve_application_number(variables: dict[str, Any]) -> str:
     if raw_value is None:
         raise ValueError(
             "variables.application_number is required "
-            "for the agent_invocation proof stage."
+            "for capability proof stages that require it."
         )
 
     application_number = str(raw_value).strip()
@@ -136,7 +147,7 @@ def _resolve_application_number(variables: dict[str, Any]) -> str:
     if not application_number:
         raise ValueError(
             "variables.application_number is required "
-            "for the agent_invocation proof stage."
+            "for capability proof stages that require it."
         )
 
     if len(application_number) > MAX_APPLICATION_NUMBER_LENGTH:
@@ -200,6 +211,113 @@ def _run_agent_invocation(
     }
 
 
+def _run_callable_api_lookup(
+    inputs: Any,
+    *,
+    application_number: str,
+) -> dict[str, Any]:
+    """Invoke the governed openFDA callable asset and return bounded evidence.
+
+    The capability-lab adapter supplies only semantic variables. The child
+    adapter owns its declared Runtime Source input contract, while Assets/Core
+    retain authority for Runtime Source resolution, credentials, transport,
+    admission, retries, and execution.
+
+    Args:
+        inputs: Runtime inputs exposing the trusted ``invoke_asset`` helper.
+        application_number: Validated Drugs@FDA application number.
+
+    Returns:
+        Safe bounded evidence showing that the expected callable asset completed.
+
+    Raises:
+        RuntimeError: If the callable bridge is unavailable or returns an
+            unexpected envelope, result, capability, or provenance identity.
+    """
+    invoke_asset = getattr(inputs, "invoke_asset", None)
+
+    if not callable(invoke_asset):
+        raise RuntimeError(
+            "Trusted callable-asset invocation is not available in this runtime."
+        )
+
+    callable_result = invoke_asset(
+        OPENFDA_CALLABLE_ROLE,
+        variables={
+            "application_number": application_number,
+        },
+    )
+
+    if not isinstance(callable_result, dict):
+        raise RuntimeError(
+            "Trusted callable-asset invocation returned an invalid envelope."
+        )
+
+    if callable_result.get("status") != "success":
+        raise RuntimeError(
+            "Trusted callable-asset invocation did not succeed."
+        )
+
+    result = callable_result.get("result")
+
+    if not isinstance(result, dict):
+        raise RuntimeError(
+            "Trusted callable-asset invocation returned an invalid result."
+        )
+
+    if result.get("capability") != OPENFDA_CAPABILITY:
+        raise RuntimeError(
+            "Trusted callable-asset invocation returned an unexpected capability."
+        )
+
+    if result.get("application_number") != application_number:
+        raise RuntimeError(
+            "Trusted callable-asset invocation returned an unexpected application."
+        )
+
+    provenance = callable_result.get("provenance")
+
+    if not isinstance(provenance, dict):
+        raise RuntimeError(
+            "Trusted callable-asset invocation returned invalid provenance."
+        )
+
+    if provenance.get("callable_asset") is not True:
+        raise RuntimeError(
+            "Trusted callable-asset invocation provenance is not callable-asset scoped."
+        )
+
+    if provenance.get("role") != OPENFDA_CALLABLE_ROLE:
+        raise RuntimeError(
+            "Trusted callable-asset invocation returned unexpected role provenance."
+        )
+
+    if provenance.get("asset_key") != OPENFDA_CALLABLE_ASSET_KEY:
+        raise RuntimeError(
+            "Trusted callable-asset invocation returned unexpected asset provenance."
+        )
+
+    if provenance.get("asset_version") != OPENFDA_CALLABLE_ASSET_VERSION:
+        raise RuntimeError(
+            "Trusted callable-asset invocation returned unexpected version provenance."
+        )
+
+    # Do not copy the child record or provider response into the lab output.
+    # The primitive proof needs only bounded status/presence evidence.
+    return {
+        "callable_asset_status": "success",
+        "callable_asset_role": OPENFDA_CALLABLE_ROLE,
+        "callable_asset_capability": OPENFDA_CAPABILITY,
+        "callable_asset_result_present": True,
+        "callable_asset_brand_name_present": bool(
+            result.get("brand_name")
+        ),
+        "callable_asset_submission_date_present": bool(
+            result.get("submission_status_date")
+        ),
+    }
+
+
 def _read_fixed_skill(inputs: Any) -> dict[str, Any]:
     """Read and inspect the manifest-pinned Fixed Skill without executing it.
 
@@ -237,7 +355,7 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.agent_capability_lab"
-    version: ClassVar[str] = "0.1.1"
+    version: ClassVar[str] = "0.1.2"
 
     def invoke(
         self,
@@ -248,7 +366,8 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
 
         Args:
             inputs: Runtime-provided inputs. The object may expose trusted
-                capability helpers such as ``invoke_agent`` and ``skill``.
+                capability helpers such as ``invoke_agent``, ``invoke_asset``,
+                and ``skill``.
             context: Safe runtime context metadata. The current adapter does not
                 use context values to select providers, tools, assets, or data.
 
@@ -290,7 +409,19 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
             )
 
         elif proof_stage == "fixed_skill_read":
-            capability_result.update(_read_fixed_skill(inputs))
+            capability_result.update(
+                _read_fixed_skill(inputs)
+            )
+
+        elif proof_stage == "callable_asset_api":
+            application_number = _resolve_application_number(variables)
+
+            capability_result.update(
+                _run_callable_api_lookup(
+                    inputs,
+                    application_number=application_number,
+                )
+            )
 
         return {
             "response_version": "1",
@@ -312,6 +443,9 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
                 "proof_stage_validated": 1,
                 "logical_agent_invocations": (
                     1 if proof_stage == "agent_invocation" else 0
+                ),
+                "logical_callable_asset_invocations": (
+                    1 if proof_stage == "callable_asset_api" else 0
                 ),
             },
         }
