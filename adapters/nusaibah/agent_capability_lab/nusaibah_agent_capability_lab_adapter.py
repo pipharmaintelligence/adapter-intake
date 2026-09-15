@@ -10,8 +10,20 @@ except ImportError:  # pragma: no cover - local adapter-root execution path
     from execution_plan import validate_execution_plan
 
 
+# Explicitly declares that this exact packaged adapter version owns
+# its Agent orchestration through inputs.invoke_agent(...).
+#
+# This is source-controlled adapter identity metadata. It is NOT a credential,
+# provider setting, model setting, URL, or deployment environment variable.
+AGENT_ORCHESTRATION_OWNER = "python_adapter"
+
 AGENT_ROLE = "capability_orchestrator"
+
+# Defensive local input bound for variables.application_number.
+# This prevents accidentally sending an unexpectedly large semantic identifier
+# into the governed Agent invocation path.
 MAX_APPLICATION_NUMBER_LENGTH = 128
+
 
 ALLOWED_PROOF_STAGES = {
     "scaffold",
@@ -57,10 +69,13 @@ def _resolve_variables(inputs: Any) -> dict[str, Any]:
         ValueError: If the variables role is present but is not an object.
     """
     variables = inputs.get("variables", {})
+
     if variables is None:
         return {}
+
     if not isinstance(variables, dict):
         raise ValueError("inputs.variables must be an object when provided.")
+
     return dict(variables)
 
 
@@ -87,6 +102,7 @@ def _resolve_records(inputs: Any) -> list[Any]:
 
     if isinstance(companies, dict):
         records = companies.get("records", [])
+
         if isinstance(records, list):
             return list(records)
 
@@ -108,6 +124,7 @@ def _resolve_application_number(variables: dict[str, Any]) -> str:
         ValueError: If the value is missing, empty, or exceeds the local bound.
     """
     raw_value = variables.get("application_number")
+
     if raw_value is None:
         raise ValueError(
             "variables.application_number is required "
@@ -115,6 +132,7 @@ def _resolve_application_number(variables: dict[str, Any]) -> str:
         )
 
     application_number = str(raw_value).strip()
+
     if not application_number:
         raise ValueError(
             "variables.application_number is required "
@@ -153,6 +171,7 @@ def _run_agent_invocation(
             result, or does not reach the expected terminal state.
     """
     invoke_agent = getattr(inputs, "invoke_agent", None)
+
     if not callable(invoke_agent):
         raise RuntimeError(
             "Trusted agent invocation is not available in this runtime."
@@ -212,15 +231,19 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
 
     This development adapter keeps business logic deterministic except where a
     proof stage explicitly calls an approved runtime-owned capability helper.
-    It never owns credentials, provider connection details, storage locations, Runtime
-    Source transport, MCP transport, publication, queues, retries, or Core/OBS
-    authority.
+    It never owns credentials, provider connection details, storage locations,
+    Runtime Source transport, MCP transport, publication, queues, retries, or
+    Core/OBS authority.
     """
 
     key: ClassVar[str] = "nusaibah.agent_capability_lab"
     version: ClassVar[str] = "0.1.1"
 
-    def invoke(self, inputs: Any, context: dict[str, Any]) -> dict[str, Any]:
+    def invoke(
+        self,
+        inputs: Any,
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
         """Execute one bounded capability-lab proof stage.
 
         Args:
@@ -258,6 +281,7 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
 
         if proof_stage == "agent_invocation":
             application_number = _resolve_application_number(variables)
+
             capability_result.update(
                 _run_agent_invocation(
                     inputs,
