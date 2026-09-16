@@ -4,7 +4,7 @@ Local adapter package for a controlled Drugs@FDA Runtime Source lookup.
 
 ## Contract
 
-- Asset: `nusaibah.openfda_application_lookup@0.1.0`
+- Asset: `nusaibah.openfda_application_lookup@0.1.1`
 - Developer-facing input: `variables.application_number`
 - Runtime-resolved role: `openfda_application_runtime.records`
 - One semantic result capability: `openfda.application.lookup`
