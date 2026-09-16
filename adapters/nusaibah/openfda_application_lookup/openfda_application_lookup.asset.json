@@ -28,7 +28,49 @@
         "openfda_application_runtime": {
           "required": true,
           "source": "direct",
-          "shape": "object"
+          "shape": "object",
+          "contract": {
+            "source": {
+              "type": "api",
+              "authority": "dlm_core",
+              "reference": {
+                "service": "openfda_application_runtime",
+                "runtime_source_handle": "@openfda",
+                "runtime_source_request": {
+                  "resolve": "eager",
+                  "text_from_variable": {
+                    "name": "application_number",
+                    "prefix": "application_number:"
+                  }
+                }
+              }
+            },
+            "schema": {
+              "source": "governed"
+            },
+            "partitioning": {
+              "mode": "none",
+              "source": "none",
+              "dimensions": []
+            },
+            "access": {
+              "mode": "service"
+            },
+            "execution": {
+              "strategy": "single_call",
+              "developer_hint": "Resolve the governed Runtime Source for Drugs@FDA application records."
+            },
+            "explainability": {
+              "summary": "Use governed openFDA Drugs@FDA application records.",
+              "logic": "The trusted runtime resolves the admitted Runtime Source; the adapter only processes normalized records."
+            },
+            "capabilities": {
+              "preview": {
+                "supported": false,
+                "default_in_developer_env": false
+              }
+            }
+          }
         }
       },
       "outputs": {
@@ -36,6 +78,13 @@
           "required": true,
           "shape": "object"
         }
+      },
+      "callable": {
+        "enabled": true,
+        "result_key": "application_lookup",
+        "result_shape": "object",
+        "max_result_bytes": 262144,
+        "timeout_seconds": 30
       }
     }
   }
