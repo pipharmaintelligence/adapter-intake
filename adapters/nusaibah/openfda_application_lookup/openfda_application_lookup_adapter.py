@@ -36,7 +36,7 @@ class OpenFdaApplicationLookupAdapter(Adapter):
     """
 
     key = "nusaibah.openfda_application_lookup"
-    version = "0.1.0"
+    version = "0.1.1"
 
     def invoke(
         self,
