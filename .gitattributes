@@ -1,1 +1,6 @@
 adapters/nusaibah/sfda_getdrugs/schema_admin/schema/snapshots/*.json text eol=lf
+adapters/**/skills/**/*.md text eol=lf
+adapters/**/skills/**/*.txt text eol=lf
+adapters/**/skills/**/*.json text eol=lf
+adapters/**/skills/**/*.yaml text eol=lf
+adapters/**/skills/**/*.yml text eol=lf
