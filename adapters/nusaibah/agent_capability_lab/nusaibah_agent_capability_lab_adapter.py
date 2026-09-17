@@ -24,7 +24,7 @@ OPENFDA_CALLABLE_ROLE = "openfda_application_lookup"
 
 # Exact governed callable target expected behind the logical role.
 OPENFDA_CALLABLE_ASSET_KEY = "nusaibah.openfda_application_lookup"
-OPENFDA_CALLABLE_ASSET_VERSION = "0.1.0"
+OPENFDA_CALLABLE_ASSET_VERSION = "0.1.1"
 
 # Safe capability identifier expected from the callable child's bounded result.
 OPENFDA_CAPABILITY = "openfda.application.lookup"

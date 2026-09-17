@@ -38,7 +38,7 @@
       "callable_assets": {
         "openfda_application_lookup": {
           "asset_key": "nusaibah.openfda_application_lookup",
-          "asset_version": "0.1.0",
+          "asset_version": "0.1.1",
           "result_key": "application_lookup",
           "result_shape": "object"
         }
