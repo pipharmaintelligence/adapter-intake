@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.agent_capability_lab",
-  "default": "0.1.2",
+  "default": "0.1.3",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -14,7 +14,7 @@
     "default_substrate": "local_worker"
   },
   "versions": {
-    "0.1.2": {
+    "0.1.3": {
       "state": "active",
       "inputs": {
         "companies": {
@@ -35,6 +35,21 @@
           "digest": "sha256:f21420cbffb959e43453c144ee8b78fc4fb98d80c5b017d8c7eecc6a483e5111"
         }
       ],
+      "runtime_skills": {
+        "company_memory": {
+          "source": {
+            "lake_ref": "googl123",
+            "node_key": "company_memory"
+          },
+          "resolution": "current",
+          "mutation": "read_only",
+          "partition": {
+            "company_id": {
+              "from_variable": "company_id"
+            }
+          }
+        }
+      },
       "callable_assets": {
         "openfda_application_lookup": {
           "asset_key": "nusaibah.openfda_application_lookup",
