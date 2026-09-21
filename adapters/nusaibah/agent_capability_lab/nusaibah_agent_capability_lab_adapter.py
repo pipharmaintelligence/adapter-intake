@@ -51,6 +51,7 @@ ALLOWED_PROOF_STAGES = {
     "callable_asset_api",
     "vertex_grounded_citation",
     "vertex_grounded_dynamic_skill",
+    "dynamic_skill_commit_verify",
 }
 
 
@@ -349,29 +350,77 @@ def _run_vertex_grounded_dynamic_skill(inputs: Any) -> dict[str, Any]:
 
     receipt = handle.apply(changes, expected_digest=before_digest)
 
-    fresh = inputs.dynamic_skill(MUTATION_FIXTURE_ROLE, variables={})
-    history_after = fresh.history(limit=20)
-
-    if fresh.content_digest() != receipt.after_content_digest:
-        raise RuntimeError("Dynamic Skill fresh readback does not match committed receipt.")
-    if len(history_after.receipts) <= len(history_before.receipts):
-        raise RuntimeError("Dynamic Skill committed history did not advance.")
-    if history_after.latest().content_digest != fresh.content_digest():
-        raise RuntimeError("Dynamic Skill latest history does not match fresh readback.")
-
     evidence.update({
         "dynamic_skill_fixture_company_id": MUTATION_FIXTURE_COMPANY_ID,
         "dynamic_skill_mutation_applied": True,
         "dynamic_skill_before_digest": before_digest,
-        "dynamic_skill_after_digest": fresh.content_digest(),
+        "dynamic_skill_after_digest": receipt.after_content_digest,
         "dynamic_skill_change_id": receipt.change_id,
         "dynamic_skill_operation_count": receipt.operation_count,
         "dynamic_skill_history_before_count": len(history_before.receipts),
-        "dynamic_skill_history_after_count": len(history_after.receipts),
-        "dynamic_skill_fresh_readback_verified": True,
-        "dynamic_skill_history_verified": True,
+        "dynamic_skill_fresh_readback_required": True,
     })
     return evidence
+
+
+def _required_safe_token(
+    variables: dict[str, Any],
+    key: str,
+    *,
+    prefix: str | None = None,
+    max_length: int = 256,
+) -> str:
+    """Return one bounded opaque verification token from caller variables."""
+
+    value = variables.get(key)
+    if not isinstance(value, str) or not value or value != value.strip():
+        raise ValueError(f"variables.{key} must be a non-empty exact string.")
+    if len(value) > max_length:
+        raise ValueError(f"variables.{key} exceeds the verification bound.")
+    if prefix is not None and not value.startswith(prefix):
+        raise ValueError(f"variables.{key} has an unexpected format.")
+    return value
+
+
+def _verify_dynamic_skill_commit(
+    inputs: Any,
+    variables: dict[str, Any],
+) -> dict[str, Any]:
+    """Verify one prior commit from a fresh adapter execution."""
+
+    expected_change_id = _required_safe_token(
+        variables,
+        "expected_change_id",
+        max_length=256,
+    )
+    expected_after_digest = _required_safe_token(
+        variables,
+        "expected_after_digest",
+        prefix="sha256:",
+        max_length=80,
+    )
+
+    handle = inputs.dynamic_skill(MUTATION_FIXTURE_ROLE, variables={})
+    if handle.content_digest() != expected_after_digest:
+        raise RuntimeError("Fresh Dynamic Skill readback digest mismatch.")
+
+    history = handle.history(limit=50)
+    latest_change = history.latest_change()
+    if latest_change is None or latest_change.change_id != expected_change_id:
+        raise RuntimeError("Fresh Dynamic Skill history does not contain the expected latest change.")
+    if latest_change.after_content_digest != expected_after_digest:
+        raise RuntimeError("Fresh Dynamic Skill history digest mismatch.")
+    if history.latest().content_digest != expected_after_digest:
+        raise RuntimeError("Fresh Dynamic Skill latest snapshot digest mismatch.")
+
+    return {
+        "dynamic_skill_fixture_company_id": MUTATION_FIXTURE_COMPANY_ID,
+        "dynamic_skill_fresh_readback_verified": True,
+        "dynamic_skill_history_verified": True,
+        "dynamic_skill_verified_change_id": expected_change_id,
+        "dynamic_skill_verified_after_digest": expected_after_digest,
+        "dynamic_skill_history_count": len(history.receipts),
+    }
 
 
 def _run_callable_api_lookup(
@@ -599,6 +648,11 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
                     "vertex_grounded_dynamic_skill requires execution_plan.company_id=13."
                 )
             capability_result.update(_run_vertex_grounded_dynamic_skill(inputs))
+
+        elif proof_stage == "dynamic_skill_commit_verify":
+            capability_result.update(
+                _verify_dynamic_skill_commit(inputs, variables)
+            )
 
         return {
             "response_version": "1",
