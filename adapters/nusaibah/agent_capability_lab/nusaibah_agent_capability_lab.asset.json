@@ -122,7 +122,6 @@
                 "handle": "provider:text_generation",
                 "type": "provider_execution",
                 "version": "1.0.0",
-                "owner_client_id": null,
                 "visibility": "internal",
                 "status": "active",
                 "capabilities": [
@@ -147,7 +146,6 @@
             "chain": {
               "chain_id": "agent.nusaibah.agent_capability_lab_vertex_grounded",
               "version": "1.0.0",
-              "owner_client_id": null,
               "visibility": "internal",
               "status": "active",
               "steps": [
