@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.agent_capability_lab",
-  "default": "0.1.2",
+  "default": "0.1.5",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -14,7 +14,7 @@
     "default_substrate": "local_worker"
   },
   "versions": {
-    "0.1.2": {
+    "0.1.5": {
       "state": "active",
       "inputs": {
         "companies": {
@@ -35,6 +35,34 @@
           "digest": "sha256:f21420cbffb959e43453c144ee8b78fc4fb98d80c5b017d8c7eecc6a483e5111"
         }
       ],
+      "runtime_skills": {
+        "company_memory": {
+          "source": {
+            "lake_ref": "googl123",
+            "node_key": "company_memory"
+          },
+          "resolution": "current",
+          "mutation": "read_only",
+          "partition": {
+            "company_id": {
+              "from_variable": "company_id"
+            }
+          }
+        },
+        "company_memory_mutation_fixture": {
+          "source": {
+            "lake_ref": "googl123",
+            "node_key": "company_memory"
+          },
+          "resolution": "current",
+          "mutation": "mutable",
+          "partition": {
+            "company_id": {
+              "value": "900013"
+            }
+          }
+        }
+      },
       "callable_assets": {
         "openfda_application_lookup": {
           "asset_key": "nusaibah.openfda_application_lookup",
@@ -70,11 +98,34 @@
           }
         }
       },
+      "public_web": {
+        "profiles": [
+          "reference_read"
+        ],
+        "modes": [
+          "http"
+        ]
+      },
       "agents": {
         "capability_orchestrator": {
           "contract_key": "agent.nusaibah.agent_capability_lab",
           "contract_version": "1.0.0",
           "reference": "agent://contracts/nusaibah.agent-capability-lab"
+        },
+        "vertex_grounded_orchestrator": {
+          "contract_key": "agent.nusaibah.agent_capability_lab_vertex_grounded",
+          "contract_version": "1.0.0",
+          "reference": "agent://contracts/nusaibah.agent-capability-lab-vertex-grounded"
+        },
+        "bedrock_orchestrator": {
+          "contract_key": "agent.nusaibah.agent_capability_lab_bedrock",
+          "contract_version": "1.0.0",
+          "reference": "agent://contracts/nusaibah.agent-capability-lab-bedrock"
+        },
+        "openai_orchestrator": {
+          "contract_key": "agent.nusaibah.agent_capability_lab_openai",
+          "contract_version": "1.0.0",
+          "reference": "agent://contracts/nusaibah.agent-capability-lab-openai"
         }
       }
     }
