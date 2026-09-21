@@ -92,7 +92,6 @@ def test_vertex_role_carries_exact_version_local_packaged_definition() -> None:
             "handle": "provider:text_generation",
             "type": "provider_execution",
             "version": "1.0.0",
-            "owner_client_id": None,
             "visibility": "internal",
             "status": "active",
             "capabilities": ["text_generation"],
@@ -116,7 +115,7 @@ def test_vertex_role_carries_exact_version_local_packaged_definition() -> None:
         "agent.nusaibah.agent_capability_lab_vertex_grounded"
     )
     assert chain["version"] == "1.0.0"
-    assert chain["owner_client_id"] is None
+    assert "owner_client_id" not in chain
     assert chain["visibility"] == "internal"
     assert chain["status"] == "active"
 
