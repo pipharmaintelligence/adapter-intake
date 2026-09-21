@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.agent_capability_lab",
-  "default": "0.1.5",
+  "default": "0.1.6",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -14,7 +14,7 @@
     "default_substrate": "local_worker"
   },
   "versions": {
-    "0.1.5": {
+    "0.1.6": {
       "state": "active",
       "inputs": {
         "companies": {
@@ -115,7 +115,83 @@
         "vertex_grounded_orchestrator": {
           "contract_key": "agent.nusaibah.agent_capability_lab_vertex_grounded",
           "contract_version": "1.0.0",
-          "reference": "agent://contracts/nusaibah.agent-capability-lab-vertex-grounded"
+          "reference": "agent://contracts/nusaibah.agent-capability-lab-vertex-grounded",
+          "definition": {
+            "registry_entries": [
+              {
+                "handle": "provider:text_generation",
+                "type": "provider_execution",
+                "version": "1.0.0",
+                "owner_client_id": null,
+                "visibility": "internal",
+                "status": "active",
+                "capabilities": [
+                  "text_generation"
+                ],
+                "input_schema_version": null,
+                "output_schema_version": null,
+                "runtime": null,
+                "safety_policy": {
+                  "store_prompt": false,
+                  "store_output": false
+                },
+                "provenance_policy": {
+                  "record_step": true
+                },
+                "access_policy": null,
+                "metadata": {
+                  "provisioning_source": "pi_1939_capability_lab_0_1_6"
+                }
+              }
+            ],
+            "chain": {
+              "chain_id": "agent.nusaibah.agent_capability_lab_vertex_grounded",
+              "version": "1.0.0",
+              "owner_client_id": null,
+              "visibility": "internal",
+              "status": "active",
+              "steps": [
+                {
+                  "step_handle": "provider:text_generation",
+                  "required_capability": "text_generation",
+                  "provider": "vertex_ai",
+                  "provider_policy": {
+                    "provider": "vertex_ai",
+                    "model": "gemini-2.5-pro",
+                    "search_enabled": true,
+                    "search_mode": "provider_grounding",
+                    "citation_policy": "refs_only",
+                    "provider_vault": {
+                      "provider_instance_ref": "vertex-primary",
+                      "provider_family": "vertex_ai",
+                      "capability_ref": "llm.generate",
+                      "binding_id": "330c2e62-8445-44e6-8842-1cfe08a55900",
+                      "execution_project_id": "laravelai-490700",
+                      "execution_location": "us-central1",
+                      "policy_flags": {
+                        "mode": "read_only"
+                      }
+                    }
+                  }
+                }
+              ],
+              "budget_policy": {
+                "max_tool_calls": 0,
+                "max_provider_calls": 1
+              },
+              "safety_policy": {
+                "store_prompt": false,
+                "store_output": false
+              },
+              "provenance_policy": {
+                "record_step": true
+              },
+              "access_policy": null,
+              "metadata": {
+                "provisioning_source": "pi_1939_capability_lab_0_1_6"
+              }
+            }
+          }
         },
         "bedrock_orchestrator": {
           "contract_key": "agent.nusaibah.agent_capability_lab_bedrock",
