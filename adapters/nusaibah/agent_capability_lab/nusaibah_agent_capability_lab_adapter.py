@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from adapters.base import Adapter
+from devtools.agent_citation_view import AgentCitationView
+from devtools.public_reference import ReferenceTarget
 
 try:
     from .execution_plan import validate_execution_plan
@@ -18,6 +20,13 @@ except ImportError:  # pragma: no cover - local adapter-root execution path
 AGENT_ORCHESTRATION_OWNER = "python_adapter"
 
 AGENT_ROLE = "capability_orchestrator"
+VERTEX_GROUNDED_AGENT_ROLE = "vertex_grounded_orchestrator"
+
+CANONICAL_COMPANY_ID = "13"
+CANONICAL_COMPANY_NAME = "Tabuk Pharmaceuticals"
+MUTATION_FIXTURE_COMPANY_ID = "900013"
+MUTATION_FIXTURE_ROLE = "company_memory_mutation_fixture"
+MAX_COMPANY_MEMORY_CHARS = 12000
 
 # Logical callable role declared by this parent asset.
 OPENFDA_CALLABLE_ROLE = "openfda_application_lookup"
@@ -40,6 +49,8 @@ ALLOWED_PROOF_STAGES = {
     "agent_invocation",
     "fixed_skill_read",
     "callable_asset_api",
+    "vertex_grounded_citation",
+    "vertex_grounded_dynamic_skill",
 }
 
 
@@ -211,6 +222,158 @@ def _run_agent_invocation(
     }
 
 
+def _resolve_agent_result(agent_envelope: dict[str, Any]) -> dict[str, Any]:
+    """Return one completed typed agent result or fail closed."""
+
+    if agent_envelope.get("status") != "completed":
+        raise RuntimeError("Trusted grounded agent invocation did not complete.")
+
+    result = agent_envelope.get("result")
+    if not isinstance(result, dict):
+        raise RuntimeError("Trusted grounded agent invocation returned an invalid result.")
+
+    if result.get("schema_version") != "agent_result.v1":
+        raise RuntimeError("Trusted grounded agent invocation returned an unexpected schema.")
+
+    return result
+
+
+def _canonical_company_memory(inputs: Any) -> Any:
+    """Resolve the canonical company memory as read-only governed context."""
+
+    dynamic_skill = getattr(inputs, "dynamic_skill", None)
+    if not callable(dynamic_skill):
+        raise RuntimeError("Dynamic Skill access is not available in this runtime.")
+
+    memory = dynamic_skill(
+        "company_memory",
+        variables={"company_id": CANONICAL_COMPANY_ID},
+    )
+
+    provenance = memory.provenance()
+    if provenance.mutable is not False:
+        raise RuntimeError("Canonical company memory must remain read-only.")
+
+    text = memory.read()
+    if not isinstance(text, str) or not text.strip():
+        raise RuntimeError("Canonical company memory is empty.")
+    if len(text) > MAX_COMPANY_MEMORY_CHARS:
+        raise RuntimeError("Canonical company memory exceeds the proof input bound.")
+
+    return memory
+
+
+def _run_vertex_grounded_citation(inputs: Any) -> tuple[dict[str, Any], Any]:
+    """Run the Vertex-grounded company proof and inspect one safe citation."""
+
+    memory = _canonical_company_memory(inputs)
+    invoke_agent = getattr(inputs, "invoke_agent", None)
+    if not callable(invoke_agent):
+        raise RuntimeError("Trusted agent invocation is not available in this runtime.")
+
+    envelope = invoke_agent(
+        VERTEX_GROUNDED_AGENT_ROLE,
+        input={
+            "company_id": CANONICAL_COMPANY_ID,
+            "company_name": CANONICAL_COMPANY_NAME,
+            "company_memory_context": memory.read(),
+            "task": (
+                "Research current public information about Tabuk Pharmaceuticals, "
+                "use provider grounding, and return a concise evidence-backed update."
+            ),
+        },
+    )
+    if not isinstance(envelope, dict):
+        raise RuntimeError("Trusted grounded agent invocation returned an invalid envelope.")
+
+    result = _resolve_agent_result(envelope)
+    citations = AgentCitationView.from_agent_result(result).deduped_citations()
+    if not citations:
+        raise RuntimeError("Grounded Vertex result contained no admitted citations.")
+
+    citation = citations[0]
+    target = ReferenceTarget.from_agent_citation(citation)
+    inspection = inputs.open_reference(target, mode="http")
+
+    evidence = {
+        "vertex_grounded_status": "completed",
+        "vertex_grounded_agent_role": VERTEX_GROUNDED_AGENT_ROLE,
+        "vertex_grounded_result_schema": "agent_result.v1",
+        "vertex_grounded_citation_count": len(citations),
+        "vertex_grounded_first_provider_family": citation.provider_family,
+        "vertex_grounded_first_turn_index": citation.provider_turn_index,
+        "vertex_grounded_first_title_present": bool(citation.title),
+        "vertex_reference_transport": inspection.transport,
+        "vertex_reference_text_present": bool(inspection.text),
+        "canonical_company_memory_digest": memory.content_digest(),
+        "canonical_company_memory_mutable": memory.provenance().mutable,
+    }
+    return evidence, citation
+
+
+def _mutation_target(handle: Any) -> Any:
+    """Choose one deterministic existing section for citation attachment."""
+
+    evidence_sections = handle.find_sections("Evidence")
+    if len(evidence_sections) == 1:
+        return evidence_sections[0].path
+
+    sections = handle.list_sections()
+    if not sections:
+        raise RuntimeError("Mutation fixture Dynamic Skill has no addressable section.")
+
+    return sections[0].path
+
+
+def _run_vertex_grounded_dynamic_skill(inputs: Any) -> dict[str, Any]:
+    """Compose grounded Vertex evidence with the governed mutable Skill fixture."""
+
+    evidence, citation = _run_vertex_grounded_citation(inputs)
+    handle = inputs.dynamic_skill(MUTATION_FIXTURE_ROLE, variables={})
+
+    provenance = handle.provenance()
+    if provenance.mutable is not True:
+        raise RuntimeError("Synthetic Dynamic Skill fixture is not mutable.")
+    if provenance.role != MUTATION_FIXTURE_ROLE:
+        raise RuntimeError("Synthetic Dynamic Skill fixture role mismatch.")
+
+    before_digest = handle.content_digest()
+    history_before = handle.history(limit=20)
+
+    changes = handle.new_changeset().add_citation(_mutation_target(handle), citation)
+    preview = handle.preview(changes)
+    if preview.diff.old_digest != before_digest:
+        raise RuntimeError("Dynamic Skill preview baseline digest mismatch.")
+    if preview.diff.new_digest == before_digest:
+        raise RuntimeError("Dynamic Skill citation preview produced no change.")
+
+    receipt = handle.apply(changes, expected_digest=before_digest)
+
+    fresh = inputs.dynamic_skill(MUTATION_FIXTURE_ROLE, variables={})
+    history_after = fresh.history(limit=20)
+
+    if fresh.content_digest() != receipt.after_content_digest:
+        raise RuntimeError("Dynamic Skill fresh readback does not match committed receipt.")
+    if len(history_after.receipts) <= len(history_before.receipts):
+        raise RuntimeError("Dynamic Skill committed history did not advance.")
+    if history_after.latest().content_digest != fresh.content_digest():
+        raise RuntimeError("Dynamic Skill latest history does not match fresh readback.")
+
+    evidence.update({
+        "dynamic_skill_fixture_company_id": MUTATION_FIXTURE_COMPANY_ID,
+        "dynamic_skill_mutation_applied": True,
+        "dynamic_skill_before_digest": before_digest,
+        "dynamic_skill_after_digest": fresh.content_digest(),
+        "dynamic_skill_change_id": receipt.change_id,
+        "dynamic_skill_operation_count": receipt.operation_count,
+        "dynamic_skill_history_before_count": len(history_before.receipts),
+        "dynamic_skill_history_after_count": len(history_after.receipts),
+        "dynamic_skill_fresh_readback_verified": True,
+        "dynamic_skill_history_verified": True,
+    })
+    return evidence
+
+
 def _run_callable_api_lookup(
     inputs: Any,
     *,
@@ -355,7 +518,7 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.agent_capability_lab"
-    version: ClassVar[str] = "0.1.2"
+    version: ClassVar[str] = "0.1.5"
 
     def invoke(
         self,
@@ -423,6 +586,20 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
                 )
             )
 
+        elif proof_stage == "vertex_grounded_citation":
+            if validated_plan.company_id != int(CANONICAL_COMPANY_ID):
+                raise ValueError(
+                    "vertex_grounded_citation requires execution_plan.company_id=13."
+                )
+            capability_result.update(_run_vertex_grounded_citation(inputs)[0])
+
+        elif proof_stage == "vertex_grounded_dynamic_skill":
+            if validated_plan.company_id != int(CANONICAL_COMPANY_ID):
+                raise ValueError(
+                    "vertex_grounded_dynamic_skill requires execution_plan.company_id=13."
+                )
+            capability_result.update(_run_vertex_grounded_dynamic_skill(inputs))
+
         return {
             "response_version": "1",
             "status": "success",
@@ -446,6 +623,17 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
                 ),
                 "logical_callable_asset_invocations": (
                     1 if proof_stage == "callable_asset_api" else 0
+                ),
+                "logical_grounded_agent_invocations": (
+                    1
+                    if proof_stage in {
+                        "vertex_grounded_citation",
+                        "vertex_grounded_dynamic_skill",
+                    }
+                    else 0
+                ),
+                "dynamic_skill_mutations": (
+                    1 if proof_stage == "vertex_grounded_dynamic_skill" else 0
                 ),
             },
         }
