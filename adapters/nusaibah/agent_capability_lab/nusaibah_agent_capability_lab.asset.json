@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.agent_capability_lab",
-  "default": "0.1.8",
+  "default": "0.1.9",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -14,7 +14,7 @@
     "default_substrate": "local_worker"
   },
   "versions": {
-    "0.1.8": {
+    "0.1.9": {
       "state": "active",
       "inputs": {
         "companies": {
@@ -169,6 +169,9 @@
                       "policy_flags": {
                         "mode": "read_only"
                       }
+                    },
+                    "generation_policy": {
+                      "max_tokens": 1024
                     }
                   }
                 }
@@ -186,7 +189,7 @@
               },
               "access_policy": null,
               "metadata": {
-                "provisioning_source": "pi_1939_capability_lab_0_1_8"
+                "provisioning_source": "pi_1939_capability_lab_0_1_9"
               }
             }
           }
