@@ -11,8 +11,7 @@
     "allowed_substrates": [
       "local_worker"
     ],
-    "default_substrate": "local_worker",
-    "timeout_seconds": 600
+    "default_substrate": "local_worker"
   },
   "versions": {
     "0.1.10": {
@@ -207,6 +206,14 @@
           "contract_version": "1.0.0",
           "reference": "agent://contracts/nusaibah.agent-capability-lab-openai"
         }
+      },
+      "execution": {
+        "allowed_substrates": [
+          "local_worker",
+          "ecs"
+        ],
+        "default_substrate": "local_worker",
+        "timeout_seconds": 600
       }
     }
   }
