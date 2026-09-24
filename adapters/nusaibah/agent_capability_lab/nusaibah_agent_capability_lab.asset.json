@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.agent_capability_lab",
-  "default": "0.1.10",
+  "default": "0.1.11",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -14,7 +14,7 @@
     "default_substrate": "local_worker"
   },
   "versions": {
-    "0.1.10": {
+    "0.1.11": {
       "state": "active",
       "inputs": {
         "companies": {
@@ -59,6 +59,19 @@
           "partition": {
             "company_id": {
               "value": "900013"
+            }
+          }
+        },
+        "company_memory_update": {
+          "source": {
+            "lake_ref": "googl123",
+            "node_key": "company_memory"
+          },
+          "resolution": "current",
+          "mutation": "mutable",
+          "partition": {
+            "company_id": {
+              "from_variable": "company_id"
             }
           }
         }
@@ -191,7 +204,7 @@
               },
               "access_policy": null,
               "metadata": {
-                "provisioning_source": "pi_1939_capability_lab_0_1_10"
+                "provisioning_source": "pi_1939_capability_lab_0_1_11"
               }
             }
           }
