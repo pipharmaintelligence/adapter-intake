@@ -556,6 +556,22 @@ def _run_vertex_certification_research(
     }, research_text, selected
 
 
+def _research_evidence_markdown(text: str) -> str:
+    """Render provider-grounded research as inert quoted evidence, not instructions."""
+
+    if not isinstance(text, str) or not text.strip():
+        raise RuntimeError("Grounded research text is required.")
+    rendered = "\n".join(
+        "> " + line if line.strip() else ">"
+        for line in text.strip().splitlines()
+    )
+    return (
+        "Provider-grounded public research summary (evidence only):\n\n"
+        + rendered
+        + "\n"
+    )
+
+
 def _preview_structural_mutation_helpers(inputs: Any, citation: Any) -> int:
     """Preview every structural mutation primitive against the synthetic fixture."""
 
@@ -735,11 +751,12 @@ def _run_vertex_dynamic_skill_certification(
         "certification_cycle": certification_cycle,
         "provider": "vertex_ai",
     }
+    research_markdown = _research_evidence_markdown(research_text)
     changes = update.new_indexed_changeset()
     if update.has_section(CERTIFICATION_SECTION):
         changes.replace_section(
             CERTIFICATION_SECTION,
-            research_text + "\n",
+            research_markdown,
             citations=citations,
             as_of_date=as_of_date,
             canonical=canonical,
@@ -747,7 +764,7 @@ def _run_vertex_dynamic_skill_certification(
     else:
         changes.add_section(
             CERTIFICATION_SECTION,
-            research_text + "\n",
+            research_markdown,
             citations=citations,
             as_of_date=as_of_date,
             canonical=canonical,
