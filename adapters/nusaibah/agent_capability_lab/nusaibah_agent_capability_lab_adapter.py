@@ -781,8 +781,7 @@ def _run_vertex_dynamic_skill_certification(
     committed_index = committed.target_index()
     if committed_index is None:
         raise RuntimeError("Committed Dynamic Skill target index is missing.")
-    committed_metadata = committed_index.metadata_for_section(
-        committed._document,
+    committed_metadata = committed.target_metadata_for_section(
         CERTIFICATION_SECTION,
     )
     if committed_metadata is None or committed_metadata.canonical_dict() != canonical:
@@ -837,8 +836,7 @@ def _verify_vertex_dynamic_skill_certification(
     target_index = read_only.target_index()
     if target_index is None:
         raise RuntimeError("Fresh company memory target index is missing.")
-    metadata = target_index.metadata_for_section(
-        read_only._document,
+    metadata = read_only.target_metadata_for_section(
         CERTIFICATION_SECTION,
     )
     if metadata is None:
