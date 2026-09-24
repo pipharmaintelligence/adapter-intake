@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Any, ClassVar
 
 from adapters.base import Adapter
@@ -26,7 +27,11 @@ CANONICAL_COMPANY_ID = "13"
 CANONICAL_COMPANY_NAME = "Tabuk Pharmaceuticals"
 MUTATION_FIXTURE_COMPANY_ID = "900013"
 MUTATION_FIXTURE_ROLE = "company_memory_mutation_fixture"
+COMPANY_MEMORY_UPDATE_ROLE = "company_memory_update"
 MAX_COMPANY_MEMORY_CHARS = 12000
+MAX_RESEARCH_TEXT_CHARS = 12000
+MAX_CERTIFICATION_CITATIONS = 3
+CERTIFICATION_SECTION = "Current Public Research"
 
 # Logical callable role declared by this parent asset.
 OPENFDA_CALLABLE_ROLE = "openfda_application_lookup"
@@ -52,6 +57,8 @@ ALLOWED_PROOF_STAGES = {
     "vertex_grounded_citation",
     "vertex_grounded_dynamic_skill",
     "dynamic_skill_commit_verify",
+    "vertex_dynamic_skill_certify",
+    "vertex_dynamic_skill_verify",
 }
 
 
@@ -363,6 +370,533 @@ def _run_vertex_grounded_dynamic_skill(inputs: Any) -> dict[str, Any]:
     return evidence
 
 
+
+def _required_as_of_date(variables: dict[str, Any]) -> str:
+    """Return one exact ISO date used for durable certification annotations."""
+
+    value = variables.get("research_as_of_date")
+    if not isinstance(value, str) or value != value.strip():
+        raise ValueError("variables.research_as_of_date must be an exact ISO date.")
+    try:
+        parsed = date.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError("variables.research_as_of_date must be an exact ISO date.") from exc
+    if parsed.isoformat() != value:
+        raise ValueError("variables.research_as_of_date must be an exact ISO date.")
+    return value
+
+
+def _required_certification_cycle(variables: dict[str, Any]) -> str:
+    """Return one bounded cycle marker persisted as canonical Skill metadata."""
+
+    value = variables.get("certification_cycle")
+    if (
+        not isinstance(value, str)
+        or not value
+        or value != value.strip()
+        or len(value) > 128
+    ):
+        raise ValueError("variables.certification_cycle must be a bounded exact string.")
+    return value
+
+
+def _exercise_dynamic_skill_read_helpers(handle: Any) -> dict[str, Any]:
+    """Exercise every safe read/navigation helper on one resolved Dynamic Skill."""
+
+    text = handle.read()
+    inspection = handle.inspect()
+    sections = handle.list_sections()
+    toc = handle.table_of_contents()
+    if not text.strip() or not sections:
+        raise RuntimeError("Dynamic Skill helper certification requires non-empty content.")
+
+    first_section = sections[0]
+    path = first_section.path
+    if not handle.has_section(path):
+        raise RuntimeError("Dynamic Skill has_section helper disagrees with list_sections.")
+    if handle.section(path).path != path:
+        raise RuntimeError("Dynamic Skill section helper returned an unexpected path.")
+
+    section_text = handle.section_text(path)
+    blocks = handle.list_blocks(path)
+    paragraphs = handle.paragraphs(path)
+    handle.subsections(path)
+    handle.subsections(path, recursive=True)
+    handle.parent_section(path)
+    depth = handle.section_depth(path)
+    found_sections = handle.find_sections(path.parts[-1])
+    if not found_sections:
+        raise RuntimeError("Dynamic Skill find_sections helper did not resolve a known heading.")
+
+    searchable_block = next(
+        (block for block in blocks if isinstance(block.text, str) and block.text.strip()),
+        None,
+    )
+    if searchable_block is None:
+        for section in sections[1:]:
+            candidates = handle.list_blocks(section.path)
+            searchable_block = next(
+                (
+                    block
+                    for block in candidates
+                    if isinstance(block.text, str) and block.text.strip()
+                ),
+                None,
+            )
+            if searchable_block is not None:
+                break
+    if searchable_block is None:
+        raise RuntimeError("Dynamic Skill helper certification requires an addressable block.")
+
+    if handle.block(searchable_block.ref).ref != searchable_block.ref:
+        raise RuntimeError("Dynamic Skill block helper returned an unexpected block.")
+
+    needle = searchable_block.text.strip().split()[0]
+    if not handle.find(needle):
+        raise RuntimeError("Dynamic Skill find helper did not resolve known text.")
+    if not handle.find_blocks(text=needle):
+        raise RuntimeError("Dynamic Skill find_blocks helper did not resolve known text.")
+
+    resources = handle.list_resources()
+    resource_read = False
+    if resources:
+        first_resource = resources[0]
+        if not handle.resource_exists(first_resource.path):
+            raise RuntimeError("Dynamic Skill resource_exists helper disagrees with list_resources.")
+        resource_text = handle.read_resource(first_resource.path)
+        if not isinstance(resource_text, str):
+            raise RuntimeError("Dynamic Skill read_resource returned an invalid value.")
+        resource_read = True
+
+    snapshot = handle.snapshot()
+    history = handle.history(limit=20)
+    target_index = handle.target_index() if callable(getattr(handle, "target_index", None)) else None
+    if snapshot.content_digest != handle.content_digest():
+        raise RuntimeError("Dynamic Skill snapshot/content digest mismatch.")
+    if inspection.content_digest != handle.content_digest():
+        raise RuntimeError("Dynamic Skill inspection/content digest mismatch.")
+
+    return {
+        "dynamic_skill_read_helper_count": 20,
+        "dynamic_skill_section_count": len(sections),
+        "dynamic_skill_block_count": handle.block_count(),
+        "dynamic_skill_paragraph_count": handle.paragraph_count(),
+        "dynamic_skill_toc_count": len(toc),
+        "dynamic_skill_first_section_depth": depth,
+        "dynamic_skill_first_section_text_present": bool(section_text.strip()),
+        "dynamic_skill_resource_count": len(resources),
+        "dynamic_skill_resource_read_exercised": resource_read,
+        "dynamic_skill_snapshot_verified": True,
+        "dynamic_skill_history_receipt_count": len(history.receipts),
+        "dynamic_skill_target_index_present": target_index is not None,
+    }
+
+
+def _run_vertex_certification_research(
+    inputs: Any,
+    memory: Any,
+) -> tuple[dict[str, Any], str, tuple[Any, ...]]:
+    """Run strict Vertex online research and validate bounded public references."""
+
+    invoke_agent = getattr(inputs, "invoke_agent", None)
+    if not callable(invoke_agent):
+        raise RuntimeError("Trusted agent invocation is not available in this runtime.")
+
+    envelope = invoke_agent(
+        VERTEX_GROUNDED_AGENT_ROLE,
+        input={
+            "company_id": CANONICAL_COMPANY_ID,
+            "company_name": CANONICAL_COMPANY_NAME,
+            "company_memory_context": memory.read(),
+            "task": (
+                "Research current public information about Tabuk Pharmaceuticals. "
+                "Use provider grounding and return a concise factual update suitable "
+                "for refreshing governed company memory. Prefer primary or authoritative "
+                "public sources and preserve evidence-backed statements."
+            ),
+        },
+    )
+    if not isinstance(envelope, dict):
+        raise RuntimeError("Trusted grounded agent invocation returned an invalid envelope.")
+
+    result = _resolve_agent_result(envelope)
+    research_text = result.get("text")
+    if (
+        not isinstance(research_text, str)
+        or not research_text.strip()
+        or len(research_text) > MAX_RESEARCH_TEXT_CHARS
+    ):
+        raise RuntimeError("Grounded Vertex result text is empty or exceeds the proof bound.")
+    research_text = research_text.strip()
+
+    citations = AgentCitationView.from_agent_result(result).deduped_citations()
+    if not citations:
+        raise RuntimeError("Grounded Vertex result contained no admitted citations.")
+    selected = tuple(citations[:MAX_CERTIFICATION_CITATIONS])
+
+    transports: set[str] = set()
+    opened = 0
+    for citation in selected:
+        if citation.provider_family != "vertex_ai":
+            raise RuntimeError("Vertex certification returned a non-Vertex citation.")
+        target = ReferenceTarget.from_agent_citation(citation)
+        inspection = inputs.open_reference(target, mode="http")
+        if not isinstance(inspection.text, str) or not inspection.text.strip():
+            raise RuntimeError("Vertex certification reference opened without readable text.")
+        transports.add(str(inspection.transport))
+        opened += 1
+
+    return {
+        "vertex_certification_status": "completed",
+        "vertex_certification_result_schema": "agent_result.v1",
+        "vertex_certification_result_text_present": True,
+        "vertex_certification_citation_count": len(citations),
+        "vertex_certification_validated_reference_count": opened,
+        "vertex_certification_reference_transport_count": len(transports),
+    }, research_text, selected
+
+
+def _preview_structural_mutation_helpers(inputs: Any, citation: Any) -> int:
+    """Preview every structural mutation primitive against the synthetic fixture."""
+
+    handle = inputs.dynamic_skill(MUTATION_FIXTURE_ROLE, variables={})
+    if handle.provenance().mutable is not True:
+        raise RuntimeError("Synthetic Dynamic Skill fixture is not mutable.")
+
+    sections = handle.list_sections()
+    if not sections:
+        raise RuntimeError("Synthetic Dynamic Skill fixture has no sections.")
+    first_path = sections[0].path
+    section_body = handle.section_text(first_path)
+    paragraphs = [
+        block
+        for section in sections
+        for block in handle.paragraphs(section.path)
+    ]
+    if not paragraphs:
+        raise RuntimeError("Synthetic Dynamic Skill fixture has no paragraph blocks.")
+    paragraph = paragraphs[0]
+
+    previews = [
+        handle.new_changeset().replace_section(
+            first_path,
+            section_body + "\n\nCertification preview replacement.\n",
+        ),
+        handle.new_changeset().add_section(
+            "Certification Preview Add",
+            "Preview-only section.\n",
+        ),
+        handle.new_changeset().add_subsection(
+            first_path,
+            "Certification Preview Child",
+            "Preview-only child section.\n",
+        ),
+        handle.new_changeset().upsert_section(
+            "Certification Preview Upsert",
+            "Preview-only upsert section.\n",
+        ),
+        handle.new_changeset().replace_block(
+            paragraph.ref,
+            "Certification preview block replacement.\n",
+        ),
+        handle.new_changeset().replace_paragraph(
+            paragraph.ref,
+            "Certification preview paragraph replacement.",
+        ),
+        handle.new_changeset().append_paragraph(
+            first_path,
+            "Certification preview appended paragraph.",
+        ),
+        handle.new_changeset().add_citation(first_path, citation),
+        handle.new_changeset().add_citations(first_path, (citation,)),
+    ]
+    for changes in previews:
+        preview = handle.preview(changes)
+        if preview.diff.operation_count < 1:
+            raise RuntimeError("Dynamic Skill structural mutation preview produced no operation.")
+    return len(previews)
+
+
+def _preview_indexed_mutation_helpers(
+    handle: Any,
+    citation: Any,
+    *,
+    as_of_date: str,
+    certification_cycle: str,
+) -> int:
+    """Preview every indexed mutation primitive without writing company memory."""
+
+    sections = handle.list_sections()
+    if not sections:
+        raise RuntimeError("Company memory update role has no sections.")
+    first_path = sections[0].path
+    section_body = handle.section_text(first_path)
+    paragraphs = [
+        block
+        for section in sections
+        for block in handle.paragraphs(section.path)
+    ]
+    if not paragraphs:
+        raise RuntimeError("Company memory update role has no paragraph blocks.")
+    paragraph = paragraphs[0]
+    canonical = {
+        "company_id": int(CANONICAL_COMPANY_ID),
+        "certification_cycle": certification_cycle,
+        "provider": "vertex_ai",
+    }
+
+    previews = [
+        handle.new_indexed_changeset().replace_section(
+            first_path,
+            section_body + "\n\nIndexed certification preview.\n",
+            citations=(citation,),
+            as_of_date=as_of_date,
+            canonical=canonical,
+        ),
+        handle.new_indexed_changeset().add_section(
+            "Certification Indexed Add",
+            "Preview-only indexed section.\n",
+            citations=(citation,),
+            as_of_date=as_of_date,
+            canonical=canonical,
+        ),
+        handle.new_indexed_changeset().add_subsection(
+            first_path,
+            "Certification Indexed Child",
+            "Preview-only indexed child.\n",
+            citations=(citation,),
+            as_of_date=as_of_date,
+            canonical=canonical,
+        ),
+        handle.new_indexed_changeset().append_paragraph(
+            first_path,
+            "Preview-only indexed paragraph.",
+            citations=(citation,),
+            as_of_date=as_of_date,
+            canonical=canonical,
+        ),
+        handle.new_indexed_changeset().replace_paragraph(
+            paragraph.ref,
+            "Preview-only indexed paragraph replacement.",
+            citations=(citation,),
+            as_of_date=as_of_date,
+            canonical=canonical,
+        ),
+    ]
+    for changes in previews:
+        preview = handle.preview_indexed(changes)
+        if preview.diff.operation_count < 1 or not preview.target_index.entries:
+            raise RuntimeError("Dynamic Skill indexed mutation preview was incomplete.")
+    return len(previews)
+
+
+def _run_vertex_dynamic_skill_certification(
+    inputs: Any,
+    variables: dict[str, Any],
+) -> dict[str, Any]:
+    """Research company 13 online and commit one annotated governed memory update."""
+
+    as_of_date = _required_as_of_date(variables)
+    certification_cycle = _required_certification_cycle(variables)
+    memory = _canonical_company_memory(inputs)
+    evidence = _exercise_dynamic_skill_read_helpers(memory)
+
+    vertex_evidence, research_text, citations = _run_vertex_certification_research(
+        inputs,
+        memory,
+    )
+    evidence.update(vertex_evidence)
+    evidence["dynamic_skill_structural_preview_count"] = _preview_structural_mutation_helpers(
+        inputs,
+        citations[0],
+    )
+
+    update = inputs.dynamic_skill(
+        COMPANY_MEMORY_UPDATE_ROLE,
+        variables={"company_id": CANONICAL_COMPANY_ID},
+    )
+    if update.provenance().mutable is not True:
+        raise RuntimeError("Company memory update role must be mutable.")
+    if update.provenance().role != COMPANY_MEMORY_UPDATE_ROLE:
+        raise RuntimeError("Company memory update role mismatch.")
+    if update.content_digest() != memory.content_digest():
+        raise RuntimeError("Read-only and mutable company memory baselines differ.")
+
+    evidence["dynamic_skill_indexed_preview_count"] = _preview_indexed_mutation_helpers(
+        update,
+        citations[0],
+        as_of_date=as_of_date,
+        certification_cycle=certification_cycle,
+    )
+
+    canonical = {
+        "company_id": int(CANONICAL_COMPANY_ID),
+        "company_name": CANONICAL_COMPANY_NAME,
+        "certification_cycle": certification_cycle,
+        "provider": "vertex_ai",
+    }
+    changes = update.new_indexed_changeset()
+    if update.has_section(CERTIFICATION_SECTION):
+        changes.replace_section(
+            CERTIFICATION_SECTION,
+            research_text + "\n",
+            citations=citations,
+            as_of_date=as_of_date,
+            canonical=canonical,
+        )
+    else:
+        changes.add_section(
+            CERTIFICATION_SECTION,
+            research_text + "\n",
+            citations=citations,
+            as_of_date=as_of_date,
+            canonical=canonical,
+        )
+
+    before_digest = update.content_digest()
+    preview = update.preview_indexed(changes)
+    metadata = preview.target_index.metadata_for_section(
+        preview.document,
+        CERTIFICATION_SECTION,
+    )
+    if metadata is None:
+        raise RuntimeError("Certification target metadata was not created.")
+    if metadata.as_of_date != as_of_date:
+        raise RuntimeError("Certification target as-of metadata mismatch.")
+    if metadata.canonical_dict() != canonical:
+        raise RuntimeError("Certification canonical metadata mismatch.")
+    if len(metadata.citations) != len(citations):
+        raise RuntimeError("Certification citation annotation count mismatch.")
+
+    receipt = update.apply_indexed(changes, expected_digest=before_digest)
+    if not receipt.document_changed or not receipt.target_index_changed:
+        raise RuntimeError("Certification commit did not change content and annotations.")
+
+    committed = inputs.dynamic_skill(
+        COMPANY_MEMORY_UPDATE_ROLE,
+        variables={"company_id": CANONICAL_COMPANY_ID},
+    )
+    if committed.content_digest() != receipt.after_content_digest:
+        raise RuntimeError("Same-run committed Dynamic Skill digest mismatch.")
+    committed_index = committed.target_index()
+    if committed_index is None:
+        raise RuntimeError("Committed Dynamic Skill target index is missing.")
+    committed_metadata = committed_index.metadata_for_section(
+        committed._document,
+        CERTIFICATION_SECTION,
+    )
+    if committed_metadata is None or committed_metadata.canonical_dict() != canonical:
+        raise RuntimeError("Committed Dynamic Skill annotation metadata mismatch.")
+
+    history = committed.history(limit=20)
+    latest = history.latest_change()
+    if latest is None or latest.change_id != receipt.change_id:
+        raise RuntimeError("Committed Dynamic Skill history is missing the certification change.")
+    if latest.after_content_digest != receipt.after_content_digest:
+        raise RuntimeError("Committed Dynamic Skill history content digest mismatch.")
+    if latest.target_index_changed is not True:
+        raise RuntimeError("Committed Dynamic Skill history did not record annotation change.")
+
+    evidence.update({
+        "dynamic_skill_company_id": int(CANONICAL_COMPANY_ID),
+        "dynamic_skill_update_role": COMPANY_MEMORY_UPDATE_ROLE,
+        "dynamic_skill_baseline_digest_match": True,
+        "dynamic_skill_real_update_applied": True,
+        "dynamic_skill_document_changed": receipt.document_changed,
+        "dynamic_skill_target_index_changed": receipt.target_index_changed,
+        "dynamic_skill_after_digest": receipt.after_content_digest,
+        "dynamic_skill_after_target_index_digest": receipt.after_target_index_digest,
+        "dynamic_skill_change_id": receipt.change_id,
+        "dynamic_skill_operation_count": receipt.operation_count,
+        "dynamic_skill_committed_citation_count": len(committed_metadata.citations),
+        "dynamic_skill_committed_as_of_date": committed_metadata.as_of_date,
+        "dynamic_skill_same_run_history_verified": True,
+        "dynamic_skill_fresh_execution_verification_required": True,
+    })
+    return evidence
+
+
+def _verify_vertex_dynamic_skill_certification(
+    inputs: Any,
+    variables: dict[str, Any],
+) -> dict[str, Any]:
+    """Fresh-run verification of company-13 content, annotations, history, and references."""
+
+    as_of_date = _required_as_of_date(variables)
+    certification_cycle = _required_certification_cycle(variables)
+    read_only = _canonical_company_memory(inputs)
+    update = inputs.dynamic_skill(
+        COMPANY_MEMORY_UPDATE_ROLE,
+        variables={"company_id": CANONICAL_COMPANY_ID},
+    )
+    if update.provenance().mutable is not True:
+        raise RuntimeError("Company memory update role must remain mutable.")
+    if read_only.content_digest() != update.content_digest():
+        raise RuntimeError("Fresh read-only and mutable company memory digests differ.")
+
+    target_index = read_only.target_index()
+    if target_index is None:
+        raise RuntimeError("Fresh company memory target index is missing.")
+    metadata = target_index.metadata_for_section(
+        read_only._document,
+        CERTIFICATION_SECTION,
+    )
+    if metadata is None:
+        raise RuntimeError("Fresh company memory certification metadata is missing.")
+    canonical = metadata.canonical_dict()
+    if canonical.get("company_id") != int(CANONICAL_COMPANY_ID):
+        raise RuntimeError("Fresh company memory canonical company_id mismatch.")
+    if canonical.get("company_name") != CANONICAL_COMPANY_NAME:
+        raise RuntimeError("Fresh company memory canonical company name mismatch.")
+    if canonical.get("certification_cycle") != certification_cycle:
+        raise RuntimeError("Fresh company memory certification cycle mismatch.")
+    if canonical.get("provider") != "vertex_ai":
+        raise RuntimeError("Fresh company memory provider annotation mismatch.")
+    if metadata.as_of_date != as_of_date:
+        raise RuntimeError("Fresh company memory as-of annotation mismatch.")
+    if not metadata.citations:
+        raise RuntimeError("Fresh company memory has no persisted citations.")
+
+    opened = 0
+    for citation in metadata.citations[:MAX_CERTIFICATION_CITATIONS]:
+        if citation.provider_family != "vertex_ai":
+            raise RuntimeError("Persisted company memory citation is not Vertex-derived.")
+        inspection = inputs.open_reference(
+            ReferenceTarget.from_agent_citation(citation),
+            mode="http",
+        )
+        if not isinstance(inspection.text, str) or not inspection.text.strip():
+            raise RuntimeError("Persisted company memory citation reference has no readable text.")
+        opened += 1
+
+    history = update.history(limit=20)
+    latest = history.latest_change()
+    if latest is None:
+        raise RuntimeError("Fresh company memory history has no committed change.")
+    if latest.after_content_digest != update.content_digest():
+        raise RuntimeError("Fresh company memory history/content digest mismatch.")
+    if latest.target_index_changed is not True:
+        raise RuntimeError("Fresh company memory history lacks target-index mutation evidence.")
+    latest_snapshot = history.latest()
+    if latest_snapshot.content_digest != update.content_digest():
+        raise RuntimeError("Fresh company memory latest snapshot digest mismatch.")
+    if latest_snapshot.target_index_digest != target_index.digest():
+        raise RuntimeError("Fresh company memory historical target-index digest mismatch.")
+
+    helper_evidence = _exercise_dynamic_skill_read_helpers(read_only)
+    helper_evidence.update({
+        "dynamic_skill_company_id": int(CANONICAL_COMPANY_ID),
+        "dynamic_skill_fresh_certification_verified": True,
+        "dynamic_skill_read_write_digest_match": True,
+        "dynamic_skill_persisted_citation_count": len(metadata.citations),
+        "dynamic_skill_revalidated_reference_count": opened,
+        "dynamic_skill_annotation_review_present": bool(metadata.review_annotation()),
+        "dynamic_skill_history_latest_change_verified": True,
+        "dynamic_skill_history_target_index_verified": True,
+    })
+    return helper_evidence
+
+
 def _required_safe_token(
     variables: dict[str, Any],
     key: str,
@@ -567,7 +1101,7 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.agent_capability_lab"
-    version: ClassVar[str] = "0.1.10"
+    version: ClassVar[str] = "0.1.11"
 
     def invoke(
         self,
@@ -654,6 +1188,24 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
                 _verify_dynamic_skill_commit(inputs, variables)
             )
 
+        elif proof_stage == "vertex_dynamic_skill_certify":
+            if validated_plan.company_id != int(CANONICAL_COMPANY_ID):
+                raise ValueError(
+                    "vertex_dynamic_skill_certify requires execution_plan.company_id=13."
+                )
+            capability_result.update(
+                _run_vertex_dynamic_skill_certification(inputs, variables)
+            )
+
+        elif proof_stage == "vertex_dynamic_skill_verify":
+            if validated_plan.company_id != int(CANONICAL_COMPANY_ID):
+                raise ValueError(
+                    "vertex_dynamic_skill_verify requires execution_plan.company_id=13."
+                )
+            capability_result.update(
+                _verify_vertex_dynamic_skill_certification(inputs, variables)
+            )
+
         return {
             "response_version": "1",
             "status": "success",
@@ -683,11 +1235,17 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
                     if proof_stage in {
                         "vertex_grounded_citation",
                         "vertex_grounded_dynamic_skill",
+                        "vertex_dynamic_skill_certify",
                     }
                     else 0
                 ),
                 "dynamic_skill_mutations": (
-                    1 if proof_stage == "vertex_grounded_dynamic_skill" else 0
+                    1
+                    if proof_stage in {
+                        "vertex_grounded_dynamic_skill",
+                        "vertex_dynamic_skill_certify",
+                    }
+                    else 0
                 ),
             },
         }
