@@ -477,7 +477,7 @@ def _exercise_dynamic_skill_read_helpers(handle: Any) -> dict[str, Any]:
         raise RuntimeError("Dynamic Skill inspection/content digest mismatch.")
 
     return {
-        "dynamic_skill_read_helper_count": 20,
+        "dynamic_skill_read_helpers_verified": True,
         "dynamic_skill_section_count": len(sections),
         "dynamic_skill_block_count": handle.block_count(),
         "dynamic_skill_paragraph_count": handle.paragraph_count(),
@@ -899,6 +899,8 @@ def _verify_vertex_dynamic_skill_certification(
         raise RuntimeError("Fresh company memory historical target-index digest mismatch.")
 
     helper_evidence = _exercise_dynamic_skill_read_helpers(read_only)
+    if helper_evidence.get("dynamic_skill_resource_read_exercised") is not True:
+        raise RuntimeError("Fresh annotated company memory resource read was not exercised.")
     helper_evidence.update({
         "dynamic_skill_company_id": int(CANONICAL_COMPANY_ID),
         "dynamic_skill_fresh_certification_verified": True,
