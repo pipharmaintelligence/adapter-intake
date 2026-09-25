@@ -53,6 +53,30 @@ Future development rule:
 8. If a live proof fails, separate provider completion from downstream adapter validation before
    changing model, timeout, credentials, runtime, or token budget.
 
+## Citation inspection resilience in 0.1.15
+
+Provider grounding may return several admitted public citations. The certification
+contract requires **at least one** selected citation to be successfully inspected;
+it does not require every selected public website to respond successfully.
+
+The adapter therefore applies this bounded rule:
+
+1. Select at most `MAX_CERTIFICATION_CITATIONS` citations.
+2. Require every selected citation to be Vertex-derived before inspection.
+3. Attempt each selected reference independently through the admitted `http` mode.
+4. Treat a trusted `PublicReferenceError` or an opened reference without readable
+   text as a failed candidate and continue to the next selected citation.
+5. Require at least one readable inspection or fail closed.
+6. Pass only successfully inspected citations into the Dynamic Skill annotation
+   and commit path.
+7. Apply the same at-least-one rule when fresh-run verification re-opens persisted
+   citations.
+
+Do not expose source URLs, raw HTTP status/body, headers, transport exceptions, or
+provider payloads in certification output. Keep only bounded counts and transport
+classes. A source-specific HTTP failure is a public-reference runtime/external-site
+outcome; the adapter owns only the bounded retry-across-selected-citations policy.
+
 ## Diagnostic discipline
 
 For strict-output failures, preserve bounded evidence such as the failed rule, counts, and fixed
