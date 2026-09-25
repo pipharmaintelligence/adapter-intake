@@ -1208,7 +1208,7 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.agent_capability_lab"
-    version: ClassVar[str] = "0.1.12"
+    version: ClassVar[str] = "0.1.13"
 
     def invoke(
         self,
