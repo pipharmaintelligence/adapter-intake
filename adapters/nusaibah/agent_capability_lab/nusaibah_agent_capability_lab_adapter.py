@@ -5,7 +5,7 @@ from typing import Any, ClassVar
 
 from adapters.base import Adapter
 from devtools.agent_citation_view import AgentCitationView
-from devtools.public_reference import ReferenceTarget
+from devtools.public_reference import PublicReferenceError, ReferenceTarget
 
 try:
     from .execution_plan import validate_execution_plan
@@ -718,27 +718,43 @@ def _run_vertex_certification_research(
     selected = tuple(citations[:MAX_CERTIFICATION_CITATIONS])
 
     transports: set[str] = set()
-    opened = 0
+    validated: list[Any] = []
+    failed = 0
     for citation in selected:
         if citation.provider_family != "vertex_ai":
             raise RuntimeError("Vertex certification returned a non-Vertex citation.")
-        target = ReferenceTarget.from_agent_citation(citation)
-        inspection = inputs.open_reference(target, mode="http")
+
+        try:
+            target = ReferenceTarget.from_agent_citation(citation)
+            inspection = inputs.open_reference(target, mode="http")
+        except PublicReferenceError:
+            failed += 1
+            continue
+
         if not isinstance(inspection.text, str) or not inspection.text.strip():
-            raise RuntimeError("Vertex certification reference opened without readable text.")
+            failed += 1
+            continue
+
         transports.add(str(inspection.transport))
-        opened += 1
+        validated.append(citation)
+
+    if not validated:
+        raise RuntimeError(
+            "Vertex certification could not inspect any selected citation with readable text."
+        )
 
     evidence = {
         "vertex_certification_status": "completed",
         "vertex_certification_result_schema": "agent_result.v1",
         "vertex_certification_result_text_present": True,
         "vertex_certification_citation_count": len(citations),
-        "vertex_certification_validated_reference_count": opened,
+        "vertex_certification_reference_attempt_count": len(selected),
+        "vertex_certification_validated_reference_count": len(validated),
+        "vertex_certification_reference_failure_count": failed,
         "vertex_certification_reference_transport_count": len(transports),
     }
     evidence.update(format_evidence)
-    return evidence, research_text, selected
+    return evidence, research_text, tuple(validated)
 
 
 def _research_evidence_markdown(text: str) -> str:
@@ -1057,16 +1073,31 @@ def _verify_vertex_dynamic_skill_certification(
         raise RuntimeError("Fresh company memory has no persisted citations.")
 
     opened = 0
+    attempted = 0
+    failed = 0
     for citation in metadata.citations[:MAX_CERTIFICATION_CITATIONS]:
         if citation.provider_family != "vertex_ai":
             raise RuntimeError("Persisted company memory citation is not Vertex-derived.")
-        inspection = inputs.open_reference(
-            ReferenceTarget.from_agent_citation(citation),
-            mode="http",
-        )
+
+        attempted += 1
+        try:
+            inspection = inputs.open_reference(
+                ReferenceTarget.from_agent_citation(citation),
+                mode="http",
+            )
+        except PublicReferenceError:
+            failed += 1
+            continue
+
         if not isinstance(inspection.text, str) or not inspection.text.strip():
-            raise RuntimeError("Persisted company memory citation reference has no readable text.")
+            failed += 1
+            continue
         opened += 1
+
+    if opened < 1:
+        raise RuntimeError(
+            "Fresh company memory could not revalidate any persisted citation."
+        )
 
     history = update.history(limit=20)
     latest = history.latest_change()
@@ -1090,7 +1121,9 @@ def _verify_vertex_dynamic_skill_certification(
         "dynamic_skill_fresh_certification_verified": True,
         "dynamic_skill_read_write_digest_match": True,
         "dynamic_skill_persisted_citation_count": len(metadata.citations),
+        "dynamic_skill_reference_revalidation_attempt_count": attempted,
         "dynamic_skill_revalidated_reference_count": opened,
+        "dynamic_skill_reference_revalidation_failure_count": failed,
         "dynamic_skill_annotation_review_present": bool(metadata.review_annotation()),
         "dynamic_skill_history_latest_change_verified": True,
         "dynamic_skill_history_target_index_verified": True,
@@ -1309,7 +1342,7 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.agent_capability_lab"
-    version: ClassVar[str] = "0.1.14"
+    version: ClassVar[str] = "0.1.15"
 
     def invoke(
         self,
