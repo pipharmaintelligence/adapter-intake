@@ -8,6 +8,13 @@
     "requires": ">=3.10"
   },
   "dependencies": {
-    "jsonschema": "==4.25.1"
+    "jsonschema": {
+      "version": "4.25.1",
+      "import_name": "jsonschema",
+      "purpose": "schema_validation",
+      "runtime_required": false,
+      "native_extensions": false,
+      "production_approval": "approved"
+    }
   }
 }
