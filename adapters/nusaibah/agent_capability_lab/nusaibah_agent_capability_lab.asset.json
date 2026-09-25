@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.agent_capability_lab",
-  "default": "0.1.12",
+  "default": "0.1.13",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -14,7 +14,7 @@
     "default_substrate": "local_worker"
   },
   "versions": {
-    "0.1.12": {
+    "0.1.13": {
       "state": "active",
       "inputs": {
         "companies": {
@@ -114,7 +114,7 @@
         },
         "vertex_grounded_orchestrator": {
           "contract_key": "agent.nusaibah.agent_capability_lab_vertex_grounded",
-          "contract_version": "1.0.0",
+          "contract_version": "1.0.1",
           "reference": "agent://contracts/nusaibah.agent-capability-lab-vertex-grounded",
           "definition": {
             "registry_entries": [
@@ -145,7 +145,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.agent_capability_lab_vertex_grounded",
-              "version": "1.0.0",
+              "version": "1.0.1",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -155,7 +155,7 @@
                   "provider": "vertex_ai",
                   "provider_policy": {
                     "provider": "vertex_ai",
-                    "model": "gemini-2.5-pro",
+                    "model": "gemini-3.1-pro-preview",
                     "search_enabled": true,
                     "search_mode": "provider_grounding",
                     "citation_policy": "refs_only",
@@ -165,15 +165,14 @@
                       "capability_ref": "llm.generate",
                       "binding_id": "9ce2bed4-fae6-4147-82ee-cdc4dea300a8",
                       "execution_project_id": "laravelai-490700",
-                      "execution_location": "us-central1",
+                      "execution_location": "global",
                       "policy_flags": {
                         "mode": "read_only"
                       }
                     },
                     "generation_policy": {
-                      "max_tokens": 1024,
-                      "temperature": 0.2,
-                      "top_k": 64
+                      "max_tokens": 8192,
+                      "thinking_level": "medium"
                     }
                   }
                 }
@@ -191,7 +190,7 @@
               },
               "access_policy": null,
               "metadata": {
-                "provisioning_source": "pi_1939_capability_lab_0_1_12"
+                "provisioning_source": "pi_1939_capability_lab_0_1_13"
               }
             }
           }
