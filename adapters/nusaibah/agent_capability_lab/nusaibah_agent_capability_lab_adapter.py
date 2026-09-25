@@ -38,6 +38,11 @@ VERTEX_FORMAT_SUMMARY = "SUMMARY:"
 VERTEX_FORMAT_UPDATES = "VERIFIED_UPDATES:"
 VERTEX_FORMAT_MEMORY_NOTE = "MEMORY_NOTE:"
 VERTEX_FORMAT_END = "END_FORMAT"
+VERTEX_FORMAT_BULLET_PREFIX = "- "
+VERTEX_FORMAT_SUMMARY_MIN_ITEMS = 2
+VERTEX_FORMAT_SUMMARY_MAX_ITEMS = 4
+VERTEX_FORMAT_UPDATES_MIN_ITEMS = 2
+VERTEX_FORMAT_UPDATES_MAX_ITEMS = 6
 
 # Logical callable role declared by this parent asset.
 OPENFDA_CALLABLE_ROLE = "openfda_application_lookup"
@@ -1208,7 +1213,7 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.agent_capability_lab"
-    version: ClassVar[str] = "0.1.13"
+    version: ClassVar[str] = "0.1.14"
 
     def invoke(
         self,
