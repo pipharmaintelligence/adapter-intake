@@ -31,7 +31,7 @@ Normative rules:
 - Every item is exactly one physical line.
 - Every item begins with the exact ASCII prefix `- ` (hyphen + one space).
 - `* `, `+ `, numbered bullets, continuation lines, and extra non-bullet lines are rejected.
-- `MEMORY_NOTE` is non-bullet prose.
+- `MEMORY_NOTE` is prose outside the item-list grammar; no line may begin with the exact `- ` item prefix.
 - The opening `FORMAT_ID`, section labels, section order, and final `END_FORMAT` marker are exact.
 
 ## Lesson learned: prompt grammar and validator grammar are one contract
