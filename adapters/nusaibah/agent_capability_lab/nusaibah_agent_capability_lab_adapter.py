@@ -55,8 +55,6 @@ ALLOWED_PROOF_STAGES = {
     "fixed_skill_read",
     "callable_asset_api",
     "vertex_grounded_citation",
-    "vertex_grounded_dynamic_skill",
-    "dynamic_skill_commit_verify",
     "vertex_dynamic_skill_certify",
     "vertex_dynamic_skill_verify",
 }
@@ -572,16 +570,15 @@ def _research_evidence_markdown(text: str) -> str:
     )
 
 
-def _preview_structural_mutation_helpers(inputs: Any, citation: Any) -> int:
-    """Preview every structural mutation primitive against the synthetic fixture."""
+def _preview_structural_mutation_helpers(handle: Any, citation: Any) -> int:
+    """Preview every structural mutation primitive without committing company memory."""
 
-    handle = inputs.dynamic_skill(MUTATION_FIXTURE_ROLE, variables={})
     if handle.provenance().mutable is not True:
-        raise RuntimeError("Synthetic Dynamic Skill fixture is not mutable.")
+        raise RuntimeError("Company memory update role must be mutable for preview.")
 
     sections = handle.list_sections()
     if not sections:
-        raise RuntimeError("Synthetic Dynamic Skill fixture has no sections.")
+        raise RuntimeError("Company memory update role has no sections.")
     first_path = sections[0].path
     section_body = handle.section_text(first_path)
     paragraphs = [
@@ -722,10 +719,6 @@ def _run_vertex_dynamic_skill_certification(
         memory,
     )
     evidence.update(vertex_evidence)
-    evidence["dynamic_skill_structural_preview_count"] = _preview_structural_mutation_helpers(
-        inputs,
-        citations[0],
-    )
 
     update = inputs.dynamic_skill(
         COMPANY_MEMORY_UPDATE_ROLE,
@@ -738,6 +731,10 @@ def _run_vertex_dynamic_skill_certification(
     if update.content_digest() != memory.content_digest():
         raise RuntimeError("Read-only and mutable company memory baselines differ.")
 
+    evidence["dynamic_skill_structural_preview_count"] = _preview_structural_mutation_helpers(
+        update,
+        citations[0],
+    )
     evidence["dynamic_skill_indexed_preview_count"] = _preview_indexed_mutation_helpers(
         update,
         citations[0],
@@ -1118,7 +1115,7 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.agent_capability_lab"
-    version: ClassVar[str] = "0.1.11"
+    version: ClassVar[str] = "0.1.12"
 
     def invoke(
         self,
