@@ -502,7 +502,24 @@ def _exercise_dynamic_skill_read_helpers(handle: Any) -> dict[str, Any]:
 
 
 def _vertex_format_instructions() -> dict[str, Any]:
-    """Return a provider-portable response format contract for live proof."""
+    """Return the exact line-oriented response grammar used by certification.
+
+    Authoring invariant:
+        This instruction builder and _validate_vertex_response_format are one
+        versioned protocol contract. Do not describe a broader format than the
+        validator accepts. The phrase "Markdown bullets" is intentionally
+        avoided because Markdown permits multiple bullet markers while this
+        certification protocol accepts only the ASCII "- " prefix.
+
+        Any grammar change must update the shared constants, this instruction
+        text, the validator, deterministic positive/negative tests, the README,
+        and the adapter version in the same change.
+
+    Returns:
+        A provider-portable grammar with an explicit minimum valid template.
+        The template is illustrative content only; marker, line-shape, and
+        item-count rules are normative.
+    """
 
     return {
         "format_id": VERTEX_RESPONSE_FORMAT_ID,
@@ -510,18 +527,63 @@ def _vertex_format_instructions() -> dict[str, Any]:
             f"First line must be exactly: FORMAT_ID: {VERTEX_RESPONSE_FORMAT_ID}",
             f"Then emit exactly these labels in order: {VERTEX_FORMAT_SUMMARY}, "
             f"{VERTEX_FORMAT_UPDATES}, {VERTEX_FORMAT_MEMORY_NOTE}",
-            "SUMMARY must contain 2 to 4 concise Markdown bullet lines.",
-            "VERIFIED_UPDATES must contain 2 to 6 concise Markdown bullet lines.",
-            "MEMORY_NOTE must contain one concise evidence-based paragraph.",
+            (
+                "SUMMARY must contain "
+                f"{VERTEX_FORMAT_SUMMARY_MIN_ITEMS} to "
+                f"{VERTEX_FORMAT_SUMMARY_MAX_ITEMS} items. "
+                "Every item must be exactly one physical line beginning with "
+                f"the ASCII prefix {VERTEX_FORMAT_BULLET_PREFIX!r} "
+                "(hyphen followed by one space)."
+            ),
+            (
+                "VERIFIED_UPDATES must contain "
+                f"{VERTEX_FORMAT_UPDATES_MIN_ITEMS} to "
+                f"{VERTEX_FORMAT_UPDATES_MAX_ITEMS} items with the same exact "
+                f"{VERTEX_FORMAT_BULLET_PREFIX!r} one-physical-line grammar."
+            ),
+            (
+                "Do not use asterisk, plus, numbered bullets, wrapped bullet "
+                "continuation lines, or additional non-bullet lines inside "
+                "SUMMARY or VERIFIED_UPDATES."
+            ),
+            (
+                "MEMORY_NOTE must contain concise non-bullet prose. "
+                "No MEMORY_NOTE line may begin with the exact bullet prefix "
+                f"{VERTEX_FORMAT_BULLET_PREFIX!r}."
+            ),
             "Do not add extra section labels, URLs, or a source list in the text; "
             "provider citations are captured separately by the runtime.",
             f"Final non-empty line must be exactly: {VERTEX_FORMAT_END}",
+        ],
+        "minimum_valid_template": [
+            f"FORMAT_ID: {VERTEX_RESPONSE_FORMAT_ID}",
+            VERTEX_FORMAT_SUMMARY,
+            f"{VERTEX_FORMAT_BULLET_PREFIX}<summary item 1>",
+            f"{VERTEX_FORMAT_BULLET_PREFIX}<summary item 2>",
+            VERTEX_FORMAT_UPDATES,
+            f"{VERTEX_FORMAT_BULLET_PREFIX}<verified update 1>",
+            f"{VERTEX_FORMAT_BULLET_PREFIX}<verified update 2>",
+            VERTEX_FORMAT_MEMORY_NOTE,
+            "<concise evidence-based non-bullet note>",
+            VERTEX_FORMAT_END,
         ],
     }
 
 
 def _validate_vertex_response_format(text: str) -> dict[str, Any]:
-    """Fail closed unless the grounded model obeyed the requested text format."""
+    """Validate the exact certification grammar emitted to the grounded model.
+
+    This is a protocol validator, not a generic Markdown parser. SUMMARY and
+    VERIFIED_UPDATES deliberately accept only one physical line per item with
+    the shared ASCII "- " prefix and the shared item-count bounds.
+
+    Maintenance rule:
+        Keep this function synchronized with _vertex_format_instructions.
+        A prompt/validator mismatch is an adapter contract defect even when the
+        provider invocation succeeds. When changing this grammar, update the
+        shared constants, instructions, tests, README, and adapter version
+        together instead of relying on prose interpretation.
+    """
 
     if not isinstance(text, str) or not text.strip():
         raise RuntimeError("Vertex format proof requires non-empty result text.")
@@ -565,13 +627,41 @@ def _validate_vertex_response_format(text: str) -> dict[str, Any]:
         if line.strip() and line.strip() != VERTEX_FORMAT_END
     ]
 
-    summary_bullets = [line for line in summary_lines if line.startswith("- ")]
-    update_bullets = [line for line in update_lines if line.startswith("- ")]
-    if not (2 <= len(summary_bullets) <= 4) or len(summary_bullets) != len(summary_lines):
+    summary_bullets = [
+        line
+        for line in summary_lines
+        if line.startswith(VERTEX_FORMAT_BULLET_PREFIX)
+    ]
+    update_bullets = [
+        line
+        for line in update_lines
+        if line.startswith(VERTEX_FORMAT_BULLET_PREFIX)
+    ]
+    if (
+        not (
+            VERTEX_FORMAT_SUMMARY_MIN_ITEMS
+            <= len(summary_bullets)
+            <= VERTEX_FORMAT_SUMMARY_MAX_ITEMS
+        )
+        or len(summary_bullets) != len(summary_lines)
+    ):
         raise RuntimeError("Vertex SUMMARY did not honor the required bullet format.")
-    if not (2 <= len(update_bullets) <= 6) or len(update_bullets) != len(update_lines):
+    if (
+        not (
+            VERTEX_FORMAT_UPDATES_MIN_ITEMS
+            <= len(update_bullets)
+            <= VERTEX_FORMAT_UPDATES_MAX_ITEMS
+        )
+        or len(update_bullets) != len(update_lines)
+    ):
         raise RuntimeError("Vertex VERIFIED_UPDATES did not honor the required bullet format.")
-    if not memory_lines or any(line.startswith("- ") for line in memory_lines):
+    if (
+        not memory_lines
+        or any(
+            line.startswith(VERTEX_FORMAT_BULLET_PREFIX)
+            for line in memory_lines
+        )
+    ):
         raise RuntimeError("Vertex MEMORY_NOTE did not honor the required paragraph format.")
 
     return {
@@ -581,7 +671,6 @@ def _validate_vertex_response_format(text: str) -> dict[str, Any]:
         "vertex_format_update_bullet_count": len(update_bullets),
         "vertex_format_memory_note_present": True,
     }
-
 
 def _run_vertex_certification_research(
     inputs: Any,
