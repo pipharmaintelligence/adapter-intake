@@ -1299,6 +1299,13 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
     It never owns credentials, provider connection details, storage locations,
     Runtime Source transport, MCP transport, publication, queues, retries, or
     Core/OBS authority.
+
+    Development lesson:
+        Strict model-output formats are versioned adapter protocols. Prompt
+        wording must never be broader or looser than the parser that consumes
+        it. Shared grammar constants plus deterministic negative tests prevent
+        a successful provider response from being rejected only because prompt
+        prose and validation semantics drifted apart.
     """
 
     key: ClassVar[str] = "nusaibah.agent_capability_lab"
