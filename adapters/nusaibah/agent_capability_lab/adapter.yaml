@@ -1,11 +1,14 @@
 asset_key: nusaibah.agent_capability_lab
-asset_version: 0.1.13
+asset_version: 0.1.14
 package_target: python_runtime/adapters/intake/nusaibah/agent_capability_lab
 manifest: nusaibah_agent_capability_lab.asset.json
 adapter_module: nusaibah_agent_capability_lab_adapter.py
 
 reviewed_helpers:
   - execution_plan.py
+
+optional_files:
+  - README.md
 
 dependency_manifest: adapter.dependencies.json
 release_stage: development
