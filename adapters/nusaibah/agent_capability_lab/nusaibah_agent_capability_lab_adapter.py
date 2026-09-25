@@ -33,6 +33,12 @@ MAX_RESEARCH_TEXT_CHARS = 12000
 MAX_CERTIFICATION_CITATIONS = 3
 CERTIFICATION_SECTION = "Current Public Research"
 
+VERTEX_RESPONSE_FORMAT_ID = "capability_lab.vertex_grounded.v1"
+VERTEX_FORMAT_SUMMARY = "SUMMARY:"
+VERTEX_FORMAT_UPDATES = "VERIFIED_UPDATES:"
+VERTEX_FORMAT_MEMORY_NOTE = "MEMORY_NOTE:"
+VERTEX_FORMAT_END = "END_FORMAT"
+
 # Logical callable role declared by this parent asset.
 OPENFDA_CALLABLE_ROLE = "openfda_application_lookup"
 
@@ -490,6 +496,88 @@ def _exercise_dynamic_skill_read_helpers(handle: Any) -> dict[str, Any]:
     }
 
 
+def _vertex_format_instructions() -> dict[str, Any]:
+    """Return a provider-portable response format contract for live proof."""
+
+    return {
+        "format_id": VERTEX_RESPONSE_FORMAT_ID,
+        "requirements": [
+            f"First line must be exactly: FORMAT_ID: {VERTEX_RESPONSE_FORMAT_ID}",
+            f"Then emit exactly these labels in order: {VERTEX_FORMAT_SUMMARY}, "
+            f"{VERTEX_FORMAT_UPDATES}, {VERTEX_FORMAT_MEMORY_NOTE}",
+            "SUMMARY must contain 2 to 4 concise Markdown bullet lines.",
+            "VERIFIED_UPDATES must contain 2 to 6 concise Markdown bullet lines.",
+            "MEMORY_NOTE must contain one concise evidence-based paragraph.",
+            "Do not add extra section labels, URLs, or a source list in the text; "
+            "provider citations are captured separately by the runtime.",
+            f"Final non-empty line must be exactly: {VERTEX_FORMAT_END}",
+        ],
+    }
+
+
+def _validate_vertex_response_format(text: str) -> dict[str, Any]:
+    """Fail closed unless the grounded model obeyed the requested text format."""
+
+    if not isinstance(text, str) or not text.strip():
+        raise RuntimeError("Vertex format proof requires non-empty result text.")
+
+    lines = [line.rstrip() for line in text.strip().splitlines()]
+    nonempty = [line for line in lines if line.strip()]
+    expected_first = f"FORMAT_ID: {VERTEX_RESPONSE_FORMAT_ID}"
+    if not nonempty or nonempty[0] != expected_first:
+        raise RuntimeError("Vertex response did not honor the required format id.")
+    if nonempty[-1] != VERTEX_FORMAT_END:
+        raise RuntimeError("Vertex response did not honor the required format end marker.")
+
+    labels = (
+        VERTEX_FORMAT_SUMMARY,
+        VERTEX_FORMAT_UPDATES,
+        VERTEX_FORMAT_MEMORY_NOTE,
+    )
+    positions: list[int] = []
+    for label in labels:
+        matches = [index for index, line in enumerate(lines) if line.strip() == label]
+        if len(matches) != 1:
+            raise RuntimeError("Vertex response format labels are missing or duplicated.")
+        positions.append(matches[0])
+
+    if positions != sorted(positions) or len(set(positions)) != len(positions):
+        raise RuntimeError("Vertex response format labels are out of order.")
+
+    summary_lines = [
+        line.strip()
+        for line in lines[positions[0] + 1 : positions[1]]
+        if line.strip()
+    ]
+    update_lines = [
+        line.strip()
+        for line in lines[positions[1] + 1 : positions[2]]
+        if line.strip()
+    ]
+    memory_lines = [
+        line.strip()
+        for line in lines[positions[2] + 1 :]
+        if line.strip() and line.strip() != VERTEX_FORMAT_END
+    ]
+
+    summary_bullets = [line for line in summary_lines if line.startswith("- ")]
+    update_bullets = [line for line in update_lines if line.startswith("- ")]
+    if not (2 <= len(summary_bullets) <= 4) or len(summary_bullets) != len(summary_lines):
+        raise RuntimeError("Vertex SUMMARY did not honor the required bullet format.")
+    if not (2 <= len(update_bullets) <= 6) or len(update_bullets) != len(update_lines):
+        raise RuntimeError("Vertex VERIFIED_UPDATES did not honor the required bullet format.")
+    if not memory_lines or any(line.startswith("- ") for line in memory_lines):
+        raise RuntimeError("Vertex MEMORY_NOTE did not honor the required paragraph format.")
+
+    return {
+        "vertex_format_instruction_id": VERTEX_RESPONSE_FORMAT_ID,
+        "vertex_format_instruction_followed": True,
+        "vertex_format_summary_bullet_count": len(summary_bullets),
+        "vertex_format_update_bullet_count": len(update_bullets),
+        "vertex_format_memory_note_present": True,
+    }
+
+
 def _run_vertex_certification_research(
     inputs: Any,
     memory: Any,
@@ -510,8 +598,10 @@ def _run_vertex_certification_research(
                 "Research current public information about Tabuk Pharmaceuticals. "
                 "Use provider grounding and return a concise factual update suitable "
                 "for refreshing governed company memory. Prefer primary or authoritative "
-                "public sources and preserve evidence-backed statements."
+                "public sources and preserve evidence-backed statements. "
+                "Follow the supplied format_instructions exactly."
             ),
+            "format_instructions": _vertex_format_instructions(),
         },
     )
     if not isinstance(envelope, dict):
@@ -526,6 +616,7 @@ def _run_vertex_certification_research(
     ):
         raise RuntimeError("Grounded Vertex result text is empty or exceeds the proof bound.")
     research_text = research_text.strip()
+    format_evidence = _validate_vertex_response_format(research_text)
 
     citations = AgentCitationView.from_agent_result(result).deduped_citations()
     if not citations:
@@ -544,14 +635,16 @@ def _run_vertex_certification_research(
         transports.add(str(inspection.transport))
         opened += 1
 
-    return {
+    evidence = {
         "vertex_certification_status": "completed",
         "vertex_certification_result_schema": "agent_result.v1",
         "vertex_certification_result_text_present": True,
         "vertex_certification_citation_count": len(citations),
         "vertex_certification_validated_reference_count": opened,
         "vertex_certification_reference_transport_count": len(transports),
-    }, research_text, selected
+    }
+    evidence.update(format_evidence)
+    return evidence, research_text, selected
 
 
 def _research_evidence_markdown(text: str) -> str:
