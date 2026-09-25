@@ -547,8 +547,8 @@ def _vertex_format_instructions() -> dict[str, Any]:
                 "SUMMARY or VERIFIED_UPDATES."
             ),
             (
-                "MEMORY_NOTE must contain concise non-bullet prose. "
-                "No MEMORY_NOTE line may begin with the exact bullet prefix "
+                "MEMORY_NOTE must contain concise prose outside the item-list grammar. "
+                "Under this protocol, no MEMORY_NOTE line may begin with the exact "
                 f"{VERTEX_FORMAT_BULLET_PREFIX!r}."
             ),
             "Do not add extra section labels, URLs, or a source list in the text; "
