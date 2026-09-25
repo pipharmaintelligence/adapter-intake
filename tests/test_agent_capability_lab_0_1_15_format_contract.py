@@ -80,11 +80,11 @@ def _assert_rejected(validate, text: str, expected_message: str) -> None:
         raise AssertionError('expected strict format rejection')
 
 
-def test_0_1_14_source_and_documentation_declare_same_strict_grammar() -> None:
+def test_0_1_15_source_and_documentation_declare_same_strict_grammar() -> None:
     source = ADAPTER_PATH.read_text(encoding='utf-8')
     readme = README_PATH.read_text(encoding='utf-8')
 
-    assert 'version: ClassVar[str] = "0.1.14"' in source
+    assert 'version: ClassVar[str] = "0.1.15"' in source
     assert 'VERTEX_FORMAT_BULLET_PREFIX = "- "' in source
     assert 'Every item must be exactly one physical line' in source
     assert 'prompt grammar and validator grammar are one contract' in readme
