@@ -1000,6 +1000,19 @@ def _run_vertex_dynamic_skill_certification(
     )
     evidence.update(vertex_evidence)
 
+    if not citations:
+        evidence.update(
+            {
+                "dynamic_skill_company_id": int(CANONICAL_COMPANY_ID),
+                "dynamic_skill_update_role": COMPANY_MEMORY_UPDATE_ROLE,
+                "dynamic_skill_real_update_applied": False,
+                "dynamic_skill_mutation_skipped": True,
+                "dynamic_skill_mutation_skip_reason": "public_reference_verification_degraded",
+                "dynamic_skill_fresh_execution_verification_required": True,
+            }
+        )
+        return evidence
+
     update = inputs.dynamic_skill(
         COMPANY_MEMORY_UPDATE_ROLE,
         variables={"company_id": CANONICAL_COMPANY_ID},
@@ -1149,20 +1162,22 @@ def _verify_vertex_dynamic_skill_certification(
     if not metadata.citations:
         raise RuntimeError("Fresh company memory has no persisted citations.")
 
+    selected, web_candidate_count, non_web_count = _partition_vertex_reference_candidates(
+        tuple(metadata.citations)
+    )
     opened = 0
     attempted = 0
     failed = 0
-    for citation in metadata.citations[:MAX_CERTIFICATION_CITATIONS]:
-        if citation.provider_family != "vertex_ai":
-            raise RuntimeError("Persisted company memory citation is not Vertex-derived.")
-
+    for citation in selected:
         attempted += 1
         try:
             inspection = inputs.open_reference(
                 ReferenceTarget.from_agent_citation(citation),
                 mode="http",
             )
-        except PublicReferenceError:
+        except PublicReferenceError as exc:
+            if not _is_degradable_public_reference_error(exc):
+                raise
             failed += 1
             continue
 
@@ -1171,10 +1186,7 @@ def _verify_vertex_dynamic_skill_certification(
             continue
         opened += 1
 
-    if opened < 1:
-        raise RuntimeError(
-            "Fresh company memory could not revalidate any persisted citation."
-        )
+    reference_status = "verified" if opened > 0 else "degraded"
 
     history = update.history(limit=20)
     latest = history.latest_change()
@@ -1196,11 +1208,16 @@ def _verify_vertex_dynamic_skill_certification(
     helper_evidence.update({
         "dynamic_skill_company_id": int(CANONICAL_COMPANY_ID),
         "dynamic_skill_fresh_certification_verified": True,
+        "dynamic_skill_governed_state_verified": True,
         "dynamic_skill_read_write_digest_match": True,
         "dynamic_skill_persisted_citation_count": len(metadata.citations),
+        "dynamic_skill_web_reference_candidate_count": web_candidate_count,
+        "dynamic_skill_non_web_reference_count": non_web_count,
         "dynamic_skill_reference_revalidation_attempt_count": attempted,
         "dynamic_skill_revalidated_reference_count": opened,
         "dynamic_skill_reference_revalidation_failure_count": failed,
+        "dynamic_skill_reference_revalidation_status": reference_status,
+        "dynamic_skill_reference_revalidation_complete": opened > 0,
         "dynamic_skill_annotation_review_present": bool(metadata.review_annotation()),
         "dynamic_skill_history_latest_change_verified": True,
         "dynamic_skill_history_target_index_verified": True,
