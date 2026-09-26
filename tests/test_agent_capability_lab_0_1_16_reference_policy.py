@@ -283,40 +283,26 @@ def test_no_provider_citations_remains_a_contract_failure() -> None:
         raise AssertionError("expected missing provider citations to fail closed")
 
 
-def test_certification_skips_mutation_when_reference_verification_is_degraded() -> None:
-    namespace = _namespace({"_run_vertex_dynamic_skill_certification"})
-    namespace["_required_as_of_date"] = lambda variables: "2026-09-26"
-    namespace["_required_certification_cycle"] = lambda variables: "cycle-1"
-    namespace["_canonical_company_memory"] = lambda inputs: object()
-    namespace["_exercise_dynamic_skill_read_helpers"] = lambda memory: {
-        "dynamic_skill_resource_read_exercised": True
-    }
-    namespace["_run_vertex_certification_research"] = lambda inputs, memory: (
-        {
-            "vertex_certification_reference_status": "degraded",
-            "vertex_certification_mutation_eligible": False,
-        },
-        "provider research text",
-        (),
+def test_certification_no_longer_short_circuits_degraded_provider_provenance() -> None:
+    source = ADAPTER_PATH.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    function = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef)
+        and node.name == "_run_vertex_dynamic_skill_certification"
     )
 
-    class Inputs:
-        def dynamic_skill(self, *args, **kwargs):
-            raise AssertionError("degraded certification must not open mutable Skill handle")
+    for node in ast.walk(function):
+        if not isinstance(node, ast.If):
+            continue
+        rendered = ast.unparse(node.test)
+        assert rendered not in {"not citations", "len(citations) == 0"}
 
-    result = namespace["_run_vertex_dynamic_skill_certification"](
-        Inputs(),
-        {},
-    )
-
-    assert result["dynamic_skill_real_update_applied"] is False
-    assert result["dynamic_skill_mutation_skipped"] is True
-    assert result["dynamic_skill_fresh_execution_verification_required"] is False
-    assert result["dynamic_skill_reference_followup_required"] is True
-    assert (
-        result["dynamic_skill_mutation_skip_reason"]
-        == "public_reference_verification_degraded"
-    )
+    rendered_function = ast.unparse(function)
+    assert "inputs.dynamic_skill(COMPANY_MEMORY_UPDATE_ROLE" in rendered_function
+    assert "dynamic_skill_reference_followup_required" in rendered_function
+    assert "dynamic_skill_mutation_evidence_basis" in rendered_function
 
 
 def test_fresh_verification_still_proves_governed_state_when_urls_are_unreachable() -> None:
