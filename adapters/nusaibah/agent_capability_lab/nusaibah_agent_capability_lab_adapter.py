@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from typing import Any, ClassVar
+from urllib.parse import urlsplit
 
 from adapters.base import Adapter
 from devtools.agent_citation_view import AgentCitationView
@@ -32,6 +33,21 @@ MAX_COMPANY_MEMORY_CHARS = 12000
 MAX_RESEARCH_TEXT_CHARS = 12000
 MAX_CERTIFICATION_CITATIONS = 3
 CERTIFICATION_SECTION = "Current Public Research"
+
+# Public-reference failures in this set describe external reachability/content
+# conditions. They may degrade evidence verification but must not be confused
+# with bridge/admission/security contract failures.
+DEGRADABLE_PUBLIC_REFERENCE_CODES = frozenset(
+    {
+        "public_reference_http_failed",
+        "public_reference_http_timeout",
+        "public_reference_http_too_large",
+        "public_reference_http_content_invalid",
+        "public_reference_http_redirect_limit",
+        "public_reference_redirect_invalid",
+        "public_reference_target_unresolvable",
+    }
+)
 
 VERTEX_RESPONSE_FORMAT_ID = "capability_lab.vertex_grounded.v1"
 VERTEX_FORMAT_SUMMARY = "SUMMARY:"
@@ -672,11 +688,69 @@ def _validate_vertex_response_format(text: str) -> dict[str, Any]:
         "vertex_format_memory_note_present": True,
     }
 
+def _is_public_https_reference_candidate(citation: Any) -> bool:
+    """Return whether one inert citation locator is eligible for public-web opening.
+
+    This is only a deterministic structural classification. Runtime-owned public
+    target validation remains authoritative for DNS, public-address safety,
+    ports, redirects, and transport admission.
+    """
+
+    locator = getattr(citation, "locator", None)
+    if not isinstance(locator, str) or not locator.strip():
+        return False
+    if locator != locator.strip() or any(character.isspace() for character in locator):
+        return False
+    if "\\" in locator:
+        return False
+
+    try:
+        parsed = urlsplit(locator)
+    except ValueError:
+        return False
+
+    return (
+        parsed.scheme.lower() == "https"
+        and bool(parsed.netloc)
+        and parsed.hostname is not None
+    )
+
+
+def _is_degradable_public_reference_error(exc: PublicReferenceError) -> bool:
+    """Return whether a public-reference failure is safe to treat as degraded."""
+
+    return getattr(exc, "code", str(exc)) in DEGRADABLE_PUBLIC_REFERENCE_CODES
+
+
+def _partition_vertex_reference_candidates(
+    citations: tuple[Any, ...],
+) -> tuple[tuple[Any, ...], int, int]:
+    """Partition Vertex citations into public-HTTPS candidates and inert provenance."""
+
+    web_candidates: list[Any] = []
+    non_web_count = 0
+
+    for citation in citations:
+        if citation.provider_family != "vertex_ai":
+            raise RuntimeError("Vertex certification returned a non-Vertex citation.")
+
+        if _is_public_https_reference_candidate(citation):
+            web_candidates.append(citation)
+        else:
+            non_web_count += 1
+
+    return (
+        tuple(web_candidates[:MAX_CERTIFICATION_CITATIONS]),
+        len(web_candidates),
+        non_web_count,
+    )
+
+
 def _run_vertex_certification_research(
     inputs: Any,
     memory: Any,
 ) -> tuple[dict[str, Any], str, tuple[Any, ...]]:
-    """Run strict Vertex online research and validate bounded public references."""
+    """Run grounded Vertex research and independently inspect eligible web citations."""
 
     invoke_agent = getattr(inputs, "invoke_agent", None)
     if not callable(invoke_agent):
@@ -715,19 +789,22 @@ def _run_vertex_certification_research(
     citations = AgentCitationView.from_agent_result(result).deduped_citations()
     if not citations:
         raise RuntimeError("Grounded Vertex result contained no admitted citations.")
-    selected = tuple(citations[:MAX_CERTIFICATION_CITATIONS])
+
+    selected, web_candidate_count, non_web_count = _partition_vertex_reference_candidates(
+        citations
+    )
 
     transports: set[str] = set()
     validated: list[Any] = []
     failed = 0
-    for citation in selected:
-        if citation.provider_family != "vertex_ai":
-            raise RuntimeError("Vertex certification returned a non-Vertex citation.")
 
+    for citation in selected:
         try:
             target = ReferenceTarget.from_agent_citation(citation)
             inspection = inputs.open_reference(target, mode="http")
-        except PublicReferenceError:
+        except PublicReferenceError as exc:
+            if not _is_degradable_public_reference_error(exc):
+                raise
             failed += 1
             continue
 
@@ -738,24 +815,24 @@ def _run_vertex_certification_research(
         transports.add(str(inspection.transport))
         validated.append(citation)
 
-    if not validated:
-        raise RuntimeError(
-            "Vertex certification could not inspect any selected citation with readable text."
-        )
-
+    reference_status = "verified" if validated else "degraded"
     evidence = {
         "vertex_certification_status": "completed",
         "vertex_certification_result_schema": "agent_result.v1",
         "vertex_certification_result_text_present": True,
         "vertex_certification_citation_count": len(citations),
+        "vertex_certification_web_reference_candidate_count": web_candidate_count,
+        "vertex_certification_non_web_reference_count": non_web_count,
         "vertex_certification_reference_attempt_count": len(selected),
         "vertex_certification_validated_reference_count": len(validated),
         "vertex_certification_reference_failure_count": failed,
         "vertex_certification_reference_transport_count": len(transports),
+        "vertex_certification_reference_status": reference_status,
+        "vertex_certification_reference_verification_complete": bool(validated),
+        "vertex_certification_mutation_eligible": bool(validated),
     }
     evidence.update(format_evidence)
     return evidence, research_text, tuple(validated)
-
 
 def _research_evidence_markdown(text: str) -> str:
     """Render provider-grounded research as inert quoted evidence, not instructions."""
@@ -1342,7 +1419,7 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.agent_capability_lab"
-    version: ClassVar[str] = "0.1.15"
+    version: ClassVar[str] = "0.1.16"
 
     def invoke(
         self,
