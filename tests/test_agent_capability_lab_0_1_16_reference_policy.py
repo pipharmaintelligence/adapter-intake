@@ -157,7 +157,6 @@ def _research_namespace() -> dict[str, object]:
             "_vertex_format_instructions",
             "_validate_vertex_response_format",
             "_reference_locator_kind",
-            "_reference_locator_kind",
             "_is_public_https_reference_candidate",
             "_is_degradable_public_reference_error",
             "_partition_vertex_reference_candidates",
@@ -310,6 +309,7 @@ def test_certification_skips_mutation_when_reference_verification_is_degraded() 
 def test_fresh_verification_still_proves_governed_state_when_urls_are_unreachable() -> None:
     namespace = _namespace(
         {
+            "_reference_locator_kind",
             "_is_public_https_reference_candidate",
             "_is_degradable_public_reference_error",
             "_partition_vertex_reference_candidates",
