@@ -300,6 +300,8 @@ def test_certification_skips_mutation_when_reference_verification_is_degraded() 
 
     assert result["dynamic_skill_real_update_applied"] is False
     assert result["dynamic_skill_mutation_skipped"] is True
+    assert result["dynamic_skill_fresh_execution_verification_required"] is False
+    assert result["dynamic_skill_reference_followup_required"] is True
     assert (
         result["dynamic_skill_mutation_skip_reason"]
         == "public_reference_verification_degraded"
