@@ -828,11 +828,13 @@ def _run_vertex_certification_research(
         if validated
         else ("not_applicable" if web_candidate_count == 0 else "degraded")
     )
+    provenance_citations = tuple(citations[:MAX_CERTIFICATION_CITATIONS])
     evidence = {
         "vertex_certification_status": "completed",
         "vertex_certification_result_schema": "agent_result.v1",
         "vertex_certification_result_text_present": True,
         "vertex_certification_citation_count": len(citations),
+        "vertex_certification_provenance_citation_count": len(provenance_citations),
         "vertex_certification_web_reference_candidate_count": web_candidate_count,
         "vertex_certification_non_web_reference_count": non_web_count,
         "vertex_certification_unsupported_web_reference_count": unsupported_web_count,
@@ -842,10 +844,16 @@ def _run_vertex_certification_research(
         "vertex_certification_reference_transport_count": len(transports),
         "vertex_certification_reference_status": reference_status,
         "vertex_certification_reference_verification_complete": bool(validated),
-        "vertex_certification_mutation_eligible": bool(validated),
+        "vertex_certification_independent_reference_verification_complete": bool(validated),
+        "vertex_certification_mutation_eligible": True,
+        "vertex_certification_mutation_evidence_basis": (
+            "provider_grounding_plus_independent_reference"
+            if validated
+            else "provider_grounding_with_admitted_provenance"
+        ),
     }
     evidence.update(format_evidence)
-    return evidence, research_text, tuple(validated)
+    return evidence, research_text, provenance_citations
 
 def _research_evidence_markdown(text: str) -> str:
     """Render provider-grounded research as inert quoted evidence, not instructions."""
@@ -1013,20 +1021,6 @@ def _run_vertex_dynamic_skill_certification(
     )
     evidence.update(vertex_evidence)
 
-    if not citations:
-        evidence.update(
-            {
-                "dynamic_skill_company_id": int(CANONICAL_COMPANY_ID),
-                "dynamic_skill_update_role": COMPANY_MEMORY_UPDATE_ROLE,
-                "dynamic_skill_real_update_applied": False,
-                "dynamic_skill_mutation_skipped": True,
-                "dynamic_skill_mutation_skip_reason": "public_reference_verification_degraded",
-                "dynamic_skill_fresh_execution_verification_required": False,
-                "dynamic_skill_reference_followup_required": True,
-            }
-        )
-        return evidence
-
     update = inputs.dynamic_skill(
         COMPANY_MEMORY_UPDATE_ROLE,
         variables={"company_id": CANONICAL_COMPANY_ID},
@@ -1132,6 +1126,17 @@ def _run_vertex_dynamic_skill_certification(
         "dynamic_skill_committed_as_of_date": committed_metadata.as_of_date,
         "dynamic_skill_same_run_history_verified": True,
         "dynamic_skill_fresh_execution_verification_required": True,
+        "dynamic_skill_reference_followup_required": (
+            vertex_evidence.get("vertex_certification_reference_status") == "degraded"
+        ),
+        "dynamic_skill_independent_reference_verification_complete": bool(
+            vertex_evidence.get(
+                "vertex_certification_independent_reference_verification_complete"
+            )
+        ),
+        "dynamic_skill_mutation_evidence_basis": vertex_evidence.get(
+            "vertex_certification_mutation_evidence_basis"
+        ),
     })
     return evidence
 
