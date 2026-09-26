@@ -815,7 +815,11 @@ def _run_vertex_certification_research(
         transports.add(str(inspection.transport))
         validated.append(citation)
 
-    reference_status = "verified" if validated else "degraded"
+    reference_status = (
+        "verified"
+        if validated
+        else ("not_applicable" if web_candidate_count == 0 else "degraded")
+    )
     evidence = {
         "vertex_certification_status": "completed",
         "vertex_certification_result_schema": "agent_result.v1",
@@ -1186,7 +1190,11 @@ def _verify_vertex_dynamic_skill_certification(
             continue
         opened += 1
 
-    reference_status = "verified" if opened > 0 else "degraded"
+    reference_status = (
+        "verified"
+        if opened > 0
+        else ("not_applicable" if web_candidate_count == 0 else "degraded")
+    )
 
     history = update.history(limit=20)
     latest = history.latest_change()
@@ -1207,7 +1215,7 @@ def _verify_vertex_dynamic_skill_certification(
         raise RuntimeError("Fresh annotated company memory resource read was not exercised.")
     helper_evidence.update({
         "dynamic_skill_company_id": int(CANONICAL_COMPANY_ID),
-        "dynamic_skill_fresh_certification_verified": True,
+        "dynamic_skill_fresh_certification_verified": opened > 0,
         "dynamic_skill_governed_state_verified": True,
         "dynamic_skill_read_write_digest_match": True,
         "dynamic_skill_persisted_citation_count": len(metadata.citations),
