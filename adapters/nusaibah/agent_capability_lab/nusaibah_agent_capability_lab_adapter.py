@@ -76,7 +76,7 @@ MAX_APPLICATION_NUMBER_LENGTH = 128
 
 # Governed Google Healthcare NLP provider-runtime tool. The adapter owns only
 # the logical role and bounded semantic input; Core/Assets own credentials,
-# provider endpoint material, authorization slots, and transport.
+# provider routing material, authority slots, and transport.
 HEALTHCARE_NLP_TOOL_ROLE = "healthcare_nlp"
 HEALTHCARE_NLP_CAPABILITY = "healthcare.nlp.analyze_entities"
 MAX_HEALTHCARE_TEXT_CHARS = 12000
