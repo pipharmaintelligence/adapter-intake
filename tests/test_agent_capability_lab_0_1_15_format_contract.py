@@ -80,7 +80,7 @@ def _assert_rejected(validate, text: str, expected_message: str) -> None:
         raise AssertionError('expected strict format rejection')
 
 
-def test_0_1_15_source_and_documentation_declare_same_strict_grammar() -> None:
+def test_current_source_and_documentation_declare_same_strict_grammar() -> None:
     source = ADAPTER_PATH.read_text(encoding='utf-8')
     readme = README_PATH.read_text(encoding='utf-8')
 
