@@ -44,7 +44,6 @@ DEGRADABLE_PUBLIC_REFERENCE_CODES = frozenset(
         "public_reference_http_too_large",
         "public_reference_http_content_invalid",
         "public_reference_http_redirect_limit",
-        "public_reference_redirect_invalid",
         "public_reference_target_unresolvable",
     }
 )
