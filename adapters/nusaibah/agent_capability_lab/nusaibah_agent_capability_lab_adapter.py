@@ -687,33 +687,34 @@ def _validate_vertex_response_format(text: str) -> dict[str, Any]:
         "vertex_format_memory_note_present": True,
     }
 
-def _is_public_https_reference_candidate(citation: Any) -> bool:
-    """Return whether one inert citation locator is eligible for public-web opening.
-
-    This is only a deterministic structural classification. Runtime-owned public
-    target validation remains authoritative for DNS, public-address safety,
-    ports, redirects, and transport admission.
-    """
+def _reference_locator_kind(citation: Any) -> str:
+    """Classify one inert citation locator without performing network I/O."""
 
     locator = getattr(citation, "locator", None)
     if not isinstance(locator, str) or not locator.strip():
-        return False
+        return "non_web"
     if locator != locator.strip() or any(character.isspace() for character in locator):
-        return False
+        return "non_web"
     if "\\" in locator:
-        return False
+        return "non_web"
 
     try:
         parsed = urlsplit(locator)
     except ValueError:
-        return False
+        return "non_web"
 
-    return (
-        parsed.scheme.lower() == "https"
-        and bool(parsed.netloc)
-        and parsed.hostname is not None
-    )
+    scheme = parsed.scheme.lower()
+    if scheme == "https" and bool(parsed.netloc) and parsed.hostname is not None:
+        return "public_https_candidate"
+    if scheme in {"http", "https"} and bool(parsed.netloc):
+        return "unsupported_web"
+    return "non_web"
 
+
+def _is_public_https_reference_candidate(citation: Any) -> bool:
+    """Return whether one citation is structurally eligible for public-web opening."""
+
+    return _reference_locator_kind(citation) == "public_https_candidate"
 
 def _is_degradable_public_reference_error(exc: PublicReferenceError) -> bool:
     """Return whether a public-reference failure is safe to treat as degraded."""
@@ -723,18 +724,22 @@ def _is_degradable_public_reference_error(exc: PublicReferenceError) -> bool:
 
 def _partition_vertex_reference_candidates(
     citations: tuple[Any, ...],
-) -> tuple[tuple[Any, ...], int, int]:
+) -> tuple[tuple[Any, ...], int, int, int]:
     """Partition Vertex citations into public-HTTPS candidates and inert provenance."""
 
     web_candidates: list[Any] = []
     non_web_count = 0
+    unsupported_web_count = 0
 
     for citation in citations:
         if citation.provider_family != "vertex_ai":
             raise RuntimeError("Vertex certification returned a non-Vertex citation.")
 
-        if _is_public_https_reference_candidate(citation):
+        kind = _reference_locator_kind(citation)
+        if kind == "public_https_candidate":
             web_candidates.append(citation)
+        elif kind == "unsupported_web":
+            unsupported_web_count += 1
         else:
             non_web_count += 1
 
@@ -742,6 +747,7 @@ def _partition_vertex_reference_candidates(
         tuple(web_candidates[:MAX_CERTIFICATION_CITATIONS]),
         len(web_candidates),
         non_web_count,
+        unsupported_web_count,
     )
 
 
@@ -789,9 +795,12 @@ def _run_vertex_certification_research(
     if not citations:
         raise RuntimeError("Grounded Vertex result contained no admitted citations.")
 
-    selected, web_candidate_count, non_web_count = _partition_vertex_reference_candidates(
-        citations
-    )
+    (
+        selected,
+        web_candidate_count,
+        non_web_count,
+        unsupported_web_count,
+    ) = _partition_vertex_reference_candidates(citations)
 
     transports: set[str] = set()
     validated: list[Any] = []
@@ -826,6 +835,7 @@ def _run_vertex_certification_research(
         "vertex_certification_citation_count": len(citations),
         "vertex_certification_web_reference_candidate_count": web_candidate_count,
         "vertex_certification_non_web_reference_count": non_web_count,
+        "vertex_certification_unsupported_web_reference_count": unsupported_web_count,
         "vertex_certification_reference_attempt_count": len(selected),
         "vertex_certification_validated_reference_count": len(validated),
         "vertex_certification_reference_failure_count": failed,
@@ -1165,9 +1175,12 @@ def _verify_vertex_dynamic_skill_certification(
     if not metadata.citations:
         raise RuntimeError("Fresh company memory has no persisted citations.")
 
-    selected, web_candidate_count, non_web_count = _partition_vertex_reference_candidates(
-        tuple(metadata.citations)
-    )
+    (
+        selected,
+        web_candidate_count,
+        non_web_count,
+        unsupported_web_count,
+    ) = _partition_vertex_reference_candidates(tuple(metadata.citations))
     opened = 0
     attempted = 0
     failed = 0
@@ -1220,6 +1233,7 @@ def _verify_vertex_dynamic_skill_certification(
         "dynamic_skill_persisted_citation_count": len(metadata.citations),
         "dynamic_skill_web_reference_candidate_count": web_candidate_count,
         "dynamic_skill_non_web_reference_count": non_web_count,
+        "dynamic_skill_unsupported_web_reference_count": unsupported_web_count,
         "dynamic_skill_reference_revalidation_attempt_count": attempted,
         "dynamic_skill_revalidated_reference_count": opened,
         "dynamic_skill_reference_revalidation_failure_count": failed,
