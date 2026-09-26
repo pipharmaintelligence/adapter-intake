@@ -203,14 +203,21 @@ def test_non_web_only_citations_are_not_treated_as_public_reference_failures() -
         _Memory(),
     )
 
-    assert citations == ()
+    assert tuple(item.locator for item in citations) == (
+        "doi:10.1234/example",
+        "urn:example:record:1",
+    )
     assert inputs.reference_calls == []
     assert evidence["vertex_certification_web_reference_candidate_count"] == 0
     assert evidence["vertex_certification_non_web_reference_count"] == 2
     assert evidence["vertex_certification_unsupported_web_reference_count"] == 0
     assert evidence["vertex_certification_reference_status"] == "not_applicable"
     assert evidence["vertex_certification_reference_failure_count"] == 0
-    assert evidence["vertex_certification_mutation_eligible"] is False
+    assert evidence["vertex_certification_mutation_eligible"] is True
+    assert (
+        evidence["vertex_certification_mutation_evidence_basis"]
+        == "provider_grounding_with_admitted_provenance"
+    )
 
 
 def test_blocked_or_unreachable_urls_degrade_without_aborting_research() -> None:
@@ -233,11 +240,15 @@ def test_blocked_or_unreachable_urls_degrade_without_aborting_research() -> None
         _Memory(),
     )
 
-    assert citations == ()
+    assert tuple(item.locator for item in citations) == (first, second)
     assert inputs.reference_calls == [first, second]
     assert evidence["vertex_certification_reference_status"] == "degraded"
     assert evidence["vertex_certification_reference_verification_complete"] is False
-    assert evidence["vertex_certification_mutation_eligible"] is False
+    assert evidence["vertex_certification_mutation_eligible"] is True
+    assert (
+        evidence["vertex_certification_mutation_evidence_basis"]
+        == "provider_grounding_with_admitted_provenance"
+    )
     assert evidence["vertex_certification_reference_failure_count"] == 2
 
 
