@@ -188,6 +188,28 @@ def test_only_public_https_candidates_are_opened() -> None:
     assert evidence["vertex_certification_mutation_eligible"] is True
 
 
+def test_non_web_only_citations_are_not_treated_as_public_reference_failures() -> None:
+    namespace = _research_namespace()
+    _CitationViewFactory.citations = (
+        _citation("doi:10.1234/example", "doi"),
+        _citation("urn:example:record:1", "urn"),
+    )
+    inputs = _ResearchInputs()
+
+    evidence, _text, citations = namespace["_run_vertex_certification_research"](
+        inputs,
+        _Memory(),
+    )
+
+    assert citations == ()
+    assert inputs.reference_calls == []
+    assert evidence["vertex_certification_web_reference_candidate_count"] == 0
+    assert evidence["vertex_certification_non_web_reference_count"] == 2
+    assert evidence["vertex_certification_reference_status"] == "not_applicable"
+    assert evidence["vertex_certification_reference_failure_count"] == 0
+    assert evidence["vertex_certification_mutation_eligible"] is False
+
+
 def test_blocked_or_unreachable_urls_degrade_without_aborting_research() -> None:
     namespace = _research_namespace()
     first = "https://first.example.test/evidence"
@@ -380,7 +402,7 @@ def test_fresh_verification_still_proves_governed_state_when_urls_are_unreachabl
         {},
     )
 
-    assert result["dynamic_skill_fresh_certification_verified"] is True
+    assert result["dynamic_skill_fresh_certification_verified"] is False
     assert result["dynamic_skill_governed_state_verified"] is True
     assert result["dynamic_skill_history_latest_change_verified"] is True
     assert result["dynamic_skill_history_target_index_verified"] is True
