@@ -156,6 +156,8 @@ def _research_namespace() -> dict[str, object]:
             "_resolve_agent_result",
             "_vertex_format_instructions",
             "_validate_vertex_response_format",
+            "_reference_locator_kind",
+            "_reference_locator_kind",
             "_is_public_https_reference_candidate",
             "_is_degradable_public_reference_error",
             "_partition_vertex_reference_candidates",
@@ -183,7 +185,8 @@ def test_only_public_https_candidates_are_opened() -> None:
         "https://example.test/evidence",
     )
     assert evidence["vertex_certification_web_reference_candidate_count"] == 1
-    assert evidence["vertex_certification_non_web_reference_count"] == 2
+    assert evidence["vertex_certification_non_web_reference_count"] == 1
+    assert evidence["vertex_certification_unsupported_web_reference_count"] == 1
     assert evidence["vertex_certification_reference_status"] == "verified"
     assert evidence["vertex_certification_mutation_eligible"] is True
 
@@ -205,6 +208,7 @@ def test_non_web_only_citations_are_not_treated_as_public_reference_failures() -
     assert inputs.reference_calls == []
     assert evidence["vertex_certification_web_reference_candidate_count"] == 0
     assert evidence["vertex_certification_non_web_reference_count"] == 2
+    assert evidence["vertex_certification_unsupported_web_reference_count"] == 0
     assert evidence["vertex_certification_reference_status"] == "not_applicable"
     assert evidence["vertex_certification_reference_failure_count"] == 0
     assert evidence["vertex_certification_mutation_eligible"] is False
@@ -410,5 +414,6 @@ def test_fresh_verification_still_proves_governed_state_when_urls_are_unreachabl
     assert result["dynamic_skill_reference_revalidation_complete"] is False
     assert result["dynamic_skill_web_reference_candidate_count"] == 1
     assert result["dynamic_skill_non_web_reference_count"] == 1
+    assert result["dynamic_skill_unsupported_web_reference_count"] == 0
     assert result["dynamic_skill_reference_revalidation_attempt_count"] == 1
     assert result["dynamic_skill_revalidated_reference_count"] == 0
