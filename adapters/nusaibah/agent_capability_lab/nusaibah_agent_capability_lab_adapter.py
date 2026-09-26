@@ -74,6 +74,16 @@ OPENFDA_CAPABILITY = "openfda.application.lookup"
 # into either the governed Agent or callable-asset invocation path.
 MAX_APPLICATION_NUMBER_LENGTH = 128
 
+# Governed Google Healthcare NLP provider-runtime tool. The adapter owns only
+# the logical role and bounded semantic input; Core/Assets own credentials,
+# provider endpoint material, authorization slots, and transport.
+HEALTHCARE_NLP_TOOL_ROLE = "healthcare_nlp"
+HEALTHCARE_NLP_CAPABILITY = "healthcare.nlp.analyze_entities"
+MAX_HEALTHCARE_TEXT_CHARS = 12000
+DEFAULT_HEALTHCARE_TEXT = (
+    "Synthetic test note: patient takes aspirin and metformin for type 2 diabetes."
+)
+
 
 ALLOWED_PROOF_STAGES = {
     "scaffold",
@@ -83,6 +93,8 @@ ALLOWED_PROOF_STAGES = {
     "vertex_grounded_citation",
     "vertex_dynamic_skill_certify",
     "vertex_dynamic_skill_verify",
+    "healthcare_nlp_entities",
+    "vertex_healthcare_nlp_entities",
 }
 
 
@@ -754,6 +766,8 @@ def _partition_vertex_reference_candidates(
 def _run_vertex_certification_research(
     inputs: Any,
     memory: Any,
+    *,
+    supplemental_context: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any], str, tuple[Any, ...]]:
     """Run grounded Vertex research and independently inspect eligible web citations."""
 
@@ -761,21 +775,25 @@ def _run_vertex_certification_research(
     if not callable(invoke_agent):
         raise RuntimeError("Trusted agent invocation is not available in this runtime.")
 
+    agent_input: dict[str, Any] = {
+        "company_id": CANONICAL_COMPANY_ID,
+        "company_name": CANONICAL_COMPANY_NAME,
+        "company_memory_context": memory.read(),
+        "task": (
+            "Research current public information about Tabuk Pharmaceuticals. "
+            "Use provider grounding and return a concise factual update suitable "
+            "for refreshing governed company memory. Prefer primary or authoritative "
+            "public sources and preserve evidence-backed statements. "
+            "Follow the supplied format_instructions exactly."
+        ),
+        "format_instructions": _vertex_format_instructions(),
+    }
+    if supplemental_context is not None:
+        agent_input["supplemental_context"] = dict(supplemental_context)
+
     envelope = invoke_agent(
         VERTEX_GROUNDED_AGENT_ROLE,
-        input={
-            "company_id": CANONICAL_COMPANY_ID,
-            "company_name": CANONICAL_COMPANY_NAME,
-            "company_memory_context": memory.read(),
-            "task": (
-                "Research current public information about Tabuk Pharmaceuticals. "
-                "Use provider grounding and return a concise factual update suitable "
-                "for refreshing governed company memory. Prefer primary or authoritative "
-                "public sources and preserve evidence-backed statements. "
-                "Follow the supplied format_instructions exactly."
-            ),
-            "format_instructions": _vertex_format_instructions(),
-        },
+        input=agent_input,
     )
     if not isinstance(envelope, dict):
         raise RuntimeError("Trusted grounded agent invocation returned an invalid envelope.")
@@ -1419,6 +1437,154 @@ def _run_callable_api_lookup(
     }
 
 
+def _resolve_healthcare_text(variables: dict[str, Any]) -> str:
+    """Return bounded synthetic-or-caller-provided text for the NLP proof."""
+
+    value = variables.get("healthcare_text", DEFAULT_HEALTHCARE_TEXT)
+    if not isinstance(value, str):
+        raise ValueError("variables.healthcare_text must be a string when provided.")
+    text = value.strip()
+    if not text:
+        raise ValueError("variables.healthcare_text must not be empty.")
+    if len(text) > MAX_HEALTHCARE_TEXT_CHARS:
+        raise ValueError(
+            f"variables.healthcare_text must not exceed {MAX_HEALTHCARE_TEXT_CHARS} characters."
+        )
+    return text
+
+
+def _summarize_healthcare_entity_record(record: Any) -> dict[str, Any]:
+    """Project bounded entity-shape evidence without returning clinical text."""
+
+    if not isinstance(record, dict):
+        raise RuntimeError("Healthcare NLP returned an invalid record.")
+
+    mentions = record.get("entityMentions")
+    entities = record.get("entities")
+    relationships = record.get("relationships")
+    fhir_bundle = record.get("fhirBundle")
+
+    if not isinstance(mentions, list):
+        raise RuntimeError("Healthcare NLP entityMentions must be a list.")
+    if not isinstance(entities, list):
+        raise RuntimeError("Healthcare NLP entities must be a list.")
+    if not isinstance(relationships, list):
+        raise RuntimeError("Healthcare NLP relationships must be a list.")
+    if fhir_bundle is not None and not isinstance(fhir_bundle, dict):
+        raise RuntimeError("Healthcare NLP fhirBundle must be an object when present.")
+
+    mention_text_present_count = sum(
+        1
+        for item in mentions
+        if isinstance(item, dict)
+        and isinstance(item.get("text"), dict)
+        and isinstance(item["text"].get("content"), str)
+        and bool(item["text"]["content"].strip())
+    )
+    entity_id_present_count = sum(
+        1
+        for item in entities
+        if isinstance(item, dict)
+        and isinstance(item.get("entityId"), str)
+        and bool(item["entityId"].strip())
+    )
+
+    return {
+        "healthcare_nlp_entity_shape_verified": True,
+        "healthcare_nlp_entity_mention_count": len(mentions),
+        "healthcare_nlp_entity_count": len(entities),
+        "healthcare_nlp_relationship_count": len(relationships),
+        "healthcare_nlp_mention_text_present_count": mention_text_present_count,
+        "healthcare_nlp_entity_id_present_count": entity_id_present_count,
+        "healthcare_nlp_fhir_bundle_present": bool(fhir_bundle),
+    }
+
+
+def _run_healthcare_nlp_entities(
+    inputs: Any,
+    variables: dict[str, Any],
+) -> dict[str, Any]:
+    """Invoke the governed Healthcare NLP entity analyzer and return safe evidence."""
+
+    invoke_tool = getattr(inputs, "invoke_tool", None)
+    if not callable(invoke_tool):
+        raise RuntimeError("Trusted runtime tool invocation is not available in this runtime.")
+
+    text = _resolve_healthcare_text(variables)
+    envelope = invoke_tool(
+        HEALTHCARE_NLP_TOOL_ROLE,
+        input={"body": {"documentContent": text}},
+        on_error="raise",
+    )
+    if not isinstance(envelope, dict) or envelope.get("status") != "completed":
+        raise RuntimeError("Healthcare NLP tool invocation did not complete.")
+    if envelope.get("capability_ref") != HEALTHCARE_NLP_CAPABILITY:
+        raise RuntimeError("Healthcare NLP returned unexpected capability provenance.")
+
+    provenance = envelope.get("provenance")
+    if (
+        not isinstance(provenance, dict)
+        or provenance.get("runtime_mcp_tool") is not True
+        or provenance.get("role") != HEALTHCARE_NLP_TOOL_ROLE
+    ):
+        raise RuntimeError("Healthcare NLP runtime provenance is invalid.")
+
+    records = envelope.get("records")
+    if not isinstance(records, list) or len(records) != 1:
+        raise RuntimeError("Healthcare NLP proof requires exactly one response record.")
+
+    evidence = {
+        "healthcare_nlp_status": "completed",
+        "healthcare_nlp_capability": HEALTHCARE_NLP_CAPABILITY,
+        "healthcare_nlp_role": HEALTHCARE_NLP_TOOL_ROLE,
+        "healthcare_nlp_runtime_provenance_verified": True,
+        "healthcare_nlp_record_count": 1,
+        "healthcare_nlp_input_char_count": len(text),
+    }
+    evidence.update(_summarize_healthcare_entity_record(records[0]))
+    return evidence
+
+
+def _run_vertex_healthcare_nlp_entities(
+    inputs: Any,
+    variables: dict[str, Any],
+) -> dict[str, Any]:
+    """Prove Vertex grounding and Healthcare NLP entity analysis in one adapter run."""
+
+    healthcare_evidence = _run_healthcare_nlp_entities(inputs, variables)
+    memory = _canonical_company_memory(inputs)
+    supplemental = {
+        "healthcare_nlp": {
+            "entity_mention_count": healthcare_evidence[
+                "healthcare_nlp_entity_mention_count"
+            ],
+            "entity_count": healthcare_evidence["healthcare_nlp_entity_count"],
+            "relationship_count": healthcare_evidence[
+                "healthcare_nlp_relationship_count"
+            ],
+            "fhir_bundle_present": healthcare_evidence[
+                "healthcare_nlp_fhir_bundle_present"
+            ],
+        }
+    }
+    vertex_evidence, _research_text, citations = _run_vertex_certification_research(
+        inputs,
+        memory,
+        supplemental_context=supplemental,
+    )
+
+    evidence = dict(healthcare_evidence)
+    evidence.update(vertex_evidence)
+    evidence.update(
+        {
+            "vertex_healthcare_nlp_combined_verified": True,
+            "vertex_healthcare_nlp_provenance_citation_count": len(citations),
+            "vertex_healthcare_nlp_raw_clinical_text_forwarded": False,
+        }
+    )
+    return evidence
+
+
 def _read_fixed_skill(inputs: Any) -> dict[str, Any]:
     """Read and inspect the manifest-pinned Fixed Skill without executing it.
 
@@ -1463,7 +1629,7 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.agent_capability_lab"
-    version: ClassVar[str] = "0.1.16"
+    version: ClassVar[str] = "0.1.17"
 
     def invoke(
         self,
@@ -1568,6 +1734,20 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
                 _verify_vertex_dynamic_skill_certification(inputs, variables)
             )
 
+        elif proof_stage == "healthcare_nlp_entities":
+            capability_result.update(
+                _run_healthcare_nlp_entities(inputs, variables)
+            )
+
+        elif proof_stage == "vertex_healthcare_nlp_entities":
+            if validated_plan.company_id != int(CANONICAL_COMPANY_ID):
+                raise ValueError(
+                    "vertex_healthcare_nlp_entities requires execution_plan.company_id=13."
+                )
+            capability_result.update(
+                _run_vertex_healthcare_nlp_entities(inputs, variables)
+            )
+
         return {
             "response_version": "1",
             "status": "success",
@@ -1606,6 +1786,14 @@ class NusaibahAgentCapabilityLabAdapter(Adapter):
                     if proof_stage in {
                         "vertex_grounded_dynamic_skill",
                         "vertex_dynamic_skill_certify",
+                    }
+                    else 0
+                ),
+                "logical_runtime_tool_invocations": (
+                    1
+                    if proof_stage in {
+                        "healthcare_nlp_entities",
+                        "vertex_healthcare_nlp_entities",
                     }
                     else 0
                 ),

@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.agent_capability_lab",
-  "default": "0.1.16",
+  "default": "0.1.17",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -14,7 +14,7 @@
     "default_substrate": "local_worker"
   },
   "versions": {
-    "0.1.16": {
+    "0.1.17": {
       "state": "active",
       "inputs": {
         "companies": {
@@ -213,6 +213,22 @@
         ],
         "default_substrate": "local_worker",
         "timeout_seconds": 600
+      },
+      "runtime_tools": {
+        "healthcare_nlp": {
+          "tool_handle": "@healthcare_nlp",
+          "tool_server_ref": "provider.google.healthcare_nlp",
+          "capability_ref": "healthcare.nlp.analyze_entities",
+          "consumer_type": "agent_runtime",
+          "consumer_ref": "agent-capability-lab-healthcare-nlp",
+          "allowed_api_handles": [
+            "@healthcare_nlp"
+          ],
+          "operation": "invoke",
+          "execution_mode": "enforced",
+          "cache": false,
+          "on_error": "raise"
+        }
       }
     }
   }
