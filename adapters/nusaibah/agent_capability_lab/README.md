@@ -73,3 +73,14 @@ not misdiagnosed as a transport or inference failure.
 Verify the exact adapter root with the selected project interpreter, then run the documented
 adapter-intake validation and promotion-plan commands. Keep local readiness, intake readiness,
 packaged importability, remote Agent admission, and live certification as separate proof stages.
+
+## 0.1.17 Healthcare NLP entity proof
+
+Version 0.1.17 adds the governed runtime tool role `healthcare_nlp` for `healthcare.nlp.analyze_entities`. Adapter code calls only `inputs.invoke_tool(...)`; credentials, provider endpoints, authorization slots, and provider transport remain server-owned.
+
+Two proof stages are added:
+
+- `healthcare_nlp_entities`: proves one bounded Healthcare NLP entity-analysis call and emits count/presence/provenance evidence only.
+- `vertex_healthcare_nlp_entities`: proves Healthcare NLP plus grounded Vertex execution in one adapter run, passing only aggregate entity counts to the Vertex context and never forwarding raw clinical text.
+
+This combined stage proves same-run composition of the two primitives. It does **not** claim that Vertex itself initiated the Healthcare NLP tool call; provider-driven tool orchestration remains a separate composition proof.
