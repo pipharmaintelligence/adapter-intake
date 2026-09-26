@@ -1021,7 +1021,8 @@ def _run_vertex_dynamic_skill_certification(
                 "dynamic_skill_real_update_applied": False,
                 "dynamic_skill_mutation_skipped": True,
                 "dynamic_skill_mutation_skip_reason": "public_reference_verification_degraded",
-                "dynamic_skill_fresh_execution_verification_required": True,
+                "dynamic_skill_fresh_execution_verification_required": False,
+                "dynamic_skill_reference_followup_required": True,
             }
         )
         return evidence
