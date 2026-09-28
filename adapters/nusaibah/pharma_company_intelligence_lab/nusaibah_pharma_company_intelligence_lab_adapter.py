@@ -33,7 +33,14 @@ try:
         validate_batch_request,
     )
     from .memory_contract import MEMORY_TARGET_SECTION, MemoryCandidate
-    from .methodology_contract import MethodologyResources, load_methodology
+    from .methodology_contract import (
+        PLANNER_ROLE,
+        PLANNER_SCHEMA_VERSION,
+        MethodologyPlan,
+        MethodologyResources,
+        load_methodology,
+        validate_methodology_plan,
+    )
 except ImportError:  # pragma: no cover - local adapter-root execution path
     from agent_contract import (
         BENCHMARK_SCHEMA_VERSION,
@@ -62,7 +69,14 @@ except ImportError:  # pragma: no cover - local adapter-root execution path
         validate_batch_request,
     )
     from memory_contract import MEMORY_TARGET_SECTION, MemoryCandidate
-    from methodology_contract import MethodologyResources, load_methodology
+    from methodology_contract import (
+        PLANNER_ROLE,
+        PLANNER_SCHEMA_VERSION,
+        MethodologyPlan,
+        MethodologyResources,
+        load_methodology,
+        validate_methodology_plan,
+    )
 
 
 RESEARCH_ROLES = (
@@ -153,7 +167,7 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
             "metrics": {
                 "requested_company_count": len(request.company_ids),
                 "completed_company_count": len(company_results),
-                "logical_agent_invocations": (len(company_results) * 8) + mutation_count,
+                "logical_agent_invocations": (len(company_results) * 9) + mutation_count,
                 "search_enabled_agent_invocations": len(company_results) * 3,
                 "memory_mutations_made": mutation_count,
             },
@@ -203,6 +217,16 @@ def _prepare_company(
         memory_text=memory_text,
         questions=methodology.benchmark_questions,
         stage="before",
+    )
+
+    methodology_plan = _run_methodology_planner(
+        inputs,
+        company_id=company_id,
+        company_name_value=name,
+        baseline=baseline,
+        request=request,
+        methodology=methodology,
+        before_benchmark=before_benchmark,
     )
 
     research = _run_research_fanout(
@@ -313,12 +337,63 @@ def _prepare_company(
         "result": result,
         "before_digest": before_digest,
         "before_benchmark": before_benchmark,
+        "methodology_plan": methodology_plan,
         "projected_after_benchmark": after_benchmark,
         "benchmark_questions": methodology.benchmark_questions,
         "memory_candidate": candidate,
         "citations": citations,
         "memory_mutation_eligible": mutation_eligible,
     }
+
+
+
+def _run_methodology_planner(
+    inputs: Any,
+    *,
+    company_id: int,
+    company_name_value: str,
+    baseline: dict[str, Any],
+    request: BatchRequest,
+    methodology: MethodologyResources,
+    before_benchmark: dict[str, Any],
+) -> MethodologyPlan:
+    """Create and validate one company-scoped adaptive methodology plan."""
+    envelope = inputs.invoke_agent(
+        PLANNER_ROLE,
+        input={
+            "company_id": company_id,
+            "company_name": company_name_value,
+            "objective": request.objective,
+            "research_depth": request.research_depth,
+            "methodology_packet": methodology.planner_packet.to_agent_input(),
+            "governed_company_baseline": baseline,
+            "memory_benchmark": before_benchmark,
+            "canonical_sections": [
+                {
+                    "section_id": section.section_id,
+                    "title": section.title,
+                }
+                for section in CANONICAL_SECTIONS
+            ],
+            "research_role_sections": {
+                role: list(RESEARCH_ROLE_SECTIONS[role])
+                for role in RESEARCH_ROLES
+            },
+            "allowed_research_roles": list(RESEARCH_ROLES),
+            "response_contract": {
+                "schema_version": PLANNER_SCHEMA_VERSION,
+                "role": PLANNER_ROLE,
+            },
+        },
+        on_error="raise",
+    )
+    value, _ = extract_agent_json(
+        envelope,
+        expected_role=PLANNER_ROLE,
+        company_id=company_id,
+        expected_schema_version=PLANNER_SCHEMA_VERSION,
+    )
+    return validate_methodology_plan(value, company_id=company_id)
 
 
 def _run_research_fanout(
