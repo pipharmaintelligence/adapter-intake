@@ -1055,14 +1055,6 @@ def _preview_indexed_mutation_helpers(
         "company_id": int(CANONICAL_COMPANY_ID),
         "certification_cycle": certification_cycle,
         "provider": "vertex_ai",
-        "provider_citation_count": len(provenance_citations),
-        "verified_direct_reference_count": len(direct_references),
-        "provider_locator_set_sha256": _citation_locator_set_digest(
-            provenance_citations
-        ),
-        "provider_source_pointer_set_sha256": _source_pointer_set_digest(
-            provenance_citations
-        ),
     }
 
     previews = [
@@ -1163,6 +1155,14 @@ def _run_vertex_dynamic_skill_certification(
         "company_name": CANONICAL_COMPANY_NAME,
         "certification_cycle": certification_cycle,
         "provider": "vertex_ai",
+        "provider_citation_count": len(provenance_citations),
+        "verified_direct_reference_count": len(direct_references),
+        "provider_locator_set_sha256": _citation_locator_set_digest(
+            provenance_citations
+        ),
+        "provider_source_pointer_set_sha256": _source_pointer_set_digest(
+            provenance_citations
+        ),
     }
     research_markdown = _research_evidence_markdown(research_text)
     changes = update.new_indexed_changeset()
