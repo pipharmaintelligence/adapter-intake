@@ -200,7 +200,7 @@ def test_manifest_declares_only_the_reviewed_healthcare_runtime_tool() -> None:
         ADAPTER_PATH.parent / "nusaibah_agent_capability_lab.asset.json"
     )
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    version = manifest["versions"]["0.1.17"]
+    version = manifest["versions"]["0.1.18"]
     tools = version["runtime_tools"]
 
     assert list(tools) == ["healthcare_nlp"]
@@ -211,3 +211,15 @@ def test_manifest_declares_only_the_reviewed_healthcare_runtime_tool() -> None:
     assert tool["consumer_type"] == "agent_runtime"
     assert tool["operation"] == "invoke"
     assert tool["execution_mode"] == "enforced"
+
+
+def test_manifest_and_adapter_identity_match_current_intake_version() -> None:
+    manifest_path = (
+        ADAPTER_PATH.parent / "nusaibah_agent_capability_lab.asset.json"
+    )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    source = ADAPTER_PATH.read_text(encoding="utf-8")
+
+    assert manifest["default"] == "0.1.18"
+    assert list(manifest["versions"]) == ["0.1.18"]
+    assert 'version: ClassVar[str] = "0.1.18"' in source
