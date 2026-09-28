@@ -63,7 +63,7 @@ A checked item proves only the named gate. It does not imply a later stage is re
 
 ## F. Adapter-intake gates
 
-- [ ] `obs-adapter-intake-check --adapter-yaml ...` passes.
+- [x] `obs-adapter-intake-check --adapter-yaml ...` passes.
 - [ ] Repository-wide `obs-adapter-intake-check --root .` passes.
 - [ ] Worktree is clean after commit.
 - [ ] Portable Skill digest is verified from exact committed Git bytes.
