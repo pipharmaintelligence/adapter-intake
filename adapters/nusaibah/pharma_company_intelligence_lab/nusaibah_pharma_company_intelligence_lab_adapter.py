@@ -247,6 +247,7 @@ def _prepare_company(
         baseline=baseline,
         memory_text=memory_text,
         joined_research=joined,
+        methodology_plan=methodology_plan,
     )
     critic = _run_critic(
         inputs,
@@ -254,6 +255,8 @@ def _prepare_company(
         company_name_value=name,
         joined_research=joined,
         strategic=strategic,
+        methodology=methodology,
+        methodology_plan=methodology_plan,
     )
     _require_pre_synthesis_quality(research, critic)
 
@@ -266,6 +269,8 @@ def _prepare_company(
         joined_research=joined,
         strategic=strategic,
         critic=critic,
+        methodology=methodology,
+        methodology_plan=methodology_plan,
     )
 
     claim_ids = {claim["claim_id"] for claim in joined["claims"]}
@@ -491,6 +496,7 @@ def _run_strategic(
     baseline: dict[str, Any],
     memory_text: str,
     joined_research: dict[str, Any],
+    methodology_plan: MethodologyPlan,
 ) -> dict[str, Any]:
     envelope = inputs.invoke_agent(
         STRATEGIC_ROLE,
@@ -499,6 +505,9 @@ def _run_strategic(
             "company_name": company_name_value,
             "governed_company_baseline": baseline,
             "existing_company_memory": memory_text,
+            "methodology_plan": {
+                "cross_cutting_questions": list(methodology_plan.cross_cutting_questions),
+            },
             "research_evidence": _research_for_downstream(joined_research),
             "response_contract": {
                 "schema_version": STRATEGIC_SCHEMA_VERSION,
@@ -523,6 +532,8 @@ def _run_critic(
     company_name_value: str,
     joined_research: dict[str, Any],
     strategic: dict[str, Any],
+    methodology: MethodologyResources,
+    methodology_plan: MethodologyPlan,
 ) -> dict[str, Any]:
     research_section_ids = {
         section_id
@@ -534,6 +545,10 @@ def _run_critic(
         input={
             "company_id": company_id,
             "company_name": company_name_value,
+            "methodology_packet": {
+                "evidence_rules": list(methodology.planner_packet.evidence_rules),
+            },
+            "methodology_plan": methodology_plan.to_agent_input(),
             "research_evidence": _research_for_downstream(joined_research),
             "strategic_analysis": strategic,
             "reviewed_section_ids": sorted(research_section_ids),
@@ -584,6 +599,8 @@ def _run_synthesis(
     joined_research: dict[str, Any],
     strategic: dict[str, Any],
     critic: dict[str, Any],
+    methodology: MethodologyResources,
+    methodology_plan: MethodologyPlan,
 ) -> tuple[dict[str, Any], MemoryCandidate]:
     envelope = inputs.invoke_agent(
         SYNTHESIS_ROLE,
@@ -592,6 +609,10 @@ def _run_synthesis(
             "company_name": company_name_value,
             "governed_company_baseline": baseline,
             "existing_company_memory": memory_text,
+            "methodology_packet": {
+                "memory_rules": list(methodology.planner_packet.memory_rules),
+            },
+            "methodology_plan": methodology_plan.to_agent_input(),
             "research_evidence": _research_for_downstream(joined_research),
             "strategic_analysis": strategic,
             "critic_findings": critic,
