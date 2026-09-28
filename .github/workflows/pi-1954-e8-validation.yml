@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout validation ref
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -75,4 +77,4 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git diff --check HEAD^ HEAD
+          git diff --check ca618729d7b63b83a44cde5cc57de1eef82df0ae...HEAD -- adapters/nusaibah/pharma_company_intelligence_lab
