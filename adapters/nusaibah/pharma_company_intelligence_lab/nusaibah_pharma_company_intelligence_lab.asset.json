@@ -613,7 +613,7 @@
                     }
                   },
                   "input": {
-                    "text": "Critique only the supplied current-company evidence package. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly. Identify unsupported claims, contradictions, stale claims, missing mandatory sections, citation-coverage weaknesses, and residual uncertainty. Give a bounded pass/fail recommendation for synthesis quality; do not authorize memory mutation."
+                    "text": "Critique only the supplied current-company evidence package. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly. Identify unsupported claims, contradictions, stale claims, missing mandatory sections, citation-coverage weaknesses, and residual uncertainty. Evaluate every supplied planner requirement against the evidence and strategic analysis. For any required planner item that is not satisfied, return its exact supplied requirement_id in unmet_plan_requirements with disposition unresolved_evidence when the evidence gap is explicit and retained as uncertainty, or unsatisfied when the required item was not fulfilled. Do not invent requirement IDs. Give a bounded pass/fail recommendation for synthesis quality; do not authorize memory mutation."
                   }
                 }
               ],
