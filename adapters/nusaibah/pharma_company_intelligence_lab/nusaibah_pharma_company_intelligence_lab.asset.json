@@ -1,10 +1,17 @@
 {
   "key": "nusaibah.pharma_company_intelligence_lab",
   "default": "0.1.0",
-  "allowed_surfaces": ["v1_asset_execute"],
-  "allowed_modes": ["balanced"],
+  "allowed_surfaces": [
+    "v1_asset_execute"
+  ],
+  "allowed_modes": [
+    "balanced"
+  ],
   "execution": {
-    "allowed_substrates": ["local_worker", "ecs"],
+    "allowed_substrates": [
+      "local_worker",
+      "ecs"
+    ],
     "default_substrate": "local_worker",
     "timeout_seconds": 1800
   },
@@ -12,11 +19,20 @@
     "0.1.0": {
       "state": "active",
       "inputs": {
-        "companies": {"required": true, "shape": "list"},
-        "variables": {"required": true, "shape": "object"}
+        "companies": {
+          "required": true,
+          "shape": "list"
+        },
+        "variables": {
+          "required": true,
+          "shape": "object"
+        }
       },
       "outputs": {
-        "intelligence_dossier": {"required": true, "shape": "object"}
+        "intelligence_dossier": {
+          "required": true,
+          "shape": "object"
+        }
       },
       "skills": [
         {
@@ -27,16 +43,30 @@
       ],
       "runtime_skills": {
         "company_memory": {
-          "source": {"lake_ref": "googl123", "node_key": "company_memory"},
+          "source": {
+            "lake_ref": "googl123",
+            "node_key": "company_memory"
+          },
           "resolution": "current",
           "mutation": "read_only",
-          "partition": {"company_id": {"from_variable": "company_id"}}
+          "partition": {
+            "company_id": {
+              "from_variable": "company_id"
+            }
+          }
         },
         "company_memory_update": {
-          "source": {"lake_ref": "googl123", "node_key": "company_memory"},
+          "source": {
+            "lake_ref": "googl123",
+            "node_key": "company_memory"
+          },
           "resolution": "current",
           "mutation": "mutable",
-          "partition": {"company_id": {"from_variable": "company_id"}}
+          "partition": {
+            "company_id": {
+              "from_variable": "company_id"
+            }
+          }
         }
       },
       "output_contracts": {
@@ -51,16 +81,642 @@
           "schema": {
             "source": "explicit",
             "fields": [
-              {"name": "schema_version", "type": "string", "required": true},
-              {"name": "status", "type": "string", "required": true},
-              {"name": "requested_company_count", "type": "integer", "required": true},
-              {"name": "completed_company_count", "type": "integer", "required": true},
-              {"name": "failed_company_count", "type": "integer", "required": true},
-              {"name": "company_results", "type": "array", "required": true}
+              {
+                "name": "schema_version",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "status",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "requested_company_count",
+                "type": "integer",
+                "required": true
+              },
+              {
+                "name": "completed_company_count",
+                "type": "integer",
+                "required": true
+              },
+              {
+                "name": "failed_company_count",
+                "type": "integer",
+                "required": true
+              },
+              {
+                "name": "company_results",
+                "type": "array",
+                "required": true
+              }
             ]
           },
           "validation": {
-            "self_inspection": {"enforce": true, "on_fail": "fail"}
+            "self_inspection": {
+              "enforce": true,
+              "on_fail": "fail"
+            }
+          }
+        }
+      },
+      "agents": {
+        "portfolio_researcher": {
+          "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_portfolio_researcher",
+          "contract_version": "1.0.0",
+          "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-portfolio-researcher",
+          "definition": {
+            "registry_entries": [
+              {
+                "handle": "provider:text_generation",
+                "type": "provider_execution",
+                "version": "1.0.0",
+                "visibility": "internal",
+                "status": "active",
+                "capabilities": [
+                  "text_generation"
+                ],
+                "input_schema_version": null,
+                "output_schema_version": null,
+                "runtime": null,
+                "safety_policy": {
+                  "store_prompt": false,
+                  "store_output": false
+                },
+                "provenance_policy": {
+                  "record_step": true
+                },
+                "access_policy": null,
+                "metadata": {
+                  "provisioning_source": "pi_1951_pharma_company_intelligence_lab"
+                }
+              }
+            ],
+            "chain": {
+              "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_portfolio_researcher",
+              "version": "1.0.0",
+              "visibility": "internal",
+              "status": "active",
+              "steps": [
+                {
+                  "step_handle": "provider:text_generation",
+                  "required_capability": "text_generation",
+                  "provider": "vertex_ai",
+                  "provider_policy": {
+                    "provider": "vertex_ai",
+                    "model": "gemini-3.8-flash",
+                    "provider_vault": {
+                      "provider_instance_ref": "vertex-primary",
+                      "provider_family": "vertex_ai",
+                      "capability_ref": "llm.generate",
+                      "binding_id": "9ce2bed4-fae6-4147-82ee-cdc4dea300a8",
+                      "execution_project_id": "laravelai-490700",
+                      "execution_location": "global",
+                      "policy_flags": {
+                        "mode": "read_only"
+                      }
+                    },
+                    "generation_policy": {
+                      "max_tokens": 4096,
+                      "thinking_level": "medium",
+                      "response_format": "json_object"
+                    },
+                    "search_enabled": true,
+                    "search_mode": "provider_grounding",
+                    "citation_policy": "refs_only"
+                  },
+                  "input": {
+                    "text": "Research only the current company. Cover the requested portfolio-related section and subsection IDs using grounded public evidence. Return one JSON object only. Preserve the supplied company_id exactly. Do not invent titles, section IDs, citations, products, partnerships, dates, or facts. Distinguish observed evidence from inference and surface uncertainty. Do not discuss or compare any other company."
+                  }
+                }
+              ],
+              "budget_policy": {
+                "max_tool_calls": 0,
+                "max_provider_calls": 1
+              },
+              "safety_policy": {
+                "store_prompt": false,
+                "store_output": false
+              },
+              "provenance_policy": {
+                "record_step": true
+              },
+              "access_policy": null,
+              "metadata": {
+                "provisioning_source": "pi_1951_pharma_company_intelligence_lab"
+              }
+            }
+          }
+        },
+        "market_researcher": {
+          "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_market_researcher",
+          "contract_version": "1.0.0",
+          "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-market-researcher",
+          "definition": {
+            "registry_entries": [
+              {
+                "handle": "provider:text_generation",
+                "type": "provider_execution",
+                "version": "1.0.0",
+                "visibility": "internal",
+                "status": "active",
+                "capabilities": [
+                  "text_generation"
+                ],
+                "input_schema_version": null,
+                "output_schema_version": null,
+                "runtime": null,
+                "safety_policy": {
+                  "store_prompt": false,
+                  "store_output": false
+                },
+                "provenance_policy": {
+                  "record_step": true
+                },
+                "access_policy": null,
+                "metadata": {
+                  "provisioning_source": "pi_1951_pharma_company_intelligence_lab"
+                }
+              }
+            ],
+            "chain": {
+              "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_market_researcher",
+              "version": "1.0.0",
+              "visibility": "internal",
+              "status": "active",
+              "steps": [
+                {
+                  "step_handle": "provider:text_generation",
+                  "required_capability": "text_generation",
+                  "provider": "vertex_ai",
+                  "provider_policy": {
+                    "provider": "vertex_ai",
+                    "model": "gemini-3.8-flash",
+                    "provider_vault": {
+                      "provider_instance_ref": "vertex-primary",
+                      "provider_family": "vertex_ai",
+                      "capability_ref": "llm.generate",
+                      "binding_id": "9ce2bed4-fae6-4147-82ee-cdc4dea300a8",
+                      "execution_project_id": "laravelai-490700",
+                      "execution_location": "global",
+                      "policy_flags": {
+                        "mode": "read_only"
+                      }
+                    },
+                    "generation_policy": {
+                      "max_tokens": 4096,
+                      "thinking_level": "medium",
+                      "response_format": "json_object"
+                    },
+                    "search_enabled": true,
+                    "search_mode": "provider_grounding",
+                    "citation_policy": "refs_only"
+                  },
+                  "input": {
+                    "text": "Research only the current company. Cover the requested market, geography, distribution, launch, and commercial section IDs using grounded public evidence. Return one JSON object only. Preserve the supplied company_id exactly. Do not invent titles, section IDs, citations, dates, markets, launches, or partnerships. Distinguish observed evidence from inference and surface uncertainty. Do not discuss or compare any other company."
+                  }
+                }
+              ],
+              "budget_policy": {
+                "max_tool_calls": 0,
+                "max_provider_calls": 1
+              },
+              "safety_policy": {
+                "store_prompt": false,
+                "store_output": false
+              },
+              "provenance_policy": {
+                "record_step": true
+              },
+              "access_policy": null,
+              "metadata": {
+                "provisioning_source": "pi_1951_pharma_company_intelligence_lab"
+              }
+            }
+          }
+        },
+        "regulatory_risk_researcher": {
+          "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_regulatory_risk_researcher",
+          "contract_version": "1.0.0",
+          "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-regulatory-risk-researcher",
+          "definition": {
+            "registry_entries": [
+              {
+                "handle": "provider:text_generation",
+                "type": "provider_execution",
+                "version": "1.0.0",
+                "visibility": "internal",
+                "status": "active",
+                "capabilities": [
+                  "text_generation"
+                ],
+                "input_schema_version": null,
+                "output_schema_version": null,
+                "runtime": null,
+                "safety_policy": {
+                  "store_prompt": false,
+                  "store_output": false
+                },
+                "provenance_policy": {
+                  "record_step": true
+                },
+                "access_policy": null,
+                "metadata": {
+                  "provisioning_source": "pi_1951_pharma_company_intelligence_lab"
+                }
+              }
+            ],
+            "chain": {
+              "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_regulatory_risk_researcher",
+              "version": "1.0.0",
+              "visibility": "internal",
+              "status": "active",
+              "steps": [
+                {
+                  "step_handle": "provider:text_generation",
+                  "required_capability": "text_generation",
+                  "provider": "vertex_ai",
+                  "provider_policy": {
+                    "provider": "vertex_ai",
+                    "model": "gemini-3.8-flash",
+                    "provider_vault": {
+                      "provider_instance_ref": "vertex-primary",
+                      "provider_family": "vertex_ai",
+                      "capability_ref": "llm.generate",
+                      "binding_id": "9ce2bed4-fae6-4147-82ee-cdc4dea300a8",
+                      "execution_project_id": "laravelai-490700",
+                      "execution_location": "global",
+                      "policy_flags": {
+                        "mode": "read_only"
+                      }
+                    },
+                    "generation_policy": {
+                      "max_tokens": 6144,
+                      "thinking_level": "high",
+                      "response_format": "json_object"
+                    },
+                    "search_enabled": true,
+                    "search_mode": "provider_grounding",
+                    "citation_policy": "refs_only"
+                  },
+                  "input": {
+                    "text": "Research only the current company. Cover the requested regulatory, clinical, safety, manufacturing-quality, and uncertainty section IDs using grounded public evidence. Return one JSON object only. Preserve the supplied company_id exactly. Do not invent titles, section IDs, citations, approvals, clinical evidence, safety events, quality findings, or dates. Distinguish observed evidence from inference and explicitly retain unresolved uncertainty. Do not discuss or compare any other company."
+                  }
+                }
+              ],
+              "budget_policy": {
+                "max_tool_calls": 0,
+                "max_provider_calls": 1
+              },
+              "safety_policy": {
+                "store_prompt": false,
+                "store_output": false
+              },
+              "provenance_policy": {
+                "record_step": true
+              },
+              "access_policy": null,
+              "metadata": {
+                "provisioning_source": "pi_1951_pharma_company_intelligence_lab"
+              }
+            }
+          }
+        },
+        "strategic_analyst": {
+          "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_strategic_analyst",
+          "contract_version": "1.0.0",
+          "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-strategic-analyst",
+          "definition": {
+            "registry_entries": [
+              {
+                "handle": "provider:text_generation",
+                "type": "provider_execution",
+                "version": "1.0.0",
+                "visibility": "internal",
+                "status": "active",
+                "capabilities": [
+                  "text_generation"
+                ],
+                "input_schema_version": null,
+                "output_schema_version": null,
+                "runtime": null,
+                "safety_policy": {
+                  "store_prompt": false,
+                  "store_output": false
+                },
+                "provenance_policy": {
+                  "record_step": true
+                },
+                "access_policy": null,
+                "metadata": {
+                  "provisioning_source": "pi_1951_pharma_company_intelligence_lab"
+                }
+              }
+            ],
+            "chain": {
+              "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_strategic_analyst",
+              "version": "1.0.0",
+              "visibility": "internal",
+              "status": "active",
+              "steps": [
+                {
+                  "step_handle": "provider:text_generation",
+                  "required_capability": "text_generation",
+                  "provider": "vertex_ai",
+                  "provider_policy": {
+                    "provider": "vertex_ai",
+                    "model": "gemini-3.1-pro-preview",
+                    "provider_vault": {
+                      "provider_instance_ref": "vertex-primary",
+                      "provider_family": "vertex_ai",
+                      "capability_ref": "llm.generate",
+                      "binding_id": "9ce2bed4-fae6-4147-82ee-cdc4dea300a8",
+                      "execution_project_id": "laravelai-490700",
+                      "execution_location": "global",
+                      "policy_flags": {
+                        "mode": "read_only"
+                      }
+                    },
+                    "generation_policy": {
+                      "max_tokens": 6144,
+                      "thinking_level": "high",
+                      "response_format": "json_object"
+                    }
+                  },
+                  "input": {
+                    "text": "Analyze only the supplied current-company governed baseline and joined research evidence. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly. Produce bounded strategic implications, opportunities, risks, and internal-versus-public deltas, each traceable to supplied evidence. Mark inference explicitly and keep uncertainty visible. Do not compare this company with another company."
+                  }
+                }
+              ],
+              "budget_policy": {
+                "max_tool_calls": 0,
+                "max_provider_calls": 1
+              },
+              "safety_policy": {
+                "store_prompt": false,
+                "store_output": false
+              },
+              "provenance_policy": {
+                "record_step": true
+              },
+              "access_policy": null,
+              "metadata": {
+                "provisioning_source": "pi_1951_pharma_company_intelligence_lab"
+              }
+            }
+          }
+        },
+        "evidence_critic": {
+          "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_evidence_critic",
+          "contract_version": "1.0.0",
+          "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-evidence-critic",
+          "definition": {
+            "registry_entries": [
+              {
+                "handle": "provider:text_generation",
+                "type": "provider_execution",
+                "version": "1.0.0",
+                "visibility": "internal",
+                "status": "active",
+                "capabilities": [
+                  "text_generation"
+                ],
+                "input_schema_version": null,
+                "output_schema_version": null,
+                "runtime": null,
+                "safety_policy": {
+                  "store_prompt": false,
+                  "store_output": false
+                },
+                "provenance_policy": {
+                  "record_step": true
+                },
+                "access_policy": null,
+                "metadata": {
+                  "provisioning_source": "pi_1951_pharma_company_intelligence_lab"
+                }
+              }
+            ],
+            "chain": {
+              "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_evidence_critic",
+              "version": "1.0.0",
+              "visibility": "internal",
+              "status": "active",
+              "steps": [
+                {
+                  "step_handle": "provider:text_generation",
+                  "required_capability": "text_generation",
+                  "provider": "vertex_ai",
+                  "provider_policy": {
+                    "provider": "vertex_ai",
+                    "model": "gemini-3.1-pro-preview",
+                    "provider_vault": {
+                      "provider_instance_ref": "vertex-primary",
+                      "provider_family": "vertex_ai",
+                      "capability_ref": "llm.generate",
+                      "binding_id": "9ce2bed4-fae6-4147-82ee-cdc4dea300a8",
+                      "execution_project_id": "laravelai-490700",
+                      "execution_location": "global",
+                      "policy_flags": {
+                        "mode": "read_only"
+                      }
+                    },
+                    "generation_policy": {
+                      "max_tokens": 6144,
+                      "thinking_level": "high",
+                      "response_format": "json_object"
+                    }
+                  },
+                  "input": {
+                    "text": "Critique only the supplied current-company evidence package. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly. Identify unsupported claims, contradictions, stale claims, missing mandatory sections, citation-coverage weaknesses, and residual uncertainty. Give a bounded pass/fail recommendation for synthesis quality; do not authorize memory mutation."
+                  }
+                }
+              ],
+              "budget_policy": {
+                "max_tool_calls": 0,
+                "max_provider_calls": 1
+              },
+              "safety_policy": {
+                "store_prompt": false,
+                "store_output": false
+              },
+              "provenance_policy": {
+                "record_step": true
+              },
+              "access_policy": null,
+              "metadata": {
+                "provisioning_source": "pi_1951_pharma_company_intelligence_lab"
+              }
+            }
+          }
+        },
+        "intelligence_synthesizer": {
+          "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_intelligence_synthesizer",
+          "contract_version": "1.0.0",
+          "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-intelligence-synthesizer",
+          "definition": {
+            "registry_entries": [
+              {
+                "handle": "provider:text_generation",
+                "type": "provider_execution",
+                "version": "1.0.0",
+                "visibility": "internal",
+                "status": "active",
+                "capabilities": [
+                  "text_generation"
+                ],
+                "input_schema_version": null,
+                "output_schema_version": null,
+                "runtime": null,
+                "safety_policy": {
+                  "store_prompt": false,
+                  "store_output": false
+                },
+                "provenance_policy": {
+                  "record_step": true
+                },
+                "access_policy": null,
+                "metadata": {
+                  "provisioning_source": "pi_1951_pharma_company_intelligence_lab"
+                }
+              }
+            ],
+            "chain": {
+              "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_intelligence_synthesizer",
+              "version": "1.0.0",
+              "visibility": "internal",
+              "status": "active",
+              "steps": [
+                {
+                  "step_handle": "provider:text_generation",
+                  "required_capability": "text_generation",
+                  "provider": "vertex_ai",
+                  "provider_policy": {
+                    "provider": "vertex_ai",
+                    "model": "gemini-3.8-flash",
+                    "provider_vault": {
+                      "provider_instance_ref": "vertex-primary",
+                      "provider_family": "vertex_ai",
+                      "capability_ref": "llm.generate",
+                      "binding_id": "9ce2bed4-fae6-4147-82ee-cdc4dea300a8",
+                      "execution_project_id": "laravelai-490700",
+                      "execution_location": "global",
+                      "policy_flags": {
+                        "mode": "read_only"
+                      }
+                    },
+                    "generation_policy": {
+                      "max_tokens": 8192,
+                      "thinking_level": "high",
+                      "response_format": "json_object"
+                    }
+                  },
+                  "input": {
+                    "text": "Synthesize only the supplied current-company governed baseline, validated research, strategic analysis, and critic findings. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly and use only the supplied canonical section_id and subsection_id values. Do not author or rename display titles. Produce complete dossier content plus a bounded evidence-backed memory candidate and residual uncertainties."
+                  }
+                }
+              ],
+              "budget_policy": {
+                "max_tool_calls": 0,
+                "max_provider_calls": 1
+              },
+              "safety_policy": {
+                "store_prompt": false,
+                "store_output": false
+              },
+              "provenance_policy": {
+                "record_step": true
+              },
+              "access_policy": null,
+              "metadata": {
+                "provisioning_source": "pi_1951_pharma_company_intelligence_lab"
+              }
+            }
+          }
+        },
+        "memory_benchmark_reviewer": {
+          "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_memory_benchmark_reviewer",
+          "contract_version": "1.0.0",
+          "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-memory-benchmark-reviewer",
+          "definition": {
+            "registry_entries": [
+              {
+                "handle": "provider:text_generation",
+                "type": "provider_execution",
+                "version": "1.0.0",
+                "visibility": "internal",
+                "status": "active",
+                "capabilities": [
+                  "text_generation"
+                ],
+                "input_schema_version": null,
+                "output_schema_version": null,
+                "runtime": null,
+                "safety_policy": {
+                  "store_prompt": false,
+                  "store_output": false
+                },
+                "provenance_policy": {
+                  "record_step": true
+                },
+                "access_policy": null,
+                "metadata": {
+                  "provisioning_source": "pi_1951_pharma_company_intelligence_lab"
+                }
+              }
+            ],
+            "chain": {
+              "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_memory_benchmark_reviewer",
+              "version": "1.0.0",
+              "visibility": "internal",
+              "status": "active",
+              "steps": [
+                {
+                  "step_handle": "provider:text_generation",
+                  "required_capability": "text_generation",
+                  "provider": "vertex_ai",
+                  "provider_policy": {
+                    "provider": "vertex_ai",
+                    "model": "gemini-3.8-flash",
+                    "provider_vault": {
+                      "provider_instance_ref": "vertex-primary",
+                      "provider_family": "vertex_ai",
+                      "capability_ref": "llm.generate",
+                      "binding_id": "9ce2bed4-fae6-4147-82ee-cdc4dea300a8",
+                      "execution_project_id": "laravelai-490700",
+                      "execution_location": "global",
+                      "policy_flags": {
+                        "mode": "read_only"
+                      }
+                    },
+                    "generation_policy": {
+                      "max_tokens": 4096,
+                      "thinking_level": "medium",
+                      "response_format": "json_object"
+                    }
+                  },
+                  "input": {
+                    "text": "Evaluate only the supplied current-company memory against the supplied fixed benchmark questions. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly. For each benchmark question report covered, partially_covered, or not_covered with a concise evidence basis from the supplied memory. Do not propose facts that are absent from memory."
+                  }
+                }
+              ],
+              "budget_policy": {
+                "max_tool_calls": 0,
+                "max_provider_calls": 1
+              },
+              "safety_policy": {
+                "store_prompt": false,
+                "store_output": false
+              },
+              "provenance_policy": {
+                "record_step": true
+              },
+              "access_policy": null,
+              "metadata": {
+                "provisioning_source": "pi_1951_pharma_company_intelligence_lab"
+              }
+            }
           }
         }
       }
