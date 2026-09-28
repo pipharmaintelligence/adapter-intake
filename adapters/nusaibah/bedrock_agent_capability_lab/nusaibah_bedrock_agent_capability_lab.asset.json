@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.bedrock_agent_capability_lab",
-  "default": "0.1.0",
+  "default": "0.1.2",
   "allowed_surfaces": ["v1_asset_execute"],
   "allowed_modes": ["balanced"],
   "execution": {
@@ -8,7 +8,7 @@
     "default_substrate": "local_worker"
   },
   "versions": {
-    "0.1.0": {
+    "0.1.2": {
       "state": "active",
       "inputs": {
         "companies": {"required": true, "shape": "list"}
@@ -86,7 +86,7 @@
                 "provenance_policy": {"record_step": true},
                 "access_policy": null,
                 "metadata": {
-                  "provisioning_source": "pi_1957_bedrock_capability_lab_0_1_0"
+                  "provisioning_source": "pi_1895_capability_lab"
                 }
               }
             ],
@@ -121,7 +121,7 @@
               "provenance_policy": {"record_step": true},
               "access_policy": null,
               "metadata": {
-                "provisioning_source": "pi_1957_bedrock_capability_lab_0_1_0"
+                "provisioning_source": "pi_1957_bedrock_capability_lab_0_1_2"
               }
             }
           }
