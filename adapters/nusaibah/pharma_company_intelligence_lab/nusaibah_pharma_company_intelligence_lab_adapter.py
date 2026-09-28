@@ -344,7 +344,7 @@ def _prepare_company(
             sum(len(focus.questions) for focus in methodology_plan.research_focus)
             + len(methodology_plan.cross_cutting_questions)
         ),
-        "planner_focus_item_count": len(methodology_plan.requirement_catalog()),
+        "planner_focus_item_count": len(methodology_plan.research_focus),
         "planner_unmet_requirement_count": len(critic["unmet_plan_requirements"]),
         "research_role_count": len(RESEARCH_ROLES),
         "research_claim_count": len(joined["claims"]),
