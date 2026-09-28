@@ -65,10 +65,10 @@ A checked item proves only the named gate. It does not imply a later stage is re
 
 - [x] `obs-adapter-intake-check --adapter-yaml ...` passes.
 - [x] Repository-wide `obs-adapter-intake-check --root .` passes.
-- [ ] Worktree is clean after commit.
+- [x] Worktree is clean after commit.
 - [ ] Portable Skill digest is verified from exact committed Git bytes.
-- [ ] `obs-asset-promote ... --precommit-status passed` returns promotion-plan ready.
-- [ ] Exact intake commit is pushed and remote SHA equality is proven.
+- [x] `obs-asset-promote ... --precommit-status passed` returns promotion-plan ready.
+- [x] Exact intake commit is pushed and remote SHA equality is proven.
 
 ## G. Assets materialization and CI
 
