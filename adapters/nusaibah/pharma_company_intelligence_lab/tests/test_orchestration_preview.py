@@ -410,6 +410,77 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             self.assertNotIn("known_memory_gaps", focus)
             self.assertNotIn("expected_uncertainties", focus)
 
+    def test_downstream_roles_receive_bounded_validated_methodology_context(self) -> None:
+        inputs = FakeInputs()
+        adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
+
+        with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
+            adapter.invoke(inputs, {})
+
+        by_role_company = {
+            (role, company_id): payload
+            for role, company_id, payload in inputs.agent_inputs
+        }
+
+        for company_id in (13, 59):
+            strategic = by_role_company[("strategic_analyst", company_id)]
+            self.assertEqual(
+                strategic["methodology_plan"],
+                {
+                    "cross_cutting_questions": [
+                        f"Cross-cutting question for company {company_id}."
+                    ]
+                },
+            )
+
+            critic = by_role_company[("evidence_critic", company_id)]
+            critic_plan = critic["methodology_plan"]
+            self.assertEqual(critic_plan["company_id"], company_id)
+            self.assertEqual(critic_plan["role"], "methodology_planner")
+            self.assertEqual(
+                critic_plan["cross_cutting_questions"],
+                [f"Cross-cutting question for company {company_id}."],
+            )
+            self.assertEqual(
+                critic_plan["known_memory_gaps"],
+                [f"Known gap for company {company_id}."],
+            )
+            self.assertEqual(
+                critic_plan["expected_uncertainties"],
+                [f"Expected uncertainty for company {company_id}."],
+            )
+            self.assertTrue(critic["methodology_packet"]["evidence_rules"])
+            self.assertNotIn("memory_rules", critic["methodology_packet"])
+
+            synthesis = by_role_company[("intelligence_synthesizer", company_id)]
+            synthesis_plan = synthesis["methodology_plan"]
+            self.assertEqual(synthesis_plan["company_id"], company_id)
+            self.assertEqual(
+                synthesis_plan["cross_cutting_questions"],
+                [f"Cross-cutting question for company {company_id}."],
+            )
+            self.assertTrue(synthesis["methodology_packet"]["memory_rules"])
+            self.assertNotIn("evidence_rules", synthesis["methodology_packet"])
+
+    def test_memory_benchmark_reviewer_remains_planner_independent(self) -> None:
+        inputs = FakeInputs()
+        adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
+
+        with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
+            adapter.invoke(inputs, {})
+
+        benchmark_inputs = [
+            payload
+            for role, _company_id, payload in inputs.agent_inputs
+            if role == "memory_benchmark_reviewer"
+        ]
+        self.assertEqual(len(benchmark_inputs), 4)
+        for payload in benchmark_inputs:
+            self.assertNotIn("methodology_plan", payload)
+            self.assertNotIn("methodology_packet", payload)
+            self.assertNotIn("research_focus", payload)
+            self.assertNotIn("cross_cutting_questions", payload)
+
     def test_invalid_planner_company_fails_before_research_for_that_company(self) -> None:
         inputs = FakeInputs(wrong_company_role="methodology_planner")
         adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
