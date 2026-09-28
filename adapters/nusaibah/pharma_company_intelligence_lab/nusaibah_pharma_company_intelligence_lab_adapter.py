@@ -549,12 +549,18 @@ def _run_critic(
                 "evidence_rules": list(methodology.planner_packet.evidence_rules),
             },
             "methodology_plan": methodology_plan.to_agent_input(),
+            "planner_requirements": list(methodology_plan.requirement_catalog()),
             "research_evidence": _research_for_downstream(joined_research),
             "strategic_analysis": strategic,
             "reviewed_section_ids": sorted(research_section_ids),
             "response_contract": {
                 "schema_version": CRITIC_SCHEMA_VERSION,
                 "role": CRITIC_ROLE,
+                "unmet_plan_requirement_ids": list(methodology_plan.requirement_ids()),
+                "unmet_plan_requirement_dispositions": [
+                    "unresolved_evidence",
+                    "unsatisfied",
+                ],
             },
         },
         on_error="raise",
@@ -570,6 +576,7 @@ def _run_critic(
         company_id=company_id,
         known_claim_ids={claim["claim_id"] for claim in joined_research["claims"]},
         known_section_ids=research_section_ids,
+        known_plan_requirement_ids=set(methodology_plan.requirement_ids()),
     )
 
 
@@ -587,6 +594,11 @@ def _require_pre_synthesis_quality(
         raise RuntimeError("Unsupported research claims remain after critique.")
     if critic["missing_section_ids"]:
         raise RuntimeError("Mandatory research sections are missing after critique.")
+    if any(
+        item["disposition"] == "unsatisfied"
+        for item in critic["unmet_plan_requirements"]
+    ):
+        raise RuntimeError("Mandatory methodology plan requirements remain unsatisfied.")
 
 
 def _run_synthesis(
