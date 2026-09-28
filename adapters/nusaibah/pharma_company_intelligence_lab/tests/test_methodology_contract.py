@@ -97,6 +97,23 @@ class MethodologyPlanTests(unittest.TestCase):
             list(RESEARCH_ROLE_SECTIONS["portfolio_researcher"]),
         )
 
+    def test_requirement_catalog_has_stable_unique_ids(self) -> None:
+        plan = validate_methodology_plan(_valid_plan(), company_id=13)
+
+        catalog = plan.requirement_catalog()
+        requirement_ids = [item["requirement_id"] for item in catalog]
+
+        self.assertEqual(len(requirement_ids), len(set(requirement_ids)))
+        self.assertEqual(tuple(requirement_ids), plan.requirement_ids())
+        self.assertIn(
+            "research.portfolio_researcher.question.1",
+            requirement_ids,
+        )
+        self.assertIn("cross_cutting_question.1", requirement_ids)
+        self.assertIn("known_memory_gap.1", requirement_ids)
+        self.assertIn("expected_uncertainty.1", requirement_ids)
+        self.assertTrue(all(item["mandatory"] is True for item in catalog))
+
     def test_rejects_wrong_company(self) -> None:
         with self.assertRaisesRegex(ValueError, "company_id"):
             validate_methodology_plan(_valid_plan(company_id=59), company_id=13)
