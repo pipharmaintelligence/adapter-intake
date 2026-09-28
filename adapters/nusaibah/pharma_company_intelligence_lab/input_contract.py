@@ -7,6 +7,19 @@ MAX_COMPANY_IDS = 5
 SUPPORTED_OBJECTIVE = "company_intelligence_memory"
 SUPPORTED_RESEARCH_DEPTHS = frozenset({"deep"})
 SUPPORTED_MEMORY_MODES = frozenset({"preview", "apply"})
+SENSITIVE_FIELD_NAME_FRAGMENTS = (
+    "password",
+    "secret",
+    "credential",
+    "authorization",
+    "token",
+    "header",
+    "presigned",
+    "storage_path",
+    "object_key",
+    "callback",
+    "runtime_manifest",
+)
 
 
 @dataclass(frozen=True)
@@ -116,3 +129,38 @@ def company_name(record: dict[str, Any]) -> str:
         if isinstance(value, str) and value.strip():
             return value.strip()
     return f"Company {record['company_id']}"
+
+
+def project_company_baseline(record: dict[str, Any]) -> dict[str, Any]:
+    """Project one governed company row into bounded scalar business context."""
+    projected: dict[str, Any] = {}
+    maximum_fields = 48
+    maximum_string_chars = 4000
+
+    for key in sorted(record):
+        if len(projected) >= maximum_fields:
+            break
+        if not isinstance(key, str) or not key or len(key) > 128:
+            continue
+        lowered = key.lower()
+        if any(fragment in lowered for fragment in SENSITIVE_FIELD_NAME_FRAGMENTS):
+            continue
+
+        value = record[key]
+        if value is None or isinstance(value, (bool, int, float)):
+            projected[key] = value
+        elif isinstance(value, str):
+            projected[key] = value[:maximum_string_chars]
+        elif isinstance(value, list) and len(value) <= 20 and all(
+            item is None or isinstance(item, (bool, int, float, str)) for item in value
+        ):
+            projected[key] = [
+                item[:maximum_string_chars] if isinstance(item, str) else item
+                for item in value
+            ]
+
+    company_id = record.get("company_id")
+    if company_id not in projected:
+        projected["company_id"] = company_id
+    projected["company_name"] = company_name(record)
+    return projected
