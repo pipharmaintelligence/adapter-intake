@@ -153,7 +153,7 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
             "metrics": {
                 "requested_company_count": len(request.company_ids),
                 "completed_company_count": len(company_results),
-                "logical_agent_invocations": len(company_results) * 8,
+                "logical_agent_invocations": (len(company_results) * 8) + mutation_count,
                 "search_enabled_agent_invocations": len(company_results) * 3,
                 "memory_mutations_made": mutation_count,
             },
