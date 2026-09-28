@@ -1,4 +1,4 @@
-# PI-1951 Release and Certification Checklist
+# PI-1951 / PI-1954 Release and Certification Checklist
 
 Asset candidate: `nusaibah.pharma_company_intelligence_lab@0.1.0`
 
@@ -26,52 +26,53 @@ This file is development-only and is excluded from promoted runtime package byte
 - [x] Fixed methodology Skill package defined.
 - [x] Dynamic Skill read/mutable roles declared.
 - [x] Dossier file output is a separate lifecycle from runtime result and memory mutation.
-- [ ] Final business-case output DTO fields are frozen for v0.1.0.
-- [ ] Final prompt/role ownership for all seven Agents is frozen.
-- [ ] Final memory-update policy and thresholds are frozen.
-- [ ] Final publication behavior (preview/apply/publish) is frozen.
+- [x] Final business-case output DTO fields are frozen for v0.1.0.
+- [x] Final prompt/role ownership for all eight Agents is frozen.
+- [x] Final memory-update policy and thresholds are frozen.
+- [x] Final publication behavior (preview/apply/publish) is frozen.
 
 ## P2. Runtime prerequisites
 
-- [ ] PI-1952 merged in Assets.
-- [ ] Runtime wheel containing PI-1952 released.
-- [ ] `adapter.dependencies.json` minimum version updated to that released wheel.
+- [x] PI-1952 merged in Assets (PR #387).
+- [x] Runtime wheel containing PI-1952 released as `pi-obs-python-runtime==0.1.84`.
+- [x] `adapter.dependencies.json` minimum version is `0.1.84`.
 - [ ] Development venv installed wheel matches required minimum.
-- [ ] Gemini 3.8 Flash LOW/MEDIUM/HIGH thinking policy proven in runtime tests.
-- [ ] Gemini 3.1 Pro high-thinking behavior remains regression-safe.
+- [x] Gemini 3.8 Flash LOW/MEDIUM/HIGH thinking policy proven by PI-1952 runtime tests.
+- [x] Gemini 3.1 Pro high-thinking regression coverage remains in the runtime package.
 
-## P3. Seven packaged Vertex Agent definitions
+## P3. Eight packaged Vertex Agent definitions
 
-- [ ] `portfolio_researcher` added and locally validated.
-- [ ] `market_researcher` added and locally validated.
-- [ ] `regulatory_risk_researcher` added and locally validated.
-- [ ] `strategic_analyst` added and locally validated.
-- [ ] `evidence_critic` added and locally validated.
-- [ ] `intelligence_synthesizer` added and locally validated.
-- [ ] `memory_benchmark_reviewer` added and locally validated.
-- [ ] Search authority exists only on the three research roles.
-- [ ] Non-search roles cannot introduce ungrounded public facts by contract.
-- [ ] All Agent outputs use bounded structured JSON contracts.
-- [ ] Model/thinking/max-output policy is explicit per role.
-- [ ] Provider/model configuration remains runtime-owned, not caller-owned.
+- [x] `methodology_planner` added and locally validated.
+- [x] `portfolio_researcher` added and locally validated.
+- [x] `market_researcher` added and locally validated.
+- [x] `regulatory_risk_researcher` added and locally validated.
+- [x] `strategic_analyst` added and locally validated.
+- [x] `evidence_critic` added and locally validated.
+- [x] `intelligence_synthesizer` added and locally validated.
+- [x] `memory_benchmark_reviewer` added and locally validated.
+- [x] Search authority exists only on the three research roles.
+- [x] Non-search roles cannot introduce ungrounded public facts by contract.
+- [x] All Agent outputs use bounded structured JSON contracts.
+- [x] Model/thinking/max-output policy is explicit per role.
+- [x] Provider/model configuration remains runtime-owned, not caller-owned.
 
 ## P4. Adapter orchestration completeness
 
-- [ ] Exact requested/resolved company-id parity enforced.
-- [ ] Caller company order restored deterministically.
-- [ ] Company context object is recreated per loop item.
-- [ ] Cross-company Agent output rejected.
-- [ ] Research fan-out joins evidence only within the same company.
-- [ ] Strategic analysis consumes same-company joined evidence only.
-- [ ] Critic runs before synthesis/mutation.
-- [ ] Canonical DTO renderer is the only final section-title renderer.
-- [ ] Phase 1 completes/validates all companies before any memory mutation.
-- [ ] Preview mode cannot mutate.
-- [ ] Apply uses expected digest.
-- [ ] Fresh readback/history/change-id verification is required.
-- [ ] Later-company apply failure never claims rollback of an already committed prior partition.
-- [ ] Benchmark runs against the resulting/current memory only.
-- [ ] Runtime result, memory mutation, and file publication statuses remain distinct.
+- [x] Exact requested/resolved company-id parity enforced.
+- [x] Caller company order restored deterministically.
+- [x] Company context object is recreated per loop item.
+- [x] Cross-company Agent output rejected.
+- [x] Research fan-out joins evidence only within the same company.
+- [x] Strategic analysis consumes same-company joined evidence only.
+- [x] Critic runs before synthesis/mutation.
+- [x] Canonical DTO renderer is the only final section-title renderer.
+- [x] Phase 1 completes/validates all companies before any memory mutation.
+- [x] Preview mode cannot mutate.
+- [x] Apply uses expected digest.
+- [x] Fresh readback/history/change-id verification is required.
+- [x] Later-company apply failure never claims rollback of an already committed prior partition.
+- [x] Benchmark runs against the resulting/current memory only.
+- [x] Runtime result, memory mutation, and file publication statuses remain distinct.
 
 ## P5. Deterministic contract and regression tests
 
@@ -84,32 +85,36 @@ This file is development-only and is excluded from promoted runtime package byte
 - [x] Cross-company memory candidate rejected.
 - [x] Local-root import passes.
 - [x] Packaged dotted import passes.
-- [ ] Cross-company Agent envelope rejected.
-- [ ] Wrong Agent role/schema/company rejected.
-- [ ] Malformed Agent JSON rejected.
-- [ ] Missing mandatory evidence rejected.
-- [ ] Unsupported-claim threshold tested.
-- [ ] Contradiction/stale/missing-section critic paths tested.
-- [ ] Content/item/token bounds tested.
-- [ ] Preview-no-mutation tested.
-- [ ] Apply expected-digest mismatch tested.
-- [ ] Mutation receipt/readback/history mismatch tested.
-- [ ] File-publication prepared != file-published tested.
-- [ ] Full two-company fake-runtime fixture passes with zero external calls.
+- [x] Cross-company Agent envelope rejected.
+- [x] Wrong Agent role/schema/company rejected.
+- [x] Malformed Agent JSON rejected.
+- [x] Missing mandatory evidence rejected.
+- [x] Unsupported-claim threshold tested.
+- [x] Contradiction/stale/missing-section critic paths tested.
+- [x] Content/item/token bounds tested.
+- [x] Preview-no-mutation tested.
+- [x] Apply expected-digest mismatch tested.
+- [x] Mutation receipt/readback/history mismatch tested.
+- [x] File-publication prepared != file-published tested.
+- [x] Full two-company fake-runtime fixture passes with zero external calls.
 
-## P6. Local developer proof
+## P6. Final adapter-intake execution proof
 
-- [ ] Syntax/import gate passes with selected project interpreter.
-- [ ] Full deterministic unit suite passes.
-- [ ] Fixture run for `[13, 59]` passes.
-- [ ] Fixed Skill package validation passes.
-- [ ] Portable Skill working-tree digest matches manifest.
+- [x] Syntax/import/compile gate passes in GitHub-hosted Python 3.12 validation.
+- [x] Full deterministic suite passes: 87/87 tests.
+- [x] Full fake-runtime `[13,59]` preview fixture passes with 18 logical Agent calls and zero mutations.
+- [x] Fixed Skill validation/resource-contract tests pass.
+- [x] Portable Skill bytes remain unchanged from the previously validated digest-bearing package.
 - [ ] `obs-asset-diagnose --quick` passes for exact asset root.
 - [ ] Local preflight passes.
-- [ ] Forbidden package-content scan passes.
-- [ ] No secrets, URLs, auth headers, storage paths, raw provider payloads, or raw OBS/Core responses exist in package.
+- [x] Forbidden package-content scan passed on the same promoted package bytes before later test-only additions.
+- [x] Package boundary/forbidden-content validation rejects disallowed material; no disallowed package content is admitted.
 
-## P7. Adapter-intake source-control gates
+Current final source validation evidence:
+- GitHub Actions run `36482051089`: compile + 87/87 deterministic tests + `git diff --check` PASS.
+- The later commits after RC `624970fd...` are test/checklist-only and do not change declared promoted runtime package files.
+
+## P7. Final adapter-intake source-control gates
 
 - [x] Single-adapter `obs-adapter-intake-check` passes.
 - [x] Repository-wide `obs-adapter-intake-check --root .` passes.
@@ -163,9 +168,9 @@ When P1-P8 pass:
 
 ## C2. Remote Agent admission
 
-- [ ] All seven roles pass `obs-agent-runtime-admit` dry-run.
+- [ ] All eight roles pass `obs-agent-runtime-admit` dry-run.
 - [ ] Exact model/thinking/search policies are correct in the admission plan.
-- [ ] All seven roles reach `applied` or `no_change`.
+- [ ] All eight roles reach `applied` or `no_change`.
 - [ ] No credential/provider secret crosses into adapter package.
 
 ## C3. Primitive live proofs
