@@ -426,7 +426,7 @@ def test_bedrock_dynamic_skill_mutation_is_restricted_to_synthetic_fixture() -> 
 
 def test_manifest_reuses_canonical_fixed_skill_digest_and_runtime_capabilities() -> None:
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
-    version = manifest["versions"]["0.1.0"]
+    version = manifest["versions"]["0.1.2"]
 
     assert version["skills"] == [
         {
