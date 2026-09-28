@@ -7,6 +7,7 @@ from pathlib import Path
 ASSET_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
+ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
 
 ASSET_VERSION = "0.1.1"
 CANONICAL_PROVIDER_REGISTRY_ENTRY = {
@@ -52,7 +53,9 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
 
     def test_asset_version_is_synchronized_across_intake_contract_and_manifest(self) -> None:
         adapter_yaml = ADAPTER_YAML.read_text(encoding="utf-8")
+        adapter_module = ADAPTER_MODULE.read_text(encoding="utf-8")
         self.assertIn(f"asset_version: {ASSET_VERSION}", adapter_yaml)
+        self.assertIn(f'version: ClassVar[str] = "{ASSET_VERSION}"', adapter_module)
         self.assertEqual(self.manifest["default"], ASSET_VERSION)
         self.assertEqual(set(self.manifest["versions"]), {ASSET_VERSION})
 
