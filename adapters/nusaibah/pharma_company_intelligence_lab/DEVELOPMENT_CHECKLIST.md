@@ -19,14 +19,14 @@ A checked item proves only the named gate. It does not imply a later stage is re
 
 ## B. DTO and deterministic contract tests
 
-- [ ] `company_ids` empty/duplicate/non-integer/oversize cases are tested.
-- [ ] Resolved company set must exactly equal requested company set.
-- [ ] Caller order is preserved after governed retrieval.
-- [ ] Unknown/missing/duplicate/reordered section IDs fail.
-- [ ] Unknown/missing/duplicate/reordered subsection IDs fail.
-- [ ] Provider-authored titles cannot change canonical output titles.
+- [x] `company_ids` empty/duplicate/non-integer/oversize cases are tested.
+- [x] Resolved company set must exactly equal requested company set.
+- [x] Caller order is preserved after governed retrieval.
+- [x] Unknown/missing/duplicate/reordered section IDs fail.
+- [x] Unknown/missing/duplicate/reordered subsection IDs fail.
+- [x] Provider-authored titles cannot change canonical output titles.
 - [ ] Cross-company Agent output is rejected.
-- [ ] Memory candidate company mismatch is rejected.
+- [x] Memory candidate company mismatch is rejected.
 - [ ] Preview mode cannot mutate memory.
 - [ ] Apply requires expected digest and readback/history proof.
 - [ ] Local-root import passes.
