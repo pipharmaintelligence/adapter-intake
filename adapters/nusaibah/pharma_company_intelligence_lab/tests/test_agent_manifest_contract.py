@@ -8,6 +8,7 @@ ASSET_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 
 EXPECTED = {
+    "methodology_planner": ("gemini-3.8-flash", "medium", 2048, False),
     "portfolio_researcher": ("gemini-3.8-flash", "medium", 4096, True),
     "market_researcher": ("gemini-3.8-flash", "medium", 4096, True),
     "regulatory_risk_researcher": ("gemini-3.8-flash", "high", 6144, True),
@@ -61,6 +62,43 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
                     self.assertNotIn("search_enabled", policy)
                     self.assertNotIn("search_mode", policy)
                     self.assertNotIn("citation_policy", policy)
+
+    def test_methodology_planner_instruction_preserves_authority_boundaries(self) -> None:
+        prompt = (
+            self.agents["methodology_planner"]["definition"]["chain"]["steps"][0]
+            ["input"]["text"]
+        )
+        required_phrases = (
+            "Do not search for or introduce public facts.",
+            "preserve the supplied company_id exactly",
+            "may not change company scope",
+            "provider authority",
+            "required canonical section IDs",
+            "required Agent roles",
+            "memory mutation authority",
+            "publication authority",
+        )
+        for phrase in required_phrases:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, prompt)
+
+    def test_evidence_critic_instruction_requires_plan_requirement_dispositions(self) -> None:
+        prompt = (
+            self.agents["evidence_critic"]["definition"]["chain"]["steps"][0]
+            ["input"]["text"]
+        )
+        required_phrases = (
+            "Evaluate every supplied planner requirement",
+            "exact supplied requirement_id",
+            "unmet_plan_requirements",
+            "unresolved_evidence",
+            "unsatisfied",
+            "Do not invent requirement IDs.",
+            "do not authorize memory mutation.",
+        )
+        for phrase in required_phrases:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, prompt)
 
     def test_gemini_38_roles_omit_sampling_parameters(self) -> None:
         for role, (model, _thinking, _max_tokens, _search) in EXPECTED.items():

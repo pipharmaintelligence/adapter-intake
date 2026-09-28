@@ -122,6 +122,90 @@
         }
       },
       "agents": {
+        "methodology_planner": {
+          "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_methodology_planner",
+          "contract_version": "1.0.0",
+          "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-methodology-planner",
+          "definition": {
+            "registry_entries": [
+              {
+                "handle": "provider:text_generation",
+                "type": "provider_execution",
+                "version": "1.0.0",
+                "visibility": "internal",
+                "status": "active",
+                "capabilities": [
+                  "text_generation"
+                ],
+                "input_schema_version": null,
+                "output_schema_version": null,
+                "runtime": null,
+                "safety_policy": {
+                  "store_prompt": false,
+                  "store_output": false
+                },
+                "provenance_policy": {
+                  "record_step": true
+                },
+                "access_policy": null,
+                "metadata": {
+                  "provisioning_source": "pi_1954_adaptive_methodology_planner"
+                }
+              }
+            ],
+            "chain": {
+              "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_methodology_planner",
+              "version": "1.0.0",
+              "visibility": "internal",
+              "status": "active",
+              "steps": [
+                {
+                  "step_handle": "provider:text_generation",
+                  "required_capability": "text_generation",
+                  "provider": "vertex_ai",
+                  "provider_policy": {
+                    "provider": "vertex_ai",
+                    "model": "gemini-3.8-flash",
+                    "provider_vault": {
+                      "provider_instance_ref": "vertex-primary",
+                      "provider_family": "vertex_ai",
+                      "capability_ref": "llm.generate",
+                      "binding_id": "9ce2bed4-fae6-4147-82ee-cdc4dea300a8",
+                      "execution_project_id": "laravelai-490700",
+                      "execution_location": "global",
+                      "policy_flags": {
+                        "mode": "read_only"
+                      }
+                    },
+                    "generation_policy": {
+                      "max_tokens": 2048,
+                      "thinking_level": "medium",
+                      "response_format": "json_object"
+                    }
+                  },
+                  "input": {
+                    "text": "You are the methodology planner for one governed pharma-company intelligence run. Use only the supplied methodology packet, governed company baseline, existing-memory benchmark, and canonical section registry. Do not search for or introduce public facts. Return one JSON object only and preserve the supplied company_id exactly. Choose research focus, section priorities, freshness emphasis, evidence questions, and role-specific objectives needed to apply the supplied Fixed Skill methodology. You may prioritize or deepen required work, but you may not change company scope, provider authority, required canonical section IDs, required Agent roles, output schema, memory mutation authority, publication authority, or safety gates. Do not compare this company with another company."
+                  }
+                }
+              ],
+              "budget_policy": {
+                "max_tool_calls": 0,
+                "max_provider_calls": 1
+              },
+              "safety_policy": {
+                "store_prompt": false,
+                "store_output": false
+              },
+              "provenance_policy": {
+                "record_step": true
+              },
+              "access_policy": null,
+              "metadata": {
+                "provisioning_source": "pi_1954_adaptive_methodology_planner"
+              }
+            }
+          }
+        },
         "portfolio_researcher": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_portfolio_researcher",
           "contract_version": "1.0.0",
@@ -529,7 +613,7 @@
                     }
                   },
                   "input": {
-                    "text": "Critique only the supplied current-company evidence package. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly. Identify unsupported claims, contradictions, stale claims, missing mandatory sections, citation-coverage weaknesses, and residual uncertainty. Give a bounded pass/fail recommendation for synthesis quality; do not authorize memory mutation."
+                    "text": "Critique only the supplied current-company evidence package. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly. Identify unsupported claims, contradictions, stale claims, missing mandatory sections, citation-coverage weaknesses, and residual uncertainty. Evaluate every supplied planner requirement against the evidence and strategic analysis. For any required planner item that is not satisfied, return its exact supplied requirement_id in unmet_plan_requirements with disposition unresolved_evidence when the evidence gap is explicit and retained as uncertainty, or unsatisfied when the required item was not fulfilled. Do not invent requirement IDs. Give a bounded pass/fail recommendation for synthesis quality; do not authorize memory mutation."
                   }
                 }
               ],

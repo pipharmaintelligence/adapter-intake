@@ -33,7 +33,14 @@ try:
         validate_batch_request,
     )
     from .memory_contract import MEMORY_TARGET_SECTION, MemoryCandidate
-    from .methodology_contract import MethodologyResources, load_methodology
+    from .methodology_contract import (
+        PLANNER_ROLE,
+        PLANNER_SCHEMA_VERSION,
+        MethodologyPlan,
+        MethodologyResources,
+        load_methodology,
+        validate_methodology_plan,
+    )
 except ImportError:  # pragma: no cover - local adapter-root execution path
     from agent_contract import (
         BENCHMARK_SCHEMA_VERSION,
@@ -62,7 +69,14 @@ except ImportError:  # pragma: no cover - local adapter-root execution path
         validate_batch_request,
     )
     from memory_contract import MEMORY_TARGET_SECTION, MemoryCandidate
-    from methodology_contract import MethodologyResources, load_methodology
+    from methodology_contract import (
+        PLANNER_ROLE,
+        PLANNER_SCHEMA_VERSION,
+        MethodologyPlan,
+        MethodologyResources,
+        load_methodology,
+        validate_methodology_plan,
+    )
 
 
 RESEARCH_ROLES = (
@@ -153,8 +167,33 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
             "metrics": {
                 "requested_company_count": len(request.company_ids),
                 "completed_company_count": len(company_results),
-                "logical_agent_invocations": (len(company_results) * 8) + mutation_count,
+                "logical_agent_invocations": (len(company_results) * 9) + mutation_count,
                 "search_enabled_agent_invocations": len(company_results) * 3,
+                "methodology_planner_call_count": sum(
+                    item["methodology_planner_call_count"] for item in company_results
+                ),
+                "planner_required_question_count": sum(
+                    item["planner_required_question_count"] for item in company_results
+                ),
+                "planner_focus_item_count": sum(
+                    item["planner_focus_item_count"] for item in company_results
+                ),
+                "planner_unmet_requirement_count": sum(
+                    item["planner_unmet_requirement_count"] for item in company_results
+                ),
+                "research_role_count": sum(
+                    item["research_role_count"] for item in company_results
+                ),
+                "research_claim_count": sum(
+                    item["research_claim_count"] for item in company_results
+                ),
+                "citation_count": sum(item["citation_count"] for item in company_results),
+                "quality_gate_passed_company_count": sum(
+                    1 for item in company_results if item["quality_gate_passed"]
+                ),
+                "benchmark_improvement_count": sum(
+                    item["benchmark_improvement_count"] for item in company_results
+                ),
                 "memory_mutations_made": mutation_count,
             },
         }
@@ -205,6 +244,16 @@ def _prepare_company(
         stage="before",
     )
 
+    methodology_plan = _run_methodology_planner(
+        inputs,
+        company_id=company_id,
+        company_name_value=name,
+        baseline=baseline,
+        request=request,
+        methodology=methodology,
+        before_benchmark=before_benchmark,
+    )
+
     research = _run_research_fanout(
         inputs,
         company_id=company_id,
@@ -212,6 +261,7 @@ def _prepare_company(
         baseline=baseline,
         memory_text=memory_text,
         request=request,
+        methodology_plan=methodology_plan,
     )
     joined = _join_research(research)
 
@@ -222,6 +272,7 @@ def _prepare_company(
         baseline=baseline,
         memory_text=memory_text,
         joined_research=joined,
+        methodology_plan=methodology_plan,
     )
     critic = _run_critic(
         inputs,
@@ -229,6 +280,8 @@ def _prepare_company(
         company_name_value=name,
         joined_research=joined,
         strategic=strategic,
+        methodology=methodology,
+        methodology_plan=methodology_plan,
     )
     _require_pre_synthesis_quality(research, critic)
 
@@ -241,6 +294,8 @@ def _prepare_company(
         joined_research=joined,
         strategic=strategic,
         critic=critic,
+        methodology=methodology,
+        methodology_plan=methodology_plan,
     )
 
     claim_ids = {claim["claim_id"] for claim in joined["claims"]}
@@ -284,6 +339,15 @@ def _prepare_company(
         "stale_claim_count": len(critic["stale_claim_ids"]),
         "novel_fact_count": len(candidate.fact_ids),
         "duplicate_memory_fact_count": 0,
+        "methodology_planner_call_count": 1,
+        "planner_required_question_count": (
+            sum(len(focus.questions) for focus in methodology_plan.research_focus)
+            + len(methodology_plan.cross_cutting_questions)
+        ),
+        "planner_focus_item_count": len(methodology_plan.research_focus),
+        "planner_unmet_requirement_count": len(critic["unmet_plan_requirements"]),
+        "research_role_count": len(RESEARCH_ROLES),
+        "research_claim_count": len(joined["claims"]),
         "specialist_agent_call_count": 3,
         "search_enabled_agent_call_count": 3,
         "required_section_coverage_count": len(synthesis["sections"]),
@@ -313,12 +377,63 @@ def _prepare_company(
         "result": result,
         "before_digest": before_digest,
         "before_benchmark": before_benchmark,
+        "methodology_plan": methodology_plan,
         "projected_after_benchmark": after_benchmark,
         "benchmark_questions": methodology.benchmark_questions,
         "memory_candidate": candidate,
         "citations": citations,
         "memory_mutation_eligible": mutation_eligible,
     }
+
+
+
+def _run_methodology_planner(
+    inputs: Any,
+    *,
+    company_id: int,
+    company_name_value: str,
+    baseline: dict[str, Any],
+    request: BatchRequest,
+    methodology: MethodologyResources,
+    before_benchmark: dict[str, Any],
+) -> MethodologyPlan:
+    """Create and validate one company-scoped adaptive methodology plan."""
+    envelope = inputs.invoke_agent(
+        PLANNER_ROLE,
+        input={
+            "company_id": company_id,
+            "company_name": company_name_value,
+            "objective": request.objective,
+            "research_depth": request.research_depth,
+            "methodology_packet": methodology.planner_packet.to_agent_input(),
+            "governed_company_baseline": baseline,
+            "memory_benchmark": before_benchmark,
+            "canonical_sections": [
+                {
+                    "section_id": section.section_id,
+                    "title": section.title,
+                }
+                for section in CANONICAL_SECTIONS
+            ],
+            "research_role_sections": {
+                role: list(RESEARCH_ROLE_SECTIONS[role])
+                for role in RESEARCH_ROLES
+            },
+            "allowed_research_roles": list(RESEARCH_ROLES),
+            "response_contract": {
+                "schema_version": PLANNER_SCHEMA_VERSION,
+                "role": PLANNER_ROLE,
+            },
+        },
+        on_error="raise",
+    )
+    value, _ = extract_agent_json(
+        envelope,
+        expected_role=PLANNER_ROLE,
+        company_id=company_id,
+        expected_schema_version=PLANNER_SCHEMA_VERSION,
+    )
+    return validate_methodology_plan(value, company_id=company_id)
 
 
 def _run_research_fanout(
@@ -329,11 +444,13 @@ def _run_research_fanout(
     baseline: dict[str, Any],
     memory_text: str,
     request: BatchRequest,
+    methodology_plan: MethodologyPlan,
 ) -> dict[str, dict[str, Any]]:
     results: dict[str, dict[str, Any]] = {}
 
     def run(role: str) -> dict[str, Any]:
         required_sections = _section_requests(RESEARCH_ROLE_SECTIONS[role])
+        methodology_focus = methodology_plan.role_focus(role)
         envelope = inputs.invoke_agent(
             role,
             input={
@@ -344,6 +461,7 @@ def _run_research_fanout(
                 "governed_company_baseline": baseline,
                 "existing_company_memory": memory_text,
                 "required_sections": required_sections,
+                "methodology_plan": methodology_focus,
                 "response_contract": {
                     "schema_version": RESEARCH_SCHEMA_VERSION,
                     "role": role,
@@ -412,6 +530,7 @@ def _run_strategic(
     baseline: dict[str, Any],
     memory_text: str,
     joined_research: dict[str, Any],
+    methodology_plan: MethodologyPlan,
 ) -> dict[str, Any]:
     envelope = inputs.invoke_agent(
         STRATEGIC_ROLE,
@@ -420,6 +539,9 @@ def _run_strategic(
             "company_name": company_name_value,
             "governed_company_baseline": baseline,
             "existing_company_memory": memory_text,
+            "methodology_plan": {
+                "cross_cutting_questions": list(methodology_plan.cross_cutting_questions),
+            },
             "research_evidence": _research_for_downstream(joined_research),
             "response_contract": {
                 "schema_version": STRATEGIC_SCHEMA_VERSION,
@@ -444,6 +566,8 @@ def _run_critic(
     company_name_value: str,
     joined_research: dict[str, Any],
     strategic: dict[str, Any],
+    methodology: MethodologyResources,
+    methodology_plan: MethodologyPlan,
 ) -> dict[str, Any]:
     research_section_ids = {
         section_id
@@ -455,12 +579,22 @@ def _run_critic(
         input={
             "company_id": company_id,
             "company_name": company_name_value,
+            "methodology_packet": {
+                "evidence_rules": list(methodology.planner_packet.evidence_rules),
+            },
+            "methodology_plan": methodology_plan.to_agent_input(),
+            "planner_requirements": list(methodology_plan.requirement_catalog()),
             "research_evidence": _research_for_downstream(joined_research),
             "strategic_analysis": strategic,
             "reviewed_section_ids": sorted(research_section_ids),
             "response_contract": {
                 "schema_version": CRITIC_SCHEMA_VERSION,
                 "role": CRITIC_ROLE,
+                "unmet_plan_requirement_ids": list(methodology_plan.requirement_ids()),
+                "unmet_plan_requirement_dispositions": [
+                    "unresolved_evidence",
+                    "unsatisfied",
+                ],
             },
         },
         on_error="raise",
@@ -476,6 +610,7 @@ def _run_critic(
         company_id=company_id,
         known_claim_ids={claim["claim_id"] for claim in joined_research["claims"]},
         known_section_ids=research_section_ids,
+        known_plan_requirement_ids=set(methodology_plan.requirement_ids()),
     )
 
 
@@ -493,6 +628,11 @@ def _require_pre_synthesis_quality(
         raise RuntimeError("Unsupported research claims remain after critique.")
     if critic["missing_section_ids"]:
         raise RuntimeError("Mandatory research sections are missing after critique.")
+    if any(
+        item["disposition"] == "unsatisfied"
+        for item in critic["unmet_plan_requirements"]
+    ):
+        raise RuntimeError("Mandatory methodology plan requirements remain unsatisfied.")
 
 
 def _run_synthesis(
@@ -505,6 +645,8 @@ def _run_synthesis(
     joined_research: dict[str, Any],
     strategic: dict[str, Any],
     critic: dict[str, Any],
+    methodology: MethodologyResources,
+    methodology_plan: MethodologyPlan,
 ) -> tuple[dict[str, Any], MemoryCandidate]:
     envelope = inputs.invoke_agent(
         SYNTHESIS_ROLE,
@@ -513,6 +655,10 @@ def _run_synthesis(
             "company_name": company_name_value,
             "governed_company_baseline": baseline,
             "existing_company_memory": memory_text,
+            "methodology_packet": {
+                "memory_rules": list(methodology.planner_packet.memory_rules),
+            },
+            "methodology_plan": methodology_plan.to_agent_input(),
             "research_evidence": _research_for_downstream(joined_research),
             "strategic_analysis": strategic,
             "critic_findings": critic,

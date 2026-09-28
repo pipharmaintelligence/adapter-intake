@@ -20,6 +20,7 @@ MAX_UNCERTAINTIES = 32
 MAX_LIST_ITEMS = 64
 MAX_TEXT_CHARS = 2000
 MAX_CITATIONS_OUTPUT = 24
+MAX_UNMET_PLAN_REQUIREMENTS = 64
 
 RESEARCH_ROLE_SECTIONS: dict[str, tuple[str, ...]] = {
     "portfolio_researcher": (
@@ -185,6 +186,7 @@ def validate_critic_payload(
     company_id: int,
     known_claim_ids: set[str],
     known_section_ids: set[str],
+    known_plan_requirement_ids: set[str],
 ) -> dict[str, Any]:
     """Validate critic findings against the already-known same-company evidence."""
     unsupported = _token_list(value.get("unsupported_claim_ids", []), "unsupported_claim_ids", MAX_CLAIMS)
@@ -195,6 +197,50 @@ def validate_critic_payload(
     missing = _token_list(value.get("missing_section_ids", []), "missing_section_ids", 32)
     if any(section_id not in known_section_ids for section_id in missing):
         raise ValueError("Critic referenced an unknown section_id.")
+
+    raw_unmet = value.get("unmet_plan_requirements")
+    if not isinstance(raw_unmet, list) or len(raw_unmet) > MAX_UNMET_PLAN_REQUIREMENTS:
+        raise ValueError("unmet_plan_requirements must be a bounded list.")
+
+    unmet_plan_requirements: list[dict[str, str]] = []
+    seen_requirement_ids: set[str] = set()
+    for raw in raw_unmet:
+        if not isinstance(raw, dict):
+            raise ValueError("unmet_plan_requirements must contain objects.")
+        if set(raw) != {"requirement_id", "disposition", "notes"}:
+            raise ValueError("unmet_plan_requirements entries have an invalid shape.")
+
+        requirement_id = _token(
+            raw.get("requirement_id"),
+            "unmet_plan_requirements.requirement_id",
+            max_chars=192,
+        )
+        if requirement_id not in known_plan_requirement_ids:
+            raise ValueError("Critic referenced an unknown planner requirement_id.")
+        if requirement_id in seen_requirement_ids:
+            raise ValueError("Critic planner requirement_id values must be unique.")
+        seen_requirement_ids.add(requirement_id)
+
+        disposition = _token(
+            raw.get("disposition"),
+            "unmet_plan_requirements.disposition",
+            max_chars=32,
+        )
+        if disposition not in {"unresolved_evidence", "unsatisfied"}:
+            raise ValueError("Critic planner requirement disposition is unsupported.")
+
+        notes = _text(
+            raw.get("notes"),
+            "unmet_plan_requirements.notes",
+            max_chars=MAX_TEXT_CHARS,
+        )
+        unmet_plan_requirements.append(
+            {
+                "requirement_id": requirement_id,
+                "disposition": disposition,
+                "notes": notes,
+            }
+        )
 
     recommendation = _token(value.get("recommendation"), "recommendation", max_chars=16)
     if recommendation not in {"pass", "fail"}:
@@ -220,6 +266,7 @@ def validate_critic_payload(
         ),
         "stale_claim_ids": stale,
         "missing_section_ids": missing,
+        "unmet_plan_requirements": unmet_plan_requirements,
         "citation_coverage": {
             "status": coverage_status,
             "notes": _text(coverage.get("notes", ""), "citation_coverage.notes", allow_blank=True),
