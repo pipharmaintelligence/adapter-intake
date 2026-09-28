@@ -73,20 +73,3 @@ not misdiagnosed as a transport or inference failure.
 Verify the exact adapter root with the selected project interpreter, then run the documented
 adapter-intake validation and promotion-plan commands. Keep local readiness, intake readiness,
 packaged importability, remote Agent admission, and live certification as separate proof stages.
-
-
-## 0.1.18 direct-reference persistence
-
-Version 0.1.18 keeps the strict `capability_lab.vertex_grounded.v1` response
-grammar unchanged while improving durable reference quality.
-
-For Dynamic Skill certification, provider citations remain provider provenance.
-Selected web citations are independently opened through the admitted public-reference
-runtime, and only the resolved final public destination is persisted as a
-`skill_reference` for human-facing company memory. The Vertex grounding redirect
-must not be persisted as the durable public source.
-
-The mutation stage fails closed before writing company memory when no direct public
-reference is independently verified. Fresh verification reopens persisted
-`skill_reference` citations rather than requiring Vertex to reproduce a historical
-grounding redirect.
