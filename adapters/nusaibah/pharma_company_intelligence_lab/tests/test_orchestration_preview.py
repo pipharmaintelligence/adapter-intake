@@ -227,6 +227,7 @@ def _agent_value(role: str, company_id: int, input_value: dict) -> dict:
             "contradiction_items": [],
             "stale_claim_ids": [],
             "missing_section_ids": [],
+            "unmet_plan_requirements": [],
             "citation_coverage": {"status": "sufficient", "notes": "Grounded."},
             "residual_uncertainties": [],
             "recommendation": "pass",
@@ -461,6 +462,96 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             )
             self.assertTrue(synthesis["methodology_packet"]["memory_rules"])
             self.assertNotIn("evidence_rules", synthesis["methodology_packet"])
+
+    def test_critic_receives_stable_planner_requirement_catalog(self) -> None:
+        inputs = FakeInputs()
+        adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
+
+        with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
+            adapter.invoke(inputs, {})
+
+        critic_inputs = [
+            payload
+            for role, _company_id, payload in inputs.agent_inputs
+            if role == "evidence_critic"
+        ]
+        self.assertEqual(len(critic_inputs), 2)
+
+        for payload in critic_inputs:
+            requirement_ids = [
+                item["requirement_id"] for item in payload["planner_requirements"]
+            ]
+            self.assertEqual(
+                requirement_ids,
+                payload["response_contract"]["unmet_plan_requirement_ids"],
+            )
+            self.assertEqual(len(requirement_ids), len(set(requirement_ids)))
+            self.assertIn(
+                "unresolved_evidence",
+                payload["response_contract"]["unmet_plan_requirement_dispositions"],
+            )
+            self.assertIn(
+                "unsatisfied",
+                payload["response_contract"]["unmet_plan_requirement_dispositions"],
+            )
+
+    def test_unresolved_plan_requirement_can_reach_synthesis(self) -> None:
+        inputs = FakeInputs()
+        adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
+        original_agent_value = _agent_value
+
+        def agent_value_with_unresolved(role: str, company_id: int, input_value: dict) -> dict:
+            value = original_agent_value(role, company_id, input_value)
+            if role == "evidence_critic" and company_id == 13:
+                value["unmet_plan_requirements"] = [
+                    {
+                        "requirement_id": input_value["planner_requirements"][0]["requirement_id"],
+                        "disposition": "unresolved_evidence",
+                        "notes": "Required evidence remains unavailable and is explicitly retained as unresolved.",
+                    }
+                ]
+            return value
+
+        with (
+            patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations),
+            patch(__name__ + "._agent_value", side_effect=agent_value_with_unresolved),
+        ):
+            response = adapter.invoke(inputs, {})
+
+        self.assertEqual(response["status"], "success")
+        self.assertTrue(
+            any(role == "intelligence_synthesizer" and company_id == 13 for role, company_id in inputs.agent_calls)
+        )
+
+    def test_unsatisfied_plan_requirement_fails_before_synthesis_and_mutation(self) -> None:
+        inputs = FakeInputs()
+        adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
+        original_agent_value = _agent_value
+
+        def agent_value_with_unsatisfied(role: str, company_id: int, input_value: dict) -> dict:
+            value = original_agent_value(role, company_id, input_value)
+            if role == "evidence_critic" and company_id == 13:
+                value["unmet_plan_requirements"] = [
+                    {
+                        "requirement_id": input_value["planner_requirements"][0]["requirement_id"],
+                        "disposition": "unsatisfied",
+                        "notes": "The required plan item was not satisfied by the supplied evidence.",
+                    }
+                ]
+            return value
+
+        with (
+            patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations),
+            patch(__name__ + "._agent_value", side_effect=agent_value_with_unsatisfied),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "plan requirements remain unsatisfied"):
+                adapter.invoke(inputs, {})
+
+        self.assertFalse(
+            any(role == "intelligence_synthesizer" and company_id == 13 for role, company_id in inputs.agent_calls)
+        )
+        self.assertNotIn(("company_memory_update", 13), inputs.dynamic_skill_calls)
+        self.assertNotIn(("company_memory_update", 59), inputs.dynamic_skill_calls)
 
     def test_memory_benchmark_reviewer_remains_planner_independent(self) -> None:
         inputs = FakeInputs()
