@@ -367,7 +367,7 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
         )
         self.assertGreater(first_research_index, company_13_roles.index("methodology_planner"))
 
-    def test_planner_input_is_company_scoped_and_not_injected_into_research_yet(self) -> None:
+    def test_planner_input_is_company_scoped_and_researchers_receive_only_role_focus(self) -> None:
         inputs = FakeInputs()
         adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
 
@@ -387,10 +387,28 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             planner_inputs[59]["governed_company_baseline"]["company_name"],
         )
 
-        for role, _company_id, payload in inputs.agent_inputs:
-            if role in adapter_module.RESEARCH_ROLES:
-                self.assertNotIn("methodology_plan", payload)
-                self.assertNotIn("research_focus", payload)
+        researcher_inputs = [
+            (role, company_id, payload)
+            for role, company_id, payload in inputs.agent_inputs
+            if role in adapter_module.RESEARCH_ROLES
+        ]
+        self.assertEqual(len(researcher_inputs), 6)
+
+        for role, company_id, payload in researcher_inputs:
+            focus = payload["methodology_plan"]
+            self.assertEqual(focus["role"], role)
+            self.assertEqual(
+                focus["section_ids"],
+                list(adapter_module.RESEARCH_ROLE_SECTIONS[role]),
+            )
+            self.assertEqual(
+                focus["questions"],
+                [f"Question for {role} company {company_id}."],
+            )
+            self.assertNotIn("research_focus", payload)
+            self.assertNotIn("cross_cutting_questions", focus)
+            self.assertNotIn("known_memory_gaps", focus)
+            self.assertNotIn("expected_uncertainties", focus)
 
     def test_invalid_planner_company_fails_before_research_for_that_company(self) -> None:
         inputs = FakeInputs(wrong_company_role="methodology_planner")
