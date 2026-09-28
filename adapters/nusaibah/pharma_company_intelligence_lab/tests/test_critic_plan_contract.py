@@ -47,6 +47,35 @@ def _validate(value: dict) -> dict:
 
 
 class CriticPlanRequirementContractTests(unittest.TestCase):
+    def test_preserves_stale_contradiction_and_missing_section_findings(self) -> None:
+        value = _critic_payload()
+        value["stale_claim_ids"] = ["claim-1"]
+        value["contradiction_items"] = ["Claim-1 conflicts with another supplied observation."]
+        value["missing_section_ids"] = ["company_profile"]
+
+        result = _validate(value)
+
+        self.assertEqual(result["stale_claim_ids"], ["claim-1"])
+        self.assertEqual(
+            result["contradiction_items"],
+            ["Claim-1 conflicts with another supplied observation."],
+        )
+        self.assertEqual(result["missing_section_ids"], ["company_profile"])
+
+    def test_rejects_unknown_stale_claim_id(self) -> None:
+        value = _critic_payload()
+        value["stale_claim_ids"] = ["unknown-claim"]
+
+        with self.assertRaisesRegex(ValueError, "unknown claim_id"):
+            _validate(value)
+
+    def test_rejects_unknown_missing_section_id(self) -> None:
+        value = _critic_payload()
+        value["missing_section_ids"] = ["unknown-section"]
+
+        with self.assertRaisesRegex(ValueError, "unknown section_id"):
+            _validate(value)
+
     def test_accepts_explicit_unresolved_evidence(self) -> None:
         value = _critic_payload()
         value["unmet_plan_requirements"] = [
