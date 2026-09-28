@@ -1,0 +1,23 @@
+asset_key: nusaibah.pharma_company_intelligence_lab
+asset_version: 0.1.0
+package_target: python_runtime/adapters/intake/nusaibah/pharma_company_intelligence_lab
+manifest: nusaibah_pharma_company_intelligence_lab.asset.json
+adapter_module: nusaibah_pharma_company_intelligence_lab_adapter.py
+
+reviewed_helpers:
+  - input_contract.py
+  - dossier_contract.py
+  - memory_contract.py
+
+optional_files:
+  - README.md
+  - DEVELOPMENT_CHECKLIST.md
+
+dependency_manifest: adapter.dependencies.json
+release_stage: development
+
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false

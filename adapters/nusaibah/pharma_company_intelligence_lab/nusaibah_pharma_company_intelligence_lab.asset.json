@@ -1,0 +1,69 @@
+{
+  "key": "nusaibah.pharma_company_intelligence_lab",
+  "default": "0.1.0",
+  "allowed_surfaces": ["v1_asset_execute"],
+  "allowed_modes": ["balanced"],
+  "execution": {
+    "allowed_substrates": ["local_worker", "ecs"],
+    "default_substrate": "local_worker",
+    "timeout_seconds": 1800
+  },
+  "versions": {
+    "0.1.0": {
+      "state": "active",
+      "inputs": {
+        "companies": {"required": true, "shape": "list"},
+        "variables": {"required": true, "shape": "object"}
+      },
+      "outputs": {
+        "intelligence_dossier": {"required": true, "shape": "object"}
+      },
+      "skills": [
+        {
+          "skill_ref": "nusaibah.pharma-intelligence-methodology",
+          "version": "1.0.0",
+          "digest": "sha256:2fa082aca1c100abb60a4bf77aa4cf796da2707bb951a3b51f11948efd2dd564"
+        }
+      ],
+      "runtime_skills": {
+        "company_memory": {
+          "source": {"lake_ref": "googl123", "node_key": "company_memory"},
+          "resolution": "current",
+          "mutation": "read_only",
+          "partition": {"company_id": {"from_variable": "company_id"}}
+        },
+        "company_memory_update": {
+          "source": {"lake_ref": "googl123", "node_key": "company_memory"},
+          "resolution": "current",
+          "mutation": "mutable",
+          "partition": {"company_id": {"from_variable": "company_id"}}
+        }
+      },
+      "output_contracts": {
+        "intelligence_dossier": {
+          "target_kind": "dlm_file_artifact_output",
+          "write_mode": "dry_run",
+          "format_policy": {
+            "source": "node_allowlist",
+            "developer_selected_format": "json",
+            "server_admission_required": true
+          },
+          "schema": {
+            "source": "explicit",
+            "fields": [
+              {"name": "schema_version", "type": "string", "required": true},
+              {"name": "status", "type": "string", "required": true},
+              {"name": "requested_company_count", "type": "integer", "required": true},
+              {"name": "completed_company_count", "type": "integer", "required": true},
+              {"name": "failed_company_count", "type": "integer", "required": true},
+              {"name": "company_results", "type": "array", "required": true}
+            ]
+          },
+          "validation": {
+            "self_inspection": {"enforce": true, "on_fail": "fail"}
+          }
+        }
+      }
+    }
+  }
+}
