@@ -1,9 +1,10 @@
 name: PI-1954 E8 Validation
 
 on:
-  push:
+  pull_request:
     branches:
-      - pi/e8-validation/pharma-methodology-planner
+      - naljaloudi/pi-1951-advanced-pharma-company-intelligence-lab-multi-agent
+  workflow_dispatch:
 
 permissions:
   contents: read
