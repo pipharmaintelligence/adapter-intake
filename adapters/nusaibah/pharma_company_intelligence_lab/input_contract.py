@@ -7,6 +7,19 @@ MAX_COMPANY_IDS = 5
 SUPPORTED_OBJECTIVE = "company_intelligence_memory"
 SUPPORTED_RESEARCH_DEPTHS = frozenset({"deep"})
 SUPPORTED_MEMORY_MODES = frozenset({"preview", "apply"})
+SENSITIVE_FIELD_NAME_FRAGMENTS = (
+    "password",
+    "secret",
+    "credential",
+    "authorization",
+    "token",
+    "header",
+    "presigned",
+    "storage_path",
+    "object_key",
+    "callback",
+    "runtime_manifest",
+)
 
 
 @dataclass(frozen=True)
@@ -130,22 +143,7 @@ def project_company_baseline(record: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(key, str) or not key or len(key) > 128:
             continue
         lowered = key.lower()
-        if any(
-            fragment in lowered
-            for fragment in (
-                "password",
-                "secret",
-                "credential",
-                "authorization",
-                "token",
-                "header",
-                "presigned",
-                "storage_path",
-                "object_key",
-                "callback",
-                "runtime_manifest",
-            )
-        ):
+        if any(fragment in lowered for fragment in SENSITIVE_FIELD_NAME_FRAGMENTS):
             continue
 
         value = record[key]
