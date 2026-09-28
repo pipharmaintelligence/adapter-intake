@@ -89,6 +89,7 @@ class FakeInputs(dict):
         )
         self.wrong_company_role = wrong_company_role
         self.agent_calls: list[tuple[str, int]] = []
+        self.agent_inputs: list[tuple[str, int, dict]] = []
         self.dynamic_skill_calls: list[tuple[str, int]] = []
 
     def skill(self, selector: str):
@@ -106,6 +107,7 @@ class FakeInputs(dict):
         del on_error
         company_id = int(input["company_id"])
         self.agent_calls.append((role, company_id))
+        self.agent_inputs.append((role, company_id, dict(input)))
         output_company_id = (
             999 if role == self.wrong_company_role and company_id == 13 else company_id
         )
@@ -134,6 +136,28 @@ class FakeInputs(dict):
 
 
 def _agent_value(role: str, company_id: int, input_value: dict) -> dict:
+    if role == "methodology_planner":
+        return {
+            "schema_version": "pharma_methodology_plan.v1",
+            "company_id": company_id,
+            "role": role,
+            "status": "completed",
+            "research_focus": [
+                {
+                    "role": research_role,
+                    "priority": "high" if research_role == "regulatory_risk_researcher" else "medium",
+                    "section_ids": list(adapter_module.RESEARCH_ROLE_SECTIONS[research_role]),
+                    "questions": [f"Question for {research_role} company {company_id}."],
+                    "freshness_focus": ["recent material changes"],
+                    "evidence_focus": ["authoritative public evidence"],
+                }
+                for research_role in adapter_module.RESEARCH_ROLES
+            ],
+            "cross_cutting_questions": [f"Cross-cutting question for company {company_id}."],
+            "known_memory_gaps": [f"Known gap for company {company_id}."],
+            "expected_uncertainties": [f"Expected uncertainty for company {company_id}."],
+        }
+
     if role in {
         "portfolio_researcher",
         "market_researcher",
@@ -296,11 +320,12 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             [item["company_id"] for item in dossier["company_results"]],
             [13, 59],
         )
-        self.assertEqual(response["metrics"]["logical_agent_invocations"], 16)
+        self.assertEqual(response["metrics"]["logical_agent_invocations"], 18)
         self.assertEqual(response["metrics"]["search_enabled_agent_invocations"], 6)
         self.assertEqual(response["metrics"]["memory_mutations_made"], 0)
 
         counts = Counter(role for role, _company_id in inputs.agent_calls)
+        self.assertEqual(counts["methodology_planner"], 2)
         self.assertEqual(counts["portfolio_researcher"], 2)
         self.assertEqual(counts["market_researcher"], 2)
         self.assertEqual(counts["regulatory_risk_researcher"], 2)
@@ -323,6 +348,70 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
                 [section["title"] for section in result["sections"]],
                 [section.title for section in CANONICAL_SECTIONS],
             )
+
+    def test_planner_runs_after_before_benchmark_and_before_research(self) -> None:
+        inputs = FakeInputs()
+        adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
+
+        with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
+            adapter.invoke(inputs, {})
+
+        company_13_roles = [
+            role for role, company_id in inputs.agent_calls if company_id == 13
+        ]
+        self.assertEqual(company_13_roles[0], "memory_benchmark_reviewer")
+        self.assertEqual(company_13_roles[1], "methodology_planner")
+        first_research_index = min(
+            company_13_roles.index(role)
+            for role in adapter_module.RESEARCH_ROLES
+        )
+        self.assertGreater(first_research_index, company_13_roles.index("methodology_planner"))
+
+    def test_planner_input_is_company_scoped_and_not_injected_into_research_yet(self) -> None:
+        inputs = FakeInputs()
+        adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
+
+        with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
+            adapter.invoke(inputs, {})
+
+        planner_inputs = {
+            company_id: payload
+            for role, company_id, payload in inputs.agent_inputs
+            if role == "methodology_planner"
+        }
+        self.assertEqual(set(planner_inputs), {13, 59})
+        self.assertEqual(planner_inputs[13]["company_id"], 13)
+        self.assertEqual(planner_inputs[59]["company_id"], 59)
+        self.assertNotEqual(
+            planner_inputs[13]["governed_company_baseline"]["company_name"],
+            planner_inputs[59]["governed_company_baseline"]["company_name"],
+        )
+
+        for role, _company_id, payload in inputs.agent_inputs:
+            if role in adapter_module.RESEARCH_ROLES:
+                self.assertNotIn("methodology_plan", payload)
+                self.assertNotIn("research_focus", payload)
+
+    def test_invalid_planner_company_fails_before_research_for_that_company(self) -> None:
+        inputs = FakeInputs(wrong_company_role="methodology_planner")
+        adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
+
+        with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
+            with self.assertRaisesRegex(RuntimeError, "wrong company_id"):
+                adapter.invoke(inputs, {})
+
+        company_13_roles = [
+            role for role, company_id in inputs.agent_calls if company_id == 13
+        ]
+        self.assertEqual(
+            company_13_roles,
+            ["memory_benchmark_reviewer", "methodology_planner"],
+        )
+        self.assertFalse(
+            any(role in adapter_module.RESEARCH_ROLES for role in company_13_roles)
+        )
+        self.assertNotIn(("company_memory_update", 13), inputs.dynamic_skill_calls)
+        self.assertNotIn(("company_memory_update", 59), inputs.dynamic_skill_calls)
 
     def test_cross_company_agent_result_fails_before_any_mutation(self) -> None:
         inputs = FakeInputs(wrong_company_role="market_researcher")
