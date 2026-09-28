@@ -29,8 +29,8 @@ A checked item proves only the named gate. It does not imply a later stage is re
 - [x] Memory candidate company mismatch is rejected.
 - [ ] Preview mode cannot mutate memory.
 - [ ] Apply requires expected digest and readback/history proof.
-- [ ] Local-root import passes.
-- [ ] Packaged dotted import passes.
+- [x] Local-root import passes.
+- [x] Packaged dotted import passes.
 
 ## C. Vertex runtime prerequisite
 
