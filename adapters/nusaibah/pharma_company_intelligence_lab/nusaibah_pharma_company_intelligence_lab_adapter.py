@@ -169,6 +169,31 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
                 "completed_company_count": len(company_results),
                 "logical_agent_invocations": (len(company_results) * 9) + mutation_count,
                 "search_enabled_agent_invocations": len(company_results) * 3,
+                "methodology_planner_call_count": sum(
+                    item["methodology_planner_call_count"] for item in company_results
+                ),
+                "planner_required_question_count": sum(
+                    item["planner_required_question_count"] for item in company_results
+                ),
+                "planner_focus_item_count": sum(
+                    item["planner_focus_item_count"] for item in company_results
+                ),
+                "planner_unmet_requirement_count": sum(
+                    item["planner_unmet_requirement_count"] for item in company_results
+                ),
+                "research_role_count": sum(
+                    item["research_role_count"] for item in company_results
+                ),
+                "research_claim_count": sum(
+                    item["research_claim_count"] for item in company_results
+                ),
+                "citation_count": sum(item["citation_count"] for item in company_results),
+                "quality_gate_passed_company_count": sum(
+                    1 for item in company_results if item["quality_gate_passed"]
+                ),
+                "benchmark_improvement_count": sum(
+                    item["benchmark_improvement_count"] for item in company_results
+                ),
                 "memory_mutations_made": mutation_count,
             },
         }
@@ -314,6 +339,15 @@ def _prepare_company(
         "stale_claim_count": len(critic["stale_claim_ids"]),
         "novel_fact_count": len(candidate.fact_ids),
         "duplicate_memory_fact_count": 0,
+        "methodology_planner_call_count": 1,
+        "planner_required_question_count": (
+            sum(len(focus.questions) for focus in methodology_plan.research_focus)
+            + len(methodology_plan.cross_cutting_questions)
+        ),
+        "planner_focus_item_count": len(methodology_plan.requirement_catalog()),
+        "planner_unmet_requirement_count": len(critic["unmet_plan_requirements"]),
+        "research_role_count": len(RESEARCH_ROLES),
+        "research_claim_count": len(joined["claims"]),
         "specialist_agent_call_count": 3,
         "search_enabled_agent_call_count": 3,
         "required_section_coverage_count": len(synthesis["sections"]),
