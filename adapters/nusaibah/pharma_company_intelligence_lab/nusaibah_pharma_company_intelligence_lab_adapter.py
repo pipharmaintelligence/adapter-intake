@@ -79,6 +79,11 @@ except ImportError:  # pragma: no cover - local adapter-root execution path
     )
 
 
+# Exact packaged ownership marker consumed by Assets at execute-time.
+# This adapter orchestrates its Agent roles through inputs.invoke_agent(...).
+AGENT_ORCHESTRATION_OWNER = "python_adapter"
+
+
 RESEARCH_ROLES = (
     "portfolio_researcher",
     "market_researcher",
@@ -103,7 +108,7 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.pharma_company_intelligence_lab"
-    version: ClassVar[str] = "0.1.1"
+    version: ClassVar[str] = "0.1.2"
 
     def invoke(self, inputs: Any, context: dict[str, Any]) -> dict[str, Any]:
         """Execute one bounded company batch with two-phase memory mutation."""
