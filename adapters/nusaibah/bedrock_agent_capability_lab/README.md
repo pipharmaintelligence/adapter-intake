@@ -1,7 +1,7 @@
 # Nusaibah Bedrock Agent Capability Lab
 
 This folder is the canonical adapter-intake source for
-`nusaibah.bedrock_agent_capability_lab@0.1.0`.
+`nusaibah.bedrock_agent_capability_lab@0.1.2`.
 
 It is a separate Bedrock reference asset. The existing
 `nusaibah.agent_capability_lab` Vertex lineage is intentionally not modified.
@@ -49,7 +49,7 @@ All Bedrock execution enters through the declared logical role
 
 ## Search and citations
 
-Version 0.1.0 deliberately does not claim Bedrock provider-native web search or
+Version 0.1.2 deliberately does not claim Bedrock provider-native web search or
 Vertex-style grounding. Current runtime evidence supports the reviewed
 provider-grounding contract for Vertex, not Bedrock.
 
@@ -74,7 +74,7 @@ digest. Model output alone is never treated as persisted state.
 | --- | --- | --- |
 | Provider reference | Vertex-oriented lineage | Bedrock-only reference |
 | Asset key | `nusaibah.agent_capability_lab` | `nusaibah.bedrock_agent_capability_lab` |
-| Version lineage | Existing published lineage | Starts at `0.1.0` |
+| Version lineage | Existing published lineage | Current correction candidate `0.1.2` |
 | Agent helper | `inputs.invoke_agent(...)` | `inputs.invoke_agent(...)` |
 | Fixed Skill | Governed immutable Skill | Same governed pattern |
 | Dynamic Skill | Governed read/mutation patterns | Same governed pattern |
