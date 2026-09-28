@@ -17,7 +17,7 @@ ALLOWED_CAPABILITIES = {
 ALLOWED_ROLES_BY_CAPABILITY = {
     "bedrock_agent": {"bedrock_orchestrator"},
     "fixed_skill": {"capability_orchestration"},
-    "dynamic_skill": {"company_memory", "company_memory_update"},
+    "dynamic_skill": {"company_memory", "company_memory_mutation_fixture"},
     "callable_asset": {"openfda_application_lookup"},
     "runtime_tool": {"healthcare_nlp"},
 }
