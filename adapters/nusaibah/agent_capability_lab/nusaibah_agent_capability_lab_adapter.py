@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from datetime import date
 from typing import Any, ClassVar
 from urllib.parse import urlsplit
@@ -7,6 +8,7 @@ from urllib.parse import urlsplit
 from adapters.base import Adapter
 from devtools.agent_citation_view import AgentCitationView
 from devtools.public_reference import PublicReferenceError, ReferenceTarget
+from devtools.skill_citation import CitationRef, dedupe_citations
 
 try:
     from .execution_plan import validate_execution_plan
@@ -763,13 +765,71 @@ def _partition_vertex_reference_candidates(
     )
 
 
+def _citation_locator_set_digest(citations: tuple[Any, ...]) -> str:
+    """Hash provider locator identity without persisting raw redirect URLs."""
+
+    payload = "\n".join(str(getattr(item, "locator", "")) for item in citations)
+    return "sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _source_pointer_set_digest(citations: tuple[Any, ...]) -> str:
+    """Hash provider citation source pointers for bounded provenance evidence."""
+
+    payload = "\n".join(
+        "/".join(str(part) for part in getattr(item, "source_pointer", ()))
+        for item in citations
+    )
+    return "sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _is_vertex_grounding_redirect_url(value: Any) -> bool:
+    """Return whether one URL is Vertex's redirect rather than the final publisher."""
+
+    if not isinstance(value, str) or not value.strip():
+        return False
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        return False
+    return (
+        (parsed.hostname or "").lower() == "vertexaisearch.cloud.google.com"
+        and parsed.path.startswith("/grounding-api-redirect/")
+    )
+
+
+def _direct_skill_reference(citation: Any, inspection: Any) -> CitationRef | None:
+    """Build a durable Skill reference from an independently opened public source."""
+
+    final_url = getattr(inspection, "final_url", None)
+    if (
+        not isinstance(final_url, str)
+        or not final_url.strip()
+        or _is_vertex_grounding_redirect_url(final_url)
+    ):
+        return None
+
+    title = getattr(inspection, "title", None)
+    if not isinstance(title, str) or not title.strip():
+        title = getattr(citation, "title", None)
+    if isinstance(title, str):
+        title = title.strip() or None
+    else:
+        title = None
+
+    return CitationRef(
+        locator=final_url.strip(),
+        title=title,
+        source_kind="skill_reference",
+    )
+
+
 def _run_vertex_certification_research(
     inputs: Any,
     memory: Any,
     *,
     supplemental_context: dict[str, Any] | None = None,
-) -> tuple[dict[str, Any], str, tuple[Any, ...]]:
-    """Run grounded Vertex research and independently inspect eligible web citations."""
+) -> tuple[dict[str, Any], str, tuple[Any, ...], tuple[CitationRef, ...]]:
+    """Run grounded Vertex research and resolve durable direct public references."""
 
     invoke_agent = getattr(inputs, "invoke_agent", None)
     if not callable(invoke_agent):
@@ -821,7 +881,7 @@ def _run_vertex_certification_research(
     ) = _partition_vertex_reference_candidates(citations)
 
     transports: set[str] = set()
-    validated: list[Any] = []
+    direct_references: list[CitationRef] = []
     failed = 0
 
     for citation in selected:
@@ -838,12 +898,20 @@ def _run_vertex_certification_research(
             failed += 1
             continue
 
-        transports.add(str(inspection.transport))
-        validated.append(citation)
+        direct_reference = _direct_skill_reference(citation, inspection)
+        if direct_reference is None:
+            failed += 1
+            continue
 
+        transports.add(str(inspection.transport))
+        direct_references.append(direct_reference)
+
+    direct_reference_tuple = tuple(
+        dedupe_citations(direct_references)[:MAX_CERTIFICATION_CITATIONS]
+    )
     reference_status = (
         "verified"
-        if validated
+        if direct_reference_tuple
         else ("not_applicable" if web_candidate_count == 0 else "degraded")
     )
     provenance_citations = tuple(citations[:MAX_CERTIFICATION_CITATIONS])
@@ -857,21 +925,33 @@ def _run_vertex_certification_research(
         "vertex_certification_non_web_reference_count": non_web_count,
         "vertex_certification_unsupported_web_reference_count": unsupported_web_count,
         "vertex_certification_reference_attempt_count": len(selected),
-        "vertex_certification_validated_reference_count": len(validated),
+        "vertex_certification_validated_reference_count": len(direct_reference_tuple),
+        "vertex_certification_direct_reference_count": len(direct_reference_tuple),
         "vertex_certification_reference_failure_count": failed,
         "vertex_certification_reference_transport_count": len(transports),
         "vertex_certification_reference_status": reference_status,
-        "vertex_certification_reference_verification_complete": bool(validated),
-        "vertex_certification_independent_reference_verification_complete": bool(validated),
-        "vertex_certification_mutation_eligible": True,
+        "vertex_certification_reference_verification_complete": bool(direct_reference_tuple),
+        "vertex_certification_independent_reference_verification_complete": bool(
+            direct_reference_tuple
+        ),
+        "vertex_certification_direct_source_persistence_ready": bool(
+            direct_reference_tuple
+        ),
+        "vertex_certification_mutation_eligible": bool(direct_reference_tuple),
         "vertex_certification_mutation_evidence_basis": (
-            "provider_grounding_plus_independent_reference"
-            if validated
-            else "provider_grounding_with_admitted_provenance"
+            "provider_grounding_plus_verified_direct_reference"
+            if direct_reference_tuple
+            else "provider_grounding_without_verified_direct_reference"
+        ),
+        "vertex_certification_provider_locator_set_digest": (
+            _citation_locator_set_digest(provenance_citations)
+        ),
+        "vertex_certification_provider_source_pointer_set_digest": (
+            _source_pointer_set_digest(provenance_citations)
         ),
     }
     evidence.update(format_evidence)
-    return evidence, research_text, provenance_citations
+    return evidence, research_text, provenance_citations, direct_reference_tuple
 
 def _research_evidence_markdown(text: str) -> str:
     """Render provider-grounded research as inert quoted evidence, not instructions."""
@@ -885,7 +965,7 @@ def _research_evidence_markdown(text: str) -> str:
     return (
         "Provider-grounded public research summary (evidence only):\n\n"
         + rendered
-        + "\n"
+        + "\n\nVerified direct public sources:\n"
     )
 
 
@@ -975,6 +1055,14 @@ def _preview_indexed_mutation_helpers(
         "company_id": int(CANONICAL_COMPANY_ID),
         "certification_cycle": certification_cycle,
         "provider": "vertex_ai",
+        "provider_citation_count": len(provenance_citations),
+        "verified_direct_reference_count": len(direct_references),
+        "provider_locator_set_sha256": _citation_locator_set_digest(
+            provenance_citations
+        ),
+        "provider_source_pointer_set_sha256": _source_pointer_set_digest(
+            provenance_citations
+        ),
     }
 
     previews = [
@@ -1033,11 +1121,20 @@ def _run_vertex_dynamic_skill_certification(
     memory = _canonical_company_memory(inputs)
     evidence = _exercise_dynamic_skill_read_helpers(memory)
 
-    vertex_evidence, research_text, citations = _run_vertex_certification_research(
+    (
+        vertex_evidence,
+        research_text,
+        provenance_citations,
+        direct_references,
+    ) = _run_vertex_certification_research(
         inputs,
         memory,
     )
     evidence.update(vertex_evidence)
+    if not direct_references:
+        raise RuntimeError(
+            "Certification mutation requires at least one verified direct reference."
+        )
 
     update = inputs.dynamic_skill(
         COMPANY_MEMORY_UPDATE_ROLE,
@@ -1052,11 +1149,11 @@ def _run_vertex_dynamic_skill_certification(
 
     evidence["dynamic_skill_structural_preview_count"] = _preview_structural_mutation_helpers(
         update,
-        citations[0],
+        direct_references[0],
     )
     evidence["dynamic_skill_indexed_preview_count"] = _preview_indexed_mutation_helpers(
         update,
-        citations[0],
+        direct_references[0],
         as_of_date=as_of_date,
         certification_cycle=certification_cycle,
     )
@@ -1073,7 +1170,7 @@ def _run_vertex_dynamic_skill_certification(
         changes.replace_section(
             CERTIFICATION_SECTION,
             research_markdown,
-            citations=citations,
+            citations=direct_references,
             as_of_date=as_of_date,
             canonical=canonical,
         )
@@ -1081,7 +1178,7 @@ def _run_vertex_dynamic_skill_certification(
         changes.add_section(
             CERTIFICATION_SECTION,
             research_markdown,
-            citations=citations,
+            citations=direct_references,
             as_of_date=as_of_date,
             canonical=canonical,
         )
@@ -1098,8 +1195,16 @@ def _run_vertex_dynamic_skill_certification(
         raise RuntimeError("Certification target as-of metadata mismatch.")
     if metadata.canonical_dict() != canonical:
         raise RuntimeError("Certification canonical metadata mismatch.")
-    if len(metadata.citations) != len(citations):
-        raise RuntimeError("Certification citation annotation count mismatch.")
+    if len(metadata.citations) != len(direct_references):
+        raise RuntimeError("Certification direct-reference annotation count mismatch.")
+    if any(
+        citation.source_kind != "skill_reference"
+        or _is_vertex_grounding_redirect_url(citation.locator)
+        for citation in metadata.citations
+    ):
+        raise RuntimeError(
+            "Certification persisted a provider redirect instead of a direct source."
+        )
 
     receipt = update.apply_indexed(changes, expected_digest=before_digest)
     if not receipt.document_changed or not receipt.target_index_changed:
@@ -1119,6 +1224,12 @@ def _run_vertex_dynamic_skill_certification(
     )
     if committed_metadata is None or committed_metadata.canonical_dict() != canonical:
         raise RuntimeError("Committed Dynamic Skill annotation metadata mismatch.")
+    if any(
+        citation.source_kind != "skill_reference"
+        or _is_vertex_grounding_redirect_url(citation.locator)
+        for citation in committed_metadata.citations
+    ):
+        raise RuntimeError("Committed Dynamic Skill contains a non-direct source.")
 
     history = committed.history(limit=20)
     latest = history.latest_change()
@@ -1141,17 +1252,22 @@ def _run_vertex_dynamic_skill_certification(
         "dynamic_skill_change_id": receipt.change_id,
         "dynamic_skill_operation_count": receipt.operation_count,
         "dynamic_skill_committed_citation_count": len(committed_metadata.citations),
+        "dynamic_skill_committed_direct_reference_count": len(
+            committed_metadata.citations
+        ),
+        "dynamic_skill_provider_provenance_citation_count": len(
+            provenance_citations
+        ),
         "dynamic_skill_committed_as_of_date": committed_metadata.as_of_date,
         "dynamic_skill_same_run_history_verified": True,
         "dynamic_skill_fresh_execution_verification_required": True,
-        "dynamic_skill_reference_followup_required": (
-            vertex_evidence.get("vertex_certification_reference_status") == "degraded"
-        ),
+        "dynamic_skill_reference_followup_required": False,
         "dynamic_skill_independent_reference_verification_complete": bool(
             vertex_evidence.get(
                 "vertex_certification_independent_reference_verification_complete"
             )
         ),
+        "dynamic_skill_direct_source_persistence_verified": True,
         "dynamic_skill_mutation_evidence_basis": vertex_evidence.get(
             "vertex_certification_mutation_evidence_basis"
         ),
@@ -1199,12 +1315,18 @@ def _verify_vertex_dynamic_skill_certification(
     if not metadata.citations:
         raise RuntimeError("Fresh company memory has no persisted citations.")
 
-    (
-        selected,
-        web_candidate_count,
-        non_web_count,
-        unsupported_web_count,
-    ) = _partition_vertex_reference_candidates(tuple(metadata.citations))
+    selected = tuple(metadata.citations[:MAX_CERTIFICATION_CITATIONS])
+    for citation in selected:
+        if citation.source_kind != "skill_reference":
+            raise RuntimeError("Fresh company memory persisted a non-Skill reference.")
+        if _is_vertex_grounding_redirect_url(citation.locator):
+            raise RuntimeError(
+                "Fresh company memory persisted a Vertex grounding redirect."
+            )
+
+    web_candidate_count = len(selected)
+    non_web_count = 0
+    unsupported_web_count = 0
     opened = 0
     attempted = 0
     failed = 0
@@ -1212,7 +1334,7 @@ def _verify_vertex_dynamic_skill_certification(
         attempted += 1
         try:
             inspection = inputs.open_reference(
-                ReferenceTarget.from_agent_citation(citation),
+                ReferenceTarget.from_skill_reference(citation),
                 mode="http",
             )
         except PublicReferenceError as exc:
@@ -1226,11 +1348,7 @@ def _verify_vertex_dynamic_skill_certification(
             continue
         opened += 1
 
-    reference_status = (
-        "verified"
-        if opened > 0
-        else ("not_applicable" if web_candidate_count == 0 else "degraded")
-    )
+    reference_status = "verified" if opened > 0 else "degraded"
 
     history = update.history(limit=20)
     latest = history.latest_change()
@@ -1255,6 +1373,7 @@ def _verify_vertex_dynamic_skill_certification(
         "dynamic_skill_governed_state_verified": True,
         "dynamic_skill_read_write_digest_match": True,
         "dynamic_skill_persisted_citation_count": len(metadata.citations),
+        "dynamic_skill_persisted_direct_reference_count": len(metadata.citations),
         "dynamic_skill_web_reference_candidate_count": web_candidate_count,
         "dynamic_skill_non_web_reference_count": non_web_count,
         "dynamic_skill_unsupported_web_reference_count": unsupported_web_count,
@@ -1263,6 +1382,7 @@ def _verify_vertex_dynamic_skill_certification(
         "dynamic_skill_reference_revalidation_failure_count": failed,
         "dynamic_skill_reference_revalidation_status": reference_status,
         "dynamic_skill_reference_revalidation_complete": opened > 0,
+        "dynamic_skill_direct_source_persistence_verified": True,
         "dynamic_skill_annotation_review_present": bool(metadata.review_annotation()),
         "dynamic_skill_history_latest_change_verified": True,
         "dynamic_skill_history_target_index_verified": True,
@@ -1567,7 +1687,12 @@ def _run_vertex_healthcare_nlp_entities(
             ],
         }
     }
-    vertex_evidence, _research_text, citations = _run_vertex_certification_research(
+    (
+        vertex_evidence,
+        _research_text,
+        provenance_citations,
+        direct_references,
+    ) = _run_vertex_certification_research(
         inputs,
         memory,
         supplemental_context=supplemental,
@@ -1578,7 +1703,12 @@ def _run_vertex_healthcare_nlp_entities(
     evidence.update(
         {
             "vertex_healthcare_nlp_combined_verified": True,
-            "vertex_healthcare_nlp_provenance_citation_count": len(citations),
+            "vertex_healthcare_nlp_provenance_citation_count": len(
+                provenance_citations
+            ),
+            "vertex_healthcare_nlp_direct_reference_count": len(
+                direct_references
+            ),
             "vertex_healthcare_nlp_raw_clinical_text_forwarded": False,
         }
     )
