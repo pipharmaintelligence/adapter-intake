@@ -209,7 +209,9 @@ def load_methodology(inputs: Any) -> MethodologyResources:
     memory = _json_resource(skill, "references/memory-policy.json")
     _validate_memory_policy(memory)
 
-    skill_text = _text_resource(skill, "SKILL.md")
+    skill_text = skill.read()
+    if not isinstance(skill_text, str) or not skill_text.strip():
+        raise RuntimeError("Fixed methodology Skill text is empty.")
     evidence_policy = _text_resource(skill, "references/evidence-policy.md")
     planner_packet = _build_methodology_packet(
         skill_text=skill_text,
