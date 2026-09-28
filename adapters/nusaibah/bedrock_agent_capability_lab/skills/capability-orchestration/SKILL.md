@@ -1,6 +1,6 @@
 ---
 name: capability-orchestration
-description: Provide deterministic orchestration guidance for the Bedrock capability lab.
+description: Provide deterministic orchestration guidance for the local capability lab.
 ---
 
 # Capability Orchestration
