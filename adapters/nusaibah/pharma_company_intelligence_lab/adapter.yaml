@@ -8,6 +8,8 @@ reviewed_helpers:
   - input_contract.py
   - dossier_contract.py
   - memory_contract.py
+  - agent_contract.py
+  - methodology_contract.py
 
 optional_files:
   - README.md
