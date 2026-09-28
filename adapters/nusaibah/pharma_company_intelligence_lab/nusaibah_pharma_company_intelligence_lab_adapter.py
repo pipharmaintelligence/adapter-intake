@@ -295,6 +295,7 @@ def _prepare_company(
         "benchmark_after_partially_covered_count": after_counts["partially_covered"],
         "benchmark_improvement_count": improvement_count,
         "benchmark_non_regression": benchmark_non_regression,
+        "benchmark_result_basis": "projected_memory_candidate",
         "memory_mutation_eligible": mutation_eligible,
         "memory_update_status": (
             "preview_ready" if mutation_eligible else "no_change_recommended"
@@ -308,8 +309,12 @@ def _prepare_company(
 
     return {
         "company_id": company_id,
+        "company_name": name,
         "result": result,
         "before_digest": before_digest,
+        "before_benchmark": before_benchmark,
+        "projected_after_benchmark": after_benchmark,
+        "benchmark_questions": methodology.benchmark_questions,
         "memory_candidate": candidate,
         "citations": citations,
         "memory_mutation_eligible": mutation_eligible,
@@ -617,6 +622,20 @@ def _apply_company_memory(inputs: Any, state: dict[str, Any]) -> dict[str, Any]:
     if fresh.section_text(MEMORY_TARGET_SECTION).strip() != candidate.markdown.strip():
         raise RuntimeError("Fresh company memory section content mismatch.")
 
+    final_benchmark = _run_benchmark(
+        inputs,
+        company_id=company_id,
+        company_name_value=state["company_name"],
+        memory_text=fresh.read(),
+        questions=state["benchmark_questions"],
+        stage="committed",
+    )
+    final_counts = benchmark_counts(final_benchmark)
+    final_improvement_count = benchmark_improvement_count(
+        state["before_benchmark"],
+        final_benchmark,
+    )
+
     history = fresh.history(limit=50)
     latest = history.latest_change()
     if latest is None or latest.change_id != receipt.change_id:
@@ -631,6 +650,10 @@ def _apply_company_memory(inputs: Any, state: dict[str, Any]) -> dict[str, Any]:
         "memory_change_id": receipt.change_id,
         "memory_after_digest": receipt.after_content_digest,
         "memory_readback_verified": True,
+        "benchmark_after_covered_count": final_counts["covered"],
+        "benchmark_after_partially_covered_count": final_counts["partially_covered"],
+        "benchmark_improvement_count": final_improvement_count,
+        "benchmark_result_basis": "committed_memory",
     }
 
 
