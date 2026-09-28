@@ -236,6 +236,7 @@ def _prepare_company(
         baseline=baseline,
         memory_text=memory_text,
         request=request,
+        methodology_plan=methodology_plan,
     )
     joined = _join_research(research)
 
@@ -404,11 +405,13 @@ def _run_research_fanout(
     baseline: dict[str, Any],
     memory_text: str,
     request: BatchRequest,
+    methodology_plan: MethodologyPlan,
 ) -> dict[str, dict[str, Any]]:
     results: dict[str, dict[str, Any]] = {}
 
     def run(role: str) -> dict[str, Any]:
         required_sections = _section_requests(RESEARCH_ROLE_SECTIONS[role])
+        methodology_focus = methodology_plan.role_focus(role)
         envelope = inputs.invoke_agent(
             role,
             input={
@@ -419,6 +422,7 @@ def _run_research_fanout(
                 "governed_company_baseline": baseline,
                 "existing_company_memory": memory_text,
                 "required_sections": required_sections,
+                "methodology_plan": methodology_focus,
                 "response_contract": {
                     "schema_version": RESEARCH_SCHEMA_VERSION,
                     "role": role,
