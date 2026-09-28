@@ -10,6 +10,7 @@ from pathlib import Path
 
 ASSET_ROOT = Path(__file__).resolve().parents[1]
 ADAPTER_MODULE = "nusaibah_pharma_company_intelligence_lab_adapter.py"
+ASSET_VERSION = "0.1.1"
 HELPERS = (
     "input_contract.py",
     "dossier_contract.py",
@@ -42,7 +43,7 @@ class ImportContextTests(unittest.TestCase):
 
             import nusaibah_pharma_company_intelligence_lab_adapter as module
             assert module.NusaibahPharmaCompanyIntelligenceLabAdapter.key == "nusaibah.pharma_company_intelligence_lab"
-            assert module.NusaibahPharmaCompanyIntelligenceLabAdapter.version == "0.1.0"
+            assert module.NusaibahPharmaCompanyIntelligenceLabAdapter.version == {ASSET_VERSION!r}
             """
         )
         subprocess.run([sys.executable, "-c", code], check=True)
@@ -87,7 +88,7 @@ class ImportContextTests(unittest.TestCase):
                 sys.path.insert(0, {str(root)!r})
                 from python_runtime.adapters.intake.nusaibah.pharma_company_intelligence_lab.nusaibah_pharma_company_intelligence_lab_adapter import NusaibahPharmaCompanyIntelligenceLabAdapter
                 assert NusaibahPharmaCompanyIntelligenceLabAdapter.key == "nusaibah.pharma_company_intelligence_lab"
-                assert NusaibahPharmaCompanyIntelligenceLabAdapter.version == "0.1.0"
+                assert NusaibahPharmaCompanyIntelligenceLabAdapter.version == {ASSET_VERSION!r}
                 """
             )
             subprocess.run([sys.executable, "-c", code], check=True)
