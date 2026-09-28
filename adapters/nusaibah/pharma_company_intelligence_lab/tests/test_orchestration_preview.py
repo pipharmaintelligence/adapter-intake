@@ -366,6 +366,28 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
                 [section.title for section in CANONICAL_SECTIONS],
             )
 
+    def test_runtime_output_and_file_publication_state_remain_separate(self) -> None:
+        adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
+
+        preview_inputs = FakeInputs()
+        with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
+            preview_response = adapter.invoke(preview_inputs, {})
+        preview_dossier = preview_response["outputs"]["intelligence_dossier"]
+        self.assertFalse(preview_dossier["publication_requested"])
+        self.assertEqual(preview_dossier["publication_state"], "runtime_output_only")
+
+        publish_inputs = FakeInputs()
+        publish_inputs["variables"]["publish_dossier"] = True
+        with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
+            publish_response = adapter.invoke(publish_inputs, {})
+        publish_dossier = publish_response["outputs"]["intelligence_dossier"]
+        self.assertTrue(publish_dossier["publication_requested"])
+        self.assertEqual(
+            publish_dossier["publication_state"],
+            "runtime_output_ready_for_output_policy",
+        )
+        self.assertNotEqual(publish_dossier["publication_state"], "published")
+
     def test_planner_runs_after_before_benchmark_and_before_research(self) -> None:
         inputs = FakeInputs()
         adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
