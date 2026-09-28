@@ -1,26 +1,27 @@
-# PI-1951 / PI-1954 — 0.1.1 Admission-Correction Checklist
+# PI-1951 / PI-1954 — 0.1.2 Python-Orchestration Ownership Correction Checklist
 
-Asset candidate: `nusaibah.pharma_company_intelligence_lab@0.1.1`
+Asset candidate: `nusaibah.pharma_company_intelligence_lab@0.1.2`
 
 This file is development-only and excluded from promoted runtime bytes.
 
-## Why 0.1.1 exists
+## Why 0.1.2 exists
 
-`0.1.0` was successfully validated, promoted through the documented workflow, and merged into Assets. Remote Agent admission then exposed an immutable-package defect:
+`0.1.1` was successfully promoted, all eight Agent chains were admitted, and primitive Vertex/provider-grounding live proofs passed. The first one-company live composition then failed before run creation with HTTP 422 and validation field `agent_runtime`.
 
-- all eight roles referenced shared registry identity `provider:text_generation@1.0.0`;
-- the methodology planner used registry metadata `pi_1954_adaptive_methodology_planner`;
-- the other seven roles used `pi_1951_pharma_company_intelligence_lab`;
-- the established Assets shared registry uses `pi_1895_capability_lab`;
-- current Assets admission treats registry metadata as identity-significant and correctly returned `agent_runtime_provisioning_conflict`.
+Current Assets source requires a Python-owned Agent orchestration package to declare exactly:
 
-Because the fix changes immutable manifest bytes, the correction is `0.1.1`. Do not rewrite `0.1.0`.
+```python
+AGENT_ORCHESTRATION_OWNER = "python_adapter"
+```
 
-## Non-negotiable 0.1.1 compatibility rules
+The pharma adapter already owns orchestration through `inputs.invoke_agent(...)` but `0.1.1` omitted that immutable package marker. Without it, Assets classifies the asset into the server-native single-Agent readiness lane and blocks launch. Because the correction changes packaged adapter bytes, the fix is `0.1.2`; do not rewrite `0.1.1`.
 
-- [x] `adapter.yaml` version is `0.1.1`.
-- [x] Manifest default is `0.1.1`.
-- [x] Intake manifest carries only current version `0.1.1`; Assets materialization must preserve published `0.1.0`.
+## Non-negotiable 0.1.2 compatibility rules
+
+- [x] `adapter.yaml` version is `0.1.2`.
+- [x] Exact packaged adapter module declares `AGENT_ORCHESTRATION_OWNER = "python_adapter"` exactly once.
+- [x] Manifest default is `0.1.2`.
+- [x] Intake manifest carries only current version `0.1.2`; Assets materialization must preserve published `0.1.0`.
 - [x] All eight roles reuse one byte-equivalent `provider:text_generation@1.0.0` registry entry.
 - [x] Shared registry metadata is canonical: `provisioning_source=pi_1895_capability_lab`.
 - [x] Agent-specific provenance remains on chain metadata only.
@@ -40,8 +41,9 @@ Because the fix changes immutable manifest bytes, the correction is `0.1.1`. Do 
 
 ## Deterministic regression requirements
 
-- [ ] Full deterministic suite passes after 0.1.1 changes.
-- [ ] New test proves adapter.yaml == manifest default == sole intake version `0.1.1`.
+- [ ] Full deterministic suite passes after 0.1.2 changes.
+- [ ] New test proves adapter.yaml == manifest default == sole intake version `0.1.2`.
+- [ ] New test proves the Python Agent orchestration owner marker exists exactly once.
 - [ ] New test proves all eight registry entries are exactly canonical and byte-equivalent.
 - [ ] New test proves chain-specific provenance remains outside shared registry metadata.
 - [ ] Existing model/thinking/search policy tests pass unchanged.
@@ -53,7 +55,7 @@ Because the fix changes immutable manifest bytes, the correction is `0.1.1`. Do 
 
 ## Local/intake certification
 
-- [ ] Working tree is clean on the exact 0.1.1 RC SHA.
+- [ ] Working tree is clean on the exact 0.1.2 RC SHA.
 - [ ] Local HEAD equals remote branch SHA.
 - [ ] `obs-asset-diagnose --quick` is ready.
 - [ ] Single-adapter `obs-adapter-intake-check` is ready.
@@ -64,8 +66,8 @@ Because the fix changes immutable manifest bytes, the correction is `0.1.1`. Do 
 
 ## Pinned Assets P8
 
-- [ ] Dispatch `pi-obs-python-runtime.yml` with exact immutable 0.1.1 intake SHA.
-- [ ] Materializer reports preservation of published `0.1.0` and addition of `0.1.1`.
+- [ ] Dispatch `pi-obs-python-runtime.yml` with exact immutable 0.1.2 intake SHA.
+- [ ] Materializer reports preservation of published `0.1.0` and addition of `0.1.2`.
 - [ ] Manifest publication is green.
 - [ ] Runtime catalog publication is green.
 - [ ] Packaged adapter import tests are green.
@@ -79,16 +81,16 @@ Because the fix changes immutable manifest bytes, the correction is `0.1.1`. Do 
 
 Only after every local/intake/P8 gate above is green:
 
-- [ ] Dispatch `adapter-intake-promote-pr.yml` with exact 0.1.1 RC SHA.
+- [ ] Dispatch `adapter-intake-promote-pr.yml` with exact 0.1.2 RC SHA.
 - [ ] `allow_manifest_removals=false`.
 - [ ] Review generated Assets PR only; do not recreate it manually.
-- [ ] Confirm generated package preserves `0.1.0` and adds `0.1.1`.
+- [ ] Confirm generated package preserves `0.1.0` and adds `0.1.2`.
 - [ ] Require all relevant Assets PR CI green.
-- [ ] Merge/deploy exact `0.1.1`.
+- [ ] Merge/deploy exact `0.1.2`.
 
 ## Remote admission — first post-deploy proof
 
-Run dry-run for all eight roles on `0.1.1`:
+Run dry-run for all eight roles on `0.1.2`:
 
 - [ ] methodology_planner -> ready.
 - [ ] portfolio_researcher -> ready.
@@ -118,4 +120,4 @@ Then apply:
 
 ## Release verdict rule
 
-`0.1.1` is not LIVE_PROVEN merely because local tests, P8, promotion, or admission are green. Record each maturity dimension independently in PI-1954.
+`0.1.2` is not LIVE_PROVEN merely because local tests, P8, promotion, or admission are green. Record each maturity dimension independently in PI-1954.
