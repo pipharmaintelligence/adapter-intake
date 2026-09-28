@@ -1,0 +1,22 @@
+{
+  "companies": [
+    {
+      "company_id": 13,
+      "company_name": "Tabuk Pharmaceuticals",
+      "country": "SA"
+    },
+    {
+      "company_id": 59,
+      "company_name": "Pfizer",
+      "country": "US"
+    }
+  ],
+  "variables": {
+    "execution_scope": "batch",
+    "company_ids": [13, 59],
+    "objective": "company_intelligence_memory",
+    "research_depth": "deep",
+    "memory_mode": "preview",
+    "publish_dossier": false
+  }
+}
