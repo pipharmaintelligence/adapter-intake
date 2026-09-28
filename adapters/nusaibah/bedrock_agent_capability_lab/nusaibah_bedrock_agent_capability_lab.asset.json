@@ -112,7 +112,7 @@
                       "execution_location": "eu-west-1",
                       "policy_flags": {"mode": "read_only"}
                     },
-                    "generation_policy": {"max_tokens": 2048}
+                    "generation_policy": {"max_tokens": 128}
                   }
                 }
               ],
