@@ -188,6 +188,49 @@ class MethodologyPlan:
             "expected_uncertainties": list(self.expected_uncertainties),
         }
 
+    def requirement_catalog(self) -> tuple[dict[str, Any], ...]:
+        """Return stable IDs for every validated planner requirement the critic must evaluate."""
+        requirements: list[dict[str, Any]] = []
+
+        for focus in self.research_focus:
+            for kind, values in (
+                ("question", focus.questions),
+                ("freshness_focus", focus.freshness_focus),
+                ("evidence_focus", focus.evidence_focus),
+            ):
+                for index, text in enumerate(values, start=1):
+                    requirements.append(
+                        {
+                            "requirement_id": f"research.{focus.role}.{kind}.{index}",
+                            "kind": kind,
+                            "role": focus.role,
+                            "text": text,
+                            "mandatory": True,
+                        }
+                    )
+
+        for kind, values in (
+            ("cross_cutting_question", self.cross_cutting_questions),
+            ("known_memory_gap", self.known_memory_gaps),
+            ("expected_uncertainty", self.expected_uncertainties),
+        ):
+            for index, text in enumerate(values, start=1):
+                requirements.append(
+                    {
+                        "requirement_id": f"{kind}.{index}",
+                        "kind": kind,
+                        "role": None,
+                        "text": text,
+                        "mandatory": True,
+                    }
+                )
+
+        return tuple(requirements)
+
+    def requirement_ids(self) -> tuple[str, ...]:
+        """Return the exact requirement IDs admitted for critic output."""
+        return tuple(item["requirement_id"] for item in self.requirement_catalog())
+
 
 def load_methodology(inputs: Any) -> MethodologyResources:
     """Resolve the Fixed Skill and build validated deterministic methodology resources."""
