@@ -10,6 +10,7 @@ sys.path.insert(0, str(ASSET_ROOT))
 from input_contract import (  # noqa: E402
     MAX_COMPANY_IDS,
     order_records_for_request,
+    project_company_baseline,
     resolve_company_records,
     validate_batch_request,
 )
@@ -89,6 +90,27 @@ class GovernedRecordTests(unittest.TestCase):
                 [{"company_id": 13}, {"company_id": 13}, {"company_id": 59}],
                 request,
             )
+
+    def test_baseline_projection_excludes_sensitive_named_fields(self) -> None:
+        record = {
+            "company_id": 13,
+            "company_name": "Tabuk",
+            "country": "SA",
+            "api_secret": "do-not-forward",
+            "storage_path": "do-not-forward",
+            "object_key": "do-not-forward",
+            "authorization_note": "do-not-forward",
+        }
+
+        projected = project_company_baseline(record)
+
+        self.assertEqual(projected["company_id"], 13)
+        self.assertEqual(projected["company_name"], "Tabuk")
+        self.assertEqual(projected["country"], "SA")
+        self.assertNotIn("api_secret", projected)
+        self.assertNotIn("storage_path", projected)
+        self.assertNotIn("object_key", projected)
+        self.assertNotIn("authorization_note", projected)
 
 
 if __name__ == "__main__":
