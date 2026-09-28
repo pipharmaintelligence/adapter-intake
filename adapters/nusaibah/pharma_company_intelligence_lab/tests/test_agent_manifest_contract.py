@@ -82,6 +82,24 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, prompt)
 
+    def test_evidence_critic_instruction_requires_plan_requirement_dispositions(self) -> None:
+        prompt = (
+            self.agents["evidence_critic"]["definition"]["chain"]["steps"][0]
+            ["input"]["text"]
+        )
+        required_phrases = (
+            "Evaluate every supplied planner requirement",
+            "exact supplied requirement_id",
+            "unmet_plan_requirements",
+            "unresolved_evidence",
+            "unsatisfied",
+            "Do not invent requirement IDs.",
+            "do not authorize memory mutation.",
+        )
+        for phrase in required_phrases:
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, prompt)
+
     def test_gemini_38_roles_omit_sampling_parameters(self) -> None:
         for role, (model, _thinking, _max_tokens, _search) in EXPECTED.items():
             if model != "gemini-3.8-flash":
