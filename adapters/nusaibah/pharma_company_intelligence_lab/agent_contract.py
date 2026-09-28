@@ -15,10 +15,10 @@ CRITIC_SCHEMA_VERSION = "pharma_evidence_critic.v1"
 SYNTHESIS_SCHEMA_VERSION = "pharma_synthesis_agent.v1"
 BENCHMARK_SCHEMA_VERSION = "pharma_memory_benchmark.v1"
 
-MAX_CLAIMS = 64
+MAX_CLAIMS = 16
 MAX_UNCERTAINTIES = 32
 MAX_LIST_ITEMS = 64
-MAX_TEXT_CHARS = 4000
+MAX_TEXT_CHARS = 2000
 MAX_CITATIONS_OUTPUT = 24
 
 RESEARCH_ROLE_SECTIONS: dict[str, tuple[str, ...]] = {
@@ -342,8 +342,13 @@ def _require_section_content(sections: list[dict[str, Any]]) -> None:
         if subsections:
             if any(not item["content"] for item in subsections):
                 raise ValueError("Every required subsection must contain explicit content.")
-        elif not section["content"]:
-            raise ValueError("Every required section without subsections must contain explicit content.")
+            if any(len(item["content"]) > MAX_TEXT_CHARS for item in subsections):
+                raise ValueError("Required subsection content exceeds the downstream input bound.")
+        else:
+            if not section["content"]:
+                raise ValueError("Every required section without subsections must contain explicit content.")
+            if len(section["content"]) > MAX_TEXT_CHARS:
+                raise ValueError("Required section content exceeds the downstream input bound.")
 
 
 def _text(value: Any, field: str, *, max_chars: int = MAX_TEXT_CHARS, allow_blank: bool = False) -> str:
