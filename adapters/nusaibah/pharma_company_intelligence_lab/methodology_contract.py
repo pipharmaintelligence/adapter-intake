@@ -52,7 +52,7 @@ _PLANNER_FOCUS_KEYS = frozenset(
         "evidence_focus",
     }
 )
-_PLANNER_CONTROL_KEY_TOKENS = frozenset(
+_FORBIDDEN_PLANNER_CONTROL_KEY_TOKENS = frozenset(
     {
         "provider",
         "model",
@@ -620,7 +620,7 @@ def _reject_planner_control_keys(value: Any) -> None:
         for key, child in value.items():
             if isinstance(key, str):
                 tokens = set(re.split(r"[^a-z0-9]+", key.lower()))
-                if tokens & _PLANNER_CONTROL_KEY_TOKENS:
+                if tokens & _FORBIDDEN_PLANNER_CONTROL_KEY_TOKENS:
                     raise ValueError("Methodology plan contains a forbidden control-authority field.")
             _reject_planner_control_keys(child)
     elif isinstance(value, list):
