@@ -1,0 +1,88 @@
+name: PI-1954 Pharma 0.1.1 Validation R5
+
+on:
+  push:
+    branches:
+      - pi/validate/pharma-0-1-1-admission-fix-r5
+
+permissions:
+  contents: read
+
+jobs:
+  adapter-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact validation ref
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Create minimal runtime contract stubs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pi1954_stubs/adapters /tmp/pi1954_stubs/devtools
+          touch /tmp/pi1954_stubs/adapters/__init__.py
+          touch /tmp/pi1954_stubs/devtools/__init__.py
+          cat > /tmp/pi1954_stubs/adapters/base.py <<'PY'
+          class Adapter:
+              pass
+          PY
+          cat > /tmp/pi1954_stubs/devtools/skill_citation.py <<'PY'
+          from dataclasses import dataclass
+
+          @dataclass(frozen=True)
+          class CitationRef:
+              locator: str
+              title: str | None = None
+              source_kind: str | None = None
+              provider_family: str | None = None
+              provider_turn_index: int | None = None
+
+          def dedupe_citations(citations):
+              seen = set()
+              result = []
+              for citation in citations:
+                  key = (citation.locator, citation.source_kind, citation.provider_family)
+                  if key in seen:
+                      continue
+                  seen.add(key)
+                  result.append(citation)
+              return tuple(result)
+          PY
+
+      - name: Compile full adapter source
+        shell: bash
+        env:
+          PYTHONPATH: /tmp/pi1954_stubs
+        run: |
+          set -euo pipefail
+          python -m compileall -q adapters/nusaibah/pharma_company_intelligence_lab
+
+      - name: Run full deterministic adapter suite
+        shell: bash
+        env:
+          PYTHONPATH: /tmp/pi1954_stubs
+        run: |
+          set -euo pipefail
+          python -m unittest discover \
+            -s adapters/nusaibah/pharma_company_intelligence_lab/tests \
+            -p 'test_*.py' \
+            -v
+
+      - name: Verify package source formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check 3120877ecbed73480a052eea17bacc2d6fd3dca5...HEAD -- adapters/nusaibah/pharma_company_intelligence_lab
+
+      - name: Verify no promoted-byte drift outside declared package source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --name-only 3120877ecbed73480a052eea17bacc2d6fd3dca5...HEAD -- adapters/nusaibah/pharma_company_intelligence_lab
