@@ -1,9 +1,9 @@
 name: PI-1954 Final Adapter Validation
 
 on:
-  pull_request:
+  push:
     branches:
-      - naljaloudi/pi-1951-advanced-pharma-company-intelligence-lab-multi-agent
+      - pi/e8-final-validation/pharma-methodology-planner
 
 permissions:
   contents: read
