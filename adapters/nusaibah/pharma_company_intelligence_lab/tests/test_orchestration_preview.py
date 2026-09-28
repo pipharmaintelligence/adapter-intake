@@ -31,6 +31,9 @@ class FakeSkill:
             package_digest="sha256:" + "1" * 64,
         )
 
+    def read(self) -> str:
+        return (self.root / "SKILL.md").read_text(encoding="utf-8")
+
     def read_resource(self, path: str) -> str:
         return (self.root / path).read_text(encoding="utf-8")
 
