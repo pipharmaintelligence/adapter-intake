@@ -6,7 +6,7 @@ Canonical adapter-intake source for `nusaibah.pharma_company_intelligence_lab`.
 
 - `0.1.0` is an immutable published Assets identity.
 - `0.1.1` is the corrective adapter-intake release for remote Agent admission compatibility.
-- The correction does not change business orchestration, prompts, Fixed Skill bytes, Dynamic Skill behavior, model selection, thinking levels, search policy, provider binding selectors, or canonical dossier structure.
+- The correction changes the adapter's declared version identity to `0.1.1` but does not change business orchestration, prompts, Fixed Skill bytes, Dynamic Skill behavior, model selection, thinking levels, search policy, provider binding selectors, or canonical dossier structure.
 - The correction makes every packaged Agent reuse one canonical shared `provider:text_generation@1.0.0` registry entry.
 
 Do not rewrite or republish `0.1.0` in place. Any package-byte correction after publication must use a new asset version.
