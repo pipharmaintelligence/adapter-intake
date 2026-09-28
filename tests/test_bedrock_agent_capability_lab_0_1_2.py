@@ -84,21 +84,31 @@ def test_manifest_is_independent_bedrock_reference_asset() -> None:
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
 
     assert manifest["key"] == "nusaibah.bedrock_agent_capability_lab"
-    assert manifest["default"] == "0.1.0"
-    assert list(manifest["versions"]) == ["0.1.0"]
+    assert manifest["default"] == "0.1.2"
+    assert list(manifest["versions"]) == ["0.1.2"]
     assert manifest["execution"] == {
         "allowed_substrates": ["local_worker"],
         "default_substrate": "local_worker",
     }
 
-    version = manifest["versions"]["0.1.0"]
+    version = manifest["versions"]["0.1.2"]
     assert set(version["agents"]) == {"bedrock_orchestrator"}
     assert "public_web" not in version
 
     agent = version["agents"]["bedrock_orchestrator"]
     assert agent["contract_key"] == "agent.nusaibah.bedrock_agent_capability_lab"
 
+    registry_entry = agent["definition"]["registry_entries"][0]
+    assert registry_entry["handle"] == "provider:text_generation"
+    assert registry_entry["version"] == "1.0.0"
+    assert registry_entry["metadata"] == {
+        "provisioning_source": "pi_1895_capability_lab"
+    }
+
     chain = agent["definition"]["chain"]
+    assert chain["metadata"] == {
+        "provisioning_source": "pi_1957_bedrock_capability_lab_0_1_2"
+    }
     assert chain["chain_id"] == "agent.nusaibah.bedrock_agent_capability_lab"
     assert len(chain["steps"]) == 1
 
@@ -125,7 +135,7 @@ def test_adapter_source_is_provider_api_blind_and_vertex_independent() -> None:
     tree = ast.parse(source)
 
     assert 'key: ClassVar[str] = "nusaibah.bedrock_agent_capability_lab"' in source
-    assert 'version: ClassVar[str] = "0.1.0"' in source
+    assert 'version: ClassVar[str] = "0.1.2"' in source
     assert 'BEDROCK_AGENT_ROLE = "bedrock_orchestrator"' in source
     assert "vertex_grounded_orchestrator" not in source
     assert "search_enabled" not in source

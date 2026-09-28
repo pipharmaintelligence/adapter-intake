@@ -611,7 +611,7 @@ class NusaibahBedrockAgentCapabilityLabAdapter(Adapter):
     """Reference adapter for governed AWS Bedrock Agent capability proofs."""
 
     key: ClassVar[str] = "nusaibah.bedrock_agent_capability_lab"
-    version: ClassVar[str] = "0.1.0"
+    version: ClassVar[str] = "0.1.2"
 
     def invoke(
         self,
