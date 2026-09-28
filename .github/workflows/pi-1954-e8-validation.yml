@@ -42,6 +42,17 @@ jobs:
               source_kind: str | None = None
               provider_family: str | None = None
               provider_turn_index: int | None = None
+
+          def dedupe_citations(citations):
+              seen = set()
+              result = []
+              for citation in citations:
+                  key = (citation.locator, citation.source_kind, citation.provider_family)
+                  if key in seen:
+                      continue
+                  seen.add(key)
+                  result.append(citation)
+              return tuple(result)
           PY
 
       - name: Compile adapter package
