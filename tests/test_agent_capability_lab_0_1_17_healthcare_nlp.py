@@ -171,6 +171,7 @@ def test_combined_stage_passes_aggregated_healthcare_context_to_vertex() -> None
             },
             "research",
             (SimpleNamespace(locator="https://example.test"),),
+            (SimpleNamespace(locator="https://publisher.example.test"),),
         )
 
     namespace["_run_vertex_certification_research"] = research
@@ -191,6 +192,7 @@ def test_combined_stage_passes_aggregated_healthcare_context_to_vertex() -> None
     assert result["vertex_healthcare_nlp_combined_verified"] is True
     assert result["vertex_healthcare_nlp_raw_clinical_text_forwarded"] is False
     assert result["vertex_healthcare_nlp_provenance_citation_count"] == 1
+    assert result["vertex_healthcare_nlp_direct_reference_count"] == 1
 
 
 def test_manifest_declares_only_the_reviewed_healthcare_runtime_tool() -> None:

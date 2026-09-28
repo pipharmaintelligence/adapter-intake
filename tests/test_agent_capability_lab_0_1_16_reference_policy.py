@@ -43,6 +43,10 @@ class _ReferenceTargetFactory:
     def from_agent_citation(cls, citation: SimpleNamespace) -> str:
         return citation.locator
 
+    @classmethod
+    def from_skill_reference(cls, citation: SimpleNamespace) -> str:
+        return citation.locator
+
 
 class _Memory:
     def read(self) -> str:
@@ -90,7 +94,12 @@ class _ResearchInputs:
         if code is not None:
             raise PublicReferenceError(code)
         text = "" if target in self.unreadable else "Readable public evidence."
-        return SimpleNamespace(text=text, transport="http")
+        return SimpleNamespace(
+            text=text,
+            transport="http",
+            final_url=target,
+            title="Verified public source",
+        )
 
 
 def _namespace(functions: set[str]) -> dict[str, object]:
@@ -137,6 +146,14 @@ def _namespace(functions: set[str]) -> dict[str, object]:
         "AgentCitationView": _CitationViewFactory,
         "ReferenceTarget": _ReferenceTargetFactory,
         "PublicReferenceError": PublicReferenceError,
+        "hashlib": __import__("hashlib"),
+        "CitationRef": SimpleNamespace,
+        "dedupe_citations": lambda items: tuple(
+            {
+                (item.locator, getattr(item, "title", None)): item
+                for item in items
+            }.values()
+        ),
     }
     exec(compile(module, str(ADAPTER_PATH), "exec"), namespace)
     return namespace
@@ -160,6 +177,10 @@ def _research_namespace() -> dict[str, object]:
             "_is_public_https_reference_candidate",
             "_is_degradable_public_reference_error",
             "_partition_vertex_reference_candidates",
+            "_citation_locator_set_digest",
+            "_source_pointer_set_digest",
+            "_is_vertex_grounding_redirect_url",
+            "_direct_skill_reference",
             "_run_vertex_certification_research",
         }
     )
@@ -174,13 +195,18 @@ def test_only_public_https_candidates_are_opened() -> None:
     )
     inputs = _ResearchInputs()
 
-    evidence, _text, citations = namespace["_run_vertex_certification_research"](
+    evidence, _text, citations, direct = namespace["_run_vertex_certification_research"](
         inputs,
         _Memory(),
     )
 
     assert inputs.reference_calls == ["https://example.test/evidence"]
     assert tuple(item.locator for item in citations) == (
+        "doi:10.1234/example",
+        "http://example.test/not-admitted",
+        "https://example.test/evidence",
+    )
+    assert tuple(item.locator for item in direct) == (
         "https://example.test/evidence",
     )
     assert evidence["vertex_certification_web_reference_candidate_count"] == 1
@@ -198,7 +224,7 @@ def test_non_web_only_citations_are_not_treated_as_public_reference_failures() -
     )
     inputs = _ResearchInputs()
 
-    evidence, _text, citations = namespace["_run_vertex_certification_research"](
+    evidence, _text, citations, direct = namespace["_run_vertex_certification_research"](
         inputs,
         _Memory(),
     )
@@ -207,16 +233,17 @@ def test_non_web_only_citations_are_not_treated_as_public_reference_failures() -
         "doi:10.1234/example",
         "urn:example:record:1",
     )
+    assert direct == ()
     assert inputs.reference_calls == []
     assert evidence["vertex_certification_web_reference_candidate_count"] == 0
     assert evidence["vertex_certification_non_web_reference_count"] == 2
     assert evidence["vertex_certification_unsupported_web_reference_count"] == 0
     assert evidence["vertex_certification_reference_status"] == "not_applicable"
     assert evidence["vertex_certification_reference_failure_count"] == 0
-    assert evidence["vertex_certification_mutation_eligible"] is True
+    assert evidence["vertex_certification_mutation_eligible"] is False
     assert (
         evidence["vertex_certification_mutation_evidence_basis"]
-        == "provider_grounding_with_admitted_provenance"
+        == "provider_grounding_without_verified_direct_reference"
     )
 
 
@@ -235,19 +262,20 @@ def test_blocked_or_unreachable_urls_degrade_without_aborting_research() -> None
         }
     )
 
-    evidence, _text, citations = namespace["_run_vertex_certification_research"](
+    evidence, _text, citations, direct = namespace["_run_vertex_certification_research"](
         inputs,
         _Memory(),
     )
 
     assert tuple(item.locator for item in citations) == (first, second)
+    assert direct == ()
     assert inputs.reference_calls == [first, second]
     assert evidence["vertex_certification_reference_status"] == "degraded"
     assert evidence["vertex_certification_reference_verification_complete"] is False
-    assert evidence["vertex_certification_mutation_eligible"] is True
+    assert evidence["vertex_certification_mutation_eligible"] is False
     assert (
         evidence["vertex_certification_mutation_evidence_basis"]
-        == "provider_grounding_with_admitted_provenance"
+        == "provider_grounding_without_verified_direct_reference"
     )
     assert evidence["vertex_certification_reference_failure_count"] == 2
 
@@ -300,6 +328,7 @@ def test_certification_no_longer_short_circuits_degraded_provider_provenance() -
         assert rendered not in {"not citations", "len(citations) == 0"}
 
     rendered_function = ast.unparse(function)
+    assert "if not direct_references" in rendered_function
     assert "inputs.dynamic_skill(COMPANY_MEMORY_UPDATE_ROLE" in rendered_function
     assert "dynamic_skill_reference_followup_required" in rendered_function
     assert "dynamic_skill_mutation_evidence_basis" in rendered_function
@@ -322,8 +351,14 @@ def test_fresh_verification_still_proves_governed_state_when_urls_are_unreachabl
     }
 
     citations = (
-        _citation("doi:10.1234/example", "doi"),
-        _citation("https://blocked.example.test/evidence", "web"),
+        SimpleNamespace(
+            provider_family=None,
+            provider_turn_index=None,
+            source_pointer=(),
+            source_kind="skill_reference",
+            locator="https://blocked.example.test/evidence",
+            title="web",
+        ),
     )
 
     class Metadata:
@@ -412,7 +447,7 @@ def test_fresh_verification_still_proves_governed_state_when_urls_are_unreachabl
     assert result["dynamic_skill_reference_revalidation_status"] == "degraded"
     assert result["dynamic_skill_reference_revalidation_complete"] is False
     assert result["dynamic_skill_web_reference_candidate_count"] == 1
-    assert result["dynamic_skill_non_web_reference_count"] == 1
+    assert result["dynamic_skill_non_web_reference_count"] == 0
     assert result["dynamic_skill_unsupported_web_reference_count"] == 0
     assert result["dynamic_skill_reference_revalidation_attempt_count"] == 1
     assert result["dynamic_skill_revalidated_reference_count"] == 0
