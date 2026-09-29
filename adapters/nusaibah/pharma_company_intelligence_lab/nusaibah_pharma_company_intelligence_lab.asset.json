@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.pharma_company_intelligence_lab",
-  "default": "0.1.2",
+  "default": "0.1.3",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -16,15 +16,17 @@
     "timeout_seconds": 1800
   },
   "versions": {
-    "0.1.2": {
+    "0.1.3": {
       "state": "active",
       "inputs": {
         "companies": {
           "required": true,
-          "shape": "list"
+          "source": "binding",
+          "shape": "object"
         },
         "variables": {
           "required": true,
+          "source": "direct",
           "shape": "object"
         }
       },
