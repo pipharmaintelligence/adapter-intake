@@ -68,6 +68,7 @@ class GovernedRecordTests(unittest.TestCase):
         self.assertNotIn("company_id", shared[0])
         self.assertEqual(adapted[0]["company_id"], 13)
         self.assertEqual(adapted[0]["company_name"], "Tabuk Pharmaceuticals")
+
     def test_accepts_records_envelope_and_normalizes_database_schema(self) -> None:
         records = [
             {"id": 13, "company": "Tabuk Pharmaceuticals"},
