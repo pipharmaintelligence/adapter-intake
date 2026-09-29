@@ -116,7 +116,7 @@ After review:
 
 ## Independent environment prerequisite
 
-The immutable methodology Skill is locally valid but still requires governed publication in the target Assets/Core environment:
+The immutable methodology Skill is locally valid. Its ZIP has been uploaded to the governed Fixed Skill node, but upload alone does not prove publication visibility or signed resolver/Core delivery. Verify the exact publication in the target environment:
 
 ```text
 nusaibah.pharma-intelligence-methodology@1.0.0
