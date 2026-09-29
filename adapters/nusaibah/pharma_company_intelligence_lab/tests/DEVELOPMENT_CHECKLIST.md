@@ -1,123 +1,145 @@
-# PI-1951 / PI-1954 — 0.1.2 Python-Orchestration Ownership Correction Checklist
+# PI-1951 / PI-1954 — 0.1.3 Governed Companies Binding Correction Checklist
 
-Asset candidate: `nusaibah.pharma_company_intelligence_lab@0.1.2`
+Asset candidate: `nusaibah.pharma_company_intelligence_lab@0.1.3`
 
 This file is development-only and excluded from promoted runtime bytes.
 
-## Why 0.1.2 exists
+## Why 0.1.3 exists
 
-`0.1.1` was successfully promoted, all eight Agent chains were admitted, and primitive Vertex/provider-grounding live proofs passed. The first one-company live composition then failed before run creation with HTTP 422 and validation field `agent_runtime`.
+`0.1.2` proved the Python orchestration ownership gate and loaded the reviewed adapter, but the live launch supplied a direct `companies` record. That bypassed the intended governed Assets/DLM input binding and therefore did not prove a fresh read from the database-backed company node.
 
-Current Assets source requires a Python-owned Agent orchestration package to declare exactly:
+The production contract is:
 
-```python
-AGENT_ORCHESTRATION_OWNER = "python_adapter"
+```text
+caller variables.company_ids
+        ↓
+Assets governed input binding
+        ↓
+lake_id=test_database_lake
+node_key=companies
+        ↓
+database PK column id
+        ↓
+resolved records envelope
+        ↓
+Python normalization
+id -> company_id
+company -> company_name
 ```
 
-The pharma adapter already owns orchestration through `inputs.invoke_agent(...)` but `0.1.1` omitted that immutable package marker. Without it, Assets classifies the asset into the server-native single-Agent readiness lane and blocks launch. Because the correction changes packaged adapter bytes, the fix is `0.1.2`; do not rewrite `0.1.1`.
+The manifest change and normalization helper change package bytes, so the correction is `0.1.3`; do not rewrite `0.1.2`.
 
-## Non-negotiable 0.1.2 compatibility rules
+## Non-negotiable 0.1.3 contract
 
-- [x] `adapter.yaml` version is `0.1.2`.
-- [x] Exact packaged adapter module declares `AGENT_ORCHESTRATION_OWNER = "python_adapter"` exactly once.
-- [x] Manifest default is `0.1.2`.
-- [x] Intake manifest carries only current version `0.1.2`; Assets materialization must preserve published `0.1.0`.
-- [x] All eight roles reuse one byte-equivalent `provider:text_generation@1.0.0` registry entry.
-- [x] Shared registry metadata is canonical: `provisioning_source=pi_1895_capability_lab`.
-- [x] Agent-specific provenance remains on chain metadata only.
-- [x] Model, thinking, search, citation, provider-vault selectors, prompts, budgets, safety policy, and chain identities are unchanged from `0.1.0`.
-- [x] Fixed Skill version/digest/bytes are unchanged.
+- [x] `adapter.yaml` version is `0.1.3`.
+- [x] Manifest default and sole intake version are `0.1.3`.
+- [x] `companies.required=true`.
+- [x] `companies.source=binding`.
+- [x] `companies.shape=object`.
+- [x] `variables.required=true`.
+- [x] `variables.source=direct`.
+- [x] `variables.shape=object`.
+- [x] Exact governed source is `test_database_lake / companies`.
+- [x] Governed database identity column is `id`, not `company_id`.
+- [x] Governed company-name column is `company`.
+- [x] Adapter normalizes `id -> company_id` and `company -> company_name`.
+- [x] Adapter rejects conflicting `id` / `company_id`.
+- [x] Adapter preserves exact requested/resolved company-set parity.
+- [x] Python owns no DLM/Core/database query.
+- [x] Direct caller `companies` is forbidden by manifest/runtime ownership.
+- [x] Fixed methodology Skill identity/version/digest/bytes are unchanged.
 - [x] Dynamic Skill roles and dossier output contract are unchanged.
-- [x] No cross-company benchmark/ranking/scoring requirement exists; `[13,59]` is isolation/composition proof only.
+- [x] All Agent definitions/provider policies remain unchanged from `0.1.2`.
+- [x] No cross-company benchmark/ranking/scoring requirement is introduced.
 
-## Runtime compatibility
+## DLM UI discovery proof
 
-- [x] Minimum runtime remains `pi-obs-python-runtime>=0.1.84`.
-- [x] Developer proved local wheel `0.1.88`.
-- [x] Current Assets admission service keys registry state by handle/version/owner and compares registry metadata.
-- [x] Current Assets admission supports multi-Agent role selection and dry-run/apply.
-- [x] Current Vertex transport supports declared Gemini models, thinking levels, JSON mode, and provider grounding.
-- [x] Adapter code owns no credentials, direct provider transport, storage, Core calls, workers, or publication authority.
+The current DLM UI Input Binding workspace loads Assets workflow-sequence and filters `io_descriptor.input_roles` for binding-capable roles.
+
+Required post-promotion proof:
+
+- [ ] Assets workflow-sequence projects `companies.source=binding`.
+- [ ] Assets workflow-sequence projects `variables.source=direct`.
+- [ ] DLM UI Input Binding modal offers `companies`.
+- [ ] DLM UI does not offer `variables` as a governed binding role.
+
+## Database row-filter boundary
+
+The `companies` node schema uses ordinary database column `id` as its primary key. It is not a DLM partition key.
+
+Current UI inspection shows the Input Binding request form authors `partition_filters_from_variables` from `schema_presentation.partition_fields`. Therefore:
+
+- [x] Do not fake `id` as a partition field.
+- [x] Do not encode `id <- company_ids` as a partition mapping merely to make the form green.
+- [ ] Before live variables-only execution, prove the supported bounded row/data filter mapping for `id <- company_ids`.
+- [ ] If the current UI cannot author that mapping, close the owning Assets/UI contract separately; do not push database/query logic into this adapter.
 
 ## Deterministic regression requirements
 
-- [ ] Full deterministic suite passes after 0.1.2 changes.
-- [ ] New test proves adapter.yaml == manifest default == sole intake version `0.1.2`.
-- [ ] New test proves the Python Agent orchestration owner marker exists exactly once.
-- [ ] New test proves all eight registry entries are exactly canonical and byte-equivalent.
-- [ ] New test proves chain-specific provenance remains outside shared registry metadata.
-- [ ] Existing model/thinking/search policy tests pass unchanged.
-- [ ] Existing Agent prompt/authority tests pass unchanged.
-- [ ] Existing cross-company isolation and preview-zero-mutation tests pass unchanged.
+- [ ] Full pharma deterministic suite passes.
+- [x] Test freezes adapter.yaml == manifest default == sole intake version `0.1.3`.
+- [x] Test freezes `companies=binding/object`.
+- [x] Test freezes `variables=direct/object`.
+- [x] Test proves DB-shaped records `id/company` normalize to semantic `company_id/company_name`.
+- [x] Test proves conflicting DB/semantic identity fails closed.
+- [x] Test proves requested order is restored after governed resolution.
+- [x] Test proves sensitive named fields are excluded from projected company baseline.
+- [ ] Existing Agent contract tests pass unchanged except version constant.
+- [ ] Existing preview/isolation tests pass with DB-shaped records envelope.
 - [ ] Existing expected-digest/readback/history safety tests pass unchanged.
 - [ ] Local-root and packaged dotted imports pass.
 - [ ] `git diff --check` passes.
 
 ## Local/intake certification
 
-- [ ] Working tree is clean on the exact 0.1.2 RC SHA.
-- [ ] Local HEAD equals remote branch SHA.
-- [ ] `obs-asset-diagnose --quick` is ready.
-- [ ] Single-adapter `obs-adapter-intake-check` is ready.
-- [ ] Repo-wide `obs-adapter-intake-check --root .` is ready.
-- [ ] `obs-asset-promote --precommit-status passed` reports `promotion_plan_ready`.
-- [ ] Promotion plan copies exactly the reviewed adapter/helpers/support/Skill set.
+- [ ] `obs-asset-diagnose --quick --adapter-root <pharma-root> --pretty` is ready.
+- [ ] Single-adapter `obs-adapter-intake-check --adapter-yaml <adapter.yaml> --pretty` is ready.
+- [ ] Repo-wide `obs-adapter-intake-check --root . --pretty` is ready.
+- [ ] `obs-asset-promote --adapter-yaml <adapter.yaml> --precommit-status passed --pretty` reports `promotion_plan_ready`.
 - [ ] Portable Skill digest remains `sha256:2fa082aca1c100abb60a4bf77aa4cf796da2707bb951a3b51f11948efd2dd564`.
 
-## Pinned Assets P8
+## Promotion / package proof
 
-- [ ] Dispatch `pi-obs-python-runtime.yml` with exact immutable 0.1.2 intake SHA.
-- [ ] Materializer reports preservation of published `0.1.0` and addition of `0.1.2`.
-- [ ] Manifest publication is green.
-- [ ] Runtime catalog publication is green.
-- [ ] Packaged adapter import tests are green.
-- [ ] Portable Skill digest portability is green.
-- [ ] Wheel/sdist build is green.
-- [ ] Archive inspection and forbidden-content scan are green.
-- [ ] ECS parity/evidence checks are green where applicable.
-- [ ] Full required Assets CI is green.
+Do not merge the adapter-intake PR as part of this work.
 
-## Promotion
+After review:
 
-Only after every local/intake/P8 gate above is green:
+- [ ] Push exact RC SHA.
+- [ ] Run pinned Assets validation/materialization against that SHA.
+- [ ] Confirm existing published identities are preserved and `0.1.3` is added.
+- [ ] Confirm packaged manifest exposes binding-owned `companies`.
+- [ ] Confirm runtime catalog publishes exact `0.1.3`.
+- [ ] Confirm portable Skill bytes remain unchanged.
+- [ ] Confirm package/import/build/forbidden-content checks are green.
+- [ ] Review generated Assets PR separately.
 
-- [ ] Dispatch `adapter-intake-promote-pr.yml` with exact 0.1.2 RC SHA.
-- [ ] `allow_manifest_removals=false`.
-- [ ] Review generated Assets PR only; do not recreate it manually.
-- [ ] Confirm generated package preserves `0.1.0` and adds `0.1.2`.
-- [ ] Require all relevant Assets PR CI green.
-- [ ] Merge/deploy exact `0.1.2`.
+## Independent environment prerequisite
 
-## Remote admission — first post-deploy proof
+The immutable methodology Skill is locally valid but still requires governed publication in the target Assets/Core environment:
 
-Run dry-run for all eight roles on `0.1.2`:
+```text
+nusaibah.pharma-intelligence-methodology@1.0.0
+canonical package digest:
+sha256:2fa082aca1c100abb60a4bf77aa4cf796da2707bb951a3b51f11948efd2dd564
+```
 
-- [ ] methodology_planner -> ready.
-- [ ] portfolio_researcher -> ready.
-- [ ] market_researcher -> ready.
-- [ ] regulatory_risk_researcher -> ready.
-- [ ] strategic_analyst -> ready.
-- [ ] evidence_critic -> ready.
-- [ ] intelligence_synthesizer -> ready.
-- [ ] memory_benchmark_reviewer -> ready.
+This publication does not require another pharma asset-version bump because the Skill bytes are unchanged.
 
-Then apply:
+## Live proof order
 
-- [ ] all eight roles -> `applied` or `no_change`.
-- [ ] do not use `--update-existing` merely to suppress a conflict.
-- [ ] no credentials/provider secrets cross into package or logs.
+Only after binding and Skill publication are ready:
 
-## Live proof after admission
+- [ ] Launch variables-only `company_ids=[13]`.
+- [ ] Prove governed `test_database_lake/companies` read selected exact DB row `id=13`.
+- [ ] Prove `company_memory(company_id=13)` resolves independently.
+- [ ] Prove Fixed Skill publication/delivery.
+- [ ] Prove first benchmark Agent call.
+- [ ] Prove planner/research/critic/synthesis.
+- [ ] Prove preview returns zero mutations.
+- [ ] Launch variables-only `company_ids=[13,59]`.
+- [ ] Prove exact two-row retrieval and no cross-company contamination.
+- [ ] Prove apply/readback/history separately after preview closure.
 
-- [ ] one primitive provider Agent execution succeeds.
-- [ ] each search-enabled researcher succeeds independently.
-- [ ] Fixed Skill delivery succeeds.
-- [ ] Dynamic Skill read succeeds.
-- [ ] one-company complete composition succeeds.
-- [ ] `[13,59]` preview succeeds with zero cross-company contamination and zero mutations.
-- [ ] controlled same-company Dynamic Skill apply/readback/history succeeds.
-- [ ] dossier publication is proven separately.
+## Release verdict
 
-## Release verdict rule
-
-`0.1.2` is not LIVE_PROVEN merely because local tests, P8, promotion, or admission are green. Record each maturity dimension independently in PI-1954.
+`0.1.3` is not LIVE_PROVEN merely because the manifest becomes visible in DLM UI or the PR is green. Binding discovery, row-filter execution, Fixed Skill publication/delivery, Agent/provider execution, Dynamic Skill behavior, and final preview/apply behavior remain independent gates.
