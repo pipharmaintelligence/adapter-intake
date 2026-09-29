@@ -10,7 +10,7 @@ Create a new asset version whenever adapter code, manifest metadata, reviewed he
 
 ## Batch contract
 
-The target launch variable is a bounded `company_ids` array such as `[13, 59]`. `companies` is binding-owned and `variables` is direct. The governed company source is `lake_id=test_database_lake`, `node_key=companies`; its primary-key column is `id` and its company-name column is `company`. Assets/Core must resolve the governed `companies` input before Python starts. The adapter normalizes `id -> company_id` and `company -> company_name`, validates exact requested/resolved ID parity, and processes each company context independently. Python does not query DLM/Core or the database directly.
+The target launch variable is a bounded `company_ids` array such as `[13, 59]`. `companies` is binding-owned and `variables` is direct. The governed company source is `lake_id=test_database_lake`, `node_key=companies`; its primary-key column is `id` and its company-name column is `company`. Assets/Core must resolve the governed `companies` input before Python starts. The `0.1.3` adapter module normalizes `id -> company_id` and `company -> company_name`, validates exact requested/resolved ID parity, and processes each company context independently. Shared reviewed helpers remain compatible with retained published versions; version-specific normalization is kept inside the versioned adapter implementation rather than creating parallel helper files. Python does not query DLM/Core or the database directly.
 
 ## Format ownership
 
@@ -25,4 +25,4 @@ Development progress and release evidence are tracked in Linear PI-1951 and in t
 
 The manifest intentionally declares `companies.source=binding` so Assets projects that role to the DLM UI Input Binding workflow, while `variables.source=direct` keeps launch variables out of the binding picker.
 
-Role visibility is not the same as a ready database selector. The current database node uses ordinary schema column `id`; it must not be mislabeled as a partition field. The governed binding/runtime layer must support the row/data mapping `id <- company_ids` before live variables-only execution can be considered proven.
+Role visibility is not the same as a ready database selector. The current database node uses ordinary schema column `id`; it must not be mislabeled as a partition field. The governed binding/runtime layer supports the row/data mapping `id <- company_ids` through the bounded materialized-retrieval binding lane. This is a row/data filter, not a partition mapping, and live variables-only execution still requires a ready `0.1.3` binding plus exact runtime proof.
