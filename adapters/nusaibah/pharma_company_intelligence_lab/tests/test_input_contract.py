@@ -11,6 +11,7 @@ from input_contract import (  # noqa: E402
     MAX_COMPANY_IDS,
     order_records_for_request,
     project_company_baseline,
+    resolve_company_records as resolve_shared_company_records,
     validate_batch_request,
 )
 from nusaibah_pharma_company_intelligence_lab_adapter import resolve_company_records  # noqa: E402
@@ -57,6 +58,16 @@ class BatchRequestTests(unittest.TestCase):
 
 
 class GovernedRecordTests(unittest.TestCase):
+    def test_shared_resolver_remains_generic_and_adapter_owns_database_normalization(self) -> None:
+        records = [{"id": 13, "company": "Tabuk Pharmaceuticals"}]
+
+        shared = resolve_shared_company_records({"companies": {"records": records}})
+        adapted = resolve_company_records({"companies": {"records": records}})
+
+        self.assertEqual(shared, records)
+        self.assertNotIn("company_id", shared[0])
+        self.assertEqual(adapted[0]["company_id"], 13)
+        self.assertEqual(adapted[0]["company_name"], "Tabuk Pharmaceuticals")
     def test_accepts_records_envelope_and_normalizes_database_schema(self) -> None:
         records = [
             {"id": 13, "company": "Tabuk Pharmaceuticals"},
