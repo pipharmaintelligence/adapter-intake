@@ -81,10 +81,12 @@ class FakeInputs(dict):
                     "memory_mode": "preview",
                     "publish_dossier": False,
                 },
-                "companies": [
-                    {"company_id": 59, "company_name": "Pfizer", "country": "US"},
-                    {"company_id": 13, "company_name": "Tabuk Pharmaceuticals", "country": "SA"},
-                ],
+                "companies": {
+                    "records": [
+                        {"id": 59, "company": "Pfizer", "country": "US"},
+                        {"id": 13, "company": "Tabuk Pharmaceuticals", "country": "SA"},
+                    ]
+                },
             }
         )
         self.wrong_company_role = wrong_company_role
