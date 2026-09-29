@@ -398,3 +398,461 @@ def _run_methodology_planner(
     company_id: int,
     company_name_value: str,
     baseline: dict[str, Any],
+    request: BatchRequest,
+    methodology: MethodologyResources,
+    before_benchmark: dict[str, Any],
+) -> MethodologyPlan:
+    """Create and validate one company-scoped adaptive methodology plan."""
+    envelope = inputs.invoke_agent(
+        PLANNER_ROLE,
+        input={
+            "company_id": company_id,
+            "company_name": company_name_value,
+            "objective": request.objective,
+            "research_depth": request.research_depth,
+            "methodology_packet": methodology.planner_packet.to_agent_input(),
+            "governed_company_baseline": baseline,
+            "memory_benchmark": before_benchmark,
+            "canonical_sections": [
+                {
+                    "section_id": section.section_id,
+                    "title": section.title,
+                }
+                for section in CANONICAL_SECTIONS
+            ],
+            "research_role_sections": {
+                role: list(RESEARCH_ROLE_SECTIONS[role])
+                for role in RESEARCH_ROLES
+            },
+            "allowed_research_roles": list(RESEARCH_ROLES),
+            "response_contract": {
+                "schema_version": PLANNER_SCHEMA_VERSION,
+                "role": PLANNER_ROLE,
+            },
+        },
+        on_error="raise",
+    )
+    value, _ = extract_agent_json(
+        envelope,
+        expected_role=PLANNER_ROLE,
+        company_id=company_id,
+        expected_schema_version=PLANNER_SCHEMA_VERSION,
+    )
+    return validate_methodology_plan(value, company_id=company_id)
+
+
+def _run_research_fanout(
+    inputs: Any,
+    *,
+    company_id: int,
+    company_name_value: str,
+    baseline: dict[str, Any],
+    memory_text: str,
+    request: BatchRequest,
+    methodology_plan: MethodologyPlan,
+) -> dict[str, dict[str, Any]]:
+    results: dict[str, dict[str, Any]] = {}
+
+    def run(role: str) -> dict[str, Any]:
+        required_sections = _section_requests(RESEARCH_ROLE_SECTIONS[role])
+        methodology_focus = methodology_plan.role_focus(role)
+        envelope = inputs.invoke_agent(
+            role,
+            input={
+                "company_id": company_id,
+                "company_name": company_name_value,
+                "objective": request.objective,
+                "research_depth": request.research_depth,
+                "governed_company_baseline": baseline,
+                "existing_company_memory": memory_text,
+                "required_sections": required_sections,
+                "methodology_plan": methodology_focus,
+                "response_contract": {
+                    "schema_version": RESEARCH_SCHEMA_VERSION,
+                    "role": role,
+                    "required_section_ids": list(RESEARCH_ROLE_SECTIONS[role]),
+                },
+            },
+            on_error="raise",
+        )
+        value, agent_result = extract_agent_json(
+            envelope,
+            expected_role=role,
+            company_id=company_id,
+            expected_schema_version=RESEARCH_SCHEMA_VERSION,
+        )
+        payload = validate_research_payload(value, role=role, company_id=company_id)
+        payload["_citations"] = _agent_citations(agent_result)
+        return payload
+
+    with ThreadPoolExecutor(max_workers=3, thread_name_prefix="pharma-research") as pool:
+        futures = {pool.submit(run, role): role for role in RESEARCH_ROLES}
+        for future in as_completed(futures):
+            role = futures[future]
+            results[role] = future.result()
+
+    return {role: results[role] for role in RESEARCH_ROLES}
+
+
+def _join_research(research: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    claims: list[dict[str, Any]] = []
+    uncertainties: list[str] = []
+    sections: list[dict[str, Any]] = []
+    citations: list[Any] = []
+    seen_claim_ids: set[str] = set()
+
+    for role in RESEARCH_ROLES:
+        payload = research[role]
+        if not payload["claims"]:
+            raise RuntimeError(f"Research role {role} returned no claims.")
+        for claim in payload["claims"]:
+            if claim["claim_id"] in seen_claim_ids:
+                raise RuntimeError("Research claim_id values must be unique across roles.")
+            seen_claim_ids.add(claim["claim_id"])
+            claims.append(claim)
+        sections.extend(payload["sections"])
+        uncertainties.extend(payload["uncertainties"])
+        citations.extend(payload["_citations"])
+
+    citations = list(_dedupe_citations(citations))
+    return {
+        "sections": sections,
+        "claims": claims,
+        "uncertainties": uncertainties,
+        "citations": citations,
+        "citation_count_by_role": {
+            role: len(research[role]["_citations"])
+            for role in RESEARCH_ROLES
+        },
+    }
+
+
+def _run_strategic(
+    inputs: Any,
+    *,
+    company_id: int,
+    company_name_value: str,
+    baseline: dict[str, Any],
+    memory_text: str,
+    joined_research: dict[str, Any],
+    methodology_plan: MethodologyPlan,
+) -> dict[str, Any]:
+    envelope = inputs.invoke_agent(
+        STRATEGIC_ROLE,
+        input={
+            "company_id": company_id,
+            "company_name": company_name_value,
+            "governed_company_baseline": baseline,
+            "existing_company_memory": memory_text,
+            "methodology_plan": {
+                "cross_cutting_questions": list(methodology_plan.cross_cutting_questions),
+            },
+            "research_evidence": _research_for_downstream(joined_research),
+            "response_contract": {
+                "schema_version": STRATEGIC_SCHEMA_VERSION,
+                "role": STRATEGIC_ROLE,
+            },
+        },
+        on_error="raise",
+    )
+    value, _ = extract_agent_json(
+        envelope,
+        expected_role=STRATEGIC_ROLE,
+        company_id=company_id,
+        expected_schema_version=STRATEGIC_SCHEMA_VERSION,
+    )
+    return validate_strategic_payload(value, company_id=company_id)
+
+
+def _run_critic(
+    inputs: Any,
+    *,
+    company_id: int,
+    company_name_value: str,
+    joined_research: dict[str, Any],
+    strategic: dict[str, Any],
+    methodology: MethodologyResources,
+    methodology_plan: MethodologyPlan,
+) -> dict[str, Any]:
+    research_section_ids = {
+        section_id
+        for role in RESEARCH_ROLES
+        for section_id in RESEARCH_ROLE_SECTIONS[role]
+    }
+    envelope = inputs.invoke_agent(
+        CRITIC_ROLE,
+        input={
+            "company_id": company_id,
+            "company_name": company_name_value,
+            "methodology_packet": {
+                "evidence_rules": list(methodology.planner_packet.evidence_rules),
+            },
+            "methodology_plan": methodology_plan.to_agent_input(),
+            "planner_requirements": list(methodology_plan.requirement_catalog()),
+            "research_evidence": _research_for_downstream(joined_research),
+            "strategic_analysis": strategic,
+            "reviewed_section_ids": sorted(research_section_ids),
+            "response_contract": {
+                "schema_version": CRITIC_SCHEMA_VERSION,
+                "role": CRITIC_ROLE,
+                "unmet_plan_requirement_ids": list(methodology_plan.requirement_ids()),
+                "unmet_plan_requirement_dispositions": [
+                    "unresolved_evidence",
+                    "unsatisfied",
+                ],
+            },
+        },
+        on_error="raise",
+    )
+    value, _ = extract_agent_json(
+        envelope,
+        expected_role=CRITIC_ROLE,
+        company_id=company_id,
+        expected_schema_version=CRITIC_SCHEMA_VERSION,
+    )
+    return validate_critic_payload(
+        value,
+        company_id=company_id,
+        known_claim_ids={claim["claim_id"] for claim in joined_research["claims"]},
+        known_section_ids=research_section_ids,
+        known_plan_requirement_ids=set(methodology_plan.requirement_ids()),
+    )
+
+
+def _require_pre_synthesis_quality(
+    research: dict[str, dict[str, Any]],
+    critic: dict[str, Any],
+) -> None:
+    if any(len(research[role]["_citations"]) == 0 for role in RESEARCH_ROLES):
+        raise RuntimeError("Every search-enabled research role must return admitted citations.")
+    if critic["recommendation"] != "pass":
+        raise RuntimeError("Evidence critic rejected the company evidence package.")
+    if critic["citation_coverage"]["status"] != "sufficient":
+        raise RuntimeError("Evidence critic reported insufficient citation coverage.")
+    if critic["unsupported_claim_ids"]:
+        raise RuntimeError("Unsupported research claims remain after critique.")
+    if critic["missing_section_ids"]:
+        raise RuntimeError("Mandatory research sections are missing after critique.")
+    if any(
+        item["disposition"] == "unsatisfied"
+        for item in critic["unmet_plan_requirements"]
+    ):
+        raise RuntimeError("Mandatory methodology plan requirements remain unsatisfied.")
+
+
+def _run_synthesis(
+    inputs: Any,
+    *,
+    company_id: int,
+    company_name_value: str,
+    baseline: dict[str, Any],
+    memory_text: str,
+    joined_research: dict[str, Any],
+    strategic: dict[str, Any],
+    critic: dict[str, Any],
+    methodology: MethodologyResources,
+    methodology_plan: MethodologyPlan,
+) -> tuple[dict[str, Any], MemoryCandidate]:
+    envelope = inputs.invoke_agent(
+        SYNTHESIS_ROLE,
+        input={
+            "company_id": company_id,
+            "company_name": company_name_value,
+            "governed_company_baseline": baseline,
+            "existing_company_memory": memory_text,
+            "methodology_packet": {
+                "memory_rules": list(methodology.planner_packet.memory_rules),
+            },
+            "methodology_plan": methodology_plan.to_agent_input(),
+            "research_evidence": _research_for_downstream(joined_research),
+            "strategic_analysis": strategic,
+            "critic_findings": critic,
+            "canonical_sections": _section_requests(
+                tuple(section.section_id for section in CANONICAL_SECTIONS)
+            ),
+            "allowed_memory_fact_ids": [
+                claim["claim_id"] for claim in joined_research["claims"]
+            ],
+            "response_contract": {
+                "schema_version": SYNTHESIS_SCHEMA_VERSION,
+                "role": SYNTHESIS_ROLE,
+                "dossier_schema_version": DOSSIER_SCHEMA_VERSION,
+            },
+        },
+        on_error="raise",
+    )
+    value, _ = extract_agent_json(
+        envelope,
+        expected_role=SYNTHESIS_ROLE,
+        company_id=company_id,
+        expected_schema_version=SYNTHESIS_SCHEMA_VERSION,
+    )
+    return validate_synthesis_payload(value, company_id=company_id)
+
+
+def _run_benchmark(
+    inputs: Any,
+    *,
+    company_id: int,
+    company_name_value: str,
+    memory_text: str,
+    questions: tuple[dict[str, str], ...],
+    stage: str,
+) -> dict[str, Any]:
+    envelope = inputs.invoke_agent(
+        BENCHMARK_ROLE,
+        input={
+            "company_id": company_id,
+            "company_name": company_name_value,
+            "memory_stage": stage,
+            "memory_text": memory_text,
+            "benchmark_questions": list(questions),
+            "response_contract": {
+                "schema_version": BENCHMARK_SCHEMA_VERSION,
+                "role": BENCHMARK_ROLE,
+                "question_ids": [item["question_id"] for item in questions],
+            },
+        },
+        on_error="raise",
+    )
+    value, _ = extract_agent_json(
+        envelope,
+        expected_role=BENCHMARK_ROLE,
+        company_id=company_id,
+        expected_schema_version=BENCHMARK_SCHEMA_VERSION,
+    )
+    return validate_benchmark_payload(
+        value,
+        company_id=company_id,
+        expected_question_ids=tuple(item["question_id"] for item in questions),
+    )
+
+
+def _apply_company_memory(inputs: Any, state: dict[str, Any]) -> dict[str, Any]:
+    company_id = state["company_id"]
+    before_digest = state["before_digest"]
+    candidate: MemoryCandidate = state["memory_candidate"]
+
+    handle = inputs.dynamic_skill(
+        "company_memory_update",
+        variables={"company_id": str(company_id)},
+    )
+    if handle.provenance().mutable is not True:
+        raise RuntimeError("company_memory_update must resolve mutable.")
+    if handle.content_digest() != before_digest:
+        raise RuntimeError("Mutable company memory digest differs from the Phase-1 baseline.")
+
+    targets = handle.find_sections(MEMORY_TARGET_SECTION)
+    if len(targets) != 1:
+        raise RuntimeError("Company memory update section must resolve exactly once.")
+    target_path = targets[0].path
+
+    changes = handle.new_changeset().replace_section(
+        target_path,
+        candidate.markdown.rstrip() + "\n",
+    )
+    for citation in state["citations"][:MAX_CITATIONS_PER_COMPANY]:
+        changes = changes.add_citation(target_path, citation)
+
+    preview = handle.preview(changes)
+    if preview.diff.old_digest != before_digest:
+        raise RuntimeError("Dynamic Skill preview baseline digest mismatch.")
+    if preview.diff.new_digest == before_digest:
+        raise RuntimeError("Dynamic Skill preview produced no change.")
+
+    receipt = handle.apply(changes, expected_digest=before_digest)
+
+    fresh = inputs.dynamic_skill(
+        "company_memory",
+        variables={"company_id": str(company_id)},
+    )
+    if fresh.provenance().mutable is not False:
+        raise RuntimeError("Fresh company memory readback must be read-only.")
+    if fresh.content_digest() != receipt.after_content_digest:
+        raise RuntimeError("Fresh company memory readback digest mismatch.")
+    if fresh.section_text(MEMORY_TARGET_SECTION).strip() != candidate.markdown.strip():
+        raise RuntimeError("Fresh company memory section content mismatch.")
+
+    final_benchmark = _run_benchmark(
+        inputs,
+        company_id=company_id,
+        company_name_value=state["company_name"],
+        memory_text=fresh.read(),
+        questions=state["benchmark_questions"],
+        stage="committed",
+    )
+    final_counts = benchmark_counts(final_benchmark)
+    final_improvement_count = benchmark_improvement_count(
+        state["before_benchmark"],
+        final_benchmark,
+    )
+
+    history = fresh.history(limit=50)
+    latest = history.latest_change()
+    if latest is None or latest.change_id != receipt.change_id:
+        raise RuntimeError("Fresh company memory history change-id mismatch.")
+    if latest.after_content_digest != receipt.after_content_digest:
+        raise RuntimeError("Fresh company memory history digest mismatch.")
+    if history.latest().content_digest != receipt.after_content_digest:
+        raise RuntimeError("Fresh company memory latest snapshot digest mismatch.")
+
+    return {
+        "memory_update_status": "applied",
+        "memory_change_id": receipt.change_id,
+        "memory_after_digest": receipt.after_content_digest,
+        "memory_readback_verified": True,
+        "benchmark_after_covered_count": final_counts["covered"],
+        "benchmark_after_partially_covered_count": final_counts["partially_covered"],
+        "benchmark_improvement_count": final_improvement_count,
+        "benchmark_result_basis": "committed_memory",
+    }
+
+
+def _research_for_downstream(joined: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "sections": joined["sections"],
+        "claims": joined["claims"],
+        "uncertainties": joined["uncertainties"],
+        "citation_count_by_role": joined["citation_count_by_role"],
+        "citation_sources": _citation_output(joined["citations"]),
+    }
+
+
+def _section_requests(section_ids: tuple[str, ...]) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for section_id in section_ids:
+        spec = SECTION_BY_ID[section_id]
+        result.append(
+            {
+                "section_id": spec.section_id,
+                "title": spec.title,
+                "subsection_ids": [item.subsection_id for item in spec.subsections],
+            }
+        )
+    return result
+
+
+def _agent_citations(agent_result: dict[str, Any]) -> tuple[Any, ...]:
+    from devtools.agent_citation_view import AgentCitationView
+
+    return AgentCitationView.from_agent_result(agent_result).deduped_citations()
+
+
+def _dedupe_citations(citations: list[Any]) -> tuple[Any, ...]:
+    from devtools.skill_citation import dedupe_citations
+
+    return dedupe_citations(citations)
+
+
+def _citation_output(citations: list[Any] | tuple[Any, ...]) -> list[dict[str, Any]]:
+    output: list[dict[str, Any]] = []
+    for citation in list(citations)[:MAX_CITATIONS_OUTPUT]:
+        output.append(
+            {
+                "locator": citation.locator,
+                "title": citation.title,
+                "source_kind": citation.source_kind,
+                "provider_family": citation.provider_family,
+            }
+        )
+    return output
