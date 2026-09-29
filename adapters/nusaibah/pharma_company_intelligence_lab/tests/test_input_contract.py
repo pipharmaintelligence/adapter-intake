@@ -11,9 +11,9 @@ from input_contract import (  # noqa: E402
     MAX_COMPANY_IDS,
     order_records_for_request,
     project_company_baseline,
-    resolve_company_records,
     validate_batch_request,
 )
+from nusaibah_pharma_company_intelligence_lab_adapter import resolve_company_records  # noqa: E402
 
 
 def _inputs(company_ids: list[int]) -> dict:
