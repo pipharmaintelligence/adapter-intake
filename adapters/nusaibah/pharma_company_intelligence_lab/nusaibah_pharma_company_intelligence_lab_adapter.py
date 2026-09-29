@@ -130,6 +130,7 @@ def _normalize_governed_company_record(record: dict[str, Any]) -> dict[str, Any]
 
     return normalized
 
+
 class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
     """Run a governed multi-company intelligence and memory-improvement pipeline.
 
