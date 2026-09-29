@@ -67,12 +67,13 @@ Required post-promotion proof:
 
 The `companies` node schema uses ordinary database column `id` as its primary key. It is not a DLM partition key.
 
-Current UI inspection shows the Input Binding request form authors `partition_filters_from_variables` from `schema_presentation.partition_fields`. Therefore:
+Current DLM UI and Assets source supports ordinary row/data mappings through `filters_from_variables` on the bounded materialized-retrieval lane, while `partition_filters_from_variables` remains reserved for declared partition keys. Therefore:
 
 - [x] Do not fake `id` as a partition field.
 - [x] Do not encode `id <- company_ids` as a partition mapping merely to make the form green.
-- [ ] Before live variables-only execution, prove the supported bounded row/data filter mapping for `id <- company_ids`.
-- [ ] If the current UI cannot author that mapping, close the owning Assets/UI contract separately; do not push database/query logic into this adapter.
+- [x] Source inspection proves bounded row/data mapping for `id <- company_ids` through `filters_from_variables`.
+- [x] DLM UI can author row/data filter mappings from ordinary schema fields; do not push database/query logic into this adapter.
+- [ ] Post-promotion, create and activate the exact `0.1.3` governed binding and live-prove variables-only retrieval for `company_ids=[13]` and `[13,59]`.
 
 ## Deterministic regression requirements
 
@@ -87,7 +88,7 @@ Current UI inspection shows the Input Binding request form authors `partition_fi
 - [ ] Existing Agent contract tests pass unchanged except version constant.
 - [ ] Existing preview/isolation tests pass with DB-shaped records envelope.
 - [ ] Existing expected-digest/readback/history safety tests pass unchanged.
-- [ ] Local-root and packaged dotted imports pass.
+- [ ] Local-root and packaged dotted imports pass with the import test frozen to asset version `0.1.3`.
 - [ ] `git diff --check` passes.
 
 ## Local/intake certification
