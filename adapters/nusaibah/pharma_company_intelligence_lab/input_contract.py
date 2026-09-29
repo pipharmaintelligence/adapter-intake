@@ -84,13 +84,7 @@ def validate_batch_request(inputs: dict[str, Any]) -> BatchRequest:
 
 
 def resolve_company_records(inputs: dict[str, Any]) -> list[dict[str, Any]]:
-    """Return normalized governed company records from the runtime records envelope.
-
-    The governed database node uses `id` as its primary key and `company` as
-    its display-name column. The adapter keeps `company_id` and
-    `company_name` as internal semantic fields so downstream company
-    isolation, Dynamic Skill partitioning, and Agent contracts stay stable.
-    """
+    """Return governed company records from either supported runtime envelope."""
     companies = inputs.get("companies", [])
 
     if isinstance(companies, list):
@@ -103,33 +97,7 @@ def resolve_company_records(inputs: dict[str, Any]) -> list[dict[str, Any]]:
     if not all(isinstance(record, dict) for record in records):
         raise ValueError("inputs.companies records must be objects.")
 
-    return [_normalize_governed_company_record(record) for record in records]
-
-
-def _normalize_governed_company_record(record: dict[str, Any]) -> dict[str, Any]:
-    """Normalize one governed `test_database_lake/companies` row safely."""
-    normalized = dict(record)
-
-    database_id = normalized.get("id")
-    semantic_id = normalized.get("company_id")
-
-    if database_id is not None:
-        if isinstance(database_id, bool) or not isinstance(database_id, int) or database_id <= 0:
-            raise ValueError("Governed company record id must be a positive integer.")
-        if semantic_id is not None and semantic_id != database_id:
-            raise ValueError("Governed company record id and company_id must match.")
-        normalized["company_id"] = database_id
-
-    company_value = normalized.get("company")
-    semantic_name = normalized.get("company_name")
-    if (
-        semantic_name is None
-        and isinstance(company_value, str)
-        and company_value.strip()
-    ):
-        normalized["company_name"] = company_value.strip()
-
-    return normalized
+    return [dict(record) for record in records]
 
 
 def order_records_for_request(
