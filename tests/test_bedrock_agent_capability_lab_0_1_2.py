@@ -84,14 +84,14 @@ def test_manifest_is_independent_bedrock_reference_asset() -> None:
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
 
     assert manifest["key"] == "nusaibah.bedrock_agent_capability_lab"
-    assert manifest["default"] == "0.1.2"
-    assert list(manifest["versions"]) == ["0.1.2"]
+    assert manifest["default"] == "0.1.4"
+    assert list(manifest["versions"]) == ["0.1.4"]
     assert manifest["execution"] == {
         "allowed_substrates": ["local_worker"],
         "default_substrate": "local_worker",
     }
 
-    version = manifest["versions"]["0.1.2"]
+    version = manifest["versions"]["0.1.4"]
     assert set(version["agents"]) == {"bedrock_orchestrator"}
     assert "public_web" not in version
 
@@ -107,7 +107,7 @@ def test_manifest_is_independent_bedrock_reference_asset() -> None:
 
     chain = agent["definition"]["chain"]
     assert chain["metadata"] == {
-        "provisioning_source": "pi_1957_bedrock_capability_lab_0_1_2"
+        "provisioning_source": "pi_1957_bedrock_capability_lab_0_1_4"
     }
     assert chain["chain_id"] == "agent.nusaibah.bedrock_agent_capability_lab"
     assert len(chain["steps"]) == 1
@@ -120,6 +120,7 @@ def test_manifest_is_independent_bedrock_reference_asset() -> None:
     assert policy["region"] == "eu-west-1"
     assert "search_enabled" not in policy
     assert "search_mode" not in policy
+    assert policy["generation_policy"] == {"max_tokens": 512, "thinking_level": "low"}
 
     vault = policy["provider_vault"]
     assert vault["provider_instance_ref"] == "bedrock-default"
@@ -135,7 +136,7 @@ def test_adapter_source_is_provider_api_blind_and_vertex_independent() -> None:
     tree = ast.parse(source)
 
     assert 'key: ClassVar[str] = "nusaibah.bedrock_agent_capability_lab"' in source
-    assert 'version: ClassVar[str] = "0.1.2"' in source
+    assert 'version: ClassVar[str] = "0.1.4"' in source
     assert 'BEDROCK_AGENT_ROLE = "bedrock_orchestrator"' in source
     assert "vertex_grounded_orchestrator" not in source
     assert "search_enabled" not in source
@@ -426,7 +427,7 @@ def test_bedrock_dynamic_skill_mutation_is_restricted_to_synthetic_fixture() -> 
 
 def test_manifest_reuses_canonical_fixed_skill_digest_and_runtime_capabilities() -> None:
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
-    version = manifest["versions"]["0.1.2"]
+    version = manifest["versions"]["0.1.4"]
 
     assert version["skills"] == [
         {
