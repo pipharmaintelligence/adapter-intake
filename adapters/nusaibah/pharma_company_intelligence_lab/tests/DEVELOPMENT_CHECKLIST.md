@@ -27,7 +27,7 @@ id -> company_id
 company -> company_name
 ```
 
-The manifest change and normalization helper change package bytes, so the correction is `0.1.3`; do not rewrite `0.1.2`.
+The manifest change and adapter-owned database-row normalization change the `0.1.3` package bytes, so the correction remains `0.1.3`; do not rewrite `0.1.2`. Shared reviewed helpers must remain compatible with retained published versions.
 
 ## Non-negotiable 0.1.3 contract
 
@@ -42,7 +42,7 @@ The manifest change and normalization helper change package bytes, so the correc
 - [x] Exact governed source is `test_database_lake / companies`.
 - [x] Governed database identity column is `id`, not `company_id`.
 - [x] Governed company-name column is `company`.
-- [x] Adapter normalizes `id -> company_id` and `company -> company_name`.
+- [x] The versioned `0.1.3` adapter module normalizes `id -> company_id` and `company -> company_name` without changing retained shared-helper behavior.
 - [x] Adapter rejects conflicting `id` / `company_id`.
 - [x] Adapter preserves exact requested/resolved company-set parity.
 - [x] Python owns no DLM/Core/database query.
