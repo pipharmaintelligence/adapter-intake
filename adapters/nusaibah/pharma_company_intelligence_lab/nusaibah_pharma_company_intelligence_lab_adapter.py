@@ -29,7 +29,7 @@ try:
         company_name,
         order_records_for_request,
         project_company_baseline,
-        resolve_company_records,
+        resolve_company_records as _resolve_company_records_shared,
         validate_batch_request,
     )
     from .memory_contract import MEMORY_TARGET_SECTION, MemoryCandidate
@@ -65,7 +65,7 @@ except ImportError:  # pragma: no cover - local adapter-root execution path
         company_name,
         order_records_for_request,
         project_company_baseline,
-        resolve_company_records,
+        resolve_company_records as _resolve_company_records_shared,
         validate_batch_request,
     )
     from memory_contract import MEMORY_TARGET_SECTION, MemoryCandidate
@@ -96,6 +96,39 @@ BENCHMARK_ROLE = "memory_benchmark_reviewer"
 
 MAX_MEMORY_CONTEXT_CHARS = 24000
 MAX_CITATIONS_PER_COMPANY = 24
+
+
+def resolve_company_records(inputs: dict[str, Any]) -> list[dict[str, Any]]:
+    """Normalize governed company rows for the 0.1.3 database binding contract.
+
+    The shared input_contract.py remains byte-compatible with retained
+    published versions. Version-specific database schema normalization belongs
+    to this 0.1.3 adapter module so older packaged identities keep their exact
+    helper behavior while this version can consume id / company rows.
+    """
+    records = _resolve_company_records_shared(inputs)
+    return [_normalize_governed_company_record(record) for record in records]
+
+
+def _normalize_governed_company_record(record: dict[str, Any]) -> dict[str, Any]:
+    """Map the governed Companies schema onto stable adapter semantics."""
+    normalized = dict(record)
+
+    database_id = normalized.get("id")
+    semantic_id = normalized.get("company_id")
+    if database_id is not None:
+        if isinstance(database_id, bool) or not isinstance(database_id, int) or database_id <= 0:
+            raise ValueError("Governed company record id must be a positive integer.")
+        if semantic_id is not None and semantic_id != database_id:
+            raise ValueError("Governed company record id and company_id must match.")
+        normalized["company_id"] = database_id
+
+    company_value = normalized.get("company")
+    semantic_name = normalized.get("company_name")
+    if semantic_name is None and isinstance(company_value, str) and company_value.strip():
+        normalized["company_name"] = company_value.strip()
+
+    return normalized
 
 
 class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
