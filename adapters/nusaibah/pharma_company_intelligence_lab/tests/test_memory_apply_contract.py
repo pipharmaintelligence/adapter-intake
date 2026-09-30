@@ -248,5 +248,92 @@ class MemoryApplyContractTests(unittest.TestCase):
                 adapter_module._apply_company_memory(inputs, _state(self.candidate))
 
 
+class FakeMethodologyHandle:
+    def __init__(self, digest: str = BEFORE) -> None:
+        self.digest = digest
+        self.expected_digest_seen = None
+
+    def provenance(self):
+        return SimpleNamespace(mutable=False)
+
+    def content_digest(self) -> str:
+        return self.digest
+
+
+class FakeMutableMethodology:
+    def __init__(self) -> None:
+        self.expected_digest_seen = None
+        self.applied = False
+
+    def provenance(self):
+        return SimpleNamespace(mutable=True)
+
+    def content_digest(self) -> str:
+        return BEFORE
+
+    def find_sections(self, section: str):
+        return [SimpleNamespace(path="/methodology-learning")]
+
+    def new_changeset(self):
+        return FakeChangeset()
+
+    def preview(self, changes):
+        return SimpleNamespace(
+            diff=SimpleNamespace(old_digest=BEFORE, new_digest=AFTER)
+        )
+
+    def apply(self, changes, *, expected_digest: str):
+        self.expected_digest_seen = expected_digest
+        self.applied = True
+        return SimpleNamespace(after_content_digest=AFTER, change_id="methodology-1")
+
+
+class FakeFreshMethodology:
+    def provenance(self):
+        return SimpleNamespace(mutable=False)
+
+    def content_digest(self) -> str:
+        return AFTER
+
+    def section_text(self, section: str) -> str:
+        return "candidate"
+
+    def history(self, *, limit: int):
+        return SimpleNamespace(
+            latest_change=lambda: SimpleNamespace(
+                change_id="methodology-1",
+                after_content_digest=AFTER,
+            )
+        )
+
+
+class MethodologyApplyContractTests(unittest.TestCase):
+    def test_methodology_apply_uses_expected_digest_and_fresh_history(self) -> None:
+        mutable = FakeMutableMethodology()
+        fresh = FakeFreshMethodology()
+
+        class Inputs:
+            def dynamic_skill(self, role: str, *, variables=None):
+                if role == "company_methodology_update":
+                    return mutable
+                if role == "company_methodology":
+                    return fresh
+                raise AssertionError(role)
+
+        handle = FakeMethodologyHandle()
+        result = adapter_module._apply_company_methodology(
+            Inputs(),
+            company_id=13,
+            handle=handle,
+            candidate="candidate",
+        )
+
+        self.assertTrue(mutable.applied)
+        self.assertEqual(mutable.expected_digest_seen, BEFORE)
+        self.assertEqual(result["methodology_learning_change_id"], "methodology-1")
+        self.assertTrue(result["methodology_learning_readback_verified"])
+
+
+
 if __name__ == "__main__":
     unittest.main()
