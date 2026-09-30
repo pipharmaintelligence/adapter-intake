@@ -1215,21 +1215,20 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
         mutation_count = 0
         if request.memory_mode == "apply":
             for state in prepared:
-                if request.memory_mode == "apply":
-                    learning_mutation = _apply_company_methodology(
-                        inputs,
-                        company_id=state["company_id"],
-                        handle=state["methodology_learning_handle"],
-                        candidate=state["methodology_learning_candidate"],
-                    )
-                    state["result"].update(learning_mutation)
+                if state["memory_mutation_eligible"]:
+                    mutation = _apply_company_memory(inputs, state)
+                    state["result"].update(mutation)
+                    mutation_count += 1
 
-                if not state["memory_mutation_eligible"]:
-                    state["result"]["memory_update_status"] = "no_change_recommended"
-                    continue
-                mutation = _apply_company_memory(inputs, state)
-                state["result"].update(mutation)
-                mutation_count += 1
+                # Methodology learning is committed only after the company
+                # research/memory quality gate has completed successfully.
+                learning_mutation = _apply_company_methodology(
+                    inputs,
+                    company_id=state["company_id"],
+                    handle=state["methodology_learning_handle"],
+                    candidate=state["methodology_learning_candidate"],
+                )
+                state["result"].update(learning_mutation)
 
         company_results = [state["result"] for state in prepared]
         dossier = {
