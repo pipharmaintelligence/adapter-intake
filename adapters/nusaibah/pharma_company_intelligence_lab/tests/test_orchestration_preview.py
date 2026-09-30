@@ -15,6 +15,15 @@ import nusaibah_pharma_company_intelligence_lab_adapter as adapter_module  # noq
 from dossier_contract import CANONICAL_SECTIONS  # noqa: E402
 from nusaibah_pharma_company_intelligence_lab_adapter import (  # noqa: E402
     NusaibahPharmaCompanyIntelligenceLabAdapter,
+    PLANNER_MAX_CROSS_CUTTING_QUESTIONS,
+    PLANNER_MAX_EVIDENCE_FOCUS_ITEMS_PER_ROLE,
+    PLANNER_MAX_EXPECTED_UNCERTAINTIES,
+    PLANNER_MAX_FRESHNESS_FOCUS_ITEMS_PER_ROLE,
+    PLANNER_MAX_KNOWN_MEMORY_GAPS,
+    PLANNER_MAX_QUESTIONS_PER_ROLE,
+    PLANNER_MAX_TEXT_CHARS,
+    PLANNER_MAX_TOTAL_JSON_CHARS,
+    _validate_compact_methodology_plan,
     planner_response_contract,
     response_contract_for_role,
 )
@@ -442,6 +451,67 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
                     }
 
             self.assertEqual(contract, expected)
+
+    def test_planner_contract_exposes_compact_provider_visible_limits(self) -> None:
+        contract = planner_response_contract(company_id=13)
+
+        self.assertIs(contract["compact_response_required"], True)
+        self.assertEqual(
+            contract["compact_limits"],
+            {
+                "max_questions_per_role": PLANNER_MAX_QUESTIONS_PER_ROLE,
+                "max_freshness_focus_items_per_role": PLANNER_MAX_FRESHNESS_FOCUS_ITEMS_PER_ROLE,
+                "max_evidence_focus_items_per_role": PLANNER_MAX_EVIDENCE_FOCUS_ITEMS_PER_ROLE,
+                "max_cross_cutting_questions": PLANNER_MAX_CROSS_CUTTING_QUESTIONS,
+                "max_known_memory_gaps": PLANNER_MAX_KNOWN_MEMORY_GAPS,
+                "max_expected_uncertainties": PLANNER_MAX_EXPECTED_UNCERTAINTIES,
+                "max_text_chars": PLANNER_MAX_TEXT_CHARS,
+                "max_total_json_chars": PLANNER_MAX_TOTAL_JSON_CHARS,
+            },
+        )
+
+    def test_compact_planner_validation_rejects_excess_role_questions(self) -> None:
+        value = _valid_agent_value(
+            "methodology_planner",
+            company_id=13,
+            input_value={},
+        )
+        value["research_focus"][0]["questions"] = [
+            f"Question {index}."
+            for index in range(PLANNER_MAX_QUESTIONS_PER_ROLE + 1)
+        ]
+
+        with self.assertRaisesRegex(
+            adapter_module.AgentContractValidationError,
+            "too many role questions",
+        ) as raised:
+            _validate_compact_methodology_plan(value, company_id=13)
+
+        self.assertEqual(
+            raised.exception.code,
+            "pharma_agent_business_schema_invalid",
+        )
+
+    def test_compact_planner_validation_rejects_long_text(self) -> None:
+        value = _valid_agent_value(
+            "methodology_planner",
+            company_id=13,
+            input_value={},
+        )
+        value["research_focus"][0]["questions"] = [
+            "x" * (PLANNER_MAX_TEXT_CHARS + 1)
+        ]
+
+        with self.assertRaisesRegex(
+            adapter_module.AgentContractValidationError,
+            "compact character bound",
+        ) as raised:
+            _validate_compact_methodology_plan(value, company_id=13)
+
+        self.assertEqual(
+            raised.exception.code,
+            "pharma_agent_business_schema_invalid",
+        )
 
     def test_role_contracts_freeze_validator_required_top_level_fields(self) -> None:
         expected_fields = {
