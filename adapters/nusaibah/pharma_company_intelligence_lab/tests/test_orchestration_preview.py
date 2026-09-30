@@ -208,6 +208,13 @@ def _agent_value(role: str, company_id: int, input_value: dict) -> dict:
                 ],
                 "freshness_focus": ["recent material changes"],
                 "evidence_focus": ["authoritative public evidence"],
+                "methodology_steps": [
+                    f"Validate {planner_chunk['section_id']} using the bounded section methodology."
+                ],
+                "priority_rationale": (
+                    f"Priority {priority} reflects the supplied bounded benchmark context "
+                    f"for {planner_chunk['section_id']}."
+                ),
             }
         raise AssertionError("methodology_planner requires section_chunk planning_stage")
 
