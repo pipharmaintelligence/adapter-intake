@@ -10,8 +10,12 @@ Canonical adapter-intake source for `nusaibah.pharma_company_intelligence_lab`.
 - `max_tokens: 2048 -> 8192`;
 - `thinking_level=medium` unchanged;
 - `response_format=json_object` unchanged;
-- planner response contract now exposes compact provider-visible list/text/total-size limits;
-- the version-owned adapter re-validates those compact limits before the plan is accepted.
+- the version-owned adapter deterministically routes the canonical research-section table of contents into section-sized planner chunks;
+- benchmark coverage supplies a deterministic priority hint when one is known;
+- if a section has no deterministic priority mapping, that bounded planner call may choose only low/medium/high;
+- every mandatory research section is still planned exactly once;
+- the planner receives only the selected section/subsection slice, section-scoped benchmark evidence, and bounded global methodology rules;
+- Python deterministically merges all validated chunks into one complete methodology plan and runs the existing full-plan validator.
 
 The other seven Agent definitions remain at contract/chain `1.0.1`.
 
@@ -34,7 +38,9 @@ This preserves the current Assets materializer coexistence contract and avoids a
 
 `max_tokens` remains a hard total-output authorization. `0.1.6` does not add hidden thinking budget, retries, provider changes, or weaker validation.
 
-The planner receives an 8192-token ceiling with medium thinking and must produce a compact plan. The response contract declares:
+The planner receives an 8192-token hard ceiling with medium thinking, but each provider call plans only one research section. Section calls are bounded to one question, one freshness-focus item, and one evidence-focus item, each at most 280 characters.
+
+The deterministic merge then enforces the final-plan limits:
 
 - at most 3 questions per research role;
 - at most 2 freshness-focus items per research role;
@@ -43,9 +49,9 @@ The planner receives an 8192-token ceiling with medium thinking and must produce
 - at most 4 known-memory gaps;
 - at most 4 expected uncertainties;
 - at most 280 characters per planner prose item;
-- at most 12000 serialized JSON characters in the accepted planner plan.
+- at most 12000 serialized JSON characters in the accepted final plan.
 
-The adapter enforces the same limits after the shared methodology validator. Provider output-limit termination remains a runtime failure and is not accepted as completed JSON.
+This avoids requiring one model turn to read and plan the entire research scope. Provider output-limit termination remains a runtime failure and is never accepted as completed JSON.
 
 ## Batch and governed-input contract
 
