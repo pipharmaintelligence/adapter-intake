@@ -117,7 +117,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         planner_chain = self.agents["methodology_planner"]["definition"]["chain"]
         self.assertEqual(
             planner_chain["metadata"]["provisioning_source"],
-            "pi_1954_adaptive_methodology_planner",
+            "pi_1965_section_chunk_planner",
         )
 
         for role, agent in self.agents.items():
@@ -196,14 +196,15 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             "preserve the supplied company_id exactly",
             "may not change company scope",
             "provider authority",
-            "required canonical section IDs",
+            "section ownership",
             "required Agent roles",
             "memory mutation authority",
             "publication authority",
             "Do not compare this company with another company.",
+            "Plan only the supplied section",
+            "priority_hint",
             "response_contract.compact_limits",
-            "max_total_json_chars",
-            "Do not fill optional focus lists merely to reach their maxima.",
+            "Do not fill optional lists merely to reach their maxima.",
         )
         for phrase in required_phrases:
             with self.subTest(phrase=phrase):
