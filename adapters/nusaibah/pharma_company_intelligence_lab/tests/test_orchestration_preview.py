@@ -13,6 +13,8 @@ sys.path.insert(0, str(ASSET_ROOT))
 
 import nusaibah_pharma_company_intelligence_lab_adapter as adapter_module  # noqa: E402
 from dossier_contract import CANONICAL_SECTIONS  # noqa: E402
+from agent_contract import response_contract_for_role  # noqa: E402
+from methodology_contract import planner_response_contract  # noqa: E402
 from nusaibah_pharma_company_intelligence_lab_adapter import (  # noqa: E402
     NusaibahPharmaCompanyIntelligenceLabAdapter,
 )
@@ -389,6 +391,184 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             "runtime_output_ready_for_output_policy",
         )
         self.assertNotEqual(publish_dossier["publication_state"], "published")
+
+    def test_every_agent_invocation_receives_canonical_response_contract(self) -> None:
+        inputs = FakeInputs()
+        adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
+
+        with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
+            adapter.invoke(inputs, {})
+
+        for role, company_id, payload in inputs.agent_inputs:
+            contract = payload["response_contract"]
+            if role == "methodology_planner":
+                self.assertEqual(
+                    contract,
+                    planner_response_contract(company_id=company_id),
+                )
+                continue
+
+            if role in adapter_module.RESEARCH_ROLES:
+                expected = response_contract_for_role(
+                    role,
+                    company_id=company_id,
+                    required_section_ids=adapter_module.RESEARCH_ROLE_SECTIONS[role],
+                )
+            elif role == "evidence_critic":
+                expected = response_contract_for_role(
+                    role,
+                    company_id=company_id,
+                    planner_requirement_ids=tuple(
+                        contract["unmet_plan_requirement_ids"]
+                    ),
+                )
+            elif role == "memory_benchmark_reviewer":
+                expected = response_contract_for_role(
+                    role,
+                    company_id=company_id,
+                    question_ids=tuple(
+                        item["question_id"] for item in payload["benchmark_questions"]
+                    ),
+                )
+            else:
+                expected = response_contract_for_role(
+                    role,
+                    company_id=company_id,
+                )
+                if role == "intelligence_synthesizer":
+                    expected = {
+                        **expected,
+                        "dossier_schema_version": adapter_module.DOSSIER_SCHEMA_VERSION,
+                    }
+
+            self.assertEqual(contract, expected)
+
+    def test_role_contracts_freeze_validator_required_top_level_fields(self) -> None:
+        expected_fields = {
+            "methodology_planner": {
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "research_focus",
+                "cross_cutting_questions",
+                "known_memory_gaps",
+                "expected_uncertainties",
+            },
+            "portfolio_researcher": {
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "sections",
+                "claims",
+                "uncertainties",
+            },
+            "market_researcher": {
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "sections",
+                "claims",
+                "uncertainties",
+            },
+            "regulatory_risk_researcher": {
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "sections",
+                "claims",
+                "uncertainties",
+            },
+            "strategic_analyst": {
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "implications",
+                "opportunities",
+                "risks",
+                "internal_public_deltas",
+                "uncertainties",
+            },
+            "evidence_critic": {
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "unsupported_claim_ids",
+                "contradiction_items",
+                "stale_claim_ids",
+                "missing_section_ids",
+                "unmet_plan_requirements",
+                "citation_coverage",
+                "residual_uncertainties",
+                "recommendation",
+            },
+            "intelligence_synthesizer": {
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "sections",
+                "memory_candidate",
+                "residual_uncertainties",
+            },
+            "memory_benchmark_reviewer": {
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "results",
+            },
+        }
+
+        inputs = FakeInputs()
+        adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
+
+        with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
+            adapter.invoke(inputs, {})
+
+        for role, _company_id, payload in inputs.agent_inputs:
+            self.assertEqual(
+                set(payload["response_contract"]["required_fields"]),
+                expected_fields[role],
+            )
+
+    def test_benchmark_contract_freezes_exact_result_shape_and_question_order(self) -> None:
+        inputs = FakeInputs()
+        adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
+
+        with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
+            adapter.invoke(inputs, {})
+
+        benchmark_inputs = [
+            payload
+            for role, _company_id, payload in inputs.agent_inputs
+            if role == "memory_benchmark_reviewer"
+        ]
+        self.assertTrue(benchmark_inputs)
+        for payload in benchmark_inputs:
+            contract = payload["response_contract"]
+            self.assertEqual(contract["status"], "completed")
+            self.assertEqual(
+                contract["required_fields"],
+                ["schema_version", "company_id", "role", "status", "results"],
+            )
+            self.assertEqual(
+                contract["result_fields"],
+                ["question_id", "coverage", "evidence_basis"],
+            )
+            self.assertEqual(
+                contract["question_ids_in_order"],
+                [item["question_id"] for item in payload["benchmark_questions"]],
+            )
+            self.assertEqual(
+                contract["coverage_values"],
+                ["covered", "partially_covered", "not_covered"],
+            )
 
     def test_planner_runs_after_before_benchmark_and_before_research(self) -> None:
         inputs = FakeInputs()

@@ -9,7 +9,7 @@ MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
 
-ASSET_VERSION = "0.1.4"
+ASSET_VERSION = "0.1.5"
 CANONICAL_PROVIDER_REGISTRY_ENTRY = {
     "handle": "provider:text_generation",
     "type": "provider_execution",
@@ -133,7 +133,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         for role, (model, thinking, max_tokens, search_enabled) in EXPECTED.items():
             with self.subTest(role=role):
                 agent = self.agents[role]
-                self.assertEqual(agent["contract_version"], "1.0.0")
+                self.assertEqual(agent["contract_version"], "1.0.1")
                 definition = agent["definition"]
                 self.assertEqual(len(definition["registry_entries"]), 1)
                 chain = definition["chain"]
@@ -217,6 +217,17 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
                 self.assertNotIn("temperature", generation)
                 self.assertNotIn("top_p", generation)
                 self.assertNotIn("top_k", generation)
+
+    def test_every_role_instruction_requires_exact_supplied_response_contract(self) -> None:
+        for role, agent in self.agents.items():
+            with self.subTest(role=role):
+                prompt = agent["definition"]["chain"]["steps"][0]["input"]["text"]
+                self.assertIn(
+                    "response_contract is authoritative for the complete JSON shape",
+                    prompt,
+                )
+                self.assertIn("Return every required field", prompt)
+                self.assertIn("required ID ordering", prompt)
 
     def test_every_role_has_fixed_prompt_and_safe_storage_policy(self) -> None:
         for role, agent in self.agents.items():
