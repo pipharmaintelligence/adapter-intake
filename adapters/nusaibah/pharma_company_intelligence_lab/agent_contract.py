@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import Any
 
 try:
-    from .dossier_contract import normalize_sections
+    from .dossier_contract import CANONICAL_SECTIONS, normalize_sections
     from .memory_contract import MEMORY_TARGET_SECTION, MemoryCandidate, validate_memory_candidate
 except ImportError:  # pragma: no cover - local adapter-root execution path
-    from dossier_contract import normalize_sections
+    from dossier_contract import CANONICAL_SECTIONS, normalize_sections
     from memory_contract import MEMORY_TARGET_SECTION, MemoryCandidate, validate_memory_candidate
 
 RESEARCH_SCHEMA_VERSION = "pharma_research_agent.v1"
@@ -64,6 +64,8 @@ def response_contract_for_role(
                 "uncertainties",
             ],
             "section_ids_in_order": list(required_section_ids or RESEARCH_ROLE_SECTIONS[role]),
+            "section_fields": ["section_id", "content", "subsections"],
+            "subsection_fields": ["subsection_id", "content"],
             "claim_fields": [
                 "claim_id",
                 "section_id",
@@ -135,6 +137,11 @@ def response_contract_for_role(
             ],
             "section_fields": ["section_id", "content", "subsections"],
             "subsection_fields": ["subsection_id", "content"],
+            "section_ids_in_order": [section.section_id for section in CANONICAL_SECTIONS],
+            "subsection_ids_by_section": {
+                section.section_id: [item.subsection_id for item in section.subsections]
+                for section in CANONICAL_SECTIONS
+            },
             "memory_candidate_fields": ["company_id", "target_section", "markdown", "fact_ids"],
             "memory_candidate_target_section": MEMORY_TARGET_SECTION,
         }
