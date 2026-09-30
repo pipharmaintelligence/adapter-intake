@@ -460,6 +460,171 @@ def _load_methodology_learning(inputs: Any, *, company_id: int) -> tuple[Any, st
     return handle, text
 
 
+def _planner_learned_section(
+    learned_methodology_text: str,
+    *,
+    section_id: str,
+) -> str:
+    """Return only the bounded prior methodology for one selected section."""
+
+    if not learned_methodology_text:
+        return ""
+    marker = f"### {section_id}"
+    start = learned_methodology_text.find(marker)
+    if start < 0:
+        return ""
+    end = learned_methodology_text.find("\n### ", start + len(marker))
+    if end < 0:
+        end = len(learned_methodology_text)
+    value = learned_methodology_text[start:end].strip()
+    if len(value) > METHODOLOGY_LEARNING_MAX_SECTION_CHARS:
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Stored learned methodology section exceeds its context bound.",
+        )
+    return value
+
+
+def _build_methodology_learning_candidate(
+    *,
+    company_id: int,
+    planner_chunks: tuple[dict[str, Any], ...],
+    critic: dict[str, Any],
+    methodology_plan: MethodologyPlan,
+) -> str:
+    """Build a bounded procedural-learning snapshot after the critic passes."""
+
+    if critic.get("recommendation") != "pass":
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Methodology learning requires a passed evidence-critic recommendation.",
+        )
+    if critic.get("citation_coverage", {}).get("status") != "sufficient":
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Methodology learning requires sufficient citation coverage.",
+        )
+    if critic.get("unsupported_claim_ids"):
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Methodology learning requires no unsupported claims.",
+        )
+    if critic.get("missing_section_ids"):
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Methodology learning requires complete section coverage.",
+        )
+
+    lines = [
+        f"<!-- schema: {METHODOLOGY_LEARNING_SCHEMA_VERSION} -->",
+        f"<!-- company_id: {company_id} -->",
+        "",
+    ]
+    for chunk in planner_chunks:
+        lines.extend(
+            [
+                f"### {chunk['section_id']}",
+                f"- priority: {chunk['priority']}",
+                f"- priority_rationale: {chunk['priority_rationale']}",
+                "- methodology_steps:",
+            ]
+        )
+        for step in chunk["methodology_steps"]:
+            lines.append(f"  - {step}")
+        lines.extend(
+            [
+                "- useful_questions:",
+                f"  - {chunk['questions'][0]}",
+                "- evidence_focus:",
+            ]
+        )
+        for item in chunk["evidence_focus"]:
+            lines.append(f"  - {item}")
+        lines.append("- freshness_focus:")
+        for item in chunk["freshness_focus"]:
+            lines.append(f"  - {item}")
+        lines.extend(
+            [
+                f"- critic_recommendation: {critic['recommendation']}",
+                f"- unresolved_plan_requirements: {len(critic['unmet_plan_requirements'])}",
+                "",
+            ]
+        )
+
+    lines.extend(
+        [
+            "### Cross Section Learning",
+            f"- research_role_count: {len(methodology_plan.research_focus)}",
+            f"- cross_cutting_question_count: {len(methodology_plan.cross_cutting_questions)}",
+            f"- known_memory_gap_count: {len(methodology_plan.known_memory_gaps)}",
+            f"- expected_uncertainty_count: {len(methodology_plan.expected_uncertainties)}",
+        ]
+    )
+    candidate = "\n".join(lines).strip() + "\n"
+    if len(candidate) > METHODOLOGY_LEARNING_MAX_TOTAL_CHARS:
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Methodology learning candidate exceeds the bounded snapshot size.",
+        )
+    return candidate
+
+
+def _apply_company_methodology(
+    inputs: Any,
+    *,
+    company_id: int,
+    handle: Any,
+    candidate: str,
+) -> dict[str, Any]:
+    """Atomically persist one complete company methodology snapshot."""
+
+    before_digest = handle.content_digest()
+    update = inputs.dynamic_skill(
+        METHODOLOGY_SKILL_UPDATE_ROLE,
+        variables={"company_id": str(company_id)},
+    )
+    if update.provenance().mutable is not True:
+        raise RuntimeError("company_methodology_update must resolve mutable.")
+    if update.content_digest() != before_digest:
+        raise RuntimeError("Company methodology learning baseline digest mismatch.")
+
+    targets = update.find_sections(METHODOLOGY_LEARNING_SECTION)
+    if len(targets) != 1:
+        raise RuntimeError("Company methodology learning section must resolve exactly once.")
+
+    changes = update.new_changeset().replace_section(targets[0].path, candidate)
+    preview = update.preview(changes)
+    if preview.diff.old_digest != before_digest:
+        raise RuntimeError("Company methodology preview baseline digest mismatch.")
+    if preview.diff.new_digest == before_digest:
+        raise RuntimeError("Company methodology preview produced no change.")
+
+    receipt = update.apply(changes, expected_digest=before_digest)
+
+    fresh = inputs.dynamic_skill(
+        METHODOLOGY_SKILL_ROLE,
+        variables={"company_id": str(company_id)},
+    )
+    if fresh.provenance().mutable is not False:
+        raise RuntimeError("Fresh company methodology readback must be read-only.")
+    if fresh.content_digest() != receipt.after_content_digest:
+        raise RuntimeError("Company methodology readback digest mismatch.")
+    if fresh.section_text(METHODOLOGY_LEARNING_SECTION).strip() != candidate.strip():
+        raise RuntimeError("Company methodology readback content mismatch.")
+
+    latest = fresh.history(limit=50).latest_change()
+    if latest is None or latest.change_id != receipt.change_id:
+        raise RuntimeError("Company methodology history change-id mismatch.")
+
+    return {
+        "methodology_learning_update_status": "applied",
+        "methodology_learning_change_id": receipt.change_id,
+        "methodology_learning_before_digest": before_digest,
+        "methodology_learning_after_digest": receipt.after_content_digest,
+        "methodology_learning_readback_verified": True,
+    }
+
+
 def _planner_methodology_slice(
     methodology: MethodologyResources,
     *,
@@ -1050,6 +1215,15 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
         mutation_count = 0
         if request.memory_mode == "apply":
             for state in prepared:
+                if request.memory_mode == "apply":
+                    learning_mutation = _apply_company_methodology(
+                        inputs,
+                        company_id=state["company_id"],
+                        handle=state["methodology_learning_handle"],
+                        candidate=state["methodology_learning_candidate"],
+                    )
+                    state["result"].update(learning_mutation)
+
                 if not state["memory_mutation_eligible"]:
                     state["result"]["memory_update_status"] = "no_change_recommended"
                     continue
@@ -1123,6 +1297,10 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
                     item["benchmark_improvement_count"] for item in company_results
                 ),
                 "memory_mutations_made": mutation_count,
+        "methodology_learning_mutations_made": sum(
+            1 for item in company_results
+            if item["methodology_learning_update_status"] == "applied"
+        ),
             },
         }
 
@@ -1172,7 +1350,12 @@ def _prepare_company(
         stage="before",
     )
 
-    methodology_plan, planner_call_count = _run_methodology_planner(
+    methodology_handle, methodology_learning_text = _load_methodology_learning(
+        inputs,
+        company_id=company_id,
+    )
+
+    methodology_plan, planner_call_count, planner_chunks = _run_methodology_planner(
         inputs,
         company_id=company_id,
         company_name_value=name,
@@ -1180,6 +1363,7 @@ def _prepare_company(
         request=request,
         methodology=methodology,
         before_benchmark=before_benchmark,
+        learned_methodology_text=methodology_learning_text,
     )
 
     research = _run_research_fanout(
@@ -1223,6 +1407,13 @@ def _prepare_company(
         strategic=strategic,
         critic=critic,
         methodology=methodology,
+        methodology_plan=methodology_plan,
+    )
+
+    methodology_learning_candidate = _build_methodology_learning_candidate(
+        company_id=company_id,
+        planner_chunks=planner_chunks,
+        critic=critic,
         methodology_plan=methodology_plan,
     )
 
@@ -1289,6 +1480,13 @@ def _prepare_company(
         "benchmark_non_regression": benchmark_non_regression,
         "benchmark_result_basis": "projected_memory_candidate",
         "memory_mutation_eligible": mutation_eligible,
+        "methodology_learning_update_status": (
+            "preview_ready" if request.memory_mode == "apply" else "not_requested"
+        ),
+        "methodology_learning_change_id": None,
+        "methodology_learning_before_digest": methodology_handle.content_digest(),
+        "methodology_learning_after_digest": None,
+        "methodology_learning_readback_verified": False,
         "memory_update_status": (
             "preview_ready" if mutation_eligible else "no_change_recommended"
         ),
@@ -1306,6 +1504,9 @@ def _prepare_company(
         "before_digest": before_digest,
         "before_benchmark": before_benchmark,
         "methodology_plan": methodology_plan,
+        "planner_chunks": planner_chunks,
+        "methodology_learning_handle": methodology_handle,
+        "methodology_learning_candidate": methodology_learning_candidate,
         "projected_after_benchmark": after_benchmark,
         "benchmark_questions": methodology.benchmark_questions,
         "memory_candidate": candidate,
@@ -1324,7 +1525,8 @@ def _run_methodology_planner(
     request: BatchRequest,
     methodology: MethodologyResources,
     before_benchmark: dict[str, Any],
-) -> tuple[MethodologyPlan, int]:
+    learned_methodology_text: str,
+) -> tuple[MethodologyPlan, int, tuple[dict[str, Any], ...]]:
     """Plan the full methodology through prioritized section-sized Agent calls."""
 
     validated_chunks: list[dict[str, Any]] = []
@@ -1355,6 +1557,10 @@ def _run_methodology_planner(
                     if key != "priority_hint"
                 },
                 "priority_hint": priority_hint,
+                "learned_methodology": _planner_learned_section(
+                    learned_methodology_text,
+                    section_id=planner_chunk["section_id"],
+                ),
                 "response_contract": planner_section_response_contract(
                     company_id=company_id,
                     planner_chunk=planner_chunk,
@@ -1383,7 +1589,7 @@ def _run_methodology_planner(
         before_benchmark=before_benchmark,
         planner_chunks=tuple(validated_chunks),
     )
-    return plan, len(validated_chunks)
+    return plan, len(validated_chunks), tuple(validated_chunks)
 
 def _run_research_fanout(
     inputs: Any,
