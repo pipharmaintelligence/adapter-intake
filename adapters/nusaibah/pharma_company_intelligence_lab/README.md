@@ -2,27 +2,104 @@
 
 Canonical adapter-intake source for `nusaibah.pharma_company_intelligence_lab`.
 
-## Version policy
+## Current immutable candidate
 
-`0.1.4` is the current immutable candidate. It preserves the governed company-input correction from `0.1.3` and cuts the methodology Fixed Skill from bundled `skills[]` to publication-backed `published_skills[]` without changing the Fixed Skill `1.0.0` identity/digest or adapter business logic.
+`0.1.6` is the current intake candidate. It preserves the governed company-input, published Fixed Skill, Dynamic Skill, output, and seven unchanged Agent-role contracts from `0.1.5`, while applying one scoped methodology-planner reliability change:
 
-Create a new asset version whenever adapter code, manifest metadata, reviewed helpers, dependency contract, or portable Skill bytes change. Environment-only repairs such as publishing an unchanged immutable Skill do not require an asset-version bump.
+- methodology planner Agent contract/chain: `1.0.1 -> 1.0.2`;
+- `max_tokens: 2048 -> 8192`;
+- `thinking_level=medium` unchanged;
+- `response_format=json_object` unchanged;
+- planner response contract now exposes compact provider-visible list/text/total-size limits;
+- the version-owned adapter re-validates those compact limits before the plan is accepted.
 
-## Batch contract
+The other seven Agent definitions remain at contract/chain `1.0.1`.
 
-The target launch variable is a bounded `company_ids` array such as `[13, 59]`. `companies` is binding-owned and `variables` is direct. The governed company source is `lake_id=test_database_lake`, `node_key=companies`; its primary-key column is `id` and its company-name column is `company`. Assets/Core must resolve the governed `companies` input before Python starts. The `0.1.3` adapter module normalizes `id -> company_id` and `company -> company_name`, validates exact requested/resolved ID parity, and processes each company context independently. Shared reviewed helpers remain compatible with retained published versions; version-specific normalization is kept inside the versioned adapter implementation rather than creating parallel helper files. Python does not query DLM/Core or the database directly.
+Create a new asset version whenever adapter code, manifest metadata, reviewed helpers, dependency contract, or portable Skill bytes change. Environment-only repairs do not mutate an existing published version.
+
+## Shared-helper coexistence
+
+Retained published versions share the reviewed helper files in this folder. Version-specific behavior must stay in the version-owned adapter implementation unless a shared-helper migration is explicitly designed for every retained identity.
+
+For `0.1.6`:
+
+- `agent_contract.py` is unchanged;
+- `methodology_contract.py` is unchanged;
+- `input_contract.py`, `dossier_contract.py`, and `memory_contract.py` are unchanged;
+- `adapter.dependencies.json` is unchanged.
+
+This preserves the current Assets materializer coexistence contract and avoids a `shared_runtime_file_conflict`.
+
+## Planner token-safety boundary
+
+`max_tokens` remains a hard total-output authorization. `0.1.6` does not add hidden thinking budget, retries, provider changes, or weaker validation.
+
+The planner receives an 8192-token ceiling with medium thinking and must produce a compact plan. The response contract declares:
+
+- at most 3 questions per research role;
+- at most 2 freshness-focus items per research role;
+- at most 2 evidence-focus items per research role;
+- at most 4 cross-cutting questions;
+- at most 4 known-memory gaps;
+- at most 4 expected uncertainties;
+- at most 280 characters per planner prose item;
+- at most 12000 serialized JSON characters in the accepted planner plan.
+
+The adapter enforces the same limits after the shared methodology validator. Provider output-limit termination remains a runtime failure and is not accepted as completed JSON.
+
+## Batch and governed-input contract
+
+The launch variable is a bounded `company_ids` array such as `[13]` or `[13, 59]`. `companies` is binding-owned and `variables` is direct.
+
+The governed company source is:
+
+- lake: `test_database_lake`;
+- node: `companies`;
+- database primary key: `id`;
+- company-name column: `company`.
+
+The approved row/data mapping is `id <- company_ids`. This is not a partition mapping.
+
+Assets/Core resolves the governed `companies` input before Python starts. The adapter normalizes `id -> company_id` and `company -> company_name`, validates exact requested/resolved ID parity, and processes company contexts independently.
+
+A new asset version requires its own exact governed binding identity; readiness of a `0.1.5` binding does not prove `0.1.6` binding readiness.
+
+## Fixed Skill and Dynamic Skill
+
+The Fixed Skill remains publication-backed:
+
+`nusaibah.pharma-intelligence-methodology@1.0.0`
+
+with its existing canonical digest.
+
+Dynamic Skill roles and authority are unchanged:
+
+- `company_memory`: read-only current company partition;
+- `company_memory_update`: mutable current company partition when apply mode is explicitly used.
+
+No Skill publication, mutation-authority, storage, or persistence behavior changes in `0.1.6`.
 
 ## Format ownership
 
-`dossier_contract.py` owns exact section IDs, subsection IDs, titles, and order. Agents return machine IDs and content only. Titles and hierarchy are rendered deterministically by the adapter so report structure cannot drift by provider, company, or run.
+`dossier_contract.py` owns exact section IDs, subsection IDs, titles, and order. Agents return machine IDs and content only. Titles and hierarchy are rendered deterministically by the adapter.
 
 ## Promotion ownership
 
 This adapter-intake folder is the reviewed source package. Published Assets materialization must be produced through the pinned adapter-intake promotion workflow rather than by hand-editing the packaged Assets directory.
 
-Development progress and release evidence are tracked in Linear PI-1951 and in the development-only `tests/DEVELOPMENT_CHECKLIST.md`; that checklist is intentionally excluded from promoted runtime bytes.
-## DLM UI binding readiness boundary
+Promotion must preserve every already-published pharma version and must not use manifest-removal authorization.
 
-The manifest intentionally declares `companies.source=binding` so Assets projects that role to the DLM UI Input Binding workflow, while `variables.source=direct` keeps launch variables out of the binding picker.
+## Live proof boundary
 
-Role visibility is not the same as a ready database selector. The current database node uses ordinary schema column `id`; it must not be mislabeled as a partition field. The governed binding/runtime layer supports the row/data mapping `id <- company_ids` through the bounded materialized-retrieval binding lane. This is a row/data filter, not a partition mapping, and live variables-only execution still requires a ready `0.1.4` binding plus exact runtime proof.
+A green intake or promotion PR is not live proof.
+
+After promotion/deployment of `0.1.6`, prove independently:
+
+1. exact `0.1.6` governed Companies binding;
+2. exact planner `1.0.2` Agent admission;
+3. exact worker/runtime catalog identity for `0.1.6`;
+4. company 13 preview;
+5. benchmark reviewer completion followed by methodology planner completion;
+6. remaining roles in execution order;
+7. Dynamic Skill mutation separately from runtime result;
+8. dossier file publication separately from runtime result.
