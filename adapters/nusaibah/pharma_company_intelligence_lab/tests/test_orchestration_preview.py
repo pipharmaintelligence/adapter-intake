@@ -833,15 +833,26 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             for role, company_id, payload in inputs.agent_inputs
         }
 
+        expected_cross_cutting = [
+            "What recent material developments changed the current company picture?",
+            "Which important points remain uncertain, contradictory, or stale?",
+            "What material evidence is new compared with the previously stored company memory?",
+        ]
+        expected_known_gaps = [
+            "What is the company identity and operating footprint?",
+            "What therapeutic areas and major products define the company portfolio?",
+            "Which markets and commercial channels are material to the company?",
+            "What recent material developments changed the current company picture?",
+        ]
+        expected_uncertainties = [
+            "Which important points remain uncertain, contradictory, or stale?"
+        ]
+
         for company_id in (13, 59):
             strategic = by_role_company[("strategic_analyst", company_id)]
             self.assertEqual(
                 strategic["methodology_plan"],
-                {
-                    "cross_cutting_questions": [
-                        f"Cross-cutting question for company {company_id}."
-                    ]
-                },
+                {"cross_cutting_questions": expected_cross_cutting},
             )
 
             critic = by_role_company[("evidence_critic", company_id)]
@@ -850,15 +861,15 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             self.assertEqual(critic_plan["role"], "methodology_planner")
             self.assertEqual(
                 critic_plan["cross_cutting_questions"],
-                [f"Cross-cutting question for company {company_id}."],
+                expected_cross_cutting,
             )
             self.assertEqual(
                 critic_plan["known_memory_gaps"],
-                [f"Known gap for company {company_id}."],
+                expected_known_gaps,
             )
             self.assertEqual(
                 critic_plan["expected_uncertainties"],
-                [f"Expected uncertainty for company {company_id}."],
+                expected_uncertainties,
             )
             self.assertTrue(critic["methodology_packet"]["evidence_rules"])
             self.assertNotIn("memory_rules", critic["methodology_packet"])
@@ -868,7 +879,7 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             self.assertEqual(synthesis_plan["company_id"], company_id)
             self.assertEqual(
                 synthesis_plan["cross_cutting_questions"],
-                [f"Cross-cutting question for company {company_id}."],
+                expected_cross_cutting,
             )
             self.assertTrue(synthesis["methodology_packet"]["memory_rules"])
             self.assertNotIn("evidence_rules", synthesis["methodology_packet"])
