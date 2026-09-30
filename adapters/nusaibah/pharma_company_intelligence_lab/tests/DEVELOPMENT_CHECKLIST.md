@@ -26,7 +26,7 @@ This checklist is development-only and is not part of promoted runtime bytes.
 - [x] `input_contract.py` unchanged from `0.1.5`.
 - [x] `dossier_contract.py` unchanged from `0.1.5`.
 - [x] `memory_contract.py` unchanged from `0.1.5`.
-- [x] `adapter.dependencies.json` intentionally raises the runtime floor from `0.1.84` to `0.1.87` for package-backed mutable Dynamic Skill support.
+- [x] `adapter.dependencies.json` remains byte-identical to published `0.1.5` at runtime floor `0.1.84`; package-backed mutable Dynamic Skill support already exists at that floor.
 - [ ] Promotion P3 confirms no `shared_runtime_file_conflict`.
 
 ## Routed compact planner response and methodology learning
@@ -38,7 +38,7 @@ This checklist is development-only and is not part of promoted runtime bytes.
 - [x] Learned methodology cannot override Fixed Skill or current benchmark authority.
 - [x] Learning candidate is built only after the evidence critic passes and the projected company-memory benchmark is non-regressing.
 - [x] Preview mode never mutates methodology memory.
-- [x] Apply mode uses one complete snapshot with expected-digest protection, idempotent no-change handling, fresh readback, and history change-id/digest verification.
+- [x] Apply mode uses one complete snapshot with expected-digest protection and idempotent no-change handling; fresh read-only roles verify persisted content, while freshly resolved mutable roles verify committed history change-id/digest.
 - [x] Every mandatory research section is routed exactly once.
 - [x] Known benchmark coverage becomes a deterministic priority hint.
 - [x] Unknown priority may be selected by only that section-sized planner call.
