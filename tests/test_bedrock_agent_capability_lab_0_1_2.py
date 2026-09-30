@@ -84,14 +84,14 @@ def test_manifest_is_independent_bedrock_reference_asset() -> None:
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
 
     assert manifest["key"] == "nusaibah.bedrock_agent_capability_lab"
-    assert manifest["default"] == "0.1.4"
-    assert list(manifest["versions"]) == ["0.1.4"]
+    assert manifest["default"] == "0.1.5"
+    assert list(manifest["versions"]) == ["0.1.5"]
     assert manifest["execution"] == {
         "allowed_substrates": ["local_worker"],
         "default_substrate": "local_worker",
     }
 
-    version = manifest["versions"]["0.1.4"]
+    version = manifest["versions"]["0.1.5"]
     assert set(version["agents"]) == {"bedrock_orchestrator"}
     assert "public_web" not in version
 
@@ -107,7 +107,7 @@ def test_manifest_is_independent_bedrock_reference_asset() -> None:
 
     chain = agent["definition"]["chain"]
     assert chain["metadata"] == {
-        "provisioning_source": "pi_1957_bedrock_capability_lab_0_1_4"
+        "provisioning_source": "pi_1957_bedrock_capability_lab_0_1_5"
     }
     assert chain["chain_id"] == "agent.nusaibah.bedrock_agent_capability_lab"
     assert len(chain["steps"]) == 1
@@ -136,7 +136,7 @@ def test_adapter_source_is_provider_api_blind_and_vertex_independent() -> None:
     tree = ast.parse(source)
 
     assert 'key: ClassVar[str] = "nusaibah.bedrock_agent_capability_lab"' in source
-    assert 'version: ClassVar[str] = "0.1.4"' in source
+    assert 'version: ClassVar[str] = "0.1.5"' in source
     assert 'BEDROCK_AGENT_ROLE = "bedrock_orchestrator"' in source
     assert "vertex_grounded_orchestrator" not in source
     assert "search_enabled" not in source
@@ -245,17 +245,31 @@ def test_execution_plan_allows_only_declared_bedrock_lab_roles() -> None:
         raise AssertionError("undeclared provider role must fail closed")
 
 
-def test_bedrock_agent_invocation_uses_logical_role_and_safe_result_contract() -> None:
+def test_bedrock_agent_invocation_forwards_validated_plan_and_safe_result_contract() -> None:
     namespace = _adapter_namespace(
         {
             "_resolve_bedrock_result",
             "_invoke_bedrock_agent",
+            "_execution_plan_payload",
             "_run_bedrock_agent_invocation",
         },
         {
             "BEDROCK_AGENT_ROLE",
             "MAX_AGENT_TEXT_CHARS",
         },
+    )
+
+    plan = SimpleNamespace(
+        schema_version="execution_plan.v1",
+        company_id=13,
+        steps=(
+            SimpleNamespace(
+                sequence=1,
+                capability="bedrock_agent",
+                role="bedrock_orchestrator",
+                required=True,
+            ),
+        ),
     )
 
     class Inputs:
@@ -269,18 +283,45 @@ def test_bedrock_agent_invocation_uses_logical_role_and_safe_result_contract() -
             input: dict[str, object],
         ) -> dict[str, object]:
             self.calls.append((role, input))
-            return _bedrock_envelope()
+            return _bedrock_envelope("Safe orchestration guidance.")
 
     inputs = Inputs()
-    evidence = namespace["_run_bedrock_agent_invocation"](inputs)
+    evidence = namespace["_run_bedrock_agent_invocation"](
+        inputs,
+        plan=plan,
+    )
 
     assert inputs.calls == [
-        ("bedrock_orchestrator", {"task": "Return exactly: ok"})
+        (
+            "bedrock_orchestrator",
+            {
+                "task": (
+                    "Provide safe orchestration guidance derived only from the supplied "
+                    "validated execution plan. Process steps in declared sequence order "
+                    "and do not execute capabilities."
+                ),
+                "execution_plan": {
+                    "schema_version": "execution_plan.v1",
+                    "company_id": 13,
+                    "steps": [
+                        {
+                            "sequence": 1,
+                            "capability": "bedrock_agent",
+                            "role": "bedrock_orchestrator",
+                            "required": True,
+                        }
+                    ],
+                },
+            },
+        )
     ]
     assert evidence["bedrock_agent_status"] == "completed"
     assert evidence["bedrock_agent_provider_family"] == "bedrock"
     assert evidence["bedrock_agent_provider_turn_count"] == 1
-    assert evidence["bedrock_exact_response_verified"] is True
+    assert evidence["bedrock_execution_plan_forwarded"] is True
+    assert evidence["bedrock_execution_plan_step_count"] == 1
+    assert evidence["bedrock_orchestration_guidance_present"] is True
+    assert "bedrock_exact_response_verified" not in evidence
     assert "result" not in evidence
     assert "provider_metadata" not in evidence
 
@@ -427,7 +468,7 @@ def test_bedrock_dynamic_skill_mutation_is_restricted_to_synthetic_fixture() -> 
 
 def test_manifest_reuses_canonical_fixed_skill_digest_and_runtime_capabilities() -> None:
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
-    version = manifest["versions"]["0.1.4"]
+    version = manifest["versions"]["0.1.5"]
 
     assert version["skills"] == [
         {
