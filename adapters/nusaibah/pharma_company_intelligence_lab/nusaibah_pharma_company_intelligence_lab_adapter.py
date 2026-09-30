@@ -491,8 +491,15 @@ def _build_methodology_learning_candidate(
     planner_chunks: tuple[dict[str, Any], ...],
     critic: dict[str, Any],
     methodology_plan: MethodologyPlan,
+    benchmark_non_regression: bool,
 ) -> str:
     """Build a bounded procedural-learning snapshot after the critic passes."""
+
+    if not benchmark_non_regression:
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Methodology learning requires benchmark non-regression.",
+        )
 
     if critic.get("recommendation") != "pass":
         raise AgentContractValidationError(
@@ -1409,13 +1416,6 @@ def _prepare_company(
         methodology_plan=methodology_plan,
     )
 
-    methodology_learning_candidate = _build_methodology_learning_candidate(
-        company_id=company_id,
-        planner_chunks=planner_chunks,
-        critic=critic,
-        methodology_plan=methodology_plan,
-    )
-
     claim_ids = {claim["claim_id"] for claim in joined["claims"]}
     if any(fact_id not in claim_ids for fact_id in candidate.fact_ids):
         raise RuntimeError("Memory candidate referenced a fact_id not present in grounded research.")
@@ -1442,6 +1442,14 @@ def _prepare_company(
         bool(candidate.fact_ids)
         and candidate_changed
         and benchmark_non_regression
+    )
+
+    methodology_learning_candidate = _build_methodology_learning_candidate(
+        company_id=company_id,
+        planner_chunks=planner_chunks,
+        critic=critic,
+        methodology_plan=methodology_plan,
+        benchmark_non_regression=benchmark_non_regression,
     )
 
     result = {
@@ -1480,7 +1488,9 @@ def _prepare_company(
         "benchmark_result_basis": "projected_memory_candidate",
         "memory_mutation_eligible": mutation_eligible,
         "methodology_learning_update_status": (
-            "preview_ready" if request.memory_mode in {"preview", "apply"} else "not_requested"
+            "preview_ready"
+            if benchmark_non_regression and request.memory_mode in {"preview", "apply"}
+            else "no_change_recommended"
         ),
         "methodology_learning_change_id": None,
         "methodology_learning_before_digest": methodology_handle.content_digest(),
