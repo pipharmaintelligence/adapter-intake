@@ -443,6 +443,100 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
 
             self.assertEqual(contract, expected)
 
+    def test_role_contracts_freeze_validator_required_top_level_fields(self) -> None:
+        expected_fields = {
+            "methodology_planner": {
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "research_focus",
+                "cross_cutting_questions",
+                "known_memory_gaps",
+                "expected_uncertainties",
+            },
+            "portfolio_researcher": {
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "sections",
+                "claims",
+                "uncertainties",
+            },
+            "market_researcher": {
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "sections",
+                "claims",
+                "uncertainties",
+            },
+            "regulatory_risk_researcher": {
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "sections",
+                "claims",
+                "uncertainties",
+            },
+            "strategic_analyst": {
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "implications",
+                "opportunities",
+                "risks",
+                "internal_public_deltas",
+                "uncertainties",
+            },
+            "evidence_critic": {
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "unsupported_claim_ids",
+                "contradiction_items",
+                "stale_claim_ids",
+                "missing_section_ids",
+                "unmet_plan_requirements",
+                "citation_coverage",
+                "residual_uncertainties",
+                "recommendation",
+            },
+            "intelligence_synthesizer": {
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "sections",
+                "memory_candidate",
+                "residual_uncertainties",
+            },
+            "memory_benchmark_reviewer": {
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "results",
+            },
+        }
+
+        inputs = FakeInputs()
+        adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
+
+        with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
+            adapter.invoke(inputs, {})
+
+        for role, _company_id, payload in inputs.agent_inputs:
+            self.assertEqual(
+                set(payload["response_contract"]["required_fields"]),
+                expected_fields[role],
+            )
+
     def test_benchmark_contract_freezes_exact_result_shape_and_question_order(self) -> None:
         inputs = FakeInputs()
         adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
