@@ -208,8 +208,6 @@ def _agent_value(role: str, company_id: int, input_value: dict) -> dict:
                 ],
                 "freshness_focus": ["recent material changes"],
                 "evidence_focus": ["authoritative public evidence"],
-                "methodology_steps": ["verify the selected section with authoritative evidence"],
-                "priority_rationale": f"Priority selected for {planner_chunk['section_id']}.",
             }
         raise AssertionError("methodology_planner requires section_chunk planning_stage")
 
@@ -664,9 +662,9 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             "priority_hint": "medium",
         }
         value = {
-            "schema_version": PLANNER_CHUNK_SCHEMA_VERSION,
+            "schema_version": adapter_module.PLANNER_CHUNK_SCHEMA_VERSION,
             "company_id": 13,
-            "role": PLANNER_ROLE,
+            "role": adapter_module.PLANNER_ROLE,
             "status": "completed",
             "chunk_id": "portfolio_researcher:company_profile",
             "research_role": "portfolio_researcher",
