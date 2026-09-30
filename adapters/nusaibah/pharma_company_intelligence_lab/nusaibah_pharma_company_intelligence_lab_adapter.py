@@ -99,11 +99,11 @@ MAX_CITATIONS_PER_COMPANY = 24
 
 
 def resolve_company_records(inputs: dict[str, Any]) -> list[dict[str, Any]]:
-    """Normalize governed company rows for the 0.1.3 database binding contract.
+    """Normalize governed company rows for the 0.1.4 database binding contract.
 
     The shared input_contract.py remains byte-compatible with retained
     published versions. Version-specific database schema normalization belongs
-    to this 0.1.3 adapter module so older packaged identities keep their exact
+    to this 0.1.4 adapter module so older packaged identities keep their exact
     helper behavior while this version can consume id / company rows.
     """
     records = _resolve_company_records_shared(inputs)
@@ -141,7 +141,7 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.pharma_company_intelligence_lab"
-    version: ClassVar[str] = "0.1.3"
+    version: ClassVar[str] = "0.1.4"
 
     def invoke(self, inputs: Any, context: dict[str, Any]) -> dict[str, Any]:
         """Execute one bounded company batch with two-phase memory mutation."""
