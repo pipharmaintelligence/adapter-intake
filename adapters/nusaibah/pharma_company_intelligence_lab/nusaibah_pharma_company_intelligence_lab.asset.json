@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.pharma_company_intelligence_lab",
-  "default": "0.1.4",
+  "default": "0.1.5",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -16,7 +16,7 @@
     "timeout_seconds": 1800
   },
   "versions": {
-    "0.1.4": {
+    "0.1.5": {
       "state": "active",
       "inputs": {
         "companies": {
@@ -186,7 +186,7 @@
                     }
                   },
                   "input": {
-                    "text": "You are the methodology planner for one governed pharma-company intelligence run. Use only the supplied methodology packet, governed company baseline, existing-memory benchmark, and canonical section registry. Do not search for or introduce public facts. Return one JSON object only and preserve the supplied company_id exactly. Choose research focus, section priorities, freshness emphasis, evidence questions, and role-specific objectives needed to apply the supplied Fixed Skill methodology. You may prioritize or deepen required work, but you may not change company scope, provider authority, required canonical section IDs, required Agent roles, output schema, memory mutation authority, publication authority, or safety gates. Do not compare this company with another company."
+                    "text": "You are the methodology planner for one governed pharma-company intelligence run. Use only the supplied methodology packet, governed company baseline, existing-memory benchmark, and canonical section registry. Do not search for or introduce public facts. Return one JSON object only and preserve the supplied company_id exactly. Choose research focus, section priorities, freshness emphasis, evidence questions, and role-specific objectives needed to apply the supplied Fixed Skill methodology. You may prioritize or deepen required work, but you may not change company scope, provider authority, required canonical section IDs, required Agent roles, output schema, memory mutation authority, publication authority, or safety gates. Do not compare this company with another company. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
                   }
                 }
               ],
@@ -273,7 +273,7 @@
                     "citation_policy": "refs_only"
                   },
                   "input": {
-                    "text": "Research only the current company. Cover the requested portfolio-related section and subsection IDs using grounded public evidence. Return one JSON object only. Preserve the supplied company_id exactly. Do not invent titles, section IDs, citations, products, partnerships, dates, or facts. Distinguish observed evidence from inference and surface uncertainty. Do not discuss or compare any other company."
+                    "text": "Research only the current company. Cover the requested portfolio-related section and subsection IDs using grounded public evidence. Return one JSON object only. Preserve the supplied company_id exactly. Do not invent titles, section IDs, citations, products, partnerships, dates, or facts. Distinguish observed evidence from inference and surface uncertainty. Do not discuss or compare any other company. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
                   }
                 }
               ],
@@ -360,7 +360,7 @@
                     "citation_policy": "refs_only"
                   },
                   "input": {
-                    "text": "Research only the current company. Cover the requested market, geography, distribution, launch, and commercial section IDs using grounded public evidence. Return one JSON object only. Preserve the supplied company_id exactly. Do not invent titles, section IDs, citations, dates, markets, launches, or partnerships. Distinguish observed evidence from inference and surface uncertainty. Do not discuss or compare any other company."
+                    "text": "Research only the current company. Cover the requested market, geography, distribution, launch, and commercial section IDs using grounded public evidence. Return one JSON object only. Preserve the supplied company_id exactly. Do not invent titles, section IDs, citations, dates, markets, launches, or partnerships. Distinguish observed evidence from inference and surface uncertainty. Do not discuss or compare any other company. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
                   }
                 }
               ],
@@ -447,7 +447,7 @@
                     "citation_policy": "refs_only"
                   },
                   "input": {
-                    "text": "Research only the current company. Cover the requested regulatory, clinical, safety, manufacturing-quality, and uncertainty section IDs using grounded public evidence. Return one JSON object only. Preserve the supplied company_id exactly. Do not invent titles, section IDs, citations, approvals, clinical evidence, safety events, quality findings, or dates. Distinguish observed evidence from inference and explicitly retain unresolved uncertainty. Do not discuss or compare any other company."
+                    "text": "Research only the current company. Cover the requested regulatory, clinical, safety, manufacturing-quality, and uncertainty section IDs using grounded public evidence. Return one JSON object only. Preserve the supplied company_id exactly. Do not invent titles, section IDs, citations, approvals, clinical evidence, safety events, quality findings, or dates. Distinguish observed evidence from inference and explicitly retain unresolved uncertainty. Do not discuss or compare any other company. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
                   }
                 }
               ],
@@ -531,7 +531,7 @@
                     }
                   },
                   "input": {
-                    "text": "Analyze only the supplied current-company governed baseline and joined research evidence. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly. Produce bounded strategic implications, opportunities, risks, and internal-versus-public deltas, each traceable to supplied evidence. Mark inference explicitly and keep uncertainty visible. Do not compare this company with another company."
+                    "text": "Analyze only the supplied current-company governed baseline and joined research evidence. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly. Produce bounded strategic implications, opportunities, risks, and internal-versus-public deltas, each traceable to supplied evidence. Mark inference explicitly and keep uncertainty visible. Do not compare this company with another company. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
                   }
                 }
               ],
@@ -615,7 +615,7 @@
                     }
                   },
                   "input": {
-                    "text": "Critique only the supplied current-company evidence package. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly. Identify unsupported claims, contradictions, stale claims, missing mandatory sections, citation-coverage weaknesses, and residual uncertainty. Evaluate every supplied planner requirement against the evidence and strategic analysis. For any required planner item that is not satisfied, return its exact supplied requirement_id in unmet_plan_requirements with disposition unresolved_evidence when the evidence gap is explicit and retained as uncertainty, or unsatisfied when the required item was not fulfilled. Do not invent requirement IDs. Give a bounded pass/fail recommendation for synthesis quality; do not authorize memory mutation."
+                    "text": "Critique only the supplied current-company evidence package. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly. Identify unsupported claims, contradictions, stale claims, missing mandatory sections, citation-coverage weaknesses, and residual uncertainty. Evaluate every supplied planner requirement against the evidence and strategic analysis. For any required planner item that is not satisfied, return its exact supplied requirement_id in unmet_plan_requirements with disposition unresolved_evidence when the evidence gap is explicit and retained as uncertainty, or unsatisfied when the required item was not fulfilled. Do not invent requirement IDs. Give a bounded pass/fail recommendation for synthesis quality; do not authorize memory mutation. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
                   }
                 }
               ],
@@ -699,7 +699,7 @@
                     }
                   },
                   "input": {
-                    "text": "Synthesize only the supplied current-company governed baseline, validated research, strategic analysis, and critic findings. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly and use only the supplied canonical section_id and subsection_id values. Do not author or rename display titles. Produce complete dossier content plus a bounded evidence-backed memory candidate and residual uncertainties."
+                    "text": "Synthesize only the supplied current-company governed baseline, validated research, strategic analysis, and critic findings. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly and use only the supplied canonical section_id and subsection_id values. Do not author or rename display titles. Produce complete dossier content plus a bounded evidence-backed memory candidate and residual uncertainties. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
                   }
                 }
               ],
@@ -783,7 +783,7 @@
                     }
                   },
                   "input": {
-                    "text": "Evaluate only the supplied current-company memory against the supplied fixed benchmark questions. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly. For each benchmark question report covered, partially_covered, or not_covered with a concise evidence basis from the supplied memory. Do not propose facts that are absent from memory."
+                    "text": "Evaluate only the supplied current-company memory against the supplied fixed benchmark questions. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly. For each benchmark question report covered, partially_covered, or not_covered with a concise evidence basis from the supplied memory. Do not propose facts that are absent from memory. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
                   }
                 }
               ],
