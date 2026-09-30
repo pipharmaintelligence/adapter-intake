@@ -569,11 +569,7 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
         )
 
     def test_compact_planner_validation_rejects_long_text(self) -> None:
-        value = _agent_value(
-            "methodology_planner",
-            company_id=13,
-            input_value={},
-        )
+        value = _full_planner_value(13)
         value["research_focus"][0]["questions"] = [
             "x" * (PLANNER_MAX_TEXT_CHARS + 1)
         ]
