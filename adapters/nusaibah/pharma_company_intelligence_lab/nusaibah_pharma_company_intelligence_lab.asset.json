@@ -126,7 +126,7 @@
       "agents": {
         "methodology_planner": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_methodology_planner",
-          "contract_version": "1.0.0",
+          "contract_version": "1.0.1",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-methodology-planner",
           "definition": {
             "registry_entries": [
@@ -157,7 +157,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_methodology_planner",
-              "version": "1.0.0",
+              "version": "1.0.1",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -210,7 +210,7 @@
         },
         "portfolio_researcher": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_portfolio_researcher",
-          "contract_version": "1.0.0",
+          "contract_version": "1.0.1",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-portfolio-researcher",
           "definition": {
             "registry_entries": [
@@ -241,7 +241,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_portfolio_researcher",
-              "version": "1.0.0",
+              "version": "1.0.1",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -297,7 +297,7 @@
         },
         "market_researcher": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_market_researcher",
-          "contract_version": "1.0.0",
+          "contract_version": "1.0.1",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-market-researcher",
           "definition": {
             "registry_entries": [
@@ -328,7 +328,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_market_researcher",
-              "version": "1.0.0",
+              "version": "1.0.1",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -384,7 +384,7 @@
         },
         "regulatory_risk_researcher": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_regulatory_risk_researcher",
-          "contract_version": "1.0.0",
+          "contract_version": "1.0.1",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-regulatory-risk-researcher",
           "definition": {
             "registry_entries": [
@@ -415,7 +415,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_regulatory_risk_researcher",
-              "version": "1.0.0",
+              "version": "1.0.1",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -471,7 +471,7 @@
         },
         "strategic_analyst": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_strategic_analyst",
-          "contract_version": "1.0.0",
+          "contract_version": "1.0.1",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-strategic-analyst",
           "definition": {
             "registry_entries": [
@@ -502,7 +502,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_strategic_analyst",
-              "version": "1.0.0",
+              "version": "1.0.1",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -555,7 +555,7 @@
         },
         "evidence_critic": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_evidence_critic",
-          "contract_version": "1.0.0",
+          "contract_version": "1.0.1",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-evidence-critic",
           "definition": {
             "registry_entries": [
@@ -586,7 +586,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_evidence_critic",
-              "version": "1.0.0",
+              "version": "1.0.1",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -639,7 +639,7 @@
         },
         "intelligence_synthesizer": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_intelligence_synthesizer",
-          "contract_version": "1.0.0",
+          "contract_version": "1.0.1",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-intelligence-synthesizer",
           "definition": {
             "registry_entries": [
@@ -670,7 +670,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_intelligence_synthesizer",
-              "version": "1.0.0",
+              "version": "1.0.1",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -723,7 +723,7 @@
         },
         "memory_benchmark_reviewer": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_memory_benchmark_reviewer",
-          "contract_version": "1.0.0",
+          "contract_version": "1.0.1",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-memory-benchmark-reviewer",
           "definition": {
             "registry_entries": [
@@ -754,7 +754,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_memory_benchmark_reviewer",
-              "version": "1.0.0",
+              "version": "1.0.1",
               "visibility": "internal",
               "status": "active",
               "steps": [
