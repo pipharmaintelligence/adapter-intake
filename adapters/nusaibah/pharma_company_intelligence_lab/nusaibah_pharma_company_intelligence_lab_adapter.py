@@ -110,6 +110,7 @@ MAX_CITATIONS_PER_COMPANY = 24
 # shared helper safety ceilings so the provider receives and the adapter
 # enforces one compact workload contract without mutating retained helpers.
 PLANNER_CHUNK_SCHEMA_VERSION = "pharma_methodology_chunk.v1"
+PLANNER_MAX_SECTION_CALLS = 4
 PLANNER_MAX_QUESTIONS_PER_SECTION = 1
 PLANNER_MAX_FRESHNESS_FOCUS_ITEMS_PER_SECTION = 1
 PLANNER_MAX_EVIDENCE_FOCUS_ITEMS_PER_SECTION = 1
@@ -372,6 +373,11 @@ def _planner_section_catalog() -> tuple[dict[str, Any], ...]:
                     ],
                 }
             )
+    if len(chunks) != PLANNER_MAX_SECTION_CALLS:
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Methodology planner section catalog changed outside the reviewed call budget.",
+        )
     return tuple(chunks)
 
 
