@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.pharma_company_intelligence_lab",
-  "default": "0.1.5",
+  "default": "0.1.6",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -16,7 +16,7 @@
     "timeout_seconds": 1800
   },
   "versions": {
-    "0.1.5": {
+    "0.1.6": {
       "state": "active",
       "inputs": {
         "companies": {
@@ -126,7 +126,7 @@
       "agents": {
         "methodology_planner": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_methodology_planner",
-          "contract_version": "1.0.1",
+          "contract_version": "1.0.2",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-methodology-planner",
           "definition": {
             "registry_entries": [
@@ -157,7 +157,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_methodology_planner",
-              "version": "1.0.1",
+              "version": "1.0.2",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -180,13 +180,13 @@
                       }
                     },
                     "generation_policy": {
-                      "max_tokens": 2048,
+                      "max_tokens": 8192,
                       "thinking_level": "medium",
                       "response_format": "json_object"
                     }
                   },
                   "input": {
-                    "text": "You are the methodology planner for one governed pharma-company intelligence run. Use only the supplied methodology packet, governed company baseline, existing-memory benchmark, and canonical section registry. Do not search for or introduce public facts. Return one JSON object only and preserve the supplied company_id exactly. Choose research focus, section priorities, freshness emphasis, evidence questions, and role-specific objectives needed to apply the supplied Fixed Skill methodology. You may prioritize or deepen required work, but you may not change company scope, provider authority, required canonical section IDs, required Agent roles, output schema, memory mutation authority, publication authority, or safety gates. Do not compare this company with another company. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
+                    "text": "You are the methodology planner for one governed pharma-company intelligence run. Use only the supplied methodology packet, governed company baseline, existing-memory benchmark, and canonical section registry. Do not search for or introduce public facts. Return one JSON object only and preserve the supplied company_id exactly. Choose research focus, section priorities, freshness emphasis, evidence questions, and role-specific objectives needed to apply the supplied Fixed Skill methodology. You may prioritize or deepen required work, but you may not change company scope, provider authority, required canonical section IDs, required Agent roles, output schema, memory mutation authority, publication authority, or safety gates. Do not compare this company with another company. The supplied response_contract is authoritative for the complete JSON shape. Obey response_contract.compact_limits exactly: keep every question and focus item concise, keep all lists within their declared maxima, and keep the entire JSON response within max_total_json_chars. Do not fill optional focus lists merely to reach their maxima. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields or explanatory prose outside the JSON object."
                   }
                 }
               ],
