@@ -43,7 +43,7 @@ def _valid_plan(company_id: int = 13) -> dict:
 
 class MethodologyPacketTests(unittest.TestCase):
     def test_builds_bounded_packet_from_fixed_methodology_text(self) -> None:
-        root = ASSET_ROOT / "skills" / "pharma-intelligence-methodology"
+        root = ASSET_ROOT / "tests" / "fixtures" / "skills" / "pharma-intelligence-methodology"
         packet = _build_methodology_packet(
             skill_text=(root / "SKILL.md").read_text(encoding="utf-8"),
             evidence_policy=(root / "references" / "evidence-policy.md").read_text(encoding="utf-8"),
