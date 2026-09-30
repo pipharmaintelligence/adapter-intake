@@ -35,6 +35,126 @@ RESEARCH_ROLE_SECTIONS: dict[str, tuple[str, ...]] = {
     ),
 }
 
+def response_contract_for_role(
+    role: str,
+    *,
+    company_id: int,
+    required_section_ids: tuple[str, ...] = (),
+    question_ids: tuple[str, ...] = (),
+    planner_requirement_ids: tuple[str, ...] = (),
+) -> dict[str, Any]:
+    """Return the compact canonical JSON response contract for one Agent role."""
+    base: dict[str, Any] = {
+        "company_id": company_id,
+        "role": role,
+        "status": "completed",
+    }
+
+    if role in RESEARCH_ROLE_SECTIONS:
+        return {
+            **base,
+            "schema_version": RESEARCH_SCHEMA_VERSION,
+            "required_fields": [
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "sections",
+                "claims",
+                "uncertainties",
+            ],
+            "section_ids_in_order": list(required_section_ids or RESEARCH_ROLE_SECTIONS[role]),
+            "claim_fields": [
+                "claim_id",
+                "section_id",
+                "statement",
+                "evidence_kind",
+                "as_of_date",
+                "confidence",
+                "inference",
+            ],
+            "evidence_kind_values": ["grounded_external", "inference"],
+            "confidence_values": ["low", "medium", "high"],
+        }
+
+    if role == "strategic_analyst":
+        return {
+            **base,
+            "schema_version": STRATEGIC_SCHEMA_VERSION,
+            "required_fields": [
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "implications",
+                "opportunities",
+                "risks",
+                "internal_public_deltas",
+                "uncertainties",
+            ],
+        }
+
+    if role == "evidence_critic":
+        return {
+            **base,
+            "schema_version": CRITIC_SCHEMA_VERSION,
+            "required_fields": [
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "unsupported_claim_ids",
+                "contradiction_items",
+                "stale_claim_ids",
+                "missing_section_ids",
+                "unmet_plan_requirements",
+                "citation_coverage",
+                "residual_uncertainties",
+                "recommendation",
+            ],
+            "unmet_plan_requirement_ids": list(planner_requirement_ids),
+            "unmet_plan_requirement_fields": ["requirement_id", "disposition", "notes"],
+            "unmet_plan_requirement_dispositions": ["unresolved_evidence", "unsatisfied"],
+            "citation_coverage_fields": ["status", "notes"],
+            "citation_coverage_status_values": ["sufficient", "insufficient"],
+            "recommendation_values": ["pass", "fail"],
+        }
+
+    if role == "intelligence_synthesizer":
+        return {
+            **base,
+            "schema_version": SYNTHESIS_SCHEMA_VERSION,
+            "required_fields": [
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "sections",
+                "memory_candidate",
+                "residual_uncertainties",
+            ],
+            "memory_candidate_fields": ["company_id", "target_section", "markdown", "fact_ids"],
+        }
+
+    if role == "memory_benchmark_reviewer":
+        return {
+            **base,
+            "schema_version": BENCHMARK_SCHEMA_VERSION,
+            "required_fields": [
+                "schema_version",
+                "company_id",
+                "role",
+                "status",
+                "results",
+            ],
+            "question_ids_in_order": list(question_ids),
+            "result_fields": ["question_id", "coverage", "evidence_basis"],
+            "coverage_values": ["covered", "partially_covered", "not_covered"],
+        }
+
+    raise ValueError("Unknown Agent role for response contract.")
+
+
 
 def extract_agent_json(
     envelope: Any,
