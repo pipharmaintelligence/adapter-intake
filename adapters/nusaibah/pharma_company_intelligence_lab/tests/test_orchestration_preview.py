@@ -415,6 +415,7 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
         self.assertEqual(response["metrics"]["quality_gate_passed_company_count"], 2)
         self.assertGreaterEqual(response["metrics"]["benchmark_improvement_count"], 0)
         self.assertEqual(response["metrics"]["memory_mutations_made"], 0)
+        self.assertEqual(response["metrics"]["methodology_learning_mutations_made"], 0)
 
         counts = Counter(role for role, _company_id in inputs.agent_calls)
         self.assertEqual(counts["methodology_planner"], 8)
@@ -428,7 +429,12 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
 
         self.assertEqual(
             inputs.dynamic_skill_calls,
-            [("company_memory", 13), ("company_memory", 59)],
+            [
+                ("company_memory", 13),
+                ("company_methodology", 13),
+                ("company_memory", 59),
+                ("company_methodology", 59),
+            ],
         )
         for result in dossier["company_results"]:
             self.assertTrue(result["quality_gate_passed"])
@@ -441,6 +447,9 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             self.assertEqual(result["citation_count"], 3)
             self.assertTrue(result["memory_mutation_eligible"])
             self.assertEqual(result["memory_update_status"], "preview_ready")
+            self.assertEqual(result["methodology_learning_update_status"], "preview_ready")
+            self.assertIsNone(result["methodology_learning_change_id"])
+            self.assertFalse(result["methodology_learning_readback_verified"])
             self.assertEqual(result["benchmark_result_basis"], "projected_memory_candidate")
             self.assertFalse(result["memory_readback_verified"])
             self.assertEqual(
