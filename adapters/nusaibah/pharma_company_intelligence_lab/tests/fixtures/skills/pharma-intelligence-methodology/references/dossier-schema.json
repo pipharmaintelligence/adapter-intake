@@ -1,0 +1,43 @@
+{
+  "schema_version": "pharma_company_intelligence_dossier.v1",
+  "sections": [
+    {"section_id": "executive_intelligence_summary", "title": "Executive Intelligence Summary", "required": true, "subsections": []},
+    {"section_id": "internal_baseline", "title": "Internal Baseline", "required": true, "subsections": []},
+    {"section_id": "company_profile", "title": "Company Profile", "required": true, "subsections": [
+      {"subsection_id": "identity", "title": "Identity", "required": true},
+      {"subsection_id": "ownership_structure", "title": "Ownership & Structure", "required": true},
+      {"subsection_id": "headquarters_footprint", "title": "Headquarters & Footprint", "required": true},
+      {"subsection_id": "manufacturing_footprint", "title": "Manufacturing Footprint", "required": true}
+    ]},
+    {"section_id": "product_portfolio_intelligence", "title": "Product & Portfolio Intelligence", "required": true, "subsections": [
+      {"subsection_id": "therapeutic_areas", "title": "Therapeutic Areas", "required": true},
+      {"subsection_id": "key_products", "title": "Key Products", "required": true},
+      {"subsection_id": "pipeline_lifecycle_signals", "title": "Pipeline & Lifecycle Signals", "required": true},
+      {"subsection_id": "licensing_partnerships", "title": "Licensing & Partnerships", "required": true}
+    ]},
+    {"section_id": "markets_commercial_signals", "title": "Markets & Commercial Signals", "required": true, "subsections": [
+      {"subsection_id": "geographies", "title": "Geographies", "required": true},
+      {"subsection_id": "market_presence", "title": "Market Presence", "required": true},
+      {"subsection_id": "launches_distribution", "title": "Launches & Distribution", "required": true},
+      {"subsection_id": "commercial_partnerships", "title": "Commercial Partnerships", "required": true}
+    ]},
+    {"section_id": "regulatory_clinical_risk_signals", "title": "Regulatory / Clinical / Risk Signals", "required": true, "subsections": [
+      {"subsection_id": "approvals", "title": "Approvals", "required": true},
+      {"subsection_id": "clinical_evidence", "title": "Clinical Evidence", "required": true},
+      {"subsection_id": "safety", "title": "Safety", "required": true},
+      {"subsection_id": "manufacturing_quality", "title": "Manufacturing & Quality", "required": true},
+      {"subsection_id": "regulatory_uncertainty", "title": "Regulatory Uncertainty", "required": true}
+    ]},
+    {"section_id": "strategic_developments", "title": "Strategic Developments", "required": true, "subsections": [
+      {"subsection_id": "recent_material_developments", "title": "Recent Material Developments", "required": true},
+      {"subsection_id": "implications", "title": "Implications", "required": true},
+      {"subsection_id": "opportunities", "title": "Opportunities", "required": true},
+      {"subsection_id": "risks", "title": "Risks", "required": true}
+    ]},
+    {"section_id": "contradictions_uncertainty_register", "title": "Contradictions & Uncertainty Register", "required": true, "subsections": []},
+    {"section_id": "new_evidence_since_existing_memory", "title": "New Evidence Since Existing Memory", "required": true, "subsections": []},
+    {"section_id": "recommended_memory_update", "title": "Recommended Memory Update", "required": true, "subsections": []},
+    {"section_id": "evidence_citation_coverage", "title": "Evidence / Citation Coverage", "required": true, "subsections": []},
+    {"section_id": "quality_performance_scorecard", "title": "Quality / Performance Scorecard", "required": true, "subsections": []}
+  ]
+}
