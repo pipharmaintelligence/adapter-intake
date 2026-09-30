@@ -811,7 +811,10 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             )
             self.assertEqual(
                 focus["questions"],
-                [f"Question for {role} company {company_id}."],
+                [
+                    f"Question for {section_id} company {company_id}."
+                    for section_id in adapter_module.RESEARCH_ROLE_SECTIONS[role]
+                ],
             )
             self.assertNotIn("research_focus", payload)
             self.assertNotIn("cross_cutting_questions", focus)
