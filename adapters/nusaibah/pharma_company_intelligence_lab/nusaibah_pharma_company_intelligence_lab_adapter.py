@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import json
 from typing import Any, ClassVar
 
 from adapters.base import Adapter
@@ -105,9 +106,21 @@ BENCHMARK_ROLE = "memory_benchmark_reviewer"
 MAX_MEMORY_CONTEXT_CHARS = 24000
 MAX_CITATIONS_PER_COMPANY = 24
 
+# 0.1.6 planner-output target. These are intentionally stricter than the
+# shared helper safety ceilings so the provider receives and the adapter
+# enforces one compact workload contract without mutating retained helpers.
+PLANNER_MAX_QUESTIONS_PER_ROLE = 3
+PLANNER_MAX_FRESHNESS_FOCUS_ITEMS_PER_ROLE = 2
+PLANNER_MAX_EVIDENCE_FOCUS_ITEMS_PER_ROLE = 2
+PLANNER_MAX_CROSS_CUTTING_QUESTIONS = 4
+PLANNER_MAX_KNOWN_MEMORY_GAPS = 4
+PLANNER_MAX_EXPECTED_UNCERTAINTIES = 4
+PLANNER_MAX_TEXT_CHARS = 280
+PLANNER_MAX_TOTAL_JSON_CHARS = 12000
+
 
 class AgentContractValidationError(RuntimeError):
-    """Bounded 0.1.5 business-contract failure safe for reviewed runtime projection."""
+    """Bounded 0.1.6 business-contract failure safe for reviewed runtime projection."""
 
     def __init__(self, code: str, message: str) -> None:
         self.code = code
@@ -122,7 +135,7 @@ def response_contract_for_role(
     question_ids: tuple[str, ...] = (),
     planner_requirement_ids: tuple[str, ...] = (),
 ) -> dict[str, Any]:
-    """Return the canonical 0.1.5 JSON response contract for one Agent role."""
+    """Return the canonical 0.1.6 JSON response contract for one Agent role."""
     base: dict[str, Any] = {
         "company_id": company_id,
         "role": role,
@@ -245,7 +258,7 @@ def response_contract_for_role(
 
 
 def planner_response_contract(*, company_id: int) -> dict[str, Any]:
-    """Return the canonical 0.1.5 JSON response contract for the methodology planner."""
+    """Return the canonical 0.1.6 JSON response contract for the methodology planner."""
     return {
         "schema_version": PLANNER_SCHEMA_VERSION,
         "company_id": company_id,
@@ -260,7 +273,100 @@ def planner_response_contract(*, company_id: int) -> dict[str, Any]:
             role: list(RESEARCH_ROLE_SECTIONS[role])
             for role in MANDATORY_RESEARCH_ROLES
         },
+        "compact_response_required": True,
+        "compact_limits": {
+            "max_questions_per_role": PLANNER_MAX_QUESTIONS_PER_ROLE,
+            "max_freshness_focus_items_per_role": PLANNER_MAX_FRESHNESS_FOCUS_ITEMS_PER_ROLE,
+            "max_evidence_focus_items_per_role": PLANNER_MAX_EVIDENCE_FOCUS_ITEMS_PER_ROLE,
+            "max_cross_cutting_questions": PLANNER_MAX_CROSS_CUTTING_QUESTIONS,
+            "max_known_memory_gaps": PLANNER_MAX_KNOWN_MEMORY_GAPS,
+            "max_expected_uncertainties": PLANNER_MAX_EXPECTED_UNCERTAINTIES,
+            "max_text_chars": PLANNER_MAX_TEXT_CHARS,
+            "max_total_json_chars": PLANNER_MAX_TOTAL_JSON_CHARS,
+        },
     }
+
+
+def _validate_compact_methodology_plan(
+    value: Any,
+    *,
+    company_id: int,
+) -> MethodologyPlan:
+    """Validate the 0.1.6 planner result against strict compact output bounds."""
+
+    try:
+        plan = validate_methodology_plan(value, company_id=company_id)
+    except ValueError as exc:
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Methodology planner returned an invalid business contract.",
+        ) from exc
+
+    serialized = json.dumps(
+        plan.to_agent_input(),
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+    if len(serialized) > PLANNER_MAX_TOTAL_JSON_CHARS:
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Methodology planner response exceeds the compact total-size bound.",
+        )
+
+    for focus in plan.research_focus:
+        if len(focus.questions) > PLANNER_MAX_QUESTIONS_PER_ROLE:
+            raise AgentContractValidationError(
+                "pharma_agent_business_schema_invalid",
+                "Methodology planner returned too many role questions.",
+            )
+        if len(focus.freshness_focus) > PLANNER_MAX_FRESHNESS_FOCUS_ITEMS_PER_ROLE:
+            raise AgentContractValidationError(
+                "pharma_agent_business_schema_invalid",
+                "Methodology planner returned too many freshness-focus items.",
+            )
+        if len(focus.evidence_focus) > PLANNER_MAX_EVIDENCE_FOCUS_ITEMS_PER_ROLE:
+            raise AgentContractValidationError(
+                "pharma_agent_business_schema_invalid",
+                "Methodology planner returned too many evidence-focus items.",
+            )
+        _validate_planner_text_lengths(
+            (*focus.questions, *focus.freshness_focus, *focus.evidence_focus)
+        )
+
+    if len(plan.cross_cutting_questions) > PLANNER_MAX_CROSS_CUTTING_QUESTIONS:
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Methodology planner returned too many cross-cutting questions.",
+        )
+    if len(plan.known_memory_gaps) > PLANNER_MAX_KNOWN_MEMORY_GAPS:
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Methodology planner returned too many known-memory gaps.",
+        )
+    if len(plan.expected_uncertainties) > PLANNER_MAX_EXPECTED_UNCERTAINTIES:
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Methodology planner returned too many expected uncertainties.",
+        )
+    _validate_planner_text_lengths(
+        (
+            *plan.cross_cutting_questions,
+            *plan.known_memory_gaps,
+            *plan.expected_uncertainties,
+        )
+    )
+    return plan
+
+
+def _validate_planner_text_lengths(values: tuple[str, ...]) -> None:
+    """Reject planner prose that exceeds the provider-visible 0.1.6 bound."""
+
+    if any(len(value) > PLANNER_MAX_TEXT_CHARS for value in values):
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Methodology planner text exceeds the compact character bound.",
+        )
 
 
 def extract_agent_json(
@@ -270,7 +376,7 @@ def extract_agent_json(
     company_id: int,
     expected_schema_version: str,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Return typed Agent JSON while projecting reviewed 0.1.5 failure codes."""
+    """Return typed Agent JSON while projecting reviewed 0.1.6 failure codes."""
     if not isinstance(envelope, dict) or envelope.get("status") != "completed":
         raise AgentContractValidationError(
             "pharma_agent_runtime_envelope_invalid",
@@ -333,7 +439,7 @@ def validate_benchmark_payload(
     company_id: int,
     expected_question_ids: tuple[str, ...],
 ) -> dict[str, Any]:
-    """Validate benchmark output with reviewed 0.1.5 failure codes."""
+    """Validate benchmark output with reviewed 0.1.6 failure codes."""
     rows = value.get("results")
     if not isinstance(rows, list) or len(rows) != len(expected_question_ids):
         raise AgentContractValidationError(
@@ -385,11 +491,11 @@ def validate_benchmark_payload(
 
 
 def resolve_company_records(inputs: dict[str, Any]) -> list[dict[str, Any]]:
-    """Normalize governed company rows for the 0.1.5 database binding contract.
+    """Normalize governed company rows for the 0.1.6 database binding contract.
 
     The shared input_contract.py remains byte-compatible with retained
     published versions. Version-specific database schema normalization belongs
-    to this 0.1.5 adapter module so older packaged identities keep their exact
+    to this 0.1.6 adapter module so older packaged identities keep their exact
     helper behavior while this version can consume id / company rows.
     """
     records = _resolve_company_records_shared(inputs)
@@ -427,7 +533,7 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.pharma_company_intelligence_lab"
-    version: ClassVar[str] = "0.1.5"
+    version: ClassVar[str] = "0.1.6"
 
     def invoke(self, inputs: Any, context: dict[str, Any]) -> dict[str, Any]:
         """Execute one bounded company batch with two-phase memory mutation."""
@@ -754,7 +860,7 @@ def _run_methodology_planner(
         company_id=company_id,
         expected_schema_version=PLANNER_SCHEMA_VERSION,
     )
-    return validate_methodology_plan(value, company_id=company_id)
+    return _validate_compact_methodology_plan(value, company_id=company_id)
 
 
 def _run_research_fanout(
