@@ -471,7 +471,7 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
         )
 
     def test_compact_planner_validation_rejects_excess_role_questions(self) -> None:
-        value = _valid_agent_value(
+        value = _agent_value(
             "methodology_planner",
             company_id=13,
             input_value={},
@@ -493,7 +493,7 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
         )
 
     def test_compact_planner_validation_rejects_long_text(self) -> None:
-        value = _valid_agent_value(
+        value = _agent_value(
             "methodology_planner",
             company_id=13,
             input_value={},
