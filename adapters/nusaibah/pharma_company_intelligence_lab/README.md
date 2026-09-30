@@ -30,7 +30,7 @@ For `0.1.6`:
 - `agent_contract.py` is unchanged;
 - `methodology_contract.py` is unchanged;
 - `input_contract.py`, `dossier_contract.py`, and `memory_contract.py` are unchanged;
-- `adapter.dependencies.json` is unchanged.
+- `adapter.dependencies.json` now requires `pi-obs-python-runtime>=0.1.87` because 0.1.6 uses the package-backed mutable Dynamic Skill runtime.
 
 This preserves the current Assets materializer coexistence contract and avoids a `shared_runtime_file_conflict`.
 
