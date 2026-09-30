@@ -345,6 +345,8 @@ def planner_section_response_contract(
             "questions",
             "freshness_focus",
             "evidence_focus",
+            "methodology_steps",
+            "priority_rationale",
         ],
         "chunk_id": planner_chunk["chunk_id"],
         "research_role": planner_chunk["research_role"],
@@ -355,7 +357,9 @@ def planner_section_response_contract(
             "max_questions": PLANNER_MAX_QUESTIONS_PER_SECTION,
             "max_freshness_focus_items": PLANNER_MAX_FRESHNESS_FOCUS_ITEMS_PER_SECTION,
             "max_evidence_focus_items": PLANNER_MAX_EVIDENCE_FOCUS_ITEMS_PER_SECTION,
+            "max_methodology_steps": PLANNER_MAX_METHODOLOGY_STEPS_PER_SECTION,
             "max_text_chars": PLANNER_MAX_TEXT_CHARS,
+            "max_priority_rationale_chars": PLANNER_MAX_TEXT_CHARS,
         },
     }
 
@@ -437,6 +441,23 @@ def _ordered_planner_chunks(before_benchmark: dict[str, Any]) -> tuple[dict[str,
         )
     )
     return tuple(chunk for _index, chunk in indexed)
+
+
+def _load_methodology_learning(inputs: Any, *, company_id: int) -> tuple[Any, str]:
+    """Resolve bounded company methodology memory as a read-only planning hint."""
+
+    handle = inputs.dynamic_skill(
+        METHODOLOGY_SKILL_ROLE,
+        variables={"company_id": str(company_id)},
+    )
+    if handle.provenance().mutable is not False:
+        raise RuntimeError("company_methodology must resolve read-only.")
+    if not handle.has_section(METHODOLOGY_LEARNING_SECTION):
+        raise RuntimeError("Company methodology Skill is missing its learning section.")
+    text = handle.section_text(METHODOLOGY_LEARNING_SECTION).strip()
+    if len(text) > METHODOLOGY_LEARNING_MAX_TOTAL_CHARS:
+        raise RuntimeError("Company methodology Skill exceeds its context bound.")
+    return handle, text
 
 
 def _planner_methodology_slice(
@@ -568,6 +589,16 @@ def _validate_planner_section(
         minimum=0,
         field="evidence_focus",
     )
+    methodology_steps = _planner_chunk_text_list(
+        value.get("methodology_steps"),
+        maximum=PLANNER_MAX_METHODOLOGY_STEPS_PER_SECTION,
+        minimum=1,
+        field="methodology_steps",
+    )
+    priority_rationale = _planner_chunk_text(
+        value.get("priority_rationale"),
+        field="priority_rationale",
+    )
     return {
         "chunk_id": planner_chunk["chunk_id"],
         "research_role": planner_chunk["research_role"],
@@ -576,7 +607,30 @@ def _validate_planner_section(
         "questions": questions,
         "freshness_focus": freshness_focus,
         "evidence_focus": evidence_focus,
+        "methodology_steps": methodology_steps,
+        "priority_rationale": priority_rationale,
     }
+
+
+def _planner_chunk_text(
+    value: Any,
+    *,
+    field: str,
+) -> str:
+    """Normalize one bounded planner text field."""
+
+    if not isinstance(value, str):
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            f"Methodology planner chunk {field} must contain text.",
+        )
+    normalized = " ".join(value.split()).strip()
+    if not normalized or len(normalized) > PLANNER_MAX_TEXT_CHARS:
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            f"Methodology planner chunk {field} exceeds the compact text bound.",
+        )
+    return normalized
 
 
 def _planner_chunk_text_list(
