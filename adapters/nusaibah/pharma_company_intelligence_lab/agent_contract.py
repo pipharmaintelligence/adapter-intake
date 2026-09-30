@@ -4,10 +4,10 @@ from typing import Any
 
 try:
     from .dossier_contract import normalize_sections
-    from .memory_contract import MemoryCandidate, validate_memory_candidate
+    from .memory_contract import MEMORY_TARGET_SECTION, MemoryCandidate, validate_memory_candidate
 except ImportError:  # pragma: no cover - local adapter-root execution path
     from dossier_contract import normalize_sections
-    from memory_contract import MemoryCandidate, validate_memory_candidate
+    from memory_contract import MEMORY_TARGET_SECTION, MemoryCandidate, validate_memory_candidate
 
 RESEARCH_SCHEMA_VERSION = "pharma_research_agent.v1"
 STRATEGIC_SCHEMA_VERSION = "pharma_strategic_agent.v1"
@@ -133,7 +133,10 @@ def response_contract_for_role(
                 "memory_candidate",
                 "residual_uncertainties",
             ],
+            "section_fields": ["section_id", "content", "subsections"],
+            "subsection_fields": ["subsection_id", "content"],
             "memory_candidate_fields": ["company_id", "target_section", "markdown", "fact_ids"],
+            "memory_candidate_target_section": MEMORY_TARGET_SECTION,
         }
 
     if role == "memory_benchmark_reviewer":
