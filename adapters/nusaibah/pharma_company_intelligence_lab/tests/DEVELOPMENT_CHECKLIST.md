@@ -1,147 +1,72 @@
-# PI-1951 / PI-1954 — 0.1.4 Published Fixed Skill Runtime Cutover Checklist
+# PI-1965 — Pharma 0.1.6 Planner Reliability Checklist
 
-Asset candidate: `nusaibah.pharma_company_intelligence_lab@0.1.4`
+Asset candidate: `nusaibah.pharma_company_intelligence_lab@0.1.6`
 
-This file is development-only and excluded from promoted runtime bytes.
+This checklist is development-only and is not part of promoted runtime bytes.
 
-## Why 0.1.4 exists
+## Scope
 
-`0.1.2` proved the Python orchestration ownership gate and loaded the reviewed adapter, but the live launch supplied a direct `companies` record. That bypassed the intended governed Assets/DLM input binding and therefore did not prove a fresh read from the database-backed company node.
+- [x] New immutable asset version `0.1.6`.
+- [x] Planner contract/chain moves to `1.0.2`.
+- [x] Planner `max_tokens=8192`.
+- [x] Planner `thinking_level=medium` unchanged.
+- [x] Planner `response_format=json_object` unchanged.
+- [x] Other seven Agent contracts/chains remain `1.0.1`.
+- [x] No provider/model/provider-vault change.
+- [x] No retry or failover policy change.
+- [x] No input-role or binding-contract change.
+- [x] No Fixed Skill identity/digest change.
+- [x] Existing factual Dynamic Skill authority is unchanged; `company_methodology` read/update roles are the scoped 0.1.6 addition.
+- [x] No output/publication contract change.
 
-The production contract is:
+## Shared-file coexistence
 
-```text
-caller variables.company_ids
-        ↓
-Assets governed input binding
-        ↓
-lake_id=test_database_lake
-node_key=companies
-        ↓
-database PK column id
-        ↓
-resolved records envelope
-        ↓
-Python normalization
-id -> company_id
-company -> company_name
-```
+- [x] `agent_contract.py` unchanged from `0.1.5`.
+- [x] `methodology_contract.py` unchanged from `0.1.5`.
+- [x] `input_contract.py` unchanged from `0.1.5`.
+- [x] `dossier_contract.py` unchanged from `0.1.5`.
+- [x] `memory_contract.py` unchanged from `0.1.5`.
+- [x] `adapter.dependencies.json` remains byte-identical to published `0.1.5` at runtime floor `0.1.84`; package-backed mutable Dynamic Skill support already exists at that floor.
+- [ ] Promotion P3 confirms no `shared_runtime_file_conflict`.
 
-`0.1.3` established the governed company-input correction. `0.1.4` preserves that behavior and changes only the Fixed Skill source declaration from bundled `skills[]` to publication-backed `published_skills[]`, keeping `nusaibah.pharma-intelligence-methodology@1.0.0` and its canonical digest unchanged. Shared reviewed helpers remain compatible with retained published versions.
+## Routed compact planner response and methodology learning
 
-## Non-negotiable 0.1.4 contract
+- [x] Python owns deterministic routing from the canonical dossier section registry.
+- [x] `company_methodology` is declared as company-scoped read-only procedural memory.
+- [x] `company_methodology_update` is declared as company-scoped mutable procedural memory.
+- [x] Planner receives only the selected section's learned methodology slice.
+- [x] Learned methodology cannot override Fixed Skill or current benchmark authority.
+- [x] Learning candidate is built only after the evidence critic passes and the projected company-memory benchmark is non-regressing.
+- [x] Preview mode never mutates methodology memory.
+- [x] Apply mode uses one complete snapshot with expected-digest protection and idempotent no-change handling; fresh read-only roles verify persisted content, while freshly resolved mutable roles verify committed history change-id/digest.
+- [x] Every mandatory research section is routed exactly once.
+- [x] Known benchmark coverage becomes a deterministic priority hint.
+- [x] Unknown priority may be selected by only that section-sized planner call.
+- [x] Planner receives section/subsection TOC slice, section-scoped benchmark evidence, and bounded global methodology rules only.
+- [x] Section response contracts declare compact list/text bounds.
+- [x] Python merges section chunks into one complete methodology plan.
+- [x] Final plan passes existing shared methodology validation plus stricter 0.1.6 compact bounds.
+- [x] Existing reviewed `pharma_agent_business_schema_invalid` code is reused for compact-contract failures.
+- [x] Strict JSON/business validation remains enabled.
+- [x] No truncated response can be treated as successful by the merged Assets P0 runtime.
 
-- [x] `adapter.yaml` version is `0.1.4`.
-- [x] Manifest default and sole intake version are `0.1.4`.
-- [x] `companies.required=true`.
-- [x] `companies.source=binding`.
-- [x] `companies.shape=object`.
-- [x] `variables.required=true`.
-- [x] `variables.source=direct`.
-- [x] `variables.shape=object`.
-- [x] Exact governed source is `test_database_lake / companies`.
-- [x] Governed database identity column is `id`, not `company_id`.
-- [x] Governed company-name column is `company`.
-- [x] The versioned `0.1.4` adapter module preserves `id -> company_id` and `company -> company_name` normalization without changing retained shared-helper behavior.
-- [x] Adapter rejects conflicting `id` / `company_id`.
-- [x] Adapter preserves exact requested/resolved company-set parity.
-- [x] Python owns no DLM/Core/database query.
-- [x] Direct caller `companies` is forbidden by manifest/runtime ownership.
-- [x] Fixed methodology Skill identity/version/digest/bytes are unchanged.
-- [x] Dynamic Skill roles and dossier output contract are unchanged.
-- [x] All Agent definitions/provider policies remain unchanged from `0.1.2`.
-- [x] No cross-company benchmark/ranking/scoring requirement is introduced.
+## Local/intake proof
 
-## DLM UI discovery proof
+- [ ] Syntax/import checks pass.
+- [ ] Unit tests pass.
+- [ ] Local-root import passes.
+- [ ] Packaged dotted import is proven by promotion/package CI.
+- [ ] `obs-adapter-intake-check --adapter-yaml adapters/nusaibah/pharma_company_intelligence_lab/adapter.yaml` passes.
+- [ ] Repository-wide intake check passes.
+- [ ] Exact final intake commit SHA is recorded after all fixes/CI.
+- [ ] Promotion dry-run/planner is ready.
 
-The current DLM UI Input Binding workspace loads Assets workflow-sequence and filters `io_descriptor.input_roles` for binding-capable roles.
+## Remote proof after promotion
 
-Required post-promotion proof:
-
-- [ ] Assets workflow-sequence projects `companies.source=binding`.
-- [ ] Assets workflow-sequence projects `variables.source=direct`.
-- [ ] DLM UI Input Binding modal offers `companies`.
-- [ ] DLM UI does not offer `variables` as a governed binding role.
-
-## Database row-filter boundary
-
-The `companies` node schema uses ordinary database column `id` as its primary key. It is not a DLM partition key.
-
-Current DLM UI and Assets source supports ordinary row/data mappings through `filters_from_variables` on the bounded materialized-retrieval lane, while `partition_filters_from_variables` remains reserved for declared partition keys. Therefore:
-
-- [x] Do not fake `id` as a partition field.
-- [x] Do not encode `id <- company_ids` as a partition mapping merely to make the form green.
-- [x] Source inspection proves bounded row/data mapping for `id <- company_ids` through `filters_from_variables`.
-- [x] DLM UI can author row/data filter mappings from ordinary schema fields; do not push database/query logic into this adapter.
-- [ ] Post-promotion, create and activate the exact `0.1.4` governed binding and live-prove variables-only retrieval for `company_ids=[13]` and `[13,59]`.
-
-## Deterministic regression requirements
-
-- [ ] Full pharma deterministic suite passes.
-- [x] Test freezes adapter.yaml == manifest default == sole intake version `0.1.4`.
-- [x] Test freezes `companies=binding/object`.
-- [x] Test freezes `variables=direct/object`.
-- [x] Test proves DB-shaped records `id/company` normalize to semantic `company_id/company_name`.
-- [x] Test proves conflicting DB/semantic identity fails closed.
-- [x] Test proves requested order is restored after governed resolution.
-- [x] Test proves sensitive named fields are excluded from projected company baseline.
-- [ ] Existing Agent contract tests pass unchanged except version constant.
-- [ ] Existing preview/isolation tests pass with DB-shaped records envelope.
-- [ ] Existing expected-digest/readback/history safety tests pass unchanged.
-- [ ] Local-root and packaged dotted imports pass with the import test frozen to asset version `0.1.4`.
-- [ ] `git diff --check` passes.
-
-## Local/intake certification
-
-- [ ] `obs-asset-diagnose --quick --adapter-root <pharma-root> --pretty` is ready.
-- [ ] Single-adapter `obs-adapter-intake-check --adapter-yaml <adapter.yaml> --pretty` is ready.
-- [ ] Repo-wide `obs-adapter-intake-check --root . --pretty` is ready.
-- [ ] `obs-asset-promote --adapter-yaml <adapter.yaml> --precommit-status passed --pretty` reports `promotion_plan_ready`.
-- [ ] Portable Skill digest remains `sha256:2fa082aca1c100abb60a4bf77aa4cf796da2707bb951a3b51f11948efd2dd564`.
-
-## Promotion / package proof
-
-Do not merge the adapter-intake PR as part of this work.
-
-After review:
-
-- [ ] Push exact RC SHA.
-- [ ] Run pinned Assets validation/materialization against that SHA.
-- [ ] Confirm existing published identities are preserved and `0.1.4` is added.
-- [ ] Confirm packaged manifest exposes binding-owned `companies`.
-- [ ] Confirm runtime catalog publishes exact `0.1.4`.
-- [ ] Confirm portable Skill bytes remain unchanged.
-- [ ] Confirm package/import/build/forbidden-content checks are green.
-- [ ] Review generated Assets PR separately.
-
-## Independent environment prerequisite
-
-The immutable methodology Skill is locally valid. Its ZIP has been uploaded to the governed Fixed Skill node, but upload alone does not prove publication visibility or signed resolver/Core delivery. Verify the exact publication in the target environment:
-
-```text
-nusaibah.pharma-intelligence-methodology@1.0.0
-canonical package digest:
-sha256:2fa082aca1c100abb60a4bf77aa4cf796da2707bb951a3b51f11948efd2dd564
-```
-
-The Fixed Skill remains version `1.0.0`; the asset version is `0.1.4` because the asset manifest now explicitly selects publication-backed delivery.
-
-## Live proof order
-
-Only after binding and Skill publication are ready:
-
-- [ ] Launch variables-only `company_ids=[13]`.
-- [ ] Prove governed `test_database_lake/companies` read selected exact DB row `id=13`.
-- [ ] Prove `company_memory(company_id=13)` resolves independently.
-- [x] Prove Fixed Skill publication resolves for client `1` to Core object `122`.
-- [ ] Prove publication-backed Fixed Skill delivery/hydration through `published_skills[]`.
-- [ ] Prove first benchmark Agent call.
-- [ ] Prove planner/research/critic/synthesis.
-- [ ] Prove preview returns zero mutations.
-- [ ] Launch variables-only `company_ids=[13,59]`.
-- [ ] Prove exact two-row retrieval and no cross-company contamination.
-- [ ] Prove apply/readback/history separately after preview closure.
-
-## Release verdict
-
-`0.1.4` is not LIVE_PROVEN merely because the manifest becomes visible in DLM UI or the PR is green. Binding discovery, row-filter execution, Fixed Skill publication/delivery, Agent/provider execution, Dynamic Skill behavior, and final preview/apply behavior remain independent gates.
+- [ ] Exact `0.1.6` governed Companies binding ready.
+- [ ] Methodology planner `1.0.2` admission dry-run ready.
+- [ ] Methodology planner `1.0.2` admission applied/no-change.
+- [ ] Worker catalog resolves exact `nusaibah.pharma_company_intelligence_lab:0.1.6`.
+- [ ] Company 13 preview reaches benchmark reviewer successfully.
+- [ ] Company 13 preview reaches and completes methodology planner.
+- [ ] Later roles are evaluated at their first live boundary.

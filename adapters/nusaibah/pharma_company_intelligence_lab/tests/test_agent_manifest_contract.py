@@ -9,7 +9,7 @@ MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
 
-ASSET_VERSION = "0.1.5"
+ASSET_VERSION = "0.1.6"
 CANONICAL_PROVIDER_REGISTRY_ENTRY = {
     "handle": "provider:text_generation",
     "type": "provider_execution",
@@ -34,7 +34,7 @@ CANONICAL_PROVIDER_REGISTRY_ENTRY = {
 }
 
 EXPECTED = {
-    "methodology_planner": ("gemini-3.8-flash", "medium", 2048, False),
+    "methodology_planner": ("gemini-3.8-flash", "medium", 8192, False),
     "portfolio_researcher": ("gemini-3.8-flash", "medium", 4096, True),
     "market_researcher": ("gemini-3.8-flash", "medium", 4096, True),
     "regulatory_risk_researcher": ("gemini-3.8-flash", "high", 6144, True),
@@ -117,7 +117,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         planner_chain = self.agents["methodology_planner"]["definition"]["chain"]
         self.assertEqual(
             planner_chain["metadata"]["provisioning_source"],
-            "pi_1954_adaptive_methodology_planner",
+            "pi_1965_section_chunk_planner",
         )
 
         for role, agent in self.agents.items():
@@ -133,7 +133,10 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         for role, (model, thinking, max_tokens, search_enabled) in EXPECTED.items():
             with self.subTest(role=role):
                 agent = self.agents[role]
-                self.assertEqual(agent["contract_version"], "1.0.1")
+                expected_contract_version = (
+                    "1.0.2" if role == "methodology_planner" else "1.0.1"
+                )
+                self.assertEqual(agent["contract_version"], expected_contract_version)
                 definition = agent["definition"]
                 self.assertEqual(len(definition["registry_entries"]), 1)
                 chain = definition["chain"]
@@ -167,6 +170,47 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
                     self.assertNotIn("search_mode", policy)
                     self.assertNotIn("citation_policy", policy)
 
+    def test_methodology_learning_dynamic_skill_roles_are_company_scoped(self) -> None:
+        runtime_skills = self.manifest["versions"]["0.1.6"]["runtime_skills"]
+
+        self.assertEqual(
+            runtime_skills["company_methodology"]["source"],
+            {"lake_ref": "googl123", "node_key": "company_methodology"},
+        )
+        self.assertEqual(runtime_skills["company_methodology"]["resolution"], "current")
+        self.assertEqual(runtime_skills["company_methodology"]["mutation"], "read_only")
+        self.assertEqual(
+            runtime_skills["company_methodology"]["partition"],
+            {"company_id": {"from_variable": "company_id"}},
+        )
+
+        self.assertEqual(
+            runtime_skills["company_methodology_update"]["source"],
+            {"lake_ref": "googl123", "node_key": "company_methodology"},
+        )
+        self.assertEqual(runtime_skills["company_methodology_update"]["resolution"], "current")
+        self.assertEqual(runtime_skills["company_methodology_update"]["mutation"], "mutable")
+        self.assertEqual(
+            runtime_skills["company_methodology_update"]["partition"],
+            {"company_id": {"from_variable": "company_id"}},
+        )
+
+    def test_only_methodology_planner_identity_changes_in_0_1_6(self) -> None:
+        self.assertEqual(
+            self.agents["methodology_planner"]["contract_version"],
+            "1.0.2",
+        )
+        self.assertEqual(
+            self.agents["methodology_planner"]["definition"]["chain"]["version"],
+            "1.0.2",
+        )
+        for role, agent in self.agents.items():
+            if role == "methodology_planner":
+                continue
+            with self.subTest(role=role):
+                self.assertEqual(agent["contract_version"], "1.0.1")
+                self.assertEqual(agent["definition"]["chain"]["version"], "1.0.1")
+
     def test_methodology_planner_instruction_preserves_authority_boundaries(self) -> None:
         prompt = (
             self.agents["methodology_planner"]["definition"]["chain"]["steps"][0]
@@ -177,11 +221,15 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             "preserve the supplied company_id exactly",
             "may not change company scope",
             "provider authority",
-            "required canonical section IDs",
+            "section ownership",
             "required Agent roles",
             "memory mutation authority",
             "publication authority",
             "Do not compare this company with another company.",
+            "Plan only the supplied section",
+            "priority_hint",
+            "response_contract.compact_limits",
+            "Do not fill optional lists merely to reach their maxima.",
         )
         for phrase in required_phrases:
             with self.subTest(phrase=phrase):
