@@ -4,7 +4,7 @@ Canonical adapter-intake source for `nusaibah.pharma_company_intelligence_lab`.
 
 ## Version policy
 
-`0.1.3` is the current immutable candidate. It corrects the governed company-input contract after live `0.1.2` proof showed that direct caller-supplied `companies` data could bypass the intended Assets/DLM binding path.
+`0.1.4` is the current immutable candidate. It preserves the governed company-input correction from `0.1.3` and cuts the methodology Fixed Skill from bundled `skills[]` to publication-backed `published_skills[]` without changing the Fixed Skill `1.0.0` identity/digest or adapter business logic.
 
 Create a new asset version whenever adapter code, manifest metadata, reviewed helpers, dependency contract, or portable Skill bytes change. Environment-only repairs such as publishing an unchanged immutable Skill do not require an asset-version bump.
 
@@ -25,4 +25,4 @@ Development progress and release evidence are tracked in Linear PI-1951 and in t
 
 The manifest intentionally declares `companies.source=binding` so Assets projects that role to the DLM UI Input Binding workflow, while `variables.source=direct` keeps launch variables out of the binding picker.
 
-Role visibility is not the same as a ready database selector. The current database node uses ordinary schema column `id`; it must not be mislabeled as a partition field. The governed binding/runtime layer supports the row/data mapping `id <- company_ids` through the bounded materialized-retrieval binding lane. This is a row/data filter, not a partition mapping, and live variables-only execution still requires a ready `0.1.3` binding plus exact runtime proof.
+Role visibility is not the same as a ready database selector. The current database node uses ordinary schema column `id`; it must not be mislabeled as a partition field. The governed binding/runtime layer supports the row/data mapping `id <- company_ids` through the bounded materialized-retrieval binding lane. This is a row/data filter, not a partition mapping, and live variables-only execution still requires a ready `0.1.4` binding plus exact runtime proof.

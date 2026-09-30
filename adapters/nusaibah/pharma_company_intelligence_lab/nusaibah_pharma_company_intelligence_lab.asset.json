@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.pharma_company_intelligence_lab",
-  "default": "0.1.3",
+  "default": "0.1.4",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -16,7 +16,7 @@
     "timeout_seconds": 1800
   },
   "versions": {
-    "0.1.3": {
+    "0.1.4": {
       "state": "active",
       "inputs": {
         "companies": {
@@ -36,7 +36,7 @@
           "shape": "object"
         }
       },
-      "skills": [
+      "published_skills": [
         {
           "skill_ref": "nusaibah.pharma-intelligence-methodology",
           "version": "1.0.0",
