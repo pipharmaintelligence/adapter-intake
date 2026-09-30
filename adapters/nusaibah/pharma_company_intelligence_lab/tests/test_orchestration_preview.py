@@ -309,6 +309,31 @@ def _agent_value(role: str, company_id: int, input_value: dict) -> dict:
     raise AssertionError(f"unexpected role: {role}")
 
 
+
+def _full_planner_value(company_id: int) -> dict:
+    """Return one valid assembled planner value for compact-plan validator tests."""
+    return {
+        "schema_version": "pharma_methodology_plan.v1",
+        "company_id": company_id,
+        "role": "methodology_planner",
+        "status": "completed",
+        "research_focus": [
+            {
+                "role": research_role,
+                "priority": "medium",
+                "section_ids": list(adapter_module.RESEARCH_ROLE_SECTIONS[research_role]),
+                "questions": [f"Question for {research_role} company {company_id}."],
+                "freshness_focus": ["recent material changes"],
+                "evidence_focus": ["authoritative public evidence"],
+            }
+            for research_role in adapter_module.RESEARCH_ROLES
+        ],
+        "cross_cutting_questions": [f"Cross-cutting question for company {company_id}."],
+        "known_memory_gaps": [f"Known gap for company {company_id}."],
+        "expected_uncertainties": [f"Expected uncertainty for company {company_id}."],
+    }
+
+
 def _fake_citations(agent_result):
     role = agent_result["content"][0]["value"]["role"]
     company_id = agent_result["content"][0]["value"]["company_id"]
@@ -480,11 +505,7 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
         )
 
     def test_compact_planner_validation_rejects_excess_role_questions(self) -> None:
-        value = _agent_value(
-            "methodology_planner",
-            company_id=13,
-            input_value={},
-        )
+        value = _full_planner_value(13)
         value["research_focus"][0]["questions"] = [
             f"Question {index}."
             for index in range(PLANNER_MAX_QUESTIONS_PER_ROLE + 1)
@@ -529,10 +550,13 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
                 "company_id",
                 "role",
                 "status",
-                "research_focus",
-                "cross_cutting_questions",
-                "known_memory_gaps",
-                "expected_uncertainties",
+                "chunk_id",
+                "research_role",
+                "section_id",
+                "priority",
+                "questions",
+                "freshness_focus",
+                "evidence_focus",
             },
             "portfolio_researcher": {
                 "schema_version",
