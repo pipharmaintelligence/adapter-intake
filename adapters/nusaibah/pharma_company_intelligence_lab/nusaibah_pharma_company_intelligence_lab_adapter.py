@@ -60,7 +60,7 @@ except ImportError:  # pragma: no cover - local adapter-root execution path
         validate_research_payload,
         validate_strategic_payload,
         validate_synthesis_payload,
-            response_contract_for_role,
+        response_contract_for_role,
     )
     from dossier_contract import CANONICAL_SECTIONS, DOSSIER_SCHEMA_VERSION, SECTION_BY_ID
     from input_contract import (
@@ -79,7 +79,7 @@ except ImportError:  # pragma: no cover - local adapter-root execution path
         MethodologyResources,
         load_methodology,
         validate_methodology_plan,
-            planner_response_contract,
+        planner_response_contract,
     )
 
 
@@ -103,11 +103,11 @@ MAX_CITATIONS_PER_COMPANY = 24
 
 
 def resolve_company_records(inputs: dict[str, Any]) -> list[dict[str, Any]]:
-    """Normalize governed company rows for the 0.1.4 database binding contract.
+    """Normalize governed company rows for the 0.1.5 database binding contract.
 
     The shared input_contract.py remains byte-compatible with retained
     published versions. Version-specific database schema normalization belongs
-    to this 0.1.4 adapter module so older packaged identities keep their exact
+    to this 0.1.5 adapter module so older packaged identities keep their exact
     helper behavior while this version can consume id / company rows.
     """
     records = _resolve_company_records_shared(inputs)
@@ -145,7 +145,7 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.pharma_company_intelligence_lab"
-    version: ClassVar[str] = "0.1.4"
+    version: ClassVar[str] = "0.1.5"
 
     def invoke(self, inputs: Any, context: dict[str, Any]) -> dict[str, Any]:
         """Execute one bounded company batch with two-phase memory mutation."""
