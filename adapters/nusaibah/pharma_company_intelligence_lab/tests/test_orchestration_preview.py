@@ -21,7 +21,7 @@ from devtools.skill_citation import CitationRef  # noqa: E402
 
 class FakeSkill:
     def __init__(self) -> None:
-        self.root = ASSET_ROOT / "skills" / "pharma-intelligence-methodology"
+        self.root = ASSET_ROOT / "tests" / "fixtures" / "skills" / "pharma-intelligence-methodology"
 
     def validate(self):
         return SimpleNamespace(

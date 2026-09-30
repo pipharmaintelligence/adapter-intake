@@ -62,6 +62,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
     def test_fixed_skill_uses_published_delivery_not_bundled_bytes(self) -> None:
         version = self.manifest["versions"][ASSET_VERSION]
         self.assertNotIn("skills", version)
+        self.assertFalse((ASSET_ROOT / "skills").exists())
         self.assertEqual(
             version["published_skills"],
             [
