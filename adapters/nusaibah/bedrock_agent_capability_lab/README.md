@@ -1,7 +1,7 @@
 # Nusaibah Bedrock Agent Capability Lab
 
 This folder is the canonical adapter-intake source for
-`nusaibah.bedrock_agent_capability_lab@0.1.0`.
+`nusaibah.bedrock_agent_capability_lab@0.1.5`.
 
 It is a separate Bedrock reference asset. The existing
 `nusaibah.agent_capability_lab` Vertex lineage is intentionally not modified.
@@ -14,7 +14,7 @@ roles, bounded semantic input, deterministic validation, and bounded evidence.
 Assets/Core own Agent admission, ProviderVault authority, Bedrock transport,
 AWS role material, provider execution, retries/finalization, and runtime truth.
 
-The initial version exercises:
+Version 0.1.5 exercises:
 
 - Bedrock logical Agent invocation through `inputs.invoke_agent(...)`;
 - the manifest-pinned Fixed Skill;
@@ -49,7 +49,7 @@ All Bedrock execution enters through the declared logical role
 
 ## Search and citations
 
-Version 0.1.0 deliberately does not claim Bedrock provider-native web search or
+Version 0.1.5 deliberately does not claim Bedrock provider-native web search or
 Vertex-style grounding. Current runtime evidence supports the reviewed
 provider-grounding contract for Vertex, not Bedrock.
 
@@ -100,6 +100,11 @@ digest. Model output alone is never treated as persisted state.
 Every non-scaffold run also validates the supplied `execution_plan.v1`.
 The plan is developer intent only; it does not grant provider, tool, Skill,
 storage, or credential authority.
+
+For `bedrock_agent_invocation`, version 0.1.5 forwards that already-validated
+plan as bounded semantic Agent input. The proof validates successful Bedrock
+result shape/provider evidence and the presence of orchestration guidance; it
+does not require a literal provider response such as `ok`.
 
 ## Repository ownership
 
