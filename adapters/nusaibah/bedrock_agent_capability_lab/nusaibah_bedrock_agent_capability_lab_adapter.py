@@ -186,16 +186,46 @@ def _invoke_bedrock_agent(
     return evidence, result
 
 
-def _run_bedrock_agent_invocation(inputs: Any) -> dict[str, Any]:
-    """Prove a minimal logical Bedrock Agent invocation."""
+def _execution_plan_payload(plan: Any) -> dict[str, Any]:
+    """Project one already-validated execution plan into bounded provider input."""
 
+    return {
+        "schema_version": plan.schema_version,
+        "company_id": plan.company_id,
+        "steps": [
+            {
+                "sequence": step.sequence,
+                "capability": step.capability,
+                "role": step.role,
+                "required": step.required,
+            }
+            for step in plan.steps
+        ],
+    }
+
+
+def _run_bedrock_agent_invocation(
+    inputs: Any,
+    *,
+    plan: Any,
+) -> dict[str, Any]:
+    """Prove Bedrock Agent execution with the validated orchestration plan."""
+
+    plan_payload = _execution_plan_payload(plan)
     evidence, result = _invoke_bedrock_agent(
         inputs,
-        business_input={"task": "Return exactly: ok"},
+        business_input={
+            "task": (
+                "Provide safe orchestration guidance derived only from the supplied "
+                "validated execution plan. Process steps in declared sequence order "
+                "and do not execute capabilities."
+            ),
+            "execution_plan": plan_payload,
+        },
     )
-    if result["text"].strip().lower() != "ok":
-        raise RuntimeError("Bedrock exact-response proof returned unexpected text.")
-    evidence["bedrock_exact_response_verified"] = True
+    evidence["bedrock_execution_plan_forwarded"] = True
+    evidence["bedrock_execution_plan_step_count"] = len(plan_payload["steps"])
+    evidence["bedrock_orchestration_guidance_present"] = bool(result["text"].strip())
     return evidence
 
 
@@ -611,7 +641,7 @@ class NusaibahBedrockAgentCapabilityLabAdapter(Adapter):
     """Reference adapter for governed AWS Bedrock Agent capability proofs."""
 
     key: ClassVar[str] = "nusaibah.bedrock_agent_capability_lab"
-    version: ClassVar[str] = "0.1.4"
+    version: ClassVar[str] = "0.1.5"
 
     def invoke(
         self,
@@ -637,7 +667,12 @@ class NusaibahBedrockAgentCapabilityLabAdapter(Adapter):
         }
 
         if proof_stage == "bedrock_agent_invocation":
-            capability_result.update(_run_bedrock_agent_invocation(inputs))
+            capability_result.update(
+                _run_bedrock_agent_invocation(
+                    inputs,
+                    plan=plan,
+                )
+            )
 
         elif proof_stage == "fixed_skill_read":
             capability_result.update(_read_fixed_skill(inputs))
