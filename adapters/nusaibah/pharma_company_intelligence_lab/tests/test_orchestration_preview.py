@@ -582,6 +582,27 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             )
         )
 
+    def test_methodology_learning_candidate_is_built_after_critic(self) -> None:
+        inputs = FakeInputs()
+        adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
+
+        with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
+            adapter.invoke(inputs, {})
+
+        results = [
+            state
+            for state in inputs.agent_inputs
+            if state[0] == "intelligence_synthesizer"
+        ]
+        self.assertEqual(len(results), 2)
+
+        # Preview mode exposes the candidate but never requests the mutable role.
+        methodology_calls = [
+            role
+            for role, _company_id in inputs.dynamic_skill_calls
+        ]
+        self.assertNotIn("company_methodology_update", methodology_calls)
+
     def test_planner_contract_exposes_compact_provider_visible_limits(self) -> None:
         contract = planner_response_contract(company_id=13)
 
