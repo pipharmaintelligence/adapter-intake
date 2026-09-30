@@ -88,9 +88,11 @@ The separate company methodology Dynamic Skill is company-scoped procedural memo
 Its lifecycle is:
 - read current methodology before section planning;
 - use only the selected section's bounded learned slice as a planner hint;
-- after research and evidence-critic quality gates pass, build one complete bounded learning snapshot;
-- in `memory_mode=preview`, expose the candidate without mutation;
-- in `memory_mode=apply`, commit one complete company snapshot through preview, `expected_digest`, apply, fresh readback, and history verification.
+- after research and evidence-critic quality gates pass, require projected company-memory benchmark non-regression before building one complete bounded learning snapshot;
+- if the benchmark regresses, keep the completed company result but mark methodology learning `no_change_recommended`;
+- in `memory_mode=preview`, expose the eligible candidate without mutation;
+- in `memory_mode=apply`, commit one complete company snapshot through preview, `expected_digest`, apply, fresh readback, and history verification;
+- if the generated methodology snapshot is byte-equivalent to the current snapshot, treat it as an idempotent no-change outcome rather than failing the run.
 
 No Skill publication, mutation-authority, storage, or persistence behavior changes for the Fixed Skill in `0.1.6`.
 
