@@ -123,14 +123,32 @@ class FakeFreshMemory:
         return self._history
 
 
+class FakeCommittedMutableMemory(FakeMutableMemory):
+    def __init__(self, *, digest: str = AFTER, history: FakeHistory | None = None) -> None:
+        super().__init__(current_digest=digest)
+        self._history = history or FakeHistory(latest_digest=digest)
+
+    def history(self, *, limit: int):
+        self.limit = limit
+        return self._history
+
+
 class FakeInputs:
-    def __init__(self, mutable: FakeMutableMemory, fresh: FakeFreshMemory) -> None:
+    def __init__(
+        self,
+        mutable: FakeMutableMemory,
+        fresh: FakeFreshMemory,
+        committed_mutable: FakeCommittedMutableMemory | None = None,
+    ) -> None:
         self.mutable = mutable
         self.fresh = fresh
+        self.committed_mutable = committed_mutable or FakeCommittedMutableMemory()
+        self.update_resolve_count = 0
 
     def dynamic_skill(self, role: str, *, variables=None):
         if role == "company_memory_update":
-            return self.mutable
+            self.update_resolve_count += 1
+            return self.mutable if self.update_resolve_count == 1 else self.committed_mutable
         if role == "company_memory":
             return self.fresh
         raise AssertionError(role)
@@ -224,8 +242,8 @@ class MemoryApplyContractTests(unittest.TestCase):
     def test_rejects_history_change_id_mismatch(self) -> None:
         inputs = FakeInputs(
             FakeMutableMemory(),
-            FakeFreshMemory(
-                self.candidate,
+            FakeFreshMemory(self.candidate),
+            FakeCommittedMutableMemory(
                 history=FakeHistory(change_id="wrong-change"),
             ),
         )
@@ -237,8 +255,8 @@ class MemoryApplyContractTests(unittest.TestCase):
     def test_rejects_history_digest_mismatch(self) -> None:
         inputs = FakeInputs(
             FakeMutableMemory(),
-            FakeFreshMemory(
-                self.candidate,
+            FakeFreshMemory(self.candidate),
+            FakeCommittedMutableMemory(
                 history=FakeHistory(after_digest="sha256:" + "7" * 64),
             ),
         )
@@ -305,13 +323,9 @@ class FakeFreshMethodology:
         self,
         *,
         digest: str = AFTER,
-        change_id: str = "methodology-1",
-        history_after_digest: str = AFTER,
         section_text: str = "candidate",
     ) -> None:
         self.digest = digest
-        self.change_id = change_id
-        self.history_after_digest = history_after_digest
         self._section_text = section_text
 
     def provenance(self):
@@ -322,6 +336,18 @@ class FakeFreshMethodology:
 
     def section_text(self, section: str) -> str:
         return self._section_text
+
+class FakeCommittedMutableMethodology(FakeMutableMethodology):
+    def __init__(
+        self,
+        *,
+        digest: str = AFTER,
+        change_id: str = "methodology-1",
+        history_after_digest: str = AFTER,
+    ) -> None:
+        super().__init__(current_digest=digest)
+        self.change_id = change_id
+        self.history_after_digest = history_after_digest
 
     def history(self, *, limit: int):
         return SimpleNamespace(
@@ -334,11 +360,21 @@ class FakeFreshMethodology:
 
 class MethodologyApplyContractTests(unittest.TestCase):
     @staticmethod
-    def _inputs(mutable: FakeMutableMethodology, fresh: FakeFreshMethodology):
+    def _inputs(
+        mutable: FakeMutableMethodology,
+        fresh: FakeFreshMethodology,
+        committed_mutable: FakeCommittedMutableMethodology | None = None,
+    ):
+        committed = committed_mutable or FakeCommittedMutableMethodology()
+
         class Inputs:
+            def __init__(self) -> None:
+                self.update_resolve_count = 0
+
             def dynamic_skill(self, role: str, *, variables=None):
                 if role == "company_methodology_update":
-                    return mutable
+                    self.update_resolve_count += 1
+                    return mutable if self.update_resolve_count == 1 else committed
                 if role == "company_methodology":
                     return fresh
                 raise AssertionError(role)
@@ -390,11 +426,12 @@ class MethodologyApplyContractTests(unittest.TestCase):
 
     def test_methodology_apply_rejects_history_change_id_mismatch(self) -> None:
         mutable = FakeMutableMethodology()
-        fresh = FakeFreshMethodology(change_id="wrong-change")
+        fresh = FakeFreshMethodology()
+        committed = FakeCommittedMutableMethodology(change_id="wrong-change")
 
         with self.assertRaisesRegex(RuntimeError, "history change-id mismatch"):
             adapter_module._apply_company_methodology(
-                self._inputs(mutable, fresh),
+                self._inputs(mutable, fresh, committed),
                 company_id=13,
                 handle=FakeMethodologyHandle(),
                 candidate="candidate",
@@ -402,11 +439,14 @@ class MethodologyApplyContractTests(unittest.TestCase):
 
     def test_methodology_apply_rejects_history_digest_mismatch(self) -> None:
         mutable = FakeMutableMethodology()
-        fresh = FakeFreshMethodology(history_after_digest="sha256:" + "7" * 64)
+        fresh = FakeFreshMethodology()
+        committed = FakeCommittedMutableMethodology(
+            history_after_digest="sha256:" + "7" * 64
+        )
 
         with self.assertRaisesRegex(RuntimeError, "history digest mismatch"):
             adapter_module._apply_company_methodology(
-                self._inputs(mutable, fresh),
+                self._inputs(mutable, fresh, committed),
                 company_id=13,
                 handle=FakeMethodologyHandle(),
                 candidate="candidate",
