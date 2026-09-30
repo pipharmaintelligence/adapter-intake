@@ -604,7 +604,13 @@ def _apply_company_methodology(
     if preview.diff.old_digest != before_digest:
         raise RuntimeError("Company methodology preview baseline digest mismatch.")
     if preview.diff.new_digest == before_digest:
-        raise RuntimeError("Company methodology preview produced no change.")
+        return {
+            "methodology_learning_update_status": "no_change_recommended",
+            "methodology_learning_change_id": None,
+            "methodology_learning_before_digest": before_digest,
+            "methodology_learning_after_digest": before_digest,
+            "methodology_learning_readback_verified": False,
+        }
 
     receipt = update.apply(changes, expected_digest=before_digest)
 
@@ -622,6 +628,8 @@ def _apply_company_methodology(
     latest = fresh.history(limit=50).latest_change()
     if latest is None or latest.change_id != receipt.change_id:
         raise RuntimeError("Company methodology history change-id mismatch.")
+    if latest.after_content_digest != receipt.after_content_digest:
+        raise RuntimeError("Company methodology history digest mismatch.")
 
     return {
         "methodology_learning_update_status": "applied",
@@ -1230,14 +1238,16 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
                     mutation_count += 1
 
                 # Methodology learning is committed only after the company
-                # research/memory quality gate has completed successfully.
-                learning_mutation = _apply_company_methodology(
-                    inputs,
-                    company_id=state["company_id"],
-                    handle=state["methodology_learning_handle"],
-                    candidate=state["methodology_learning_candidate"],
-                )
-                state["result"].update(learning_mutation)
+                # research/memory quality gate and benchmark non-regression gate.
+                methodology_candidate = state["methodology_learning_candidate"]
+                if methodology_candidate is not None:
+                    learning_mutation = _apply_company_methodology(
+                        inputs,
+                        company_id=state["company_id"],
+                        handle=state["methodology_learning_handle"],
+                        candidate=methodology_candidate,
+                    )
+                    state["result"].update(learning_mutation)
 
         company_results = [state["result"] for state in prepared]
         dossier = {
@@ -1305,10 +1315,11 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
                     item["benchmark_improvement_count"] for item in company_results
                 ),
                 "memory_mutations_made": mutation_count,
-        "methodology_learning_mutations_made": sum(
-            1 for item in company_results
-            if item["methodology_learning_update_status"] == "applied"
-        ),
+                "methodology_learning_mutations_made": sum(
+                    1
+                    for item in company_results
+                    if item["methodology_learning_update_status"] == "applied"
+                ),
             },
         }
 
@@ -1446,12 +1457,16 @@ def _prepare_company(
         and benchmark_non_regression
     )
 
-    methodology_learning_candidate = _build_methodology_learning_candidate(
-        company_id=company_id,
-        planner_chunks=planner_chunks,
-        critic=critic,
-        methodology_plan=methodology_plan,
-        benchmark_non_regression=benchmark_non_regression,
+    methodology_learning_candidate = (
+        _build_methodology_learning_candidate(
+            company_id=company_id,
+            planner_chunks=planner_chunks,
+            critic=critic,
+            methodology_plan=methodology_plan,
+            benchmark_non_regression=True,
+        )
+        if benchmark_non_regression
+        else None
     )
 
     result = {
@@ -1491,7 +1506,7 @@ def _prepare_company(
         "memory_mutation_eligible": mutation_eligible,
         "methodology_learning_update_status": (
             "preview_ready"
-            if benchmark_non_regression and request.memory_mode in {"preview", "apply"}
+            if methodology_learning_candidate is not None
             else "no_change_recommended"
         ),
         "methodology_learning_change_id": None,
