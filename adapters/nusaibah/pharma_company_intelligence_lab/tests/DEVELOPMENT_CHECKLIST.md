@@ -16,7 +16,7 @@ This checklist is development-only and is not part of promoted runtime bytes.
 - [x] No retry or failover policy change.
 - [x] No input-role or binding-contract change.
 - [x] No Fixed Skill identity/digest change.
-- [x] No Dynamic Skill authority change.
+- [x] Existing factual Dynamic Skill authority is unchanged; `company_methodology` read/update roles are the scoped 0.1.6 addition.
 - [x] No output/publication contract change.
 
 ## Shared-file coexistence
@@ -26,7 +26,7 @@ This checklist is development-only and is not part of promoted runtime bytes.
 - [x] `input_contract.py` unchanged from `0.1.5`.
 - [x] `dossier_contract.py` unchanged from `0.1.5`.
 - [x] `memory_contract.py` unchanged from `0.1.5`.
-- [x] `adapter.dependencies.json` unchanged from `0.1.5`.
+- [x] `adapter.dependencies.json` intentionally raises the runtime floor from `0.1.84` to `0.1.87` for package-backed mutable Dynamic Skill support.
 - [ ] Promotion P3 confirms no `shared_runtime_file_conflict`.
 
 ## Routed compact planner response and methodology learning
@@ -36,9 +36,9 @@ This checklist is development-only and is not part of promoted runtime bytes.
 - [x] `company_methodology_update` is declared as company-scoped mutable procedural memory.
 - [x] Planner receives only the selected section's learned methodology slice.
 - [x] Learned methodology cannot override Fixed Skill or current benchmark authority.
-- [x] Learning candidate is built only after the evidence critic passes.
+- [x] Learning candidate is built only after the evidence critic passes and the projected company-memory benchmark is non-regressing.
 - [x] Preview mode never mutates methodology memory.
-- [x] Apply mode uses one complete snapshot with expected-digest protection, fresh readback, and history verification.
+- [x] Apply mode uses one complete snapshot with expected-digest protection, idempotent no-change handling, fresh readback, and history change-id/digest verification.
 - [x] Every mandatory research section is routed exactly once.
 - [x] Known benchmark coverage becomes a deterministic priority hint.
 - [x] Unknown priority may be selected by only that section-sized planner call.
@@ -58,7 +58,7 @@ This checklist is development-only and is not part of promoted runtime bytes.
 - [ ] Packaged dotted import is proven by promotion/package CI.
 - [ ] `obs-adapter-intake-check --adapter-yaml adapters/nusaibah/pharma_company_intelligence_lab/adapter.yaml` passes.
 - [ ] Repository-wide intake check passes.
-- [ ] Exact intake commit SHA is recorded.
+- [ ] Exact final intake commit SHA is recorded after all fixes/CI.
 - [ ] Promotion dry-run/planner is ready.
 
 ## Remote proof after promotion
