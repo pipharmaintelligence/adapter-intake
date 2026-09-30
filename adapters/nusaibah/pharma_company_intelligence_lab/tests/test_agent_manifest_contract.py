@@ -9,7 +9,7 @@ MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
 
-ASSET_VERSION = "0.1.3"
+ASSET_VERSION = "0.1.4"
 CANONICAL_PROVIDER_REGISTRY_ENTRY = {
     "handle": "provider:text_generation",
     "type": "provider_execution",
@@ -58,6 +58,20 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         self.assertIn(f'version: ClassVar[str] = "{ASSET_VERSION}"', adapter_module)
         self.assertEqual(self.manifest["default"], ASSET_VERSION)
         self.assertEqual(set(self.manifest["versions"]), {ASSET_VERSION})
+
+    def test_fixed_skill_uses_published_delivery_not_bundled_bytes(self) -> None:
+        version = self.manifest["versions"][ASSET_VERSION]
+        self.assertNotIn("skills", version)
+        self.assertEqual(
+            version["published_skills"],
+            [
+                {
+                    "skill_ref": "nusaibah.pharma-intelligence-methodology",
+                    "version": "1.0.0",
+                    "digest": "sha256:2fa082aca1c100abb60a4bf77aa4cf796da2707bb951a3b51f11948efd2dd564",
+                }
+            ],
+        )
 
     def test_input_roles_freeze_governed_binding_and_direct_variables(self) -> None:
         inputs = self.manifest["versions"][ASSET_VERSION]["inputs"]
