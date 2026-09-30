@@ -656,6 +656,44 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             "pharma_agent_business_schema_invalid",
         )
 
+    def test_planner_chunk_validator_accepts_required_methodology_fields(self) -> None:
+        planner_chunk = {
+            "chunk_id": "portfolio_researcher:company_profile",
+            "research_role": "portfolio_researcher",
+            "section_id": "company_profile",
+            "priority_hint": "medium",
+        }
+        value = {
+            "schema_version": PLANNER_CHUNK_SCHEMA_VERSION,
+            "company_id": 13,
+            "role": PLANNER_ROLE,
+            "status": "completed",
+            "chunk_id": "portfolio_researcher:company_profile",
+            "research_role": "portfolio_researcher",
+            "section_id": "company_profile",
+            "priority": "medium",
+            "questions": ["Verify company identity."],
+            "freshness_focus": ["Recent identity changes."],
+            "evidence_focus": ["Authoritative company sources."],
+            "methodology_steps": ["Verify the section against authoritative evidence."],
+            "priority_rationale": "Baseline identity coverage is incomplete.",
+        }
+
+        validated = adapter_module._validate_planner_section(
+            value,
+            company_id=13,
+            planner_chunk=planner_chunk,
+        )
+
+        self.assertEqual(
+            validated["methodology_steps"],
+            ["Verify the section against authoritative evidence."],
+        )
+        self.assertEqual(
+            validated["priority_rationale"],
+            "Baseline identity coverage is incomplete.",
+        )
+
     def test_role_contracts_freeze_validator_required_top_level_fields(self) -> None:
         expected_fields = {
             "methodology_planner": {
