@@ -69,6 +69,32 @@
               "from_variable": "company_id"
             }
           }
+        },
+        "company_methodology": {
+          "source": {
+            "lake_ref": "googl123",
+            "node_key": "company_methodology"
+          },
+          "resolution": "current",
+          "mutation": "read_only",
+          "partition": {
+            "company_id": {
+              "from_variable": "company_id"
+            }
+          }
+        },
+        "company_methodology_update": {
+          "source": {
+            "lake_ref": "googl123",
+            "node_key": "company_methodology"
+          },
+          "resolution": "current",
+          "mutation": "mutable",
+          "partition": {
+            "company_id": {
+              "from_variable": "company_id"
+            }
+          }
         }
       },
       "output_contracts": {
