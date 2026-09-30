@@ -625,7 +625,16 @@ def _apply_company_methodology(
     if fresh.section_text(METHODOLOGY_LEARNING_SECTION).strip() != candidate.strip():
         raise RuntimeError("Company methodology readback content mismatch.")
 
-    latest = fresh.history(limit=50).latest_change()
+    committed_update = inputs.dynamic_skill(
+        METHODOLOGY_SKILL_UPDATE_ROLE,
+        variables={"company_id": str(company_id)},
+    )
+    if committed_update.provenance().mutable is not True:
+        raise RuntimeError("Fresh company methodology update handle must remain mutable.")
+    if committed_update.content_digest() != receipt.after_content_digest:
+        raise RuntimeError("Fresh company methodology update digest mismatch.")
+
+    latest = committed_update.history(limit=50).latest_change()
     if latest is None or latest.change_id != receipt.change_id:
         raise RuntimeError("Company methodology history change-id mismatch.")
     if latest.after_content_digest != receipt.after_content_digest:
@@ -1961,7 +1970,16 @@ def _apply_company_memory(inputs: Any, state: dict[str, Any]) -> dict[str, Any]:
         final_benchmark,
     )
 
-    history = fresh.history(limit=50)
+    committed_update = inputs.dynamic_skill(
+        "company_memory_update",
+        variables={"company_id": str(company_id)},
+    )
+    if committed_update.provenance().mutable is not True:
+        raise RuntimeError("Fresh company memory update handle must remain mutable.")
+    if committed_update.content_digest() != receipt.after_content_digest:
+        raise RuntimeError("Fresh company memory update digest mismatch.")
+
+    history = committed_update.history(limit=50)
     latest = history.latest_change()
     if latest is None or latest.change_id != receipt.change_id:
         raise RuntimeError("Fresh company memory history change-id mismatch.")
