@@ -109,6 +109,10 @@ MAX_CITATIONS_PER_COMPANY = 24
 # 0.1.6 planner-output target. These are intentionally stricter than the
 # shared helper safety ceilings so the provider receives and the adapter
 # enforces one compact workload contract without mutating retained helpers.
+PLANNER_CHUNK_SCHEMA_VERSION = "pharma_methodology_chunk.v1"
+PLANNER_MAX_QUESTIONS_PER_SECTION = 1
+PLANNER_MAX_FRESHNESS_FOCUS_ITEMS_PER_SECTION = 1
+PLANNER_MAX_EVIDENCE_FOCUS_ITEMS_PER_SECTION = 1
 PLANNER_MAX_QUESTIONS_PER_ROLE = 3
 PLANNER_MAX_FRESHNESS_FOCUS_ITEMS_PER_ROLE = 2
 PLANNER_MAX_EVIDENCE_FOCUS_ITEMS_PER_ROLE = 2
@@ -117,6 +121,24 @@ PLANNER_MAX_KNOWN_MEMORY_GAPS = 4
 PLANNER_MAX_EXPECTED_UNCERTAINTIES = 4
 PLANNER_MAX_TEXT_CHARS = 280
 PLANNER_MAX_TOTAL_JSON_CHARS = 12000
+
+_PLANNER_SECTION_BENCHMARK_QUESTION = {
+    "company_profile": "company_identity",
+    "product_portfolio_intelligence": "therapeutic_focus",
+    "markets_commercial_signals": "market_presence",
+    "regulatory_clinical_risk_signals": "regulatory_risk",
+}
+_PLANNER_GLOBAL_BENCHMARK_QUESTIONS = (
+    "recent_developments",
+    "uncertainty",
+    "novelty",
+)
+_COVERAGE_PRIORITY = {
+    "covered": "low",
+    "partially_covered": "medium",
+    "not_covered": "high",
+}
+_PRIORITY_RANK = {"low": 0, "medium": 1, "high": 2}
 
 
 class AgentContractValidationError(RuntimeError):
@@ -258,7 +280,8 @@ def response_contract_for_role(
 
 
 def planner_response_contract(*, company_id: int) -> dict[str, Any]:
-    """Return the canonical 0.1.6 JSON response contract for the methodology planner."""
+    """Return the compact final-plan contract assembled deterministically from chunks."""
+
     return {
         "schema_version": PLANNER_SCHEMA_VERSION,
         "company_id": company_id,
@@ -287,12 +310,413 @@ def planner_response_contract(*, company_id: int) -> dict[str, Any]:
     }
 
 
+def planner_section_response_contract(
+    *,
+    company_id: int,
+    planner_chunk: dict[str, Any],
+    priority_hint: str | None,
+) -> dict[str, Any]:
+    """Return one provider-visible contract for a single research section."""
+
+    return {
+        "schema_version": PLANNER_CHUNK_SCHEMA_VERSION,
+        "company_id": company_id,
+        "role": PLANNER_ROLE,
+        "status": "completed",
+        "required_fields": [
+            "schema_version",
+            "company_id",
+            "role",
+            "status",
+            "chunk_id",
+            "research_role",
+            "section_id",
+            "priority",
+            "questions",
+            "freshness_focus",
+            "evidence_focus",
+        ],
+        "chunk_id": planner_chunk["chunk_id"],
+        "research_role": planner_chunk["research_role"],
+        "section_id": planner_chunk["section_id"],
+        "priority_values": sorted(PLANNER_PRIORITIES),
+        "required_priority": priority_hint,
+        "compact_limits": {
+            "max_questions": PLANNER_MAX_QUESTIONS_PER_SECTION,
+            "max_freshness_focus_items": PLANNER_MAX_FRESHNESS_FOCUS_ITEMS_PER_SECTION,
+            "max_evidence_focus_items": PLANNER_MAX_EVIDENCE_FOCUS_ITEMS_PER_SECTION,
+            "max_text_chars": PLANNER_MAX_TEXT_CHARS,
+        },
+    }
+
+
+def _planner_section_catalog() -> tuple[dict[str, Any], ...]:
+    """Return deterministic section chunks from the canonical dossier table of contents."""
+
+    chunks: list[dict[str, Any]] = []
+    for research_role in RESEARCH_ROLES:
+        for section_id in RESEARCH_ROLE_SECTIONS[research_role]:
+            section = SECTION_BY_ID[section_id]
+            chunks.append(
+                {
+                    "chunk_id": f"{research_role}:{section_id}",
+                    "research_role": research_role,
+                    "section_id": section_id,
+                    "section_title": section.title,
+                    "subsections": [
+                        {
+                            "subsection_id": subsection.subsection_id,
+                            "title": subsection.title,
+                        }
+                        for subsection in section.subsections
+                    ],
+                }
+            )
+    return tuple(chunks)
+
+
+def _planner_priority_hint(
+    *,
+    section_id: str,
+    benchmark_results: dict[str, str],
+) -> str | None:
+    """Map known benchmark coverage to priority; leave unknown mappings to the planner."""
+
+    question_id = _PLANNER_SECTION_BENCHMARK_QUESTION.get(section_id)
+    if question_id is None:
+        return None
+    coverage = benchmark_results.get(question_id)
+    return _COVERAGE_PRIORITY.get(coverage)
+
+
+def _ordered_planner_chunks(before_benchmark: dict[str, Any]) -> tuple[dict[str, Any], ...]:
+    """Prioritize deterministic chunks without using another provider call."""
+
+    benchmark_results = {
+        item["question_id"]: item["coverage"]
+        for item in before_benchmark.get("results", [])
+        if isinstance(item, dict)
+        and isinstance(item.get("question_id"), str)
+        and isinstance(item.get("coverage"), str)
+    }
+    indexed: list[tuple[int, dict[str, Any]]] = []
+    for index, chunk in enumerate(_planner_section_catalog()):
+        priority_hint = _planner_priority_hint(
+            section_id=chunk["section_id"],
+            benchmark_results=benchmark_results,
+        )
+        indexed.append(
+            (
+                index,
+                {
+                    **chunk,
+                    "priority_hint": priority_hint,
+                },
+            )
+        )
+
+    indexed.sort(
+        key=lambda item: (
+            -_PRIORITY_RANK.get(item[1]["priority_hint"], -1),
+            item[0],
+        )
+    )
+    return tuple(chunk for _index, chunk in indexed)
+
+
+def _planner_methodology_slice(
+    methodology: MethodologyResources,
+    *,
+    planner_chunk: dict[str, Any],
+) -> dict[str, Any]:
+    """Return only the global methodology needed to plan one selected section."""
+
+    packet = methodology.planner_packet
+    question_id = _PLANNER_SECTION_BENCHMARK_QUESTION.get(planner_chunk["section_id"])
+    benchmark_questions = [
+        dict(item)
+        for item in packet.benchmark_questions
+        if item.get("question_id") == question_id
+    ]
+    return {
+        "skill_ref": packet.skill_ref,
+        "skill_version": packet.skill_version,
+        "skill_digest": packet.skill_digest,
+        "mission": packet.mission,
+        "structural_rules": list(packet.structural_rules),
+        "evidence_rules": list(packet.evidence_rules),
+        "role_boundaries": list(packet.role_boundaries),
+        "company_isolation_rules": list(packet.company_isolation_rules),
+        "output_rules": list(packet.output_rules),
+        "benchmark_questions": benchmark_questions,
+    }
+
+
+def _benchmark_slice(
+    before_benchmark: dict[str, Any],
+    *,
+    planner_chunk: dict[str, Any],
+) -> dict[str, Any]:
+    """Return only benchmark evidence directly mapped to the selected section."""
+
+    question_id = _PLANNER_SECTION_BENCHMARK_QUESTION.get(planner_chunk["section_id"])
+    results = [
+        dict(item)
+        for item in before_benchmark.get("results", [])
+        if isinstance(item, dict) and item.get("question_id") == question_id
+    ]
+    return {
+        "schema_version": before_benchmark.get("schema_version"),
+        "company_id": before_benchmark.get("company_id"),
+        "role": before_benchmark.get("role"),
+        "status": before_benchmark.get("status"),
+        "results": results,
+    }
+
+
+def _validate_planner_section(
+    value: Any,
+    *,
+    company_id: int,
+    planner_chunk: dict[str, Any],
+) -> dict[str, Any]:
+    """Validate one section-sized planner result before deterministic merge."""
+
+    expected_keys = {
+        "schema_version",
+        "company_id",
+        "role",
+        "status",
+        "chunk_id",
+        "research_role",
+        "section_id",
+        "priority",
+        "questions",
+        "freshness_focus",
+        "evidence_focus",
+    }
+    if not isinstance(value, dict) or set(value) != expected_keys:
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Methodology planner chunk returned an invalid shape.",
+        )
+    if value.get("schema_version") != PLANNER_CHUNK_SCHEMA_VERSION:
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Methodology planner chunk returned an invalid schema version.",
+        )
+    if value.get("company_id") != company_id:
+        raise AgentContractValidationError(
+            "pharma_agent_company_id_invalid",
+            "Methodology planner chunk returned the wrong company_id.",
+        )
+    if value.get("role") != PLANNER_ROLE or value.get("status") != "completed":
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Methodology planner chunk identity or status is invalid.",
+        )
+    for field in ("chunk_id", "research_role", "section_id"):
+        if value.get(field) != planner_chunk[field]:
+            raise AgentContractValidationError(
+                "pharma_agent_business_schema_invalid",
+                f"Methodology planner chunk returned the wrong {field}.",
+            )
+
+    priority = value.get("priority")
+    if priority not in PLANNER_PRIORITIES:
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Methodology planner chunk priority is unsupported.",
+        )
+    priority_hint = planner_chunk.get("priority_hint")
+    if priority_hint is not None and priority != priority_hint:
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Methodology planner chunk did not preserve the deterministic priority.",
+        )
+
+    questions = _planner_chunk_text_list(
+        value.get("questions"),
+        maximum=PLANNER_MAX_QUESTIONS_PER_SECTION,
+        minimum=1,
+        field="questions",
+    )
+    freshness_focus = _planner_chunk_text_list(
+        value.get("freshness_focus"),
+        maximum=PLANNER_MAX_FRESHNESS_FOCUS_ITEMS_PER_SECTION,
+        minimum=0,
+        field="freshness_focus",
+    )
+    evidence_focus = _planner_chunk_text_list(
+        value.get("evidence_focus"),
+        maximum=PLANNER_MAX_EVIDENCE_FOCUS_ITEMS_PER_SECTION,
+        minimum=0,
+        field="evidence_focus",
+    )
+    return {
+        "chunk_id": planner_chunk["chunk_id"],
+        "research_role": planner_chunk["research_role"],
+        "section_id": planner_chunk["section_id"],
+        "priority": priority,
+        "questions": questions,
+        "freshness_focus": freshness_focus,
+        "evidence_focus": evidence_focus,
+    }
+
+
+def _planner_chunk_text_list(
+    value: Any,
+    *,
+    maximum: int,
+    minimum: int,
+    field: str,
+) -> list[str]:
+    """Normalize one compact planner list without using mutable shared helpers."""
+
+    if not isinstance(value, list) or not minimum <= len(value) <= maximum:
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            f"Methodology planner chunk {field} is outside the compact item bound.",
+        )
+    normalized: list[str] = []
+    for raw in value:
+        if not isinstance(raw, str):
+            raise AgentContractValidationError(
+                "pharma_agent_business_schema_invalid",
+                f"Methodology planner chunk {field} must contain text.",
+            )
+        text = " ".join(raw.split()).strip()
+        if not text or len(text) > PLANNER_MAX_TEXT_CHARS:
+            raise AgentContractValidationError(
+                "pharma_agent_business_schema_invalid",
+                f"Methodology planner chunk {field} exceeds the compact text bound.",
+            )
+        normalized.append(text)
+    if len(set(normalized)) != len(normalized):
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            f"Methodology planner chunk {field} contains duplicates.",
+        )
+    return normalized
+
+
+def _assemble_methodology_plan(
+    *,
+    company_id: int,
+    methodology: MethodologyResources,
+    before_benchmark: dict[str, Any],
+    planner_chunks: tuple[dict[str, Any], ...],
+) -> MethodologyPlan:
+    """Merge section-sized planner outputs into one complete validated plan."""
+
+    by_role: dict[str, list[dict[str, Any]]] = {role: [] for role in RESEARCH_ROLES}
+    for chunk in planner_chunks:
+        by_role[chunk["research_role"]].append(chunk)
+
+    research_focus: list[dict[str, Any]] = []
+    for role in RESEARCH_ROLES:
+        expected_sections = RESEARCH_ROLE_SECTIONS[role]
+        chunks = by_role[role]
+        actual_sections = {chunk["section_id"] for chunk in chunks}
+        if actual_sections != set(expected_sections) or len(chunks) != len(expected_sections):
+            raise AgentContractValidationError(
+                "pharma_agent_business_schema_invalid",
+                "Methodology planner chunks do not cover the complete research section set.",
+            )
+
+        ordered = sorted(chunks, key=lambda chunk: expected_sections.index(chunk["section_id"]))
+        priority = max(
+            (chunk["priority"] for chunk in ordered),
+            key=lambda value: _PRIORITY_RANK[value],
+        )
+        research_focus.append(
+            {
+                "role": role,
+                "priority": priority,
+                "section_ids": list(expected_sections),
+                "questions": _dedupe_text(
+                    item
+                    for chunk in ordered
+                    for item in chunk["questions"]
+                ),
+                "freshness_focus": _dedupe_text(
+                    item
+                    for chunk in ordered
+                    for item in chunk["freshness_focus"]
+                ),
+                "evidence_focus": _dedupe_text(
+                    item
+                    for chunk in ordered
+                    for item in chunk["evidence_focus"]
+                ),
+            }
+        )
+
+    benchmark_question_text = {
+        item["question_id"]: item["question"]
+        for item in methodology.benchmark_questions
+    }
+    coverage_by_question = {
+        item["question_id"]: item["coverage"]
+        for item in before_benchmark.get("results", [])
+        if isinstance(item, dict)
+        and isinstance(item.get("question_id"), str)
+        and isinstance(item.get("coverage"), str)
+    }
+    incomplete_question_ids = [
+        question_id
+        for question_id, _question in benchmark_question_text.items()
+        if coverage_by_question.get(question_id) != "covered"
+    ]
+    cross_cutting_questions = [
+        benchmark_question_text[question_id]
+        for question_id in _PLANNER_GLOBAL_BENCHMARK_QUESTIONS
+        if question_id in benchmark_question_text
+        and coverage_by_question.get(question_id) != "covered"
+    ][:PLANNER_MAX_CROSS_CUTTING_QUESTIONS]
+    known_memory_gaps = [
+        benchmark_question_text[question_id]
+        for question_id in incomplete_question_ids
+    ][:PLANNER_MAX_KNOWN_MEMORY_GAPS]
+    expected_uncertainties = (
+        [benchmark_question_text["uncertainty"]]
+        if "uncertainty" in benchmark_question_text
+        and coverage_by_question.get("uncertainty") != "covered"
+        else []
+    )
+
+    value = {
+        "schema_version": PLANNER_SCHEMA_VERSION,
+        "company_id": company_id,
+        "role": PLANNER_ROLE,
+        "status": "completed",
+        "research_focus": research_focus,
+        "cross_cutting_questions": cross_cutting_questions,
+        "known_memory_gaps": known_memory_gaps,
+        "expected_uncertainties": expected_uncertainties,
+    }
+    return _validate_compact_methodology_plan(value, company_id=company_id)
+
+
+def _dedupe_text(values: Any) -> list[str]:
+    """Preserve first occurrence while merging bounded section planner fragments."""
+
+    result: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        if value in seen:
+            continue
+        seen.add(value)
+        result.append(value)
+    return result
+
+
 def _validate_compact_methodology_plan(
     value: Any,
     *,
     company_id: int,
 ) -> MethodologyPlan:
-    """Validate the 0.1.6 planner result against strict compact output bounds."""
+    """Validate the assembled 0.1.6 plan against strict compact output bounds."""
 
     try:
         plan = validate_methodology_plan(value, company_id=company_id)
@@ -360,14 +784,13 @@ def _validate_compact_methodology_plan(
 
 
 def _validate_planner_text_lengths(values: tuple[str, ...]) -> None:
-    """Reject planner prose that exceeds the provider-visible 0.1.6 bound."""
+    """Reject assembled planner prose beyond the 0.1.6 compact character bound."""
 
     if any(len(value) > PLANNER_MAX_TEXT_CHARS for value in values):
         raise AgentContractValidationError(
             "pharma_agent_business_schema_invalid",
             "Methodology planner text exceeds the compact character bound.",
         )
-
 
 def extract_agent_json(
     envelope: Any,
@@ -597,7 +1020,13 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
             "metrics": {
                 "requested_company_count": len(request.company_ids),
                 "completed_company_count": len(company_results),
-                "logical_agent_invocations": (len(company_results) * 9) + mutation_count,
+                "logical_agent_invocations": (
+                    sum(
+                        8 + item["methodology_planner_call_count"]
+                        for item in company_results
+                    )
+                    + mutation_count
+                ),
                 "search_enabled_agent_invocations": len(company_results) * 3,
                 "methodology_planner_call_count": sum(
                     item["methodology_planner_call_count"] for item in company_results
@@ -674,7 +1103,7 @@ def _prepare_company(
         stage="before",
     )
 
-    methodology_plan = _run_methodology_planner(
+    methodology_plan, planner_call_count = _run_methodology_planner(
         inputs,
         company_id=company_id,
         company_name_value=name,
@@ -769,7 +1198,7 @@ def _prepare_company(
         "stale_claim_count": len(critic["stale_claim_ids"]),
         "novel_fact_count": len(candidate.fact_ids),
         "duplicate_memory_fact_count": 0,
-        "methodology_planner_call_count": 1,
+        "methodology_planner_call_count": planner_call_count,
         "planner_required_question_count": (
             sum(len(focus.questions) for focus in methodology_plan.research_focus)
             + len(methodology_plan.cross_cutting_questions)
@@ -826,42 +1255,66 @@ def _run_methodology_planner(
     request: BatchRequest,
     methodology: MethodologyResources,
     before_benchmark: dict[str, Any],
-) -> MethodologyPlan:
-    """Create and validate one company-scoped adaptive methodology plan."""
-    envelope = inputs.invoke_agent(
-        PLANNER_ROLE,
-        input={
-            "company_id": company_id,
-            "company_name": company_name_value,
-            "objective": request.objective,
-            "research_depth": request.research_depth,
-            "methodology_packet": methodology.planner_packet.to_agent_input(),
-            "governed_company_baseline": baseline,
-            "memory_benchmark": before_benchmark,
-            "canonical_sections": [
-                {
-                    "section_id": section.section_id,
-                    "title": section.title,
-                }
-                for section in CANONICAL_SECTIONS
-            ],
-            "research_role_sections": {
-                role: list(RESEARCH_ROLE_SECTIONS[role])
-                for role in RESEARCH_ROLES
-            },
-            "allowed_research_roles": list(RESEARCH_ROLES),
-            "response_contract": planner_response_contract(company_id=company_id),
-        },
-        on_error="raise",
-    )
-    value, _ = extract_agent_json(
-        envelope,
-        expected_role=PLANNER_ROLE,
-        company_id=company_id,
-        expected_schema_version=PLANNER_SCHEMA_VERSION,
-    )
-    return _validate_compact_methodology_plan(value, company_id=company_id)
+) -> tuple[MethodologyPlan, int]:
+    """Plan the full methodology through prioritized section-sized Agent calls."""
 
+    validated_chunks: list[dict[str, Any]] = []
+    ordered_chunks = _ordered_planner_chunks(before_benchmark)
+
+    for planner_chunk in ordered_chunks:
+        priority_hint = planner_chunk.get("priority_hint")
+        envelope = inputs.invoke_agent(
+            PLANNER_ROLE,
+            input={
+                "planning_stage": "section_chunk",
+                "company_id": company_id,
+                "company_name": company_name_value,
+                "objective": request.objective,
+                "research_depth": request.research_depth,
+                "methodology_slice": _planner_methodology_slice(
+                    methodology,
+                    planner_chunk=planner_chunk,
+                ),
+                "governed_company_baseline": baseline,
+                "memory_benchmark": _benchmark_slice(
+                    before_benchmark,
+                    planner_chunk=planner_chunk,
+                ),
+                "planner_chunk": {
+                    key: value
+                    for key, value in planner_chunk.items()
+                    if key != "priority_hint"
+                },
+                "priority_hint": priority_hint,
+                "response_contract": planner_section_response_contract(
+                    company_id=company_id,
+                    planner_chunk=planner_chunk,
+                    priority_hint=priority_hint,
+                ),
+            },
+            on_error="raise",
+        )
+        value, _ = extract_agent_json(
+            envelope,
+            expected_role=PLANNER_ROLE,
+            company_id=company_id,
+            expected_schema_version=PLANNER_CHUNK_SCHEMA_VERSION,
+        )
+        validated_chunks.append(
+            _validate_planner_section(
+                value,
+                company_id=company_id,
+                planner_chunk=planner_chunk,
+            )
+        )
+
+    plan = _assemble_methodology_plan(
+        company_id=company_id,
+        methodology=methodology,
+        before_benchmark=before_benchmark,
+        planner_chunks=tuple(validated_chunks),
+    )
+    return plan, len(validated_chunks)
 
 def _run_research_fanout(
     inputs: Any,
