@@ -638,6 +638,8 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
                 "questions",
                 "freshness_focus",
                 "evidence_focus",
+            "methodology_steps",
+            "priority_rationale",
             },
             "portfolio_researcher": {
                 "schema_version",
@@ -788,6 +790,12 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             if role == "methodology_planner"
         ]
         self.assertEqual(len(planner_inputs), 8)
+        self.assertTrue(
+            all(
+                "learned_methodology" in payload
+                for _company_id, payload in planner_inputs
+            )
+        )
         self.assertEqual(
             {company_id for company_id, _payload in planner_inputs},
             {13, 59},
