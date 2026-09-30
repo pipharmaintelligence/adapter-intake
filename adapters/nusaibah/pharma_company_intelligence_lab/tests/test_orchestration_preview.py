@@ -25,6 +25,7 @@ from nusaibah_pharma_company_intelligence_lab_adapter import (  # noqa: E402
     PLANNER_MAX_TOTAL_JSON_CHARS,
     _validate_compact_methodology_plan,
     planner_response_contract,
+    planner_section_response_contract,
     response_contract_for_role,
 )
 from devtools.skill_citation import CitationRef  # noqa: E402
@@ -150,26 +151,29 @@ class FakeInputs(dict):
 
 def _agent_value(role: str, company_id: int, input_value: dict) -> dict:
     if role == "methodology_planner":
-        return {
-            "schema_version": "pharma_methodology_plan.v1",
-            "company_id": company_id,
-            "role": role,
-            "status": "completed",
-            "research_focus": [
-                {
-                    "role": research_role,
-                    "priority": "high" if research_role == "regulatory_risk_researcher" else "medium",
-                    "section_ids": list(adapter_module.RESEARCH_ROLE_SECTIONS[research_role]),
-                    "questions": [f"Question for {research_role} company {company_id}."],
-                    "freshness_focus": ["recent material changes"],
-                    "evidence_focus": ["authoritative public evidence"],
-                }
-                for research_role in adapter_module.RESEARCH_ROLES
-            ],
-            "cross_cutting_questions": [f"Cross-cutting question for company {company_id}."],
-            "known_memory_gaps": [f"Known gap for company {company_id}."],
-            "expected_uncertainties": [f"Expected uncertainty for company {company_id}."],
-        }
+        if input_value.get("planning_stage") == "section_chunk":
+            planner_chunk = input_value["planner_chunk"]
+            priority = input_value.get("priority_hint") or (
+                "high"
+                if planner_chunk["section_id"] == "regulatory_clinical_risk_signals"
+                else "medium"
+            )
+            return {
+                "schema_version": adapter_module.PLANNER_CHUNK_SCHEMA_VERSION,
+                "company_id": company_id,
+                "role": role,
+                "status": "completed",
+                "chunk_id": planner_chunk["chunk_id"],
+                "research_role": planner_chunk["research_role"],
+                "section_id": planner_chunk["section_id"],
+                "priority": priority,
+                "questions": [
+                    f"Question for {planner_chunk['section_id']} company {company_id}."
+                ],
+                "freshness_focus": ["recent material changes"],
+                "evidence_focus": ["authoritative public evidence"],
+            }
+        raise AssertionError("methodology_planner requires section_chunk planning_stage")
 
     if role in {
         "portfolio_researcher",
@@ -334,10 +338,10 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             [item["company_id"] for item in dossier["company_results"]],
             [13, 59],
         )
-        self.assertEqual(response["metrics"]["logical_agent_invocations"], 18)
+        self.assertEqual(response["metrics"]["logical_agent_invocations"], 24)
         self.assertEqual(response["metrics"]["search_enabled_agent_invocations"], 6)
-        self.assertEqual(response["metrics"]["methodology_planner_call_count"], 2)
-        self.assertEqual(response["metrics"]["planner_required_question_count"], 8)
+        self.assertEqual(response["metrics"]["methodology_planner_call_count"], 8)
+        self.assertEqual(response["metrics"]["planner_required_question_count"], 14)
         self.assertEqual(response["metrics"]["planner_focus_item_count"], 6)
         self.assertEqual(response["metrics"]["planner_unmet_requirement_count"], 0)
         self.assertEqual(response["metrics"]["research_role_count"], 6)
@@ -348,7 +352,7 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
         self.assertEqual(response["metrics"]["memory_mutations_made"], 0)
 
         counts = Counter(role for role, _company_id in inputs.agent_calls)
-        self.assertEqual(counts["methodology_planner"], 2)
+        self.assertEqual(counts["methodology_planner"], 8)
         self.assertEqual(counts["portfolio_researcher"], 2)
         self.assertEqual(counts["market_researcher"], 2)
         self.assertEqual(counts["regulatory_risk_researcher"], 2)
@@ -363,8 +367,8 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
         )
         for result in dossier["company_results"]:
             self.assertTrue(result["quality_gate_passed"])
-            self.assertEqual(result["methodology_planner_call_count"], 1)
-            self.assertEqual(result["planner_required_question_count"], 4)
+            self.assertEqual(result["methodology_planner_call_count"], 4)
+            self.assertEqual(result["planner_required_question_count"], 7)
             self.assertEqual(result["planner_focus_item_count"], 3)
             self.assertEqual(result["planner_unmet_requirement_count"], 0)
             self.assertEqual(result["research_role_count"], 3)
@@ -411,9 +415,14 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
         for role, company_id, payload in inputs.agent_inputs:
             contract = payload["response_contract"]
             if role == "methodology_planner":
+                self.assertEqual(payload["planning_stage"], "section_chunk")
                 self.assertEqual(
                     contract,
-                    planner_response_contract(company_id=company_id),
+                    planner_section_response_contract(
+                        company_id=company_id,
+                        planner_chunk=payload["planner_chunk"],
+                        priority_hint=payload["priority_hint"],
+                    ),
                 )
                 continue
 
@@ -651,12 +660,15 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             role for role, company_id in inputs.agent_calls if company_id == 13
         ]
         self.assertEqual(company_13_roles[0], "memory_benchmark_reviewer")
-        self.assertEqual(company_13_roles[1], "methodology_planner")
+        self.assertEqual(
+            company_13_roles[1:5],
+            ["methodology_planner"] * 4,
+        )
         first_research_index = min(
             company_13_roles.index(role)
             for role in adapter_module.RESEARCH_ROLES
         )
-        self.assertGreater(first_research_index, company_13_roles.index("methodology_planner"))
+        self.assertEqual(first_research_index, 5)
 
     def test_planner_input_is_company_scoped_and_researchers_receive_only_role_focus(self) -> None:
         inputs = FakeInputs()
@@ -665,18 +677,53 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
         with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
             adapter.invoke(inputs, {})
 
-        planner_inputs = {
-            company_id: payload
+        planner_inputs = [
+            (company_id, payload)
             for role, company_id, payload in inputs.agent_inputs
             if role == "methodology_planner"
-        }
-        self.assertEqual(set(planner_inputs), {13, 59})
-        self.assertEqual(planner_inputs[13]["company_id"], 13)
-        self.assertEqual(planner_inputs[59]["company_id"], 59)
-        self.assertNotEqual(
-            planner_inputs[13]["governed_company_baseline"]["company_name"],
-            planner_inputs[59]["governed_company_baseline"]["company_name"],
+        ]
+        self.assertEqual(len(planner_inputs), 8)
+        self.assertEqual(
+            {company_id for company_id, _payload in planner_inputs},
+            {13, 59},
         )
+        for company_id in (13, 59):
+            company_planner_inputs = [
+                payload
+                for current_company_id, payload in planner_inputs
+                if current_company_id == company_id
+            ]
+            self.assertEqual(len(company_planner_inputs), 4)
+            self.assertTrue(
+                all(payload["company_id"] == company_id for payload in company_planner_inputs)
+            )
+            self.assertEqual(
+                {payload["planner_chunk"]["section_id"] for payload in company_planner_inputs},
+                {
+                    "company_profile",
+                    "product_portfolio_intelligence",
+                    "markets_commercial_signals",
+                    "regulatory_clinical_risk_signals",
+                },
+            )
+            self.assertTrue(
+                all(
+                    len(payload["memory_benchmark"]["results"]) == 1
+                    for payload in company_planner_inputs
+                )
+            )
+            self.assertTrue(
+                all(
+                    "canonical_section_ids" not in payload["methodology_slice"]
+                    for payload in company_planner_inputs
+                )
+            )
+            self.assertTrue(
+                all(
+                    "memory_policy" not in payload["methodology_slice"]
+                    for payload in company_planner_inputs
+                )
+            )
 
         researcher_inputs = [
             (role, company_id, payload)
