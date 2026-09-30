@@ -78,7 +78,7 @@ The Fixed Skill remains publication-backed:
 
 with its existing canonical digest.
 
-Dynamic Skill roles and authority are unchanged:
+Existing factual Dynamic Skill roles and authority are unchanged:
 
 - `company_memory`: read-only current company partition;
 - `company_memory_update`: mutable current company partition when apply mode is explicitly used.
