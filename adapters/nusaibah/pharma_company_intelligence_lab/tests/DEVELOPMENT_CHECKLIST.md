@@ -1,10 +1,10 @@
-# PI-1951 / PI-1954 — 0.1.3 Governed Companies Binding Correction Checklist
+# PI-1951 / PI-1954 — 0.1.4 Published Fixed Skill Runtime Cutover Checklist
 
-Asset candidate: `nusaibah.pharma_company_intelligence_lab@0.1.3`
+Asset candidate: `nusaibah.pharma_company_intelligence_lab@0.1.4`
 
 This file is development-only and excluded from promoted runtime bytes.
 
-## Why 0.1.3 exists
+## Why 0.1.4 exists
 
 `0.1.2` proved the Python orchestration ownership gate and loaded the reviewed adapter, but the live launch supplied a direct `companies` record. That bypassed the intended governed Assets/DLM input binding and therefore did not prove a fresh read from the database-backed company node.
 
@@ -27,12 +27,12 @@ id -> company_id
 company -> company_name
 ```
 
-The manifest change and adapter-owned database-row normalization change the `0.1.3` package bytes, so the correction remains `0.1.3`; do not rewrite `0.1.2`. Shared reviewed helpers must remain compatible with retained published versions.
+`0.1.3` established the governed company-input correction. `0.1.4` preserves that behavior and changes only the Fixed Skill source declaration from bundled `skills[]` to publication-backed `published_skills[]`, keeping `nusaibah.pharma-intelligence-methodology@1.0.0` and its canonical digest unchanged. Shared reviewed helpers remain compatible with retained published versions.
 
-## Non-negotiable 0.1.3 contract
+## Non-negotiable 0.1.4 contract
 
-- [x] `adapter.yaml` version is `0.1.3`.
-- [x] Manifest default and sole intake version are `0.1.3`.
+- [x] `adapter.yaml` version is `0.1.4`.
+- [x] Manifest default and sole intake version are `0.1.4`.
 - [x] `companies.required=true`.
 - [x] `companies.source=binding`.
 - [x] `companies.shape=object`.
@@ -42,7 +42,7 @@ The manifest change and adapter-owned database-row normalization change the `0.1
 - [x] Exact governed source is `test_database_lake / companies`.
 - [x] Governed database identity column is `id`, not `company_id`.
 - [x] Governed company-name column is `company`.
-- [x] The versioned `0.1.3` adapter module normalizes `id -> company_id` and `company -> company_name` without changing retained shared-helper behavior.
+- [x] The versioned `0.1.4` adapter module preserves `id -> company_id` and `company -> company_name` normalization without changing retained shared-helper behavior.
 - [x] Adapter rejects conflicting `id` / `company_id`.
 - [x] Adapter preserves exact requested/resolved company-set parity.
 - [x] Python owns no DLM/Core/database query.
@@ -73,12 +73,12 @@ Current DLM UI and Assets source supports ordinary row/data mappings through `fi
 - [x] Do not encode `id <- company_ids` as a partition mapping merely to make the form green.
 - [x] Source inspection proves bounded row/data mapping for `id <- company_ids` through `filters_from_variables`.
 - [x] DLM UI can author row/data filter mappings from ordinary schema fields; do not push database/query logic into this adapter.
-- [ ] Post-promotion, create and activate the exact `0.1.3` governed binding and live-prove variables-only retrieval for `company_ids=[13]` and `[13,59]`.
+- [ ] Post-promotion, create and activate the exact `0.1.4` governed binding and live-prove variables-only retrieval for `company_ids=[13]` and `[13,59]`.
 
 ## Deterministic regression requirements
 
 - [ ] Full pharma deterministic suite passes.
-- [x] Test freezes adapter.yaml == manifest default == sole intake version `0.1.3`.
+- [x] Test freezes adapter.yaml == manifest default == sole intake version `0.1.4`.
 - [x] Test freezes `companies=binding/object`.
 - [x] Test freezes `variables=direct/object`.
 - [x] Test proves DB-shaped records `id/company` normalize to semantic `company_id/company_name`.
@@ -88,7 +88,7 @@ Current DLM UI and Assets source supports ordinary row/data mappings through `fi
 - [ ] Existing Agent contract tests pass unchanged except version constant.
 - [ ] Existing preview/isolation tests pass with DB-shaped records envelope.
 - [ ] Existing expected-digest/readback/history safety tests pass unchanged.
-- [ ] Local-root and packaged dotted imports pass with the import test frozen to asset version `0.1.3`.
+- [ ] Local-root and packaged dotted imports pass with the import test frozen to asset version `0.1.4`.
 - [ ] `git diff --check` passes.
 
 ## Local/intake certification
@@ -107,9 +107,9 @@ After review:
 
 - [ ] Push exact RC SHA.
 - [ ] Run pinned Assets validation/materialization against that SHA.
-- [ ] Confirm existing published identities are preserved and `0.1.3` is added.
+- [ ] Confirm existing published identities are preserved and `0.1.4` is added.
 - [ ] Confirm packaged manifest exposes binding-owned `companies`.
-- [ ] Confirm runtime catalog publishes exact `0.1.3`.
+- [ ] Confirm runtime catalog publishes exact `0.1.4`.
 - [ ] Confirm portable Skill bytes remain unchanged.
 - [ ] Confirm package/import/build/forbidden-content checks are green.
 - [ ] Review generated Assets PR separately.
@@ -124,7 +124,7 @@ canonical package digest:
 sha256:2fa082aca1c100abb60a4bf77aa4cf796da2707bb951a3b51f11948efd2dd564
 ```
 
-This publication does not require another pharma asset-version bump because the Skill bytes are unchanged.
+The Fixed Skill remains version `1.0.0`; the asset version is `0.1.4` because the asset manifest now explicitly selects publication-backed delivery.
 
 ## Live proof order
 
@@ -133,7 +133,8 @@ Only after binding and Skill publication are ready:
 - [ ] Launch variables-only `company_ids=[13]`.
 - [ ] Prove governed `test_database_lake/companies` read selected exact DB row `id=13`.
 - [ ] Prove `company_memory(company_id=13)` resolves independently.
-- [ ] Prove Fixed Skill publication/delivery.
+- [x] Prove Fixed Skill publication resolves for client `1` to Core object `122`.
+- [ ] Prove publication-backed Fixed Skill delivery/hydration through `published_skills[]`.
 - [ ] Prove first benchmark Agent call.
 - [ ] Prove planner/research/critic/synthesis.
 - [ ] Prove preview returns zero mutations.
@@ -143,4 +144,4 @@ Only after binding and Skill publication are ready:
 
 ## Release verdict
 
-`0.1.3` is not LIVE_PROVEN merely because the manifest becomes visible in DLM UI or the PR is green. Binding discovery, row-filter execution, Fixed Skill publication/delivery, Agent/provider execution, Dynamic Skill behavior, and final preview/apply behavior remain independent gates.
+`0.1.4` is not LIVE_PROVEN merely because the manifest becomes visible in DLM UI or the PR is green. Binding discovery, row-filter execution, Fixed Skill publication/delivery, Agent/provider execution, Dynamic Skill behavior, and final preview/apply behavior remain independent gates.
