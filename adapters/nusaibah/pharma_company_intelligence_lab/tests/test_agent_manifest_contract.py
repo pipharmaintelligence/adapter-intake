@@ -133,7 +133,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         for role, (model, thinking, max_tokens, search_enabled) in EXPECTED.items():
             with self.subTest(role=role):
                 agent = self.agents[role]
-                self.assertEqual(agent["contract_version"], "1.0.0")
+                self.assertEqual(agent["contract_version"], "1.0.1")
                 definition = agent["definition"]
                 self.assertEqual(len(definition["registry_entries"]), 1)
                 chain = definition["chain"]
