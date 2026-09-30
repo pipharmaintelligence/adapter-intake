@@ -22,7 +22,7 @@ MAX_TEXT_CHARS = 2000
 MAX_CITATIONS_OUTPUT = 24
 MAX_UNMET_PLAN_REQUIREMENTS = 64
 
-class AgentContractValidationError(ValueError):
+class AgentContractValidationError(RuntimeError):
     """Bounded business-contract failure safe for reviewed runtime projection."""
 
     def __init__(self, code: str, message: str) -> None:
