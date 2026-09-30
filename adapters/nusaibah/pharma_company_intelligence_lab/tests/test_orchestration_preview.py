@@ -82,6 +82,39 @@ class FakeMemory:
         return "sha256:" + format(self.company_id, "064x")[-64:]
 
 
+class FakeMethodology:
+    def __init__(self, company_id: int) -> None:
+        self.company_id = company_id
+        self.text = (
+            "---\n"
+            "name: company-methodology\n"
+            "description: Test procedural methodology memory.\n"
+            "---\n"
+            "# Company Methodology\n\n"
+            "## Methodology Learning\n\n"
+            "### product_portfolio_intelligence\n"
+            "- priority: high\n"
+            "- methodology_steps:\n"
+            "  - verify therapeutic areas first\n"
+            "- useful_questions:\n"
+            "  - verify portfolio gaps\n"
+            "### regulatory_clinical_risk_signals\n"
+            "- priority: medium\n"
+            "- methodology_steps:\n"
+            "  - verify regulatory signals\n"
+        )
+    def provenance(self):
+        return SimpleNamespace(mutable=False, role="company_methodology")
+    def has_section(self, section: str) -> bool:
+        return section == "Methodology Learning"
+    def section_text(self, section: str) -> str:
+        if not self.has_section(section):
+            raise KeyError(section)
+        marker = "## Methodology Learning"
+        return self.text.split(marker, 1)[1]
+    def content_digest(self) -> str:
+        return "sha256:" + format(self.company_id + 1000, "064x")[-64:]
+
 class FakeInputs(dict):
     def __init__(self, *, wrong_company_role: str | None = None) -> None:
         super().__init__(
@@ -114,9 +147,11 @@ class FakeInputs(dict):
     def dynamic_skill(self, role: str, *, variables=None):
         company_id = int((variables or {})["company_id"])
         self.dynamic_skill_calls.append((role, company_id))
-        if role != "company_memory":
-            raise AssertionError("preview fixture must not request mutable memory")
-        return FakeMemory(company_id)
+        if role == "company_memory":
+            return FakeMemory(company_id)
+        if role == "company_methodology":
+            return FakeMethodology(company_id)
+        raise AssertionError(f"unexpected Dynamic Skill role in preview: {role}")
 
     def invoke_agent(self, role: str, *, input=None, on_error="raise"):
         del on_error
@@ -173,6 +208,8 @@ def _agent_value(role: str, company_id: int, input_value: dict) -> dict:
                 ],
                 "freshness_focus": ["recent material changes"],
                 "evidence_focus": ["authoritative public evidence"],
+                "methodology_steps": ["verify the selected section with authoritative evidence"],
+                "priority_rationale": f"Priority selected for {planner_chunk['section_id']}.",
             }
         raise AssertionError("methodology_planner requires section_chunk planning_stage")
 
