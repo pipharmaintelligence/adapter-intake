@@ -261,7 +261,16 @@ class FakeMethodologyHandle:
 
 
 class FakeMutableMethodology:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        current_digest: str = BEFORE,
+        preview_old_digest: str = BEFORE,
+        preview_new_digest: str = AFTER,
+    ) -> None:
+        self.current_digest = current_digest
+        self.preview_old_digest = preview_old_digest
+        self.preview_new_digest = preview_new_digest
         self.expected_digest_seen = None
         self.applied = False
 
@@ -269,7 +278,7 @@ class FakeMutableMethodology:
         return SimpleNamespace(mutable=True)
 
     def content_digest(self) -> str:
-        return BEFORE
+        return self.current_digest
 
     def find_sections(self, section: str):
         return [SimpleNamespace(path="/methodology-learning")]
@@ -279,7 +288,10 @@ class FakeMutableMethodology:
 
     def preview(self, changes):
         return SimpleNamespace(
-            diff=SimpleNamespace(old_digest=BEFORE, new_digest=AFTER)
+            diff=SimpleNamespace(
+                old_digest=self.preview_old_digest,
+                new_digest=self.preview_new_digest,
+            )
         )
 
     def apply(self, changes, *, expected_digest: str):
@@ -289,29 +301,40 @@ class FakeMutableMethodology:
 
 
 class FakeFreshMethodology:
+    def __init__(
+        self,
+        *,
+        digest: str = AFTER,
+        change_id: str = "methodology-1",
+        history_after_digest: str = AFTER,
+        section_text: str = "candidate",
+    ) -> None:
+        self.digest = digest
+        self.change_id = change_id
+        self.history_after_digest = history_after_digest
+        self._section_text = section_text
+
     def provenance(self):
         return SimpleNamespace(mutable=False)
 
     def content_digest(self) -> str:
-        return AFTER
+        return self.digest
 
     def section_text(self, section: str) -> str:
-        return "candidate"
+        return self._section_text
 
     def history(self, *, limit: int):
         return SimpleNamespace(
             latest_change=lambda: SimpleNamespace(
-                change_id="methodology-1",
-                after_content_digest=AFTER,
+                change_id=self.change_id,
+                after_content_digest=self.history_after_digest,
             )
         )
 
 
 class MethodologyApplyContractTests(unittest.TestCase):
-    def test_methodology_apply_uses_expected_digest_and_fresh_history(self) -> None:
-        mutable = FakeMutableMethodology()
-        fresh = FakeFreshMethodology()
-
+    @staticmethod
+    def _inputs(mutable: FakeMutableMethodology, fresh: FakeFreshMethodology):
         class Inputs:
             def dynamic_skill(self, role: str, *, variables=None):
                 if role == "company_methodology_update":
@@ -320,11 +343,16 @@ class MethodologyApplyContractTests(unittest.TestCase):
                     return fresh
                 raise AssertionError(role)
 
-        handle = FakeMethodologyHandle()
+        return Inputs()
+
+    def test_methodology_apply_uses_expected_digest_and_fresh_history(self) -> None:
+        mutable = FakeMutableMethodology()
+        fresh = FakeFreshMethodology()
+
         result = adapter_module._apply_company_methodology(
-            Inputs(),
+            self._inputs(mutable, fresh),
             company_id=13,
-            handle=handle,
+            handle=FakeMethodologyHandle(),
             candidate="candidate",
         )
 
@@ -333,6 +361,68 @@ class MethodologyApplyContractTests(unittest.TestCase):
         self.assertEqual(result["methodology_learning_change_id"], "methodology-1")
         self.assertTrue(result["methodology_learning_readback_verified"])
 
+    def test_methodology_apply_treats_identical_candidate_as_no_change(self) -> None:
+        mutable = FakeMutableMethodology(preview_new_digest=BEFORE)
+        fresh = FakeFreshMethodology()
+
+        result = adapter_module._apply_company_methodology(
+            self._inputs(mutable, fresh),
+            company_id=13,
+            handle=FakeMethodologyHandle(),
+            candidate="candidate",
+        )
+
+        self.assertFalse(mutable.applied)
+        self.assertEqual(result["methodology_learning_update_status"], "no_change_recommended")
+        self.assertEqual(result["methodology_learning_after_digest"], BEFORE)
+
+    def test_methodology_apply_rejects_stale_mutable_digest(self) -> None:
+        mutable = FakeMutableMethodology(current_digest="sha256:" + "9" * 64)
+        fresh = FakeFreshMethodology()
+
+        with self.assertRaisesRegex(RuntimeError, "baseline digest mismatch"):
+            adapter_module._apply_company_methodology(
+                self._inputs(mutable, fresh),
+                company_id=13,
+                handle=FakeMethodologyHandle(),
+                candidate="candidate",
+            )
+
+    def test_methodology_apply_rejects_history_change_id_mismatch(self) -> None:
+        mutable = FakeMutableMethodology()
+        fresh = FakeFreshMethodology(change_id="wrong-change")
+
+        with self.assertRaisesRegex(RuntimeError, "history change-id mismatch"):
+            adapter_module._apply_company_methodology(
+                self._inputs(mutable, fresh),
+                company_id=13,
+                handle=FakeMethodologyHandle(),
+                candidate="candidate",
+            )
+
+    def test_methodology_apply_rejects_history_digest_mismatch(self) -> None:
+        mutable = FakeMutableMethodology()
+        fresh = FakeFreshMethodology(history_after_digest="sha256:" + "7" * 64)
+
+        with self.assertRaisesRegex(RuntimeError, "history digest mismatch"):
+            adapter_module._apply_company_methodology(
+                self._inputs(mutable, fresh),
+                company_id=13,
+                handle=FakeMethodologyHandle(),
+                candidate="candidate",
+            )
+
+    def test_methodology_apply_rejects_fresh_readback_content_mismatch(self) -> None:
+        mutable = FakeMutableMethodology()
+        fresh = FakeFreshMethodology(section_text="different")
+
+        with self.assertRaisesRegex(RuntimeError, "readback content mismatch"):
+            adapter_module._apply_company_methodology(
+                self._inputs(mutable, fresh),
+                company_id=13,
+                handle=FakeMethodologyHandle(),
+                candidate="candidate",
+            )
 
 
 if __name__ == "__main__":
