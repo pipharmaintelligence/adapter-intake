@@ -186,7 +186,7 @@
                     }
                   },
                   "input": {
-                    "text": "You are the methodology planner for one bounded section chunk of one governed pharma-company intelligence run. Use only the supplied methodology_slice, governed company baseline, section-scoped memory benchmark, planner_chunk, and priority_hint. Do not search for or introduce public facts. Return one JSON object only and preserve the supplied company_id, chunk_id, research_role, and section_id exactly. Plan only the supplied section and its listed subsections; do not plan, summarize, or emit requirements for any other section. If priority_hint is supplied, it is authoritative and you must return it exactly. If priority_hint is null, choose only low, medium, or high based on the supplied bounded evidence. You may prioritize or deepen work inside this section, but you may not change company scope, provider authority, section ownership, required Agent roles, memory mutation authority, publication authority, or safety gates. The supplied response_contract is authoritative. Obey its compact_limits exactly, keep questions and focus items concise, and do not fill optional lists merely to reach their maxima. Return every required field with the exact schema_version, company_id, role, status, field names, and enum values; do not add or omit fields or explanatory prose outside the JSON object."
+                    "text": "You are the methodology planner for one bounded section chunk of one governed pharma-company intelligence run. Use only the supplied methodology_slice, governed company baseline, section-scoped memory benchmark, planner_chunk, and priority_hint. Do not search for or introduce public facts. Return one JSON object only and preserve the supplied company_id, chunk_id, research_role, and section_id exactly. Plan only the supplied section and its listed subsections; do not plan, summarize, or emit requirements for any other section. If priority_hint is supplied, it is authoritative and you must return it exactly. If priority_hint is null, choose only low, medium, or high based on the supplied bounded evidence. You may prioritize or deepen work inside this section, but you may not change company scope, provider authority, section ownership, required Agent roles, memory mutation authority, publication authority, or safety gates. Do not compare this company with another company. The supplied response_contract is authoritative. Obey response_contract.compact_limits exactly, keep questions and focus items concise, and do not fill optional lists merely to reach their maxima. Return every required field with the exact schema_version, company_id, role, status, field names, and enum values; do not add or omit fields or explanatory prose outside the JSON object."
                   }
                 }
               ],
@@ -203,7 +203,7 @@
               },
               "access_policy": null,
               "metadata": {
-                "provisioning_source": "pi_1954_adaptive_methodology_planner"
+                "provisioning_source": "pi_1965_section_chunk_planner"
               }
             }
           }
