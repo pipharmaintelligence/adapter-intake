@@ -29,9 +29,16 @@ This checklist is development-only and is not part of promoted runtime bytes.
 - [x] `adapter.dependencies.json` unchanged from `0.1.5`.
 - [ ] Promotion P3 confirms no `shared_runtime_file_conflict`.
 
-## Routed compact planner response
+## Routed compact planner response and methodology learning
 
 - [x] Python owns deterministic routing from the canonical dossier section registry.
+- [x] `company_methodology` is declared as company-scoped read-only procedural memory.
+- [x] `company_methodology_update` is declared as company-scoped mutable procedural memory.
+- [x] Planner receives only the selected section's learned methodology slice.
+- [x] Learned methodology cannot override Fixed Skill or current benchmark authority.
+- [x] Learning candidate is built only after the evidence critic passes.
+- [x] Preview mode never mutates methodology memory.
+- [x] Apply mode uses one complete snapshot with expected-digest protection, fresh readback, and history verification.
 - [x] Every mandatory research section is routed exactly once.
 - [x] Known benchmark coverage becomes a deterministic priority hint.
 - [x] Unknown priority may be selected by only that section-sized planner call.
