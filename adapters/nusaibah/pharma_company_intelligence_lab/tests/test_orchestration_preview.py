@@ -486,6 +486,52 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
 
             self.assertEqual(contract, expected)
 
+    def test_router_prioritizes_every_mandatory_research_section_once(self) -> None:
+        chunks = adapter_module._ordered_planner_chunks(
+            {
+                "results": [
+                    {"question_id": "company_identity", "coverage": "covered"},
+                    {"question_id": "therapeutic_focus", "coverage": "not_covered"},
+                    {"question_id": "market_presence", "coverage": "partially_covered"},
+                    {"question_id": "regulatory_risk", "coverage": "covered"},
+                ]
+            }
+        )
+
+        self.assertEqual(
+            [chunk["section_id"] for chunk in chunks],
+            [
+                "product_portfolio_intelligence",
+                "markets_commercial_signals",
+                "company_profile",
+                "regulatory_clinical_risk_signals",
+            ],
+        )
+        self.assertEqual(
+            [chunk["priority_hint"] for chunk in chunks],
+            ["high", "medium", "low", "low"],
+        )
+        self.assertEqual(
+            {chunk["section_id"] for chunk in chunks},
+            {
+                section_id
+                for role in adapter_module.RESEARCH_ROLES
+                for section_id in adapter_module.RESEARCH_ROLE_SECTIONS[role]
+            },
+        )
+        self.assertEqual(
+            len({chunk["chunk_id"] for chunk in chunks}),
+            len(chunks),
+        )
+
+    def test_router_leaves_unknown_section_priority_to_bounded_planner(self) -> None:
+        self.assertIsNone(
+            adapter_module._planner_priority_hint(
+                section_id="future_optional_section",
+                benchmark_results={},
+            )
+        )
+
     def test_planner_contract_exposes_compact_provider_visible_limits(self) -> None:
         contract = planner_response_contract(company_id=13)
 
