@@ -170,6 +170,31 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
                     self.assertNotIn("search_mode", policy)
                     self.assertNotIn("citation_policy", policy)
 
+    def test_methodology_learning_dynamic_skill_roles_are_company_scoped(self) -> None:
+        runtime_skills = self.manifest["versions"]["0.1.6"]["runtime_skills"]
+
+        self.assertEqual(
+            runtime_skills["company_methodology"]["source"],
+            {"lake_ref": "googl123", "node_key": "company_methodology"},
+        )
+        self.assertEqual(runtime_skills["company_methodology"]["resolution"], "current")
+        self.assertEqual(runtime_skills["company_methodology"]["mutation"], "read_only")
+        self.assertEqual(
+            runtime_skills["company_methodology"]["partition"],
+            {"company_id": {"from_variable": "company_id"}},
+        )
+
+        self.assertEqual(
+            runtime_skills["company_methodology_update"]["source"],
+            {"lake_ref": "googl123", "node_key": "company_methodology"},
+        )
+        self.assertEqual(runtime_skills["company_methodology_update"]["resolution"], "current")
+        self.assertEqual(runtime_skills["company_methodology_update"]["mutation"], "mutable")
+        self.assertEqual(
+            runtime_skills["company_methodology_update"]["partition"],
+            {"company_id": {"from_variable": "company_id"}},
+        )
+
     def test_only_methodology_planner_identity_changes_in_0_1_6(self) -> None:
         self.assertEqual(
             self.agents["methodology_planner"]["contract_version"],
