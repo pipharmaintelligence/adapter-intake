@@ -232,25 +232,6 @@ class MethodologyPlan:
         return tuple(item["requirement_id"] for item in self.requirement_catalog())
 
 
-def planner_response_contract(*, company_id: int) -> dict[str, Any]:
-    """Return the compact canonical JSON response contract for the methodology planner."""
-    return {
-        "schema_version": PLANNER_SCHEMA_VERSION,
-        "company_id": company_id,
-        "role": PLANNER_ROLE,
-        "status": "completed",
-        "required_fields": sorted(_PLANNER_TOP_LEVEL_KEYS),
-        "research_focus_count": len(MANDATORY_RESEARCH_ROLES),
-        "research_focus_roles_in_order": list(MANDATORY_RESEARCH_ROLES),
-        "research_focus_fields": sorted(_PLANNER_FOCUS_KEYS),
-        "priority_values": sorted(PLANNER_PRIORITIES),
-        "section_ids_by_role": {
-            role: list(RESEARCH_ROLE_SECTIONS[role])
-            for role in MANDATORY_RESEARCH_ROLES
-        },
-    }
-
-
 def load_methodology(inputs: Any) -> MethodologyResources:
     """Resolve the Fixed Skill and build validated deterministic methodology resources."""
     skill = inputs.skill(SKILL_REF)

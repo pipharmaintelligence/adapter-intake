@@ -13,10 +13,10 @@ sys.path.insert(0, str(ASSET_ROOT))
 
 import nusaibah_pharma_company_intelligence_lab_adapter as adapter_module  # noqa: E402
 from dossier_contract import CANONICAL_SECTIONS  # noqa: E402
-from agent_contract import response_contract_for_role  # noqa: E402
-from methodology_contract import planner_response_contract  # noqa: E402
 from nusaibah_pharma_company_intelligence_lab_adapter import (  # noqa: E402
     NusaibahPharmaCompanyIntelligenceLabAdapter,
+    planner_response_contract,
+    response_contract_for_role,
 )
 from devtools.skill_citation import CitationRef  # noqa: E402
 
