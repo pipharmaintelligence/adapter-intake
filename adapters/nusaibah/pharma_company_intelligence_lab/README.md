@@ -83,7 +83,16 @@ Dynamic Skill roles and authority are unchanged:
 - `company_memory`: read-only current company partition;
 - `company_memory_update`: mutable current company partition when apply mode is explicitly used.
 
-No Skill publication, mutation-authority, storage, or persistence behavior changes in `0.1.6`.
+The separate company methodology Dynamic Skill is company-scoped procedural memory. It is read-only to planning and mutable only through the adapter's post-critic learning path. It does not replace factual company memory and it cannot override the Fixed Skill, current benchmark evidence, or runtime safety authority.
+
+Its lifecycle is:
+- read current methodology before section planning;
+- use only the selected section's bounded learned slice as a planner hint;
+- after research and evidence-critic quality gates pass, build one complete bounded learning snapshot;
+- in `memory_mode=preview`, expose the candidate without mutation;
+- in `memory_mode=apply`, commit one complete company snapshot through preview, `expected_digest`, apply, fresh readback, and history verification.
+
+No Skill publication, mutation-authority, storage, or persistence behavior changes for the Fixed Skill in `0.1.6`.
 
 ## Format ownership
 
