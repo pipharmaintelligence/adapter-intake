@@ -30,7 +30,7 @@ For `0.1.6`:
 - `agent_contract.py` is unchanged;
 - `methodology_contract.py` is unchanged;
 - `input_contract.py`, `dossier_contract.py`, and `memory_contract.py` are unchanged;
-- `adapter.dependencies.json` now requires `pi-obs-python-runtime>=0.1.87` because 0.1.6 uses the package-backed mutable Dynamic Skill runtime.
+- `adapter.dependencies.json` remains byte-identical to the published `0.1.5` package at `pi-obs-python-runtime>=0.1.84`. Package-backed mutable Dynamic Skill support is already present at that runtime floor, so 0.1.6 does not change this shared support file.
 
 This preserves the current Assets materializer coexistence contract and avoids a `shared_runtime_file_conflict`.
 
@@ -91,7 +91,7 @@ Its lifecycle is:
 - after research and evidence-critic quality gates pass, require projected company-memory benchmark non-regression before building one complete bounded learning snapshot;
 - if the benchmark regresses, keep the completed company result but mark methodology learning `no_change_recommended`;
 - in `memory_mode=preview`, expose the eligible candidate without mutation;
-- in `memory_mode=apply`, commit one complete company snapshot through preview, `expected_digest`, apply, fresh readback, and history verification;
+- in `memory_mode=apply`, commit one complete company snapshot through preview and `apply(expected_digest)`, verify persisted content through a fresh read-only role, then verify committed history through a freshly resolved mutable role;
 - if the generated methodology snapshot is byte-equivalent to the current snapshot, treat it as an idempotent no-change outcome rather than failing the run.
 
 No Skill publication, mutation-authority, storage, or persistence behavior changes for the Fixed Skill in `0.1.6`.
