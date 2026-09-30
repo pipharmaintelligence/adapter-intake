@@ -1480,7 +1480,7 @@ def _prepare_company(
         "benchmark_result_basis": "projected_memory_candidate",
         "memory_mutation_eligible": mutation_eligible,
         "methodology_learning_update_status": (
-            "preview_ready" if request.memory_mode == "apply" else "not_requested"
+            "preview_ready" if request.memory_mode in {"preview", "apply"} else "not_requested"
         ),
         "methodology_learning_change_id": None,
         "methodology_learning_before_digest": methodology_handle.content_digest(),
