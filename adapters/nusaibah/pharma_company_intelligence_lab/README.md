@@ -38,7 +38,7 @@ This preserves the current Assets materializer coexistence contract and avoids a
 
 `max_tokens` remains a hard total-output authorization. `0.1.6` does not add hidden thinking budget, retries, provider changes, or weaker validation.
 
-The planner receives an 8192-token hard ceiling with medium thinking, but each provider call plans only one research section. Section calls are bounded to one question, one freshness-focus item, and one evidence-focus item, each at most 280 characters.
+The planner receives an 8192-token hard ceiling with medium thinking, but each provider call plans only one research section. Version 0.1.6 permits exactly four routed planner calls per company; a future change to the routed research-section count fails closed and requires a reviewed new version rather than silently increasing provider spend. Section calls are bounded to one question, one freshness-focus item, and one evidence-focus item, each at most 280 characters.
 
 The deterministic merge then enforces the final-plan limits:
 
