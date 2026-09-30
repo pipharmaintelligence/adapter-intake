@@ -22,6 +22,7 @@ try:
         validate_research_payload,
         validate_strategic_payload,
         validate_synthesis_payload,
+        response_contract_for_role,
     )
     from .dossier_contract import CANONICAL_SECTIONS, DOSSIER_SCHEMA_VERSION, SECTION_BY_ID
     from .input_contract import (
@@ -40,6 +41,7 @@ try:
         MethodologyResources,
         load_methodology,
         validate_methodology_plan,
+        planner_response_contract,
     )
 except ImportError:  # pragma: no cover - local adapter-root execution path
     from agent_contract import (
@@ -58,6 +60,7 @@ except ImportError:  # pragma: no cover - local adapter-root execution path
         validate_research_payload,
         validate_strategic_payload,
         validate_synthesis_payload,
+            response_contract_for_role,
     )
     from dossier_contract import CANONICAL_SECTIONS, DOSSIER_SCHEMA_VERSION, SECTION_BY_ID
     from input_contract import (
@@ -76,6 +79,7 @@ except ImportError:  # pragma: no cover - local adapter-root execution path
         MethodologyResources,
         load_methodology,
         validate_methodology_plan,
+            planner_response_contract,
     )
 
 
@@ -458,10 +462,7 @@ def _run_methodology_planner(
                 for role in RESEARCH_ROLES
             },
             "allowed_research_roles": list(RESEARCH_ROLES),
-            "response_contract": {
-                "schema_version": PLANNER_SCHEMA_VERSION,
-                "role": PLANNER_ROLE,
-            },
+            "response_contract": planner_response_contract(company_id=company_id),
         },
         on_error="raise",
     )
@@ -500,11 +501,11 @@ def _run_research_fanout(
                 "existing_company_memory": memory_text,
                 "required_sections": required_sections,
                 "methodology_plan": methodology_focus,
-                "response_contract": {
-                    "schema_version": RESEARCH_SCHEMA_VERSION,
-                    "role": role,
-                    "required_section_ids": list(RESEARCH_ROLE_SECTIONS[role]),
-                },
+                "response_contract": response_contract_for_role(
+                    role,
+                    company_id=company_id,
+                    required_section_ids=RESEARCH_ROLE_SECTIONS[role],
+                ),
             },
             on_error="raise",
         )
@@ -581,10 +582,10 @@ def _run_strategic(
                 "cross_cutting_questions": list(methodology_plan.cross_cutting_questions),
             },
             "research_evidence": _research_for_downstream(joined_research),
-            "response_contract": {
-                "schema_version": STRATEGIC_SCHEMA_VERSION,
-                "role": STRATEGIC_ROLE,
-            },
+            "response_contract": response_contract_for_role(
+                STRATEGIC_ROLE,
+                company_id=company_id,
+            ),
         },
         on_error="raise",
     )
@@ -625,15 +626,11 @@ def _run_critic(
             "research_evidence": _research_for_downstream(joined_research),
             "strategic_analysis": strategic,
             "reviewed_section_ids": sorted(research_section_ids),
-            "response_contract": {
-                "schema_version": CRITIC_SCHEMA_VERSION,
-                "role": CRITIC_ROLE,
-                "unmet_plan_requirement_ids": list(methodology_plan.requirement_ids()),
-                "unmet_plan_requirement_dispositions": [
-                    "unresolved_evidence",
-                    "unsatisfied",
-                ],
-            },
+            "response_contract": response_contract_for_role(
+                CRITIC_ROLE,
+                company_id=company_id,
+                planner_requirement_ids=methodology_plan.requirement_ids(),
+            ),
         },
         on_error="raise",
     )
@@ -707,8 +704,10 @@ def _run_synthesis(
                 claim["claim_id"] for claim in joined_research["claims"]
             ],
             "response_contract": {
-                "schema_version": SYNTHESIS_SCHEMA_VERSION,
-                "role": SYNTHESIS_ROLE,
+                **response_contract_for_role(
+                    SYNTHESIS_ROLE,
+                    company_id=company_id,
+                ),
                 "dossier_schema_version": DOSSIER_SCHEMA_VERSION,
             },
         },
@@ -740,11 +739,11 @@ def _run_benchmark(
             "memory_stage": stage,
             "memory_text": memory_text,
             "benchmark_questions": list(questions),
-            "response_contract": {
-                "schema_version": BENCHMARK_SCHEMA_VERSION,
-                "role": BENCHMARK_ROLE,
-                "question_ids": [item["question_id"] for item in questions],
-            },
+            "response_contract": response_contract_for_role(
+                BENCHMARK_ROLE,
+                company_id=company_id,
+                question_ids=tuple(item["question_id"] for item in questions),
+            ),
         },
         on_error="raise",
     )
