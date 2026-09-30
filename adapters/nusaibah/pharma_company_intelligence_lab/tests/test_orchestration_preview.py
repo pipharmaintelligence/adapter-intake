@@ -361,8 +361,6 @@ def _full_planner_value(company_id: int) -> dict:
                 "questions": [f"Question for {research_role} company {company_id}."],
                 "freshness_focus": ["recent material changes"],
                 "evidence_focus": ["authoritative public evidence"],
-                "methodology_steps": ["verify the selected section with authoritative evidence"],
-                "priority_rationale": f"Priority selected for {planner_chunk['section_id']}.",
             }
             for research_role in adapter_module.RESEARCH_ROLES
         ],
