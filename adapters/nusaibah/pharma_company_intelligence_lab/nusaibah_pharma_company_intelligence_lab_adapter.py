@@ -702,6 +702,8 @@ def _validate_planner_section(
         "questions",
         "freshness_focus",
         "evidence_focus",
+        "methodology_steps",
+        "priority_rationale",
     }
     if not isinstance(value, dict) or set(value) != expected_keys:
         raise AgentContractValidationError(
