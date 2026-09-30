@@ -21,6 +21,7 @@ from nusaibah_pharma_company_intelligence_lab_adapter import (  # noqa: E402
     PLANNER_MAX_FRESHNESS_FOCUS_ITEMS_PER_ROLE,
     PLANNER_MAX_KNOWN_MEMORY_GAPS,
     PLANNER_MAX_QUESTIONS_PER_ROLE,
+    PLANNER_MAX_SECTION_CALLS,
     PLANNER_MAX_TEXT_CHARS,
     PLANNER_MAX_TOTAL_JSON_CHARS,
     _validate_compact_methodology_plan,
@@ -519,6 +520,7 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
                 for section_id in adapter_module.RESEARCH_ROLE_SECTIONS[role]
             },
         )
+        self.assertEqual(len(chunks), PLANNER_MAX_SECTION_CALLS)
         self.assertEqual(
             len({chunk["chunk_id"] for chunk in chunks}),
             len(chunks),
