@@ -141,6 +141,15 @@ _COVERAGE_PRIORITY = {
 }
 _PRIORITY_RANK = {"low": 0, "medium": 1, "high": 2}
 
+# Company methodology is procedural memory, separate from factual company_memory.
+METHODOLOGY_SKILL_ROLE = "company_methodology"
+METHODOLOGY_SKILL_UPDATE_ROLE = "company_methodology_update"
+METHODOLOGY_LEARNING_SECTION = "Methodology Learning"
+METHODOLOGY_LEARNING_SCHEMA_VERSION = "pharma_methodology_learning.v1"
+METHODOLOGY_LEARNING_MAX_SECTION_CHARS = 2400
+METHODOLOGY_LEARNING_MAX_TOTAL_CHARS = 12000
+PLANNER_MAX_METHODOLOGY_STEPS_PER_SECTION = 2
+
 
 class AgentContractValidationError(RuntimeError):
     """Bounded 0.1.6 business-contract failure safe for reviewed runtime projection."""
