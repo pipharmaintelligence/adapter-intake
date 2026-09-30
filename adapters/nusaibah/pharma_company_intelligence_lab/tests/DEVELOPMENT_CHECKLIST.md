@@ -29,10 +29,16 @@ This checklist is development-only and is not part of promoted runtime bytes.
 - [x] `adapter.dependencies.json` unchanged from `0.1.5`.
 - [ ] Promotion P3 confirms no `shared_runtime_file_conflict`.
 
-## Compact planner response
+## Routed compact planner response
 
-- [x] Provider-visible contract declares compact list/text/total bounds.
-- [x] Adapter enforces the same limits after shared methodology validation.
+- [x] Python owns deterministic routing from the canonical dossier section registry.
+- [x] Every mandatory research section is routed exactly once.
+- [x] Known benchmark coverage becomes a deterministic priority hint.
+- [x] Unknown priority may be selected by only that section-sized planner call.
+- [x] Planner receives section/subsection TOC slice, section-scoped benchmark evidence, and bounded global methodology rules only.
+- [x] Section response contracts declare compact list/text bounds.
+- [x] Python merges section chunks into one complete methodology plan.
+- [x] Final plan passes existing shared methodology validation plus stricter 0.1.6 compact bounds.
 - [x] Existing reviewed `pharma_agent_business_schema_invalid` code is reused for compact-contract failures.
 - [x] Strict JSON/business validation remains enabled.
 - [x] No truncated response can be treated as successful by the merged Assets P0 runtime.
