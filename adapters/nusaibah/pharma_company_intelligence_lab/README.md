@@ -4,7 +4,7 @@ Canonical adapter-intake source for `nusaibah.pharma_company_intelligence_lab`.
 
 ## Current immutable candidate
 
-`0.1.6` is the current intake candidate. It preserves the governed company-input, published Fixed Skill, Dynamic Skill, output, and seven unchanged Agent-role contracts from `0.1.5`, while applying one scoped methodology-planner reliability change:
+`0.1.7` is the current intake candidate. It preserves the governed company-input, published Fixed Skill, Dynamic Skill, output, and seven unchanged Agent-role contracts from `0.1.5`, while applying one scoped methodology-planner reliability change:
 
 - methodology planner Agent contract/chain: `1.0.1 -> 1.0.2`;
 - `max_tokens: 2048 -> 8192`;
@@ -25,20 +25,20 @@ Create a new asset version whenever adapter code, manifest metadata, reviewed he
 
 Retained published versions share the reviewed helper files in this folder. Version-specific behavior must stay in the version-owned adapter implementation unless a shared-helper migration is explicitly designed for every retained identity.
 
-For `0.1.6`:
+For `0.1.7`:
 
-- `agent_contract.py` is unchanged;
-- `methodology_contract.py` is unchanged;
-- `input_contract.py`, `dossier_contract.py`, and `memory_contract.py` are unchanged;
-- `adapter.dependencies.json` remains byte-identical to the published `0.1.5` package at `pi-obs-python-runtime>=0.1.84`. Package-backed mutable Dynamic Skill support is already present at that runtime floor, so 0.1.6 does not change this shared support file.
+- `agent_contract.py`, `methodology_contract.py`, `input_contract.py`, `dossier_contract.py`, and `memory_contract.py` remain byte-identical to the published `0.1.6` package;
+- the adapter adds only the reviewed optional first-run methodology-read behavior;
+- `adapter.dependencies.json` raises the runtime floor to `pi-obs-python-runtime>=0.1.90`, because `0.1.7` relies on the exact `dynamic_skill_not_initialized` mapping introduced by that runtime;
+- Assets promotion must retain older versions' dependency bytes and materialize the changed `0.1.7` dependency contract as a version-owned dependency manifest. It must not rewrite the dependency metadata used by `0.1.0` through `0.1.6`.
 
-This preserves the current Assets materializer coexistence contract and avoids a `shared_runtime_file_conflict`.
+This keeps the intake package current-version oriented while preserving published-version coexistence.
 
 ## Planner token-safety boundary
 
-`max_tokens` remains a hard total-output authorization. `0.1.6` does not add hidden thinking budget, retries, provider changes, or weaker validation.
+`max_tokens` remains a hard total-output authorization. `0.1.7` does not add hidden thinking budget, retries, provider changes, or weaker validation.
 
-The planner receives an 8192-token hard ceiling with medium thinking, but each provider call plans only one research section. Version 0.1.6 permits exactly four routed planner calls per company; a future change to the routed research-section count fails closed and requires a reviewed new version rather than silently increasing provider spend. Section calls are bounded to one question, one freshness-focus item, and one evidence-focus item, each at most 280 characters.
+The planner receives an 8192-token hard ceiling with medium thinking, but each provider call plans only one research section. Version 0.1.7 permits exactly four routed planner calls per company; a future change to the routed research-section count fails closed and requires a reviewed new version rather than silently increasing provider spend. Section calls are bounded to one question, one freshness-focus item, and one evidence-focus item, each at most 280 characters.
 
 The deterministic merge then enforces the final-plan limits:
 
@@ -68,7 +68,7 @@ The approved row/data mapping is `id <- company_ids`. This is not a partition ma
 
 Assets/Core resolves the governed `companies` input before Python starts. The adapter normalizes `id -> company_id` and `company -> company_name`, validates exact requested/resolved ID parity, and processes company contexts independently.
 
-A new asset version requires its own exact governed binding identity; readiness of a `0.1.5` binding does not prove `0.1.6` binding readiness.
+A new asset version requires its own exact governed binding identity; readiness of a `0.1.6` binding does not prove `0.1.7` binding readiness.
 
 ## Fixed Skill and Dynamic Skill
 
@@ -94,7 +94,7 @@ Its lifecycle is:
 - in `memory_mode=apply`, commit one complete company snapshot through preview and `apply(expected_digest)`, verify persisted content through a fresh read-only role, then verify committed history through a freshly resolved mutable role;
 - if the generated methodology snapshot is byte-equivalent to the current snapshot, treat it as an idempotent no-change outcome rather than failing the run.
 
-No Skill publication, mutation-authority, storage, or persistence behavior changes for the Fixed Skill in `0.1.6`.
+No Skill publication, mutation-authority, storage, or persistence behavior changes for the Fixed Skill in `0.1.7`.
 
 ## Format ownership
 
@@ -110,11 +110,11 @@ Promotion must preserve every already-published pharma version and must not use 
 
 A green intake or promotion PR is not live proof.
 
-After promotion/deployment of `0.1.6`, prove independently:
+After promotion/deployment of `0.1.7`, prove independently:
 
-1. exact `0.1.6` governed Companies binding;
+1. exact `0.1.7` governed Companies binding;
 2. exact planner `1.0.2` Agent admission;
-3. exact worker/runtime catalog identity for `0.1.6`;
+3. exact worker/runtime catalog identity for `0.1.7`;
 4. company 13 preview;
 5. benchmark reviewer completion followed by methodology planner completion;
 6. remaining roles in execution order;
