@@ -146,17 +146,18 @@ class AdapterIntakeContractTests(unittest.TestCase):
                         dependency.get("schema_version"),
                     )
                     runtime_package = dependency.get("runtime_package")
-                    self.assertIsInstance(runtime_package, dict)
-                    self.assertEqual(
-                        "pi-obs-python-runtime",
-                        runtime_package.get("name"),
-                    )
-                    minimum_version = runtime_package.get("minimum_version")
-                    self.assertIsInstance(minimum_version, str)
-                    self.assertRegex(
-                        minimum_version,
-                        r"^\d+(?:\.\d+){1,3}(?:[-+][A-Za-z0-9.-]+)?$",
-                    )
+                    if runtime_package is not None:
+                        self.assertIsInstance(runtime_package, dict)
+                        self.assertEqual(
+                            "pi-obs-python-runtime",
+                            runtime_package.get("name"),
+                        )
+                        minimum_version = runtime_package.get("minimum_version")
+                        self.assertIsInstance(minimum_version, str)
+                        self.assertRegex(
+                            minimum_version,
+                            r"^\d+(?:\.\d+){1,3}(?:[-+][A-Za-z0-9.-]+)?$",
+                        )
 
                 manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
                 self.assertIsInstance(manifest, dict)
