@@ -38,3 +38,10 @@ jobs:
         run: |
           set -o pipefail
           python -m unittest discover -s tests -p "test_adapter_intake_contract.py" -v
+
+      - name: Validate pharma authority budgets and import identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s adapters/nusaibah/pharma_company_intelligence_lab/tests -p "test_agent_manifest_contract.py" -v
+          python -m unittest discover -s adapters/nusaibah/pharma_company_intelligence_lab/tests -p "test_import_context.py" -v
