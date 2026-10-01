@@ -4,7 +4,7 @@ Canonical adapter-intake source for `nusaibah.pharma_company_intelligence_lab`.
 
 ## Current immutable candidate
 
-`0.1.8` is the current intake candidate. It preserves the `0.1.7` business behavior and gives each Agent role an explicit, Core-governed provider request budget. This closes the configuration gap behind three successive 30-second Vertex read timeouts during deep research.
+`0.1.8` is the current intake candidate. It preserves the `0.1.7` successful business flow, gives each Agent role an explicit Core-governed provider request budget, and enforces hard orchestration iteration limits. This closes the configuration gap behind three successive 30-second Vertex read timeouts during deep research and stops excess logical Agent calls before dispatch.
 
 | Role | Provider request timeout | Agent contract/chain version |
 | --- | ---: | --- |
@@ -17,9 +17,28 @@ Canonical adapter-intake source for `nusaibah.pharma_company_intelligence_lab`.
 | `evidence_critic` | 180 seconds | `1.0.2` |
 | `intelligence_synthesizer` | 180 seconds | `1.0.2` |
 
-The manifest declares these as `provider_policy.timeout_seconds`. The task deadline remains 1800 seconds. Model selection, token ceilings, thinking levels, search permissions, prompts, call counts, provider references and storage contracts are unchanged. Python adapter code changes only its version identity; the runtime continues to own transport, retries and material refresh.
+The manifest declares these as `provider_policy.timeout_seconds`. The task deadline remains 1800 seconds. Model selection, token ceilings, thinking levels, search permissions, prompts, intended call counts, provider references and storage contracts are unchanged. The adapter enforces its logical call limits; the runtime continues to own transport, retries and material refresh.
 
 Every changed Agent definition receives a new contract/chain version. Never use `--update-existing` to overwrite the chains used by published `0.1.7` or older assets. Promote the new version through the pinned intake workflow and retain older versions.
+
+## Hard iteration limits
+
+The version-owned adapter applies these fixed limits to each invocation. Caller variables and Agent output cannot raise them.
+
+| Scope | Hard maximum |
+| --- | ---: |
+| Companies per run | 5 |
+| Planner iterations per company | 4 |
+| Each researcher, analyst, critic or synthesizer per company | 1 logical call |
+| Benchmark per company | 2 in preview; 3 in apply, including committed-memory verification |
+| All Agent calls per company | 12 in preview; 13 in apply |
+| All Agent calls per five-company run | 60 in preview; 65 in apply |
+
+A single run-local counter covers the complete prepare/apply flow. It reserves each call under a lock before invoking the trusted helper, so concurrent research cannot race past a limit. A failed dispatch still consumes its logical call; the adapter does not retry it. Unknown roles and companies are rejected before invocation, each run gets fresh counters, and the apply phase verifies remaining committed-benchmark capacity for the whole batch before any mutation.
+
+The planner loop also checks its iteration number directly, including if an erroneous future iterator repeats indefinitely. Excess calls raise `AgentContractValidationError` with the existing reviewed `pharma_agent_business_schema_invalid` code and an iteration-limit message. The successful `logical_agent_invocations` metric comes from the actual counter.
+
+These are business orchestration limits, separate from runtime-owned provider retries and the 1800-second execution deadline. A call-count guard cannot interrupt a stalled network call; the governed transport timeout and worker watchdog provide that bound. The existing one-provider-call/zero-tool-call Agent chain budgets remain unchanged.
 
 ## Inherited planner behavior
 
@@ -47,7 +66,7 @@ Retained published versions share the reviewed helper files in this folder. Vers
 For `0.1.8`:
 
 - `agent_contract.py`, `methodology_contract.py`, `input_contract.py`, `dossier_contract.py`, and `memory_contract.py` remain byte-identical to the published `0.1.6` package;
-- the adapter retains the reviewed optional first-run methodology-read behavior from `0.1.7`;
+- the adapter retains the reviewed optional first-run methodology-read behavior from `0.1.7` and keeps the new iteration guard in its version-owned implementation;
 - `adapter.dependencies.json` raises the runtime floor to `pi-obs-python-runtime>=0.1.91`, which includes governed attempt/material budgets, scoped session admission and safe timeout diagnostics;
 - Assets promotion must retain older versions' dependency bytes and materialize the changed `0.1.8` dependency contract as a version-owned dependency manifest. It must not rewrite dependency metadata used by `0.1.0` through `0.1.7`.
 

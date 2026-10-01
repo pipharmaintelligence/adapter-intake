@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from itertools import cycle
 import sys
 import unittest
 from collections import Counter
@@ -411,6 +412,46 @@ def _fake_citations(agent_result):
 
 
 class FullPreviewOrchestrationTests(unittest.TestCase):
+    def test_repeating_planner_iterator_stops_before_fifth_dispatch_or_mutation(self) -> None:
+        inputs = FakeInputs()
+        original_chunks = adapter_module._ordered_planner_chunks
+        with patch.object(
+            adapter_module, "_ordered_planner_chunks",
+            side_effect=lambda benchmark: cycle(original_chunks(benchmark)),
+        ):
+            with self.assertRaisesRegex(adapter_module.AgentContractValidationError, "iteration limit"):
+                NusaibahPharmaCompanyIntelligenceLabAdapter().invoke(inputs, {})
+        self.assertEqual(Counter(role for role, _ in inputs.agent_calls), {
+            "memory_benchmark_reviewer": 1, "methodology_planner": 4,
+        })
+        self.assertFalse(any(role.endswith("_update") for role, _ in inputs.dynamic_skill_calls))
+
+    def test_five_company_preview_uses_exactly_sixty_logical_calls(self) -> None:
+        inputs = FakeInputs()
+        inputs["variables"]["company_ids"] = [1, 2, 3, 4, 5]
+        inputs["companies"]["records"] = [
+            {"id": company_id, "company": f"Synthetic {company_id}"}
+            for company_id in inputs["variables"]["company_ids"]
+        ]
+        with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
+            response = NusaibahPharmaCompanyIntelligenceLabAdapter().invoke(inputs, {})
+        self.assertEqual(response["metrics"]["logical_agent_invocations"], 60)
+        self.assertEqual(len(inputs.agent_calls), 60)
+        self.assertEqual(response["metrics"]["completed_company_count"], 5)
+        self.assertFalse(any(role.endswith("_update") for role, _ in inputs.dynamic_skill_calls))
+
+    def test_apply_checks_entire_batch_call_capacity_before_any_mutation(self) -> None:
+        inputs = FakeInputs()
+        inputs["variables"]["memory_mode"] = "apply"
+        with (
+            patch.object(adapter_module, "MAX_AGENT_CALLS_PER_COMPANY_APPLY", 12),
+            patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations),
+        ):
+            with self.assertRaisesRegex(adapter_module.AgentContractValidationError, "iteration limit"):
+                NusaibahPharmaCompanyIntelligenceLabAdapter().invoke(inputs, {})
+        self.assertEqual(len(inputs.agent_calls), 24)
+        self.assertFalse(any(role.endswith("_update") for role, _ in inputs.dynamic_skill_calls))
+
     def test_two_company_preview_runs_full_isolated_agent_graph_without_mutation(self) -> None:
         inputs = FakeInputs()
         adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()

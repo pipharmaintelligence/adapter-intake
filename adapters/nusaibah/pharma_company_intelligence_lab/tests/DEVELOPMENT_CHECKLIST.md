@@ -9,18 +9,19 @@ This development checklist is not part of promoted runtime bytes.
 - [x] Explicit `provider_policy.timeout_seconds`: planner/benchmark 60, research 120, analysis/critic/synthesis 180.
 - [x] New planner contract/chain `1.0.3`; all other roles `1.0.2`.
 - [x] Runtime floor `pi-obs-python-runtime>=0.1.91`.
-- [x] Adapter implementation changes only its version identity.
+- [x] Version-owned adapter adds thread-safe logical call budgets: 12 per company in preview, 13 in apply, at most 5 companies and 4 planner iterations.
+- [x] Guard counts failed dispatches, rejects unknown role/company scope and checks whole-batch committed-benchmark capacity before mutations.
 - [x] Shared helpers, prompts, model/token/thinking/search policy, provider references, call counts and storage contracts unchanged.
 - [x] Task deadline remains 1800 seconds; caller inputs contain no provider timeout overrides.
 - [x] README defines Core policy/environment, worker/queue budgets, admission order, safe proof and rollback.
 
 ## Local proof
 
-- [x] Pharma suite: 119 tests, including local-root and packaged dotted imports.
+- [x] Pharma suite: 130 tests, including local-root and packaged dotted imports, repeating planner iterator, concurrent duplicate calls and pre-mutation budget exhaustion.
 - [x] Repository promotion-shape test passes.
 - [x] Focused intake check passes.
 - [x] Repository-wide intake check: 18 ready, zero blocked.
-- [x] CI runs the pharma manifest/authority and import-identity checks.
+- [x] CI runs the pharma manifest/authority, import-identity and iteration-limit checks.
 - [ ] Exact final intake SHA is merged and pinned for Assets promotion.
 - [ ] Promotion verifies retained versions and version-owned dependency metadata.
 
