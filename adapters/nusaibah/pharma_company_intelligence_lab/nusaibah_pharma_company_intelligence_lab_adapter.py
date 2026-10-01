@@ -443,13 +443,25 @@ def _ordered_planner_chunks(before_benchmark: dict[str, Any]) -> tuple[dict[str,
     return tuple(chunk for _index, chunk in indexed)
 
 
-def _load_methodology_learning(inputs: Any, *, company_id: int) -> tuple[Any, str]:
-    """Resolve bounded company methodology memory as a read-only planning hint."""
+def _load_methodology_learning(
+    inputs: Any,
+    *,
+    company_id: int,
+) -> tuple[Any | None, str]:
+    """Resolve optional prior company methodology as a bounded planning hint."""
 
-    handle = inputs.dynamic_skill(
-        METHODOLOGY_SKILL_ROLE,
-        variables={"company_id": str(company_id)},
-    )
+    from devtools.dynamic_skill_runtime import DynamicSkillRuntimeError
+
+    try:
+        handle = inputs.dynamic_skill(
+            METHODOLOGY_SKILL_ROLE,
+            variables={"company_id": str(company_id)},
+        )
+    except DynamicSkillRuntimeError as exc:
+        if exc.code == "dynamic_skill_not_initialized":
+            return None, ""
+        raise
+
     if handle.provenance().mutable is not False:
         raise RuntimeError("company_methodology must resolve read-only.")
     if not handle.has_section(METHODOLOGY_LEARNING_SECTION):
@@ -580,10 +592,16 @@ def _apply_company_methodology(
     inputs: Any,
     *,
     company_id: int,
-    handle: Any,
+    handle: Any | None,
     candidate: str,
 ) -> dict[str, Any]:
-    """Atomically persist one complete company methodology snapshot."""
+    """Atomically persist one complete initialized company methodology snapshot."""
+
+    if handle is None:
+        raise RuntimeError(
+            "Company methodology is not initialized; governed create-if-absent "
+            "is required before apply."
+        )
 
     before_digest = handle.content_digest()
     update = inputs.dynamic_skill(
@@ -1216,7 +1234,7 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.pharma_company_intelligence_lab"
-    version: ClassVar[str] = "0.1.6"
+    version: ClassVar[str] = "0.1.7"
 
     def invoke(self, inputs: Any, context: dict[str, Any]) -> dict[str, Any]:
         """Execute one bounded company batch with two-phase memory mutation."""
@@ -1240,6 +1258,19 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
 
         mutation_count = 0
         if request.memory_mode == "apply":
+            # Fail before any mutation if methodology learning would need a first
+            # governed package creation. Current mutation handles only update an
+            # already initialized package and must not emulate create-if-absent.
+            for state in prepared:
+                if (
+                    state["methodology_learning_candidate"] is not None
+                    and state["methodology_learning_handle"] is None
+                ):
+                    raise RuntimeError(
+                        "Company methodology is not initialized; governed "
+                        "create-if-absent is required before apply."
+                    )
+
             for state in prepared:
                 if state["memory_mutation_eligible"]:
                     mutation = _apply_company_memory(inputs, state)
@@ -1519,7 +1550,11 @@ def _prepare_company(
             else "no_change_recommended"
         ),
         "methodology_learning_change_id": None,
-        "methodology_learning_before_digest": methodology_handle.content_digest(),
+        "methodology_learning_before_digest": (
+            methodology_handle.content_digest()
+            if methodology_handle is not None
+            else None
+        ),
         "methodology_learning_after_digest": None,
         "methodology_learning_readback_verified": False,
         "memory_update_status": (

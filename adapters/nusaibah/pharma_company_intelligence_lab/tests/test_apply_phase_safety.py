@@ -14,10 +14,31 @@ import nusaibah_pharma_company_intelligence_lab_adapter as adapter_module  # noq
 from nusaibah_pharma_company_intelligence_lab_adapter import (  # noqa: E402
     NusaibahPharmaCompanyIntelligenceLabAdapter,
 )
-from test_orchestration_preview import FakeInputs, _fake_citations  # noqa: E402
+from test_orchestration_preview import (  # noqa: E402
+    FakeInputs,
+    FirstRunMethodologyInputs,
+    _fake_citations,
+)
 
 
 class ApplyPhaseSafetyTests(unittest.TestCase):
+    def test_uninitialized_methodology_apply_fails_before_any_mutation(self) -> None:
+        inputs = FirstRunMethodologyInputs()
+        inputs["variables"]["memory_mode"] = "apply"
+        adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
+
+        with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "governed create-if-absent is required before apply",
+            ):
+                adapter.invoke(inputs, {})
+
+        mutable_calls = [
+            item for item in inputs.dynamic_skill_calls if item[0].endswith("_update")
+        ]
+        self.assertEqual(mutable_calls, [])
+
     def test_phase_one_failure_on_second_company_starts_zero_mutations(self) -> None:
         inputs = FakeInputs(wrong_company_role="market_researcher")
         inputs["variables"]["memory_mode"] = "apply"

@@ -10,7 +10,7 @@ from pathlib import Path
 
 ASSET_ROOT = Path(__file__).resolve().parents[1]
 ADAPTER_MODULE = "nusaibah_pharma_company_intelligence_lab_adapter.py"
-ASSET_VERSION = "0.1.4"
+ASSET_VERSION = "0.1.7"
 HELPERS = (
     "input_contract.py",
     "dossier_contract.py",

@@ -29,6 +29,7 @@ from nusaibah_pharma_company_intelligence_lab_adapter import (  # noqa: E402
     planner_section_response_contract,
     response_contract_for_role,
 )
+from devtools.dynamic_skill_runtime import DynamicSkillRuntimeError  # noqa: E402
 from devtools.skill_citation import CitationRef  # noqa: E402
 
 
@@ -183,6 +184,24 @@ class FakeInputs(dict):
     def assert_equal(actual, expected) -> None:
         if actual != expected:
             raise AssertionError(f"{actual!r} != {expected!r}")
+
+
+class FirstRunMethodologyInputs(FakeInputs):
+    def dynamic_skill(self, role: str, *, variables=None):
+        if role == "company_methodology":
+            company_id = int((variables or {})["company_id"])
+            self.dynamic_skill_calls.append((role, company_id))
+            raise DynamicSkillRuntimeError("dynamic_skill_not_initialized")
+        return super().dynamic_skill(role, variables=variables)
+
+
+class FailingMethodologyInputs(FakeInputs):
+    def dynamic_skill(self, role: str, *, variables=None):
+        if role == "company_methodology":
+            company_id = int((variables or {})["company_id"])
+            self.dynamic_skill_calls.append((role, company_id))
+            raise DynamicSkillRuntimeError("dynamic_skill_delivery_failed")
+        return super().dynamic_skill(role, variables=variables)
 
 
 def _agent_value(role: str, company_id: int, input_value: dict) -> dict:
@@ -795,6 +814,47 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
                 set(payload["response_contract"]["required_fields"]),
                 expected_fields[role],
             )
+
+    def test_first_run_methodology_absence_allows_preview_without_write(self) -> None:
+        inputs = FirstRunMethodologyInputs()
+        adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
+
+        with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
+            response = adapter.invoke(inputs, {})
+
+        results = response["outputs"]["intelligence_dossier"]["company_results"]
+        self.assertEqual(len(results), 2)
+        for result in results:
+            self.assertEqual(result["methodology_learning_update_status"], "preview_ready")
+            self.assertIsNone(result["methodology_learning_before_digest"])
+            self.assertIsNone(result["methodology_learning_after_digest"])
+            self.assertFalse(result["methodology_learning_readback_verified"])
+
+        planner_inputs = [
+            payload
+            for role, _company_id, payload in inputs.agent_inputs
+            if role == "methodology_planner"
+        ]
+        self.assertTrue(planner_inputs)
+        self.assertTrue(
+            all(payload["learned_methodology"] == "" for payload in planner_inputs)
+        )
+        self.assertFalse(
+            any(role.endswith("_update") for role, _company_id in inputs.dynamic_skill_calls)
+        )
+
+    def test_non_first_run_dynamic_skill_error_still_fails_closed(self) -> None:
+        inputs = FailingMethodologyInputs()
+        adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
+
+        with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
+            with self.assertRaises(DynamicSkillRuntimeError) as caught:
+                adapter.invoke(inputs, {})
+
+        self.assertEqual(caught.exception.code, "dynamic_skill_delivery_failed")
+        self.assertFalse(
+            any(role.endswith("_update") for role, _company_id in inputs.dynamic_skill_calls)
+        )
 
     def test_benchmark_contract_freezes_exact_result_shape_and_question_order(self) -> None:
         inputs = FakeInputs()
