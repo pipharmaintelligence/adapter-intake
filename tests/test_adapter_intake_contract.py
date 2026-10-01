@@ -41,6 +41,24 @@ def _adapter_yaml_scalars(path: Path) -> dict[str, str]:
     return values
 
 
+def _optional_top_level_scalar(path: Path, key: str) -> str | None:
+    """Read one optional strict top-level scalar from adapter.yaml."""
+
+    for raw_line in path.read_text(encoding="utf-8-sig").splitlines():
+        if not raw_line.strip() or raw_line.lstrip().startswith("#"):
+            continue
+        if raw_line[:1].isspace() or ":" not in raw_line:
+            continue
+        raw_key, raw_value = raw_line.split(":", 1)
+        if raw_key.strip() != key:
+            continue
+        value = raw_value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+            value = value[1:-1]
+        return value or None
+    return None
+
+
 def _skill_refs(raw: object, *, field: str, manifest_path: Path) -> list[dict[str, str]]:
     """Validate one ordered Skill reference list and return normalized entries."""
     if raw is None:
@@ -109,6 +127,36 @@ class AdapterIntakeContractTests(unittest.TestCase):
                     manifest_path.is_file(),
                     f"Missing manifest declared by {adapter_yaml.relative_to(REPO_ROOT)}",
                 )
+
+                dependency_name = _optional_top_level_scalar(
+                    adapter_yaml,
+                    "dependency_manifest",
+                )
+                if dependency_name is not None:
+                    dependency_path = adapter_dir / dependency_name
+                    self.assertTrue(
+                        dependency_path.is_file(),
+                        f"Missing dependency manifest declared by {adapter_yaml.relative_to(REPO_ROOT)}",
+                    )
+                    dependency = json.loads(
+                        dependency_path.read_text(encoding="utf-8-sig")
+                    )
+                    self.assertEqual(
+                        "adapter_dependencies.v1",
+                        dependency.get("schema_version"),
+                    )
+                    runtime_package = dependency.get("runtime_package")
+                    self.assertIsInstance(runtime_package, dict)
+                    self.assertEqual(
+                        "pi-obs-python-runtime",
+                        runtime_package.get("name"),
+                    )
+                    minimum_version = runtime_package.get("minimum_version")
+                    self.assertIsInstance(minimum_version, str)
+                    self.assertRegex(
+                        minimum_version,
+                        r"^\d+(?:\.\d+){1,3}(?:[-+][A-Za-z0-9.-]+)?$",
+                    )
 
                 manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
                 self.assertIsInstance(manifest, dict)
