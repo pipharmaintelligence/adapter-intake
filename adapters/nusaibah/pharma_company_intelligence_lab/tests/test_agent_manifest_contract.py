@@ -9,7 +9,7 @@ MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
 
-ASSET_VERSION = "0.1.6"
+ASSET_VERSION = "0.1.7"
 CANONICAL_PROVIDER_REGISTRY_ENTRY = {
     "handle": "provider:text_generation",
     "type": "provider_execution",
@@ -58,6 +58,18 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         self.assertIn(f'version: ClassVar[str] = "{ASSET_VERSION}"', adapter_module)
         self.assertEqual(self.manifest["default"], ASSET_VERSION)
         self.assertEqual(set(self.manifest["versions"]), {ASSET_VERSION})
+
+    def test_runtime_floor_requires_first_run_semantics(self) -> None:
+        dependency_manifest = json.loads(
+            (ASSET_ROOT / "adapter.dependencies.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            dependency_manifest["runtime_package"],
+            {
+                "name": "pi-obs-python-runtime",
+                "minimum_version": "0.1.90",
+            },
+        )
 
     def test_fixed_skill_uses_published_delivery_not_bundled_bytes(self) -> None:
         version = self.manifest["versions"][ASSET_VERSION]
@@ -171,7 +183,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
                     self.assertNotIn("citation_policy", policy)
 
     def test_methodology_learning_dynamic_skill_roles_are_company_scoped(self) -> None:
-        runtime_skills = self.manifest["versions"]["0.1.6"]["runtime_skills"]
+        runtime_skills = self.manifest["versions"][ASSET_VERSION]["runtime_skills"]
 
         self.assertEqual(
             runtime_skills["company_methodology"]["source"],
@@ -195,7 +207,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             {"company_id": {"from_variable": "company_id"}},
         )
 
-    def test_only_methodology_planner_identity_changes_in_0_1_6(self) -> None:
+    def test_methodology_planner_identity_remains_unchanged_in_0_1_7(self) -> None:
         self.assertEqual(
             self.agents["methodology_planner"]["contract_version"],
             "1.0.2",
