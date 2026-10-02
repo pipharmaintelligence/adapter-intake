@@ -8,7 +8,7 @@ This development checklist is not part of promoted runtime bytes.
 - [x] New immutable asset version `0.1.9`; retain all older published versions.
 - [x] Explicit `provider_policy.timeout_seconds`: planner/benchmark 60, research 120, analysis/critic/synthesis 180.
 - [x] New planner contract/chain `1.0.4`; all other roles remain `1.0.2`.
-- [x] Runtime floor `pi-obs-python-runtime>=0.1.92`.
+- [x] Runtime floor `pi-obs-python-runtime>=0.1.93`.
 - [x] Version-owned adapter adds thread-safe logical call budgets: 12 per company in preview, 13 in apply, at most 5 companies and 4 planner iterations.
 - [x] Guard counts failed dispatches, rejects unknown role/company scope and checks whole-batch committed-benchmark capacity before mutations.
 - [x] Shared helpers, prompts, model/token/thinking/search policy, provider references, call counts and storage contracts unchanged.
@@ -32,7 +32,7 @@ This development checklist is not part of promoted runtime bytes.
 
 These remain operational acceptance gates, not claims made by offline tests.
 
-- [ ] Core #158, Assets #444/#453 (or descendants), and runtime 0.1.92+ are deployed.
+- [ ] Core #158, Assets #444/#453 (or descendants), and runtime 0.1.93+ are deployed.
 - [ ] Exact Core registration policy permits 180-second requests while preserving unrelated fields.
 - [ ] Core material TTL is 240 seconds and scoped session ceiling is 1800 seconds.
 - [ ] Worker uses admission v2; task authority is bounded and never extended by refresh.
