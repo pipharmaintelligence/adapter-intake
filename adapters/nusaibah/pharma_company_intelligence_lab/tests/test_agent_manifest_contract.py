@@ -67,7 +67,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             dependency_manifest["runtime_package"],
             {
                 "name": "pi-obs-python-runtime",
-                "minimum_version": "0.1.92",
+                "minimum_version": "0.1.93",
             },
         )
 
