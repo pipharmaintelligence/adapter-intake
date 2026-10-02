@@ -9,7 +9,7 @@ MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
 
-ASSET_VERSION = "0.1.7"
+ASSET_VERSION = "0.1.8"
 CANONICAL_PROVIDER_REGISTRY_ENTRY = {
     "handle": "provider:text_generation",
     "type": "provider_execution",
@@ -34,14 +34,14 @@ CANONICAL_PROVIDER_REGISTRY_ENTRY = {
 }
 
 EXPECTED = {
-    "methodology_planner": ("gemini-3.8-flash", "medium", 8192, False),
-    "portfolio_researcher": ("gemini-3.8-flash", "medium", 4096, True),
-    "market_researcher": ("gemini-3.8-flash", "medium", 4096, True),
-    "regulatory_risk_researcher": ("gemini-3.8-flash", "high", 6144, True),
-    "strategic_analyst": ("gemini-3.1-pro-preview", "high", 6144, False),
-    "evidence_critic": ("gemini-3.1-pro-preview", "high", 6144, False),
-    "intelligence_synthesizer": ("gemini-3.8-flash", "high", 8192, False),
-    "memory_benchmark_reviewer": ("gemini-3.8-flash", "medium", 4096, False),
+    "methodology_planner": ("gemini-3.8-flash", "medium", 8192, False, 60),
+    "portfolio_researcher": ("gemini-3.8-flash", "medium", 4096, True, 120),
+    "market_researcher": ("gemini-3.8-flash", "medium", 4096, True, 120),
+    "regulatory_risk_researcher": ("gemini-3.8-flash", "high", 6144, True, 120),
+    "strategic_analyst": ("gemini-3.1-pro-preview", "high", 6144, False, 180),
+    "evidence_critic": ("gemini-3.1-pro-preview", "high", 6144, False, 180),
+    "intelligence_synthesizer": ("gemini-3.8-flash", "high", 8192, False, 180),
+    "memory_benchmark_reviewer": ("gemini-3.8-flash", "medium", 4096, False, 60),
 }
 
 
@@ -59,7 +59,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         self.assertEqual(self.manifest["default"], ASSET_VERSION)
         self.assertEqual(set(self.manifest["versions"]), {ASSET_VERSION})
 
-    def test_runtime_floor_requires_first_run_semantics(self) -> None:
+    def test_runtime_floor_requires_governed_long_request_support(self) -> None:
         dependency_manifest = json.loads(
             (ASSET_ROOT / "adapter.dependencies.json").read_text(encoding="utf-8")
         )
@@ -67,7 +67,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             dependency_manifest["runtime_package"],
             {
                 "name": "pi-obs-python-runtime",
-                "minimum_version": "0.1.90",
+                "minimum_version": "0.1.91",
             },
         )
 
@@ -141,12 +141,13 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
                     "pi_1951_pharma_company_intelligence_lab",
                 )
 
-    def test_model_thinking_search_and_json_policy_are_exact(self) -> None:
-        for role, (model, thinking, max_tokens, search_enabled) in EXPECTED.items():
+    def test_model_thinking_search_json_and_timeout_policy_are_exact(self) -> None:
+        self.assertEqual(self.manifest["execution"]["timeout_seconds"], 1800)
+        for role, (model, thinking, max_tokens, search_enabled, timeout) in EXPECTED.items():
             with self.subTest(role=role):
                 agent = self.agents[role]
                 expected_contract_version = (
-                    "1.0.2" if role == "methodology_planner" else "1.0.1"
+                    "1.0.3" if role == "methodology_planner" else "1.0.2"
                 )
                 self.assertEqual(agent["contract_version"], expected_contract_version)
                 definition = agent["definition"]
@@ -168,6 +169,8 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
                 policy = step["provider_policy"]
                 generation = policy["generation_policy"]
 
+                self.assertEqual(policy["timeout_seconds"], timeout)
+                self.assertIs(type(policy["timeout_seconds"]), int)
                 self.assertEqual(policy["model"], model)
                 self.assertEqual(generation["thinking_level"], thinking)
                 self.assertEqual(generation["max_tokens"], max_tokens)
@@ -207,21 +210,21 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             {"company_id": {"from_variable": "company_id"}},
         )
 
-    def test_methodology_planner_identity_remains_unchanged_in_0_1_7(self) -> None:
+    def test_timeout_policy_changes_use_new_agent_contract_versions(self) -> None:
         self.assertEqual(
             self.agents["methodology_planner"]["contract_version"],
-            "1.0.2",
+            "1.0.3",
         )
         self.assertEqual(
             self.agents["methodology_planner"]["definition"]["chain"]["version"],
-            "1.0.2",
+            "1.0.3",
         )
         for role, agent in self.agents.items():
             if role == "methodology_planner":
                 continue
             with self.subTest(role=role):
-                self.assertEqual(agent["contract_version"], "1.0.1")
-                self.assertEqual(agent["definition"]["chain"]["version"], "1.0.1")
+                self.assertEqual(agent["contract_version"], "1.0.2")
+                self.assertEqual(agent["definition"]["chain"]["version"], "1.0.2")
 
     def test_methodology_planner_instruction_preserves_authority_boundaries(self) -> None:
         prompt = (
@@ -266,7 +269,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
                 self.assertIn(phrase, prompt)
 
     def test_gemini_38_roles_omit_sampling_parameters(self) -> None:
-        for role, (model, _thinking, _max_tokens, _search) in EXPECTED.items():
+        for role, (model, _thinking, _max_tokens, _search, _timeout) in EXPECTED.items():
             if model != "gemini-3.8-flash":
                 continue
             with self.subTest(role=role):

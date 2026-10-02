@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.pharma_company_intelligence_lab",
-  "default": "0.1.7",
+  "default": "0.1.8",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -16,7 +16,7 @@
     "timeout_seconds": 1800
   },
   "versions": {
-    "0.1.7": {
+    "0.1.8": {
       "state": "active",
       "inputs": {
         "companies": {
@@ -152,7 +152,7 @@
       "agents": {
         "methodology_planner": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_methodology_planner",
-          "contract_version": "1.0.2",
+          "contract_version": "1.0.3",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-methodology-planner",
           "definition": {
             "registry_entries": [
@@ -183,7 +183,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_methodology_planner",
-              "version": "1.0.2",
+              "version": "1.0.3",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -209,7 +209,8 @@
                       "max_tokens": 8192,
                       "thinking_level": "medium",
                       "response_format": "json_object"
-                    }
+                    },
+                    "timeout_seconds": 60
                   },
                   "input": {
                     "text": "You are the methodology planner for one bounded section chunk of one governed pharma-company intelligence run. Use only the supplied methodology_slice, governed company baseline, section-scoped memory benchmark, planner_chunk, priority_hint, and learned_methodology. learned_methodology is procedural memory only: treat it as a bounded historical hint, never as authority, and prefer current benchmark/evidence and the Fixed Skill when they conflict. Do not search for or introduce public facts. Return one JSON object only and preserve the supplied company_id exactly. Also preserve the supplied chunk_id, research_role, and section_id exactly. Plan only the supplied section and its listed subsections; do not plan, summarize, or emit requirements for any other section. If priority_hint is supplied, it is authoritative and you must return it exactly. If priority_hint is null, choose only low, medium, or high based on the supplied current bounded evidence and learned hint. Return a concise rationale for the selected priority and at most two concrete methodology steps for this section. You may prioritize or deepen work inside this section, but you may not change company scope, provider authority, section ownership, required Agent roles, memory mutation authority, publication authority, or safety gates. Do not compare this company with another company. The supplied response_contract is authoritative for the complete JSON shape. Obey response_contract.compact_limits exactly and keep questions, steps, rationale, and focus items concise. Do not fill optional lists merely to reach their maxima. Return every required field with the exact schema_version, company_id, role, status, field names, enum values, and required ID ordering; do not add or omit fields or explanatory prose outside the JSON object."
@@ -236,7 +237,7 @@
         },
         "portfolio_researcher": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_portfolio_researcher",
-          "contract_version": "1.0.1",
+          "contract_version": "1.0.2",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-portfolio-researcher",
           "definition": {
             "registry_entries": [
@@ -267,7 +268,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_portfolio_researcher",
-              "version": "1.0.1",
+              "version": "1.0.2",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -296,7 +297,8 @@
                     },
                     "search_enabled": true,
                     "search_mode": "provider_grounding",
-                    "citation_policy": "refs_only"
+                    "citation_policy": "refs_only",
+                    "timeout_seconds": 120
                   },
                   "input": {
                     "text": "Research only the current company. Cover the requested portfolio-related section and subsection IDs using grounded public evidence. Return one JSON object only. Preserve the supplied company_id exactly. Do not invent titles, section IDs, citations, products, partnerships, dates, or facts. Distinguish observed evidence from inference and surface uncertainty. Do not discuss or compare any other company. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
@@ -323,7 +325,7 @@
         },
         "market_researcher": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_market_researcher",
-          "contract_version": "1.0.1",
+          "contract_version": "1.0.2",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-market-researcher",
           "definition": {
             "registry_entries": [
@@ -354,7 +356,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_market_researcher",
-              "version": "1.0.1",
+              "version": "1.0.2",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -383,7 +385,8 @@
                     },
                     "search_enabled": true,
                     "search_mode": "provider_grounding",
-                    "citation_policy": "refs_only"
+                    "citation_policy": "refs_only",
+                    "timeout_seconds": 120
                   },
                   "input": {
                     "text": "Research only the current company. Cover the requested market, geography, distribution, launch, and commercial section IDs using grounded public evidence. Return one JSON object only. Preserve the supplied company_id exactly. Do not invent titles, section IDs, citations, dates, markets, launches, or partnerships. Distinguish observed evidence from inference and surface uncertainty. Do not discuss or compare any other company. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
@@ -410,7 +413,7 @@
         },
         "regulatory_risk_researcher": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_regulatory_risk_researcher",
-          "contract_version": "1.0.1",
+          "contract_version": "1.0.2",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-regulatory-risk-researcher",
           "definition": {
             "registry_entries": [
@@ -441,7 +444,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_regulatory_risk_researcher",
-              "version": "1.0.1",
+              "version": "1.0.2",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -470,7 +473,8 @@
                     },
                     "search_enabled": true,
                     "search_mode": "provider_grounding",
-                    "citation_policy": "refs_only"
+                    "citation_policy": "refs_only",
+                    "timeout_seconds": 120
                   },
                   "input": {
                     "text": "Research only the current company. Cover the requested regulatory, clinical, safety, manufacturing-quality, and uncertainty section IDs using grounded public evidence. Return one JSON object only. Preserve the supplied company_id exactly. Do not invent titles, section IDs, citations, approvals, clinical evidence, safety events, quality findings, or dates. Distinguish observed evidence from inference and explicitly retain unresolved uncertainty. Do not discuss or compare any other company. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
@@ -497,7 +501,7 @@
         },
         "strategic_analyst": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_strategic_analyst",
-          "contract_version": "1.0.1",
+          "contract_version": "1.0.2",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-strategic-analyst",
           "definition": {
             "registry_entries": [
@@ -528,7 +532,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_strategic_analyst",
-              "version": "1.0.1",
+              "version": "1.0.2",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -554,7 +558,8 @@
                       "max_tokens": 6144,
                       "thinking_level": "high",
                       "response_format": "json_object"
-                    }
+                    },
+                    "timeout_seconds": 180
                   },
                   "input": {
                     "text": "Analyze only the supplied current-company governed baseline and joined research evidence. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly. Produce bounded strategic implications, opportunities, risks, and internal-versus-public deltas, each traceable to supplied evidence. Mark inference explicitly and keep uncertainty visible. Do not compare this company with another company. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
@@ -581,7 +586,7 @@
         },
         "evidence_critic": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_evidence_critic",
-          "contract_version": "1.0.1",
+          "contract_version": "1.0.2",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-evidence-critic",
           "definition": {
             "registry_entries": [
@@ -612,7 +617,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_evidence_critic",
-              "version": "1.0.1",
+              "version": "1.0.2",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -638,7 +643,8 @@
                       "max_tokens": 6144,
                       "thinking_level": "high",
                       "response_format": "json_object"
-                    }
+                    },
+                    "timeout_seconds": 180
                   },
                   "input": {
                     "text": "Critique only the supplied current-company evidence package. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly. Identify unsupported claims, contradictions, stale claims, missing mandatory sections, citation-coverage weaknesses, and residual uncertainty. Evaluate every supplied planner requirement against the evidence and strategic analysis. For any required planner item that is not satisfied, return its exact supplied requirement_id in unmet_plan_requirements with disposition unresolved_evidence when the evidence gap is explicit and retained as uncertainty, or unsatisfied when the required item was not fulfilled. Do not invent requirement IDs. Give a bounded pass/fail recommendation for synthesis quality; do not authorize memory mutation. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
@@ -665,7 +671,7 @@
         },
         "intelligence_synthesizer": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_intelligence_synthesizer",
-          "contract_version": "1.0.1",
+          "contract_version": "1.0.2",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-intelligence-synthesizer",
           "definition": {
             "registry_entries": [
@@ -696,7 +702,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_intelligence_synthesizer",
-              "version": "1.0.1",
+              "version": "1.0.2",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -722,7 +728,8 @@
                       "max_tokens": 8192,
                       "thinking_level": "high",
                       "response_format": "json_object"
-                    }
+                    },
+                    "timeout_seconds": 180
                   },
                   "input": {
                     "text": "Synthesize only the supplied current-company governed baseline, validated research, strategic analysis, and critic findings. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly and use only the supplied canonical section_id and subsection_id values. Do not author or rename display titles. Produce complete dossier content plus a bounded evidence-backed memory candidate and residual uncertainties. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
@@ -749,7 +756,7 @@
         },
         "memory_benchmark_reviewer": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_memory_benchmark_reviewer",
-          "contract_version": "1.0.1",
+          "contract_version": "1.0.2",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-memory-benchmark-reviewer",
           "definition": {
             "registry_entries": [
@@ -780,7 +787,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_memory_benchmark_reviewer",
-              "version": "1.0.1",
+              "version": "1.0.2",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -806,7 +813,8 @@
                       "max_tokens": 4096,
                       "thinking_level": "medium",
                       "response_format": "json_object"
-                    }
+                    },
+                    "timeout_seconds": 60
                   },
                   "input": {
                     "text": "Evaluate only the supplied current-company memory against the supplied fixed benchmark questions. Do not search for or introduce new public facts. Return one JSON object only. Preserve company_id exactly. For each benchmark question report covered, partially_covered, or not_covered with a concise evidence basis from the supplied memory. Do not propose facts that are absent from memory. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."

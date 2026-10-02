@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
+from threading import Lock
 from typing import Any, ClassVar
 
 from adapters.base import Adapter
@@ -105,6 +106,9 @@ BENCHMARK_ROLE = "memory_benchmark_reviewer"
 
 MAX_MEMORY_CONTEXT_CHARS = 24000
 MAX_CITATIONS_PER_COMPANY = 24
+MAX_COMPANY_ITERATIONS = 5
+MAX_AGENT_CALLS_PER_COMPANY_PREVIEW = 12
+MAX_AGENT_CALLS_PER_COMPANY_APPLY = 13
 
 # 0.1.6 planner-output target. These are intentionally stricter than the
 # shared helper safety ceilings so the provider receives and the adapter
@@ -157,6 +161,87 @@ class AgentContractValidationError(RuntimeError):
     def __init__(self, code: str, message: str) -> None:
         self.code = code
         super().__init__(message)
+
+
+def _iteration_limit_exceeded() -> None:
+    # Reuse the reviewed adapter-contract code; no runtime allowlist change.
+    raise AgentContractValidationError(
+        "pharma_agent_business_schema_invalid",
+        "Agent iteration limit exceeded for this bounded company run.",
+    )
+
+
+class _BoundedAgentInputs:
+    """Enforce a run-local business call budget around trusted runtime helpers.
+
+    Counting occurs before dispatch and is never refunded after failure. The
+    lock protects parallel research reservations, not provider execution.
+    Provider attempts, retries and wall-clock deadlines remain runtime-owned.
+    """
+
+    def __init__(self, inputs: Any, request: BatchRequest) -> None:
+        if not 1 <= len(request.company_ids) <= MAX_COMPANY_ITERATIONS:
+            _iteration_limit_exceeded()
+        self._inputs = inputs
+        self._lock = Lock()
+        self._company_calls = {company_id: 0 for company_id in request.company_ids}
+        self._role_calls: dict[tuple[int, str], int] = {}
+        self._per_company_limit = (
+            MAX_AGENT_CALLS_PER_COMPANY_APPLY
+            if request.memory_mode == "apply"
+            else MAX_AGENT_CALLS_PER_COMPANY_PREVIEW
+        )
+        self._role_limits = {
+            PLANNER_ROLE: PLANNER_MAX_SECTION_CALLS,
+            BENCHMARK_ROLE: 3 if request.memory_mode == "apply" else 2,
+            "portfolio_researcher": 1,
+            "market_researcher": 1,
+            "regulatory_risk_researcher": 1,
+            STRATEGIC_ROLE: 1,
+            CRITIC_ROLE: 1,
+            SYNTHESIS_ROLE: 1,
+        }
+        self.agent_call_limit = len(request.company_ids) * self._per_company_limit
+        self.agent_call_count = 0
+
+    def _check_available(self, company_id: Any, role: str) -> None:
+        if (
+            type(company_id) is not int
+            or company_id not in self._company_calls
+            or role not in self._role_limits
+            or self.agent_call_count >= self.agent_call_limit
+            or self._company_calls[company_id] >= self._per_company_limit
+            or self._role_calls.get((company_id, role), 0) >= self._role_limits[role]
+        ):
+            _iteration_limit_exceeded()
+
+    def invoke_agent(self, role: str, *, input: dict[str, Any], on_error: str = "raise") -> Any:
+        company_id = input.get("company_id")
+        with self._lock:
+            self._check_available(company_id, role)
+            self.agent_call_count += 1
+            self._company_calls[company_id] += 1
+            key = (company_id, role)
+            self._role_calls[key] = self._role_calls.get(key, 0) + 1
+        return self._inputs.invoke_agent(role, input=input, on_error=on_error)
+
+    def require_commit_benchmark_capacity(self, company_ids: list[int]) -> None:
+        # Phase one has joined all research futures. Check the complete apply
+        # phase before any company mutation; committed readback needs one call.
+        with self._lock:
+            if (
+                len(company_ids) != len(set(company_ids))
+                or self.agent_call_count + len(company_ids) > self.agent_call_limit
+            ):
+                _iteration_limit_exceeded()
+            for company_id in company_ids:
+                self._check_available(company_id, BENCHMARK_ROLE)
+
+    def skill(self, *args: Any, **kwargs: Any) -> Any:
+        return self._inputs.skill(*args, **kwargs)
+
+    def dynamic_skill(self, *args: Any, **kwargs: Any) -> Any:
+        return self._inputs.dynamic_skill(*args, **kwargs)
 
 
 def response_contract_for_role(
@@ -1200,6 +1285,8 @@ def resolve_company_records(inputs: dict[str, Any]) -> list[dict[str, Any]]:
     helper behavior while this version can consume id / company rows.
     """
     records = _resolve_company_records_shared(inputs)
+    if len(records) > MAX_COMPANY_ITERATIONS:
+        _iteration_limit_exceeded()
     return [_normalize_governed_company_record(record) for record in records]
 
 
@@ -1234,7 +1321,7 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.pharma_company_intelligence_lab"
-    version: ClassVar[str] = "0.1.7"
+    version: ClassVar[str] = "0.1.8"
 
     def invoke(self, inputs: Any, context: dict[str, Any]) -> dict[str, Any]:
         """Execute one bounded company batch with two-phase memory mutation."""
@@ -1244,9 +1331,12 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
         records = order_records_for_request(resolve_company_records(inputs), request)
         methodology = load_methodology(inputs)
         _require_runtime_helpers(inputs)
+        inputs = _BoundedAgentInputs(inputs, request)
 
         prepared: list[dict[str, Any]] = []
-        for record in records:
+        for company_iteration, record in enumerate(records, start=1):
+            if company_iteration > MAX_COMPANY_ITERATIONS:
+                _iteration_limit_exceeded()
             prepared.append(
                 _prepare_company(
                     inputs,
@@ -1258,6 +1348,9 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
 
         mutation_count = 0
         if request.memory_mode == "apply":
+            inputs.require_commit_benchmark_capacity([
+                state["company_id"] for state in prepared if state["memory_mutation_eligible"]
+            ])
             # Fail before any mutation if methodology learning would need a first
             # governed package creation. Current mutation handles only update an
             # already initialized package and must not emulate create-if-absent.
@@ -1321,13 +1414,7 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
             "metrics": {
                 "requested_company_count": len(request.company_ids),
                 "completed_company_count": len(company_results),
-                "logical_agent_invocations": (
-                    sum(
-                        8 + item["methodology_planner_call_count"]
-                        for item in company_results
-                    )
-                    + mutation_count
-                ),
+                "logical_agent_invocations": inputs.agent_call_count,
                 "search_enabled_agent_invocations": len(company_results) * 3,
                 "methodology_planner_call_count": sum(
                     item["methodology_planner_call_count"] for item in company_results
@@ -1602,7 +1689,9 @@ def _run_methodology_planner(
     validated_chunks: list[dict[str, Any]] = []
     ordered_chunks = _ordered_planner_chunks(before_benchmark)
 
-    for planner_chunk in ordered_chunks:
+    for planner_iteration, planner_chunk in enumerate(ordered_chunks, start=1):
+        if planner_iteration > PLANNER_MAX_SECTION_CALLS:
+            _iteration_limit_exceeded()
         priority_hint = planner_chunk.get("priority_hint")
         envelope = inputs.invoke_agent(
             PLANNER_ROLE,
