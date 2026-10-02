@@ -19,7 +19,7 @@ Canonical adapter-intake source for `nusaibah.pharma_company_intelligence_lab`.
 
 The manifest declares these as `provider_policy.timeout_seconds`. The task deadline remains 1800 seconds. Model selection, token ceilings, thinking levels, search permissions, prompts, intended call counts, provider references and storage contracts are unchanged. The adapter enforces its logical call limits; the runtime continues to own transport, retries and material refresh.
 
-Every changed Agent definition receives a new contract/chain version. Never use `--update-existing` to overwrite the chains used by published `0.1.7` or older assets. Promote the new version through the pinned intake workflow and retain older versions.
+Every changed Agent definition receives a new contract/chain version. Never use `--update-existing` to overwrite chains used by published `0.1.8` or older assets. Promote the new version through the pinned intake workflow and retain older versions.
 
 ## Hard iteration limits
 
