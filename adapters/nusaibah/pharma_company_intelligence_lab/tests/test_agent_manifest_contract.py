@@ -9,7 +9,7 @@ MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
 
-ASSET_VERSION = "0.1.8"
+ASSET_VERSION = "0.1.9"
 CANONICAL_PROVIDER_REGISTRY_ENTRY = {
     "handle": "provider:text_generation",
     "type": "provider_execution",
@@ -67,7 +67,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             dependency_manifest["runtime_package"],
             {
                 "name": "pi-obs-python-runtime",
-                "minimum_version": "0.1.91",
+                "minimum_version": "0.1.92",
             },
         )
 
@@ -147,7 +147,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             with self.subTest(role=role):
                 agent = self.agents[role]
                 expected_contract_version = (
-                    "1.0.3" if role == "methodology_planner" else "1.0.2"
+                    "1.0.4" if role == "methodology_planner" else "1.0.2"
                 )
                 self.assertEqual(agent["contract_version"], expected_contract_version)
                 definition = agent["definition"]
@@ -210,14 +210,14 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             {"company_id": {"from_variable": "company_id"}},
         )
 
-    def test_timeout_policy_changes_use_new_agent_contract_versions(self) -> None:
+    def test_planner_contract_hardening_uses_new_agent_contract_version(self) -> None:
         self.assertEqual(
             self.agents["methodology_planner"]["contract_version"],
-            "1.0.3",
+            "1.0.4",
         )
         self.assertEqual(
             self.agents["methodology_planner"]["definition"]["chain"]["version"],
-            "1.0.3",
+            "1.0.4",
         )
         for role, agent in self.agents.items():
             if role == "methodology_planner":
@@ -244,6 +244,10 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             "Plan only the supplied section",
             "priority_hint",
             "response_contract.compact_limits",
+            "response_contract.validation_contract",
+            "use the declared field types and required values",
+            "honor min_items/max_items",
+            "unique after whitespace normalization",
             "Do not fill optional lists merely to reach their maxima.",
         )
         for phrase in required_phrases:
