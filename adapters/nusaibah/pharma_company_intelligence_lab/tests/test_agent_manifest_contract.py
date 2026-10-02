@@ -59,7 +59,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         self.assertEqual(self.manifest["default"], ASSET_VERSION)
         self.assertEqual(set(self.manifest["versions"]), {ASSET_VERSION})
 
-    def test_runtime_floor_requires_governed_long_request_support(self) -> None:
+    def test_runtime_floor_requires_current_trusted_runtime_support(self) -> None:
         dependency_manifest = json.loads(
             (ASSET_ROOT / "adapter.dependencies.json").read_text(encoding="utf-8")
         )
