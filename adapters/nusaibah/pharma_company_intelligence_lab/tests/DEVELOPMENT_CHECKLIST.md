@@ -24,7 +24,7 @@ This development checklist is not part of promoted runtime bytes.
 - [x] Focused intake check passes.
 - [x] Repository-wide intake check: 18 ready, zero blocked.
 - [x] CI runs pharma manifest/authority, import identity, iteration-limit, and orchestration planner contract-parity checks.
-- [ ] Fresh 0.1.9 focused suite is green on the PR head.
+- [x] Fresh 0.1.9 focused suite is green on the PR head.
 - [ ] Exact final intake SHA is merged and pinned for Assets promotion.
 - [ ] Promotion verifies retained versions and version-owned dependency metadata.
 
