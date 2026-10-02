@@ -1,5 +1,16 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.10 grounded research candidate
+
+The current candidate is `0.1.10`, with runtime floor `0.1.94`. The three research chains advance to `1.0.3`: an evidence step uses native Google Search with text output (8192 tokens, medium thinking, 180 seconds), then a separate non-search formatting step produces typed JSON (8192 tokens, medium thinking, 120 seconds). Native citations from the evidence turn remain in the runtime's existing multi-turn evidence contract and are required by the unchanged quality gate. Planner `1.0.4` and the other role definitions remain unchanged.
+
+This follows live run `453f2d07-ac67-48a2-8a33-3576439764b3`: the corrected Core lifetime allowed all retries, but combined grounded JSON research returned repeated empty HTTP 200 candidates or exhausted three 120-second attempts. Separation is a compatibility mitigation to verify live, not proof of the provider's internal failure cause.
+
+The adapter still permits at most five companies, four planner chunks and 12 preview/13 apply logical agent invocations per company. Research now has exactly two admitted provider steps per invocation; each step uses the existing maximum of three attempts. The 1800-second task deadline and separate 60-second cleanup budget remain. No automatic whole-workflow retry or memory write is added.
+
+Deployment requires Core PR #160 and Assets PR #456 (or descendants). Promote this exact intake commit, retain all published versions, provision only the three new research chain versions, and prove a company-13 preview before declaring the candidate ready. The notes below preserve the preceding 0.1.9 investigation and deployment history.
+
+
 Canonical adapter-intake source for `nusaibah.pharma_company_intelligence_lab`.
 
 ## Current immutable candidate

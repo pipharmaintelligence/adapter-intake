@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.pharma_company_intelligence_lab",
-  "default": "0.1.9",
+  "default": "0.1.10",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -16,7 +16,7 @@
     "timeout_seconds": 1800
   },
   "versions": {
-    "0.1.9": {
+    "0.1.10": {
       "state": "active",
       "inputs": {
         "companies": {
@@ -237,7 +237,7 @@
         },
         "portfolio_researcher": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_portfolio_researcher",
-          "contract_version": "1.0.2",
+          "contract_version": "1.0.3",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-portfolio-researcher",
           "definition": {
             "registry_entries": [
@@ -268,7 +268,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_portfolio_researcher",
-              "version": "1.0.2",
+              "version": "1.0.3",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -291,23 +291,52 @@
                       }
                     },
                     "generation_policy": {
-                      "max_tokens": 4096,
+                      "max_tokens": 8192,
                       "thinking_level": "medium",
-                      "response_format": "json_object"
+                      "response_format": "text"
                     },
                     "search_enabled": true,
                     "search_mode": "provider_grounding",
                     "citation_policy": "refs_only",
+                    "timeout_seconds": 180
+                  },
+                  "input": {
+                    "text": "Evidence stage for the current company only. Use Google Search to verify public facts relevant to the supplied required_sections and methodology_plan. Return concise plain-text evidence notes, at most 4500 characters, organized by the supplied section and subsection IDs. Include observed facts, dates and source references where available; clearly label uncertainty and missing evidence. Do not invent facts, titles, IDs or sources and do not compare other companies. Stop once you have enough evidence to cover the requested sections or can state the remaining gaps. Do not serialize response_contract in this stage; a separate admitted step will format these notes."
+                  }
+                },
+                {
+                  "step_handle": "provider:text_generation",
+                  "required_capability": "text_generation",
+                  "provider": "vertex_ai",
+                  "provider_policy": {
+                    "provider": "vertex_ai",
+                    "model": "gemini-3.8-flash",
+                    "provider_vault": {
+                      "provider_instance_ref": "vertex-primary",
+                      "provider_family": "vertex_ai",
+                      "capability_ref": "llm.generate",
+                      "binding_id": "9ce2bed4-fae6-4147-82ee-cdc4dea300a8",
+                      "execution_project_id": "laravelai-490700",
+                      "execution_location": "global",
+                      "policy_flags": {
+                        "mode": "read_only"
+                      }
+                    },
+                    "generation_policy": {
+                      "max_tokens": 8192,
+                      "thinking_level": "medium",
+                      "response_format": "json_object"
+                    },
                     "timeout_seconds": 120
                   },
                   "input": {
-                    "text": "Research only the current company. Cover the requested portfolio-related section and subsection IDs using grounded public evidence. Return one JSON object only. Preserve the supplied company_id exactly. Do not invent titles, section IDs, citations, products, partnerships, dates, or facts. Distinguish observed evidence from inference and surface uncertainty. Do not discuss or compare any other company. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
+                    "text": "Format the Previous admitted agent step result using only its grounded evidence notes and the supplied governed baseline. Do not perform new research. Preserve all evidence gaps and uncertainty. Research only the current company. Cover the requested portfolio-related section and subsection IDs using grounded public evidence. Return one JSON object only. Preserve the supplied company_id exactly. Do not invent titles, section IDs, citations, products, partnerships, dates, or facts. Distinguish observed evidence from inference and surface uncertainty. Do not discuss or compare any other company. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
                   }
                 }
               ],
               "budget_policy": {
                 "max_tool_calls": 0,
-                "max_provider_calls": 1
+                "max_provider_calls": 2
               },
               "safety_policy": {
                 "store_prompt": false,
@@ -325,7 +354,7 @@
         },
         "market_researcher": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_market_researcher",
-          "contract_version": "1.0.2",
+          "contract_version": "1.0.3",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-market-researcher",
           "definition": {
             "registry_entries": [
@@ -356,7 +385,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_market_researcher",
-              "version": "1.0.2",
+              "version": "1.0.3",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -379,23 +408,52 @@
                       }
                     },
                     "generation_policy": {
-                      "max_tokens": 4096,
+                      "max_tokens": 8192,
                       "thinking_level": "medium",
-                      "response_format": "json_object"
+                      "response_format": "text"
                     },
                     "search_enabled": true,
                     "search_mode": "provider_grounding",
                     "citation_policy": "refs_only",
+                    "timeout_seconds": 180
+                  },
+                  "input": {
+                    "text": "Evidence stage for the current company only. Use Google Search to verify public facts relevant to the supplied required_sections and methodology_plan. Return concise plain-text evidence notes, at most 4500 characters, organized by the supplied section and subsection IDs. Include observed facts, dates and source references where available; clearly label uncertainty and missing evidence. Do not invent facts, titles, IDs or sources and do not compare other companies. Stop once you have enough evidence to cover the requested sections or can state the remaining gaps. Do not serialize response_contract in this stage; a separate admitted step will format these notes."
+                  }
+                },
+                {
+                  "step_handle": "provider:text_generation",
+                  "required_capability": "text_generation",
+                  "provider": "vertex_ai",
+                  "provider_policy": {
+                    "provider": "vertex_ai",
+                    "model": "gemini-3.8-flash",
+                    "provider_vault": {
+                      "provider_instance_ref": "vertex-primary",
+                      "provider_family": "vertex_ai",
+                      "capability_ref": "llm.generate",
+                      "binding_id": "9ce2bed4-fae6-4147-82ee-cdc4dea300a8",
+                      "execution_project_id": "laravelai-490700",
+                      "execution_location": "global",
+                      "policy_flags": {
+                        "mode": "read_only"
+                      }
+                    },
+                    "generation_policy": {
+                      "max_tokens": 8192,
+                      "thinking_level": "medium",
+                      "response_format": "json_object"
+                    },
                     "timeout_seconds": 120
                   },
                   "input": {
-                    "text": "Research only the current company. Cover the requested market, geography, distribution, launch, and commercial section IDs using grounded public evidence. Return one JSON object only. Preserve the supplied company_id exactly. Do not invent titles, section IDs, citations, dates, markets, launches, or partnerships. Distinguish observed evidence from inference and surface uncertainty. Do not discuss or compare any other company. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
+                    "text": "Format the Previous admitted agent step result using only its grounded evidence notes and the supplied governed baseline. Do not perform new research. Preserve all evidence gaps and uncertainty. Research only the current company. Cover the requested market, geography, distribution, launch, and commercial section IDs using grounded public evidence. Return one JSON object only. Preserve the supplied company_id exactly. Do not invent titles, section IDs, citations, dates, markets, launches, or partnerships. Distinguish observed evidence from inference and surface uncertainty. Do not discuss or compare any other company. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
                   }
                 }
               ],
               "budget_policy": {
                 "max_tool_calls": 0,
-                "max_provider_calls": 1
+                "max_provider_calls": 2
               },
               "safety_policy": {
                 "store_prompt": false,
@@ -413,7 +471,7 @@
         },
         "regulatory_risk_researcher": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_regulatory_risk_researcher",
-          "contract_version": "1.0.2",
+          "contract_version": "1.0.3",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-regulatory-risk-researcher",
           "definition": {
             "registry_entries": [
@@ -444,7 +502,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_regulatory_risk_researcher",
-              "version": "1.0.2",
+              "version": "1.0.3",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -467,23 +525,52 @@
                       }
                     },
                     "generation_policy": {
-                      "max_tokens": 6144,
-                      "thinking_level": "high",
-                      "response_format": "json_object"
+                      "max_tokens": 8192,
+                      "thinking_level": "medium",
+                      "response_format": "text"
                     },
                     "search_enabled": true,
                     "search_mode": "provider_grounding",
                     "citation_policy": "refs_only",
+                    "timeout_seconds": 180
+                  },
+                  "input": {
+                    "text": "Evidence stage for the current company only. Use Google Search to verify public facts relevant to the supplied required_sections and methodology_plan. Return concise plain-text evidence notes, at most 4500 characters, organized by the supplied section and subsection IDs. Include observed facts, dates and source references where available; clearly label uncertainty and missing evidence. Do not invent facts, titles, IDs or sources and do not compare other companies. Stop once you have enough evidence to cover the requested sections or can state the remaining gaps. Do not serialize response_contract in this stage; a separate admitted step will format these notes."
+                  }
+                },
+                {
+                  "step_handle": "provider:text_generation",
+                  "required_capability": "text_generation",
+                  "provider": "vertex_ai",
+                  "provider_policy": {
+                    "provider": "vertex_ai",
+                    "model": "gemini-3.8-flash",
+                    "provider_vault": {
+                      "provider_instance_ref": "vertex-primary",
+                      "provider_family": "vertex_ai",
+                      "capability_ref": "llm.generate",
+                      "binding_id": "9ce2bed4-fae6-4147-82ee-cdc4dea300a8",
+                      "execution_project_id": "laravelai-490700",
+                      "execution_location": "global",
+                      "policy_flags": {
+                        "mode": "read_only"
+                      }
+                    },
+                    "generation_policy": {
+                      "max_tokens": 8192,
+                      "thinking_level": "medium",
+                      "response_format": "json_object"
+                    },
                     "timeout_seconds": 120
                   },
                   "input": {
-                    "text": "Research only the current company. Cover the requested regulatory, clinical, safety, manufacturing-quality, and uncertainty section IDs using grounded public evidence. Return one JSON object only. Preserve the supplied company_id exactly. Do not invent titles, section IDs, citations, approvals, clinical evidence, safety events, quality findings, or dates. Distinguish observed evidence from inference and explicitly retain unresolved uncertainty. Do not discuss or compare any other company. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
+                    "text": "Format the Previous admitted agent step result using only its grounded evidence notes and the supplied governed baseline. Do not perform new research. Preserve all evidence gaps and uncertainty. Research only the current company. Cover the requested regulatory, clinical, safety, manufacturing-quality, and uncertainty section IDs using grounded public evidence. Return one JSON object only. Preserve the supplied company_id exactly. Do not invent titles, section IDs, citations, approvals, clinical evidence, safety events, quality findings, or dates. Distinguish observed evidence from inference and explicitly retain unresolved uncertainty. Do not discuss or compare any other company. The supplied response_contract is authoritative for the complete JSON shape. Return every required field with the exact schema_version, company_id, role, status, field names, allowed enum values, and required ID ordering; do not add or omit contract fields."
                   }
                 }
               ],
               "budget_policy": {
                 "max_tool_calls": 0,
-                "max_provider_calls": 1
+                "max_provider_calls": 2
               },
               "safety_policy": {
                 "store_prompt": false,
