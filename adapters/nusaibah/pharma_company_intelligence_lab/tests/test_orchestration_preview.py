@@ -719,6 +719,114 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             "pharma_agent_business_schema_invalid",
         )
 
+    def test_planner_section_response_contract_matches_validator_invariants(self) -> None:
+        planner_chunk = {
+            "chunk_id": "portfolio_researcher:company_profile",
+            "research_role": "portfolio_researcher",
+            "section_id": "company_profile",
+            "priority_hint": "medium",
+        }
+
+        contract = planner_section_response_contract(
+            company_id=13,
+            planner_chunk=planner_chunk,
+            priority_hint="medium",
+        )
+        validation = contract["validation_contract"]
+        fields = validation["fields"]
+
+        self.assertIs(validation["exact_fields"], True)
+        self.assertEqual(
+            validation["text_normalization"],
+            "collapse_whitespace_and_trim",
+        )
+        self.assertEqual(
+            set(fields),
+            set(contract["required_fields"]),
+        )
+        self.assertEqual(fields["schema_version"]["required_value"], adapter_module.PLANNER_CHUNK_SCHEMA_VERSION)
+        self.assertEqual(fields["company_id"], {"type": "integer", "required_value": 13})
+        self.assertEqual(fields["role"]["required_value"], adapter_module.PLANNER_ROLE)
+        self.assertEqual(fields["status"]["required_value"], "completed")
+        self.assertEqual(fields["chunk_id"]["required_value"], planner_chunk["chunk_id"])
+        self.assertEqual(fields["research_role"]["required_value"], planner_chunk["research_role"])
+        self.assertEqual(fields["section_id"]["required_value"], planner_chunk["section_id"])
+        self.assertEqual(fields["priority"]["required_value"], "medium")
+        self.assertEqual(fields["priority"]["allowed_values"], sorted(adapter_module.PLANNER_PRIORITIES))
+
+        for field, minimum, maximum in (
+            ("questions", 1, adapter_module.PLANNER_MAX_QUESTIONS_PER_SECTION),
+            ("freshness_focus", 0, adapter_module.PLANNER_MAX_FRESHNESS_FOCUS_ITEMS_PER_SECTION),
+            ("evidence_focus", 0, adapter_module.PLANNER_MAX_EVIDENCE_FOCUS_ITEMS_PER_SECTION),
+            ("methodology_steps", 1, adapter_module.PLANNER_MAX_METHODOLOGY_STEPS_PER_SECTION),
+        ):
+            with self.subTest(field=field):
+                descriptor = fields[field]
+                self.assertEqual(descriptor["type"], "array")
+                self.assertEqual(descriptor["min_items"], minimum)
+                self.assertEqual(descriptor["max_items"], maximum)
+                self.assertIs(descriptor["unique_after_normalization"], True)
+                self.assertEqual(
+                    descriptor["items"],
+                    {
+                        "type": "string",
+                        "nonempty": True,
+                        "max_chars": adapter_module.PLANNER_MAX_TEXT_CHARS,
+                    },
+                )
+
+        self.assertEqual(
+            fields["priority_rationale"],
+            {
+                "type": "string",
+                "nonempty": True,
+                "max_chars": adapter_module.PLANNER_MAX_TEXT_CHARS,
+            },
+        )
+
+    def test_planner_contract_failure_exposes_only_enum_diagnostics(self) -> None:
+        planner_chunk = {
+            "chunk_id": "portfolio_researcher:company_profile",
+            "research_role": "portfolio_researcher",
+            "section_id": "company_profile",
+            "priority_hint": "medium",
+        }
+        value = {
+            "schema_version": adapter_module.PLANNER_CHUNK_SCHEMA_VERSION,
+            "company_id": 13,
+            "role": adapter_module.PLANNER_ROLE,
+            "status": "completed",
+            "chunk_id": planner_chunk["chunk_id"],
+            "research_role": planner_chunk["research_role"],
+            "section_id": planner_chunk["section_id"],
+            "priority": "medium",
+            "questions": [],
+            "freshness_focus": [],
+            "evidence_focus": [],
+            "methodology_steps": ["Verify authoritative evidence."],
+            "priority_rationale": "Baseline coverage is incomplete.",
+        }
+
+        with self.assertRaises(adapter_module.AgentContractValidationError) as raised:
+            adapter_module._validate_planner_section(
+                value,
+                company_id=13,
+                planner_chunk=planner_chunk,
+            )
+
+        self.assertEqual(
+            raised.exception.proof_failure_detail,
+            {
+                "schema_version": "proof_failure_detail.v1",
+                "proof_kind": "agent_contract",
+                "role": "methodology_planner",
+                "stage": "planner_section",
+                "rule": "item_count",
+                "field": "questions",
+            },
+        )
+        self.assertNotIn("value", raised.exception.proof_failure_detail)
+
     def test_planner_chunk_validator_accepts_required_methodology_fields(self) -> None:
         planner_chunk = {
             "chunk_id": "portfolio_researcher:company_profile",

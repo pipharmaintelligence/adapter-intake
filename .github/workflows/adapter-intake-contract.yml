@@ -46,3 +46,4 @@ jobs:
           python -m unittest discover -s adapters/nusaibah/pharma_company_intelligence_lab/tests -p "test_agent_manifest_contract.py" -v
           python -m unittest discover -s adapters/nusaibah/pharma_company_intelligence_lab/tests -p "test_import_context.py" -v
           python -m unittest discover -s adapters/nusaibah/pharma_company_intelligence_lab/tests -p "test_iteration_limits.py" -v
+          python -m unittest discover -s adapters/nusaibah/pharma_company_intelligence_lab/tests -p "test_planner_contract.py" -v

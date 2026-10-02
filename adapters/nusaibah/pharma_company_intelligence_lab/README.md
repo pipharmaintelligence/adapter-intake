@@ -4,11 +4,11 @@ Canonical adapter-intake source for `nusaibah.pharma_company_intelligence_lab`.
 
 ## Current immutable candidate
 
-`0.1.8` is the current intake candidate. It preserves the `0.1.7` successful business flow, gives each Agent role an explicit Core-governed provider request budget, and enforces hard orchestration iteration limits. This closes the configuration gap behind three successive 30-second Vertex read timeouts during deep research and stops excess logical Agent calls before dispatch.
+`0.1.9` is the current intake candidate. It preserves the `0.1.8` provider budgets and hard orchestration limits, raises the runtime floor to `pi-obs-python-runtime>=0.1.93`, and hardens the methodology-planner response contract after live company-13 preview proved that JSON mode alone did not guarantee the exact business shape enforced by Python. The planner chain advances to `1.0.4`; all other Agent chains remain at `1.0.2`.
 
 | Role | Provider request timeout | Agent contract/chain version |
 | --- | ---: | --- |
-| `methodology_planner` | 60 seconds | `1.0.3` |
+| `methodology_planner` | 60 seconds | `1.0.4` |
 | `memory_benchmark_reviewer` | 60 seconds | `1.0.2` |
 | `portfolio_researcher` | 120 seconds | `1.0.2` |
 | `market_researcher` | 120 seconds | `1.0.2` |
@@ -19,7 +19,7 @@ Canonical adapter-intake source for `nusaibah.pharma_company_intelligence_lab`.
 
 The manifest declares these as `provider_policy.timeout_seconds`. The task deadline remains 1800 seconds. Model selection, token ceilings, thinking levels, search permissions, prompts, intended call counts, provider references and storage contracts are unchanged. The adapter enforces its logical call limits; the runtime continues to own transport, retries and material refresh.
 
-Every changed Agent definition receives a new contract/chain version. Never use `--update-existing` to overwrite the chains used by published `0.1.7` or older assets. Promote the new version through the pinned intake workflow and retain older versions.
+Every changed Agent definition receives a new contract/chain version. Never use `--update-existing` to overwrite chains used by published `0.1.8` or older assets. Promote the new version through the pinned intake workflow and retain older versions.
 
 ## Hard iteration limits
 
@@ -40,9 +40,34 @@ The planner loop also checks its iteration number directly, including if an erro
 
 These are business orchestration limits, separate from runtime-owned provider retries and the 1800-second execution deadline. A call-count guard cannot interrupt a stalled network call; the governed transport timeout and worker watchdog provide that bound. The existing one-provider-call/zero-tool-call Agent chain budgets remain unchanged.
 
+## Live-readiness lessons learned
+
+The 0.1.4 through 0.1.8 closure work exposed several failure classes that must be treated as separate gates. These are now part of the release discipline for this adapter.
+
+1. **Prompt text is not the business contract.** A provider can return valid JSON with `STOP` and still violate the exact adapter validator. Every provider-facing `response_contract` must describe the same field set, field types, required values, minimum/maximum list sizes, normalization rules, enum values, and identity constraints that Python enforces. Tests must compare the model-facing contract with validator invariants before promotion.
+2. **JSON mode is syntax, not schema enforcement.** `response_format=json_object` requests JSON output, but it does not prove the model followed the adapter business schema. Keep deterministic validation in Python and do not treat provider completion as business-contract success.
+3. **Failure diagnostics must be safe, specific, and runtime-generic.** Do not store raw model output merely to debug contract failures. The adapter may emit bounded identifiers such as role, validation stage, field, and violated rule, but the shared runtime must not contain adapter keys, role lists, schema-field lists, or business-specific enums. Generated text, prompts, credentials, URLs, raw provider payloads, and storage details must never cross the diagnostic boundary.
+4. **Published versions are immutable.** Business-contract, prompt, manifest, dependency, or adapter-code changes require a new asset version. Changed Agent definitions require new contract/chain versions. Never repair an older published identity with `--update-existing`.
+5. **Shared helper coexistence is a package gate.** Retained published versions may share support files. Version-specific behavior belongs in the version-owned adapter unless a migration is explicitly compatible with every retained identity. A `shared_runtime_file_conflict` is not a provider or business-logic failure.
+6. **Package closure is separate from catalog correctness.** A runtime catalog can reference a valid versioned dependency manifest while the wheel omits that file. Built package inspection must prove every catalog-referenced manifest is present before live execution.
+7. **Registration, binding, admission, worker reachability, provider completion, and business validation are distinct gates.** Passing one does not imply the next. In particular, a ready governed binding does not admit Agent chains, and an admitted Agent chain does not prove the live planner output satisfies the adapter contract.
+8. **Row filters are not partitions.** The Companies contract remains `filters_from_variables: id <- company_ids` on an unpartitioned node. Do not convert relational IDs into partition selectors to work around authoring limitations.
+9. **Runtime and provider budgets must be proven independently.** Provider request timeout, Core material lifetime, scoped session lifetime, isolated worker watchdog, HTTP margin, queue timeout, and orchestration call caps are separate controls. Raising one does not repair another.
+10. **Windows worker stability is an environment gate.** A native interpreter/OpenSSL crash is not an adapter contract failure. Record the exact worker interpreter/runtime identity and keep native crash diagnostics enabled; do not rebuild adapter logic to compensate for a base-Python crash.
+11. **Preview precedes mutation.** A company-13 `memory_mode=preview` run must complete benchmark, all planner chunks, research, analysis, critic, synthesis, and final preview result before `memory_mode=apply` is attempted. Dynamic Skill mutation and output publication require separate readback/persistence proof.
+12. **Historical success is not current-version readiness.** A binding, Agent chain, package, or live run for 0.1.7/0.1.8 does not establish readiness for 0.1.9. Certify the exact asset version, runtime wheel, catalog identity, binding, Agent versions, and run UUID together.
+
+### 0.1.8 live failure that motivated 0.1.9
+
+Company-13 preview run `14479e38-8958-4c85-b2dd-f89b6704fd36` established the following boundary: the governed Companies selector resolved `id=13`, the replacement worker stayed alive, `memory_benchmark_reviewer@1.0.2` completed, and the first `methodology_planner@1.0.3` provider call completed with `STOP`. The adapter then failed with `pharma_agent_business_schema_invalid` before a second planner call or any research role ran.
+
+Because output storage was disabled and several validator rules shared the same failure code, the historical run could not reveal the exact invalid field. 0.1.9 therefore does two things: it makes the provider-visible planner contract explicit enough to match `_validate_planner_section()`, and it attaches enum-only proof metadata that a compatible trusted runtime can project without exposing response content.
+
+Do not call this failure repaired until a freshly promoted/package-installed 0.1.9 company-13 preview completes the entire graph.
+
 ## Inherited planner behavior
 
-The `0.1.7` planner reliability changes remain in `0.1.8`:
+The `0.1.7` planner reliability changes remain in `0.1.9`:
 
 - methodology planner Agent contract/chain: `1.0.1 -> 1.0.2`;
 - `max_tokens: 2048 -> 8192`;
@@ -63,20 +88,20 @@ Create a new asset version whenever adapter code, manifest metadata, reviewed he
 
 Retained published versions share the reviewed helper files in this folder. Version-specific behavior must stay in the version-owned adapter implementation unless a shared-helper migration is explicitly designed for every retained identity.
 
-For `0.1.8`:
+For `0.1.9`:
 
 - `agent_contract.py`, `methodology_contract.py`, `input_contract.py`, `dossier_contract.py`, and `memory_contract.py` remain byte-identical to the published `0.1.6` package;
 - the adapter retains the reviewed optional first-run methodology-read behavior from `0.1.7` and keeps the new iteration guard in its version-owned implementation;
-- `adapter.dependencies.json` raises the runtime floor to `pi-obs-python-runtime>=0.1.91`, which includes governed attempt/material budgets, scoped session admission and safe timeout diagnostics;
-- Assets promotion must retain older versions' dependency bytes and materialize the changed `0.1.8` dependency contract as a version-owned dependency manifest. It must not rewrite dependency metadata used by `0.1.0` through `0.1.7`.
+- `adapter.dependencies.json` raises the runtime floor to `pi-obs-python-runtime>=0.1.93`, which includes the long-request governance from 0.1.91, the corrected isolated-worker watchdog from 0.1.92, and bounded generic Agent-contract proof-detail projection;
+- Assets promotion must retain older versions' dependency bytes and materialize the changed `0.1.9` dependency contract as a version-owned dependency manifest. It must not rewrite dependency metadata used by `0.1.0` through `0.1.8`.
 
 This keeps the intake package current-version oriented while preserving published-version coexistence.
 
 ## Planner token-safety boundary
 
-`max_tokens` remains a hard total-output authorization. `0.1.7` does not add hidden thinking budget, retries, provider changes, or weaker validation.
+`max_tokens` remains a hard total-output authorization. `0.1.9` does not add hidden thinking budget, retries, provider changes, or weaker validation.
 
-The planner receives an 8192-token hard ceiling with medium thinking, but each provider call plans only one research section. Version 0.1.7 permits exactly four routed planner calls per company; a future change to the routed research-section count fails closed and requires a reviewed new version rather than silently increasing provider spend. Section calls are bounded to one question, one freshness-focus item, and one evidence-focus item, each at most 280 characters.
+The planner receives an 8192-token hard ceiling with medium thinking, but each provider call plans only one research section. Version 0.1.9 permits exactly four routed planner calls per company; a future change to the routed research-section count fails closed and requires a reviewed new version rather than silently increasing provider spend. Section calls are bounded to one question, one freshness-focus item, and one evidence-focus item, each at most 280 characters.
 
 The deterministic merge then enforces the final-plan limits:
 
@@ -106,7 +131,7 @@ The approved row/data mapping is `id <- company_ids`. This is not a partition ma
 
 Assets/Core resolves the governed `companies` input before Python starts. The adapter normalizes `id -> company_id` and `company -> company_name`, validates exact requested/resolved ID parity, and processes company contexts independently.
 
-A new asset version requires its own exact governed binding identity; readiness of a `0.1.7` binding does not prove `0.1.8` binding readiness.
+A new asset version requires its own exact governed binding identity; readiness of a `0.1.7` or `0.1.8` binding does not prove `0.1.9` binding readiness.
 
 ## Fixed Skill and Dynamic Skill
 
@@ -132,7 +157,7 @@ Its lifecycle is:
 - in `memory_mode=apply`, commit one complete company snapshot through preview and `apply(expected_digest)`, verify persisted content through a fresh read-only role, then verify committed history through a freshly resolved mutable role;
 - if the generated methodology snapshot is byte-equivalent to the current snapshot, treat it as an idempotent no-change outcome rather than failing the run.
 
-No Skill publication, mutation-authority, storage, or persistence behavior changes for the Fixed Skill in `0.1.8`.
+No Skill publication, mutation-authority, storage, or persistence behavior changes for the Fixed Skill in `0.1.9`.
 
 ## Format ownership
 
@@ -146,7 +171,7 @@ Promotion must preserve every already-published pharma version and must not use 
 
 ## Coordinated deployment profile
 
-The manifest is request intent. It cannot raise Core's policy ceiling, material lifetime, or session authority. Deploy Core PR #158 and Assets PR #444 (or descendants) and runtime `0.1.91` before enabling this profile. The UI policy preservation fix is needed if editing through the UI; the guarded Core command below preserves omitted policy fields.
+The manifest is request intent. It cannot raise Core's policy ceiling, material lifetime, or session authority. Deploy Core PR #158 and Assets PR #444/#453 (or descendants) and runtime `0.1.93` or later before enabling this profile. The UI policy preservation fix is needed if editing through the UI; the guarded Core command below preserves omitted policy fields.
 
 Apply the following settings in their owning application environments. These affect newly admitted work on that deployment; do not change authority beneath active sessions. Keep the global Assets `OBS_VERTEX_TIMEOUT_SECONDS` default unchanged: this asset now supplies explicit per-role budgets, so unrelated Vertex workloads retain their current request timeouts.
 
@@ -197,7 +222,7 @@ Omit every unrelated policy option. Preserve model/location selectors, tokens, t
 
 Rebuild/clear each owning Laravel config cache according to deployment practice and restart its long-lived workers. Restart the local worker with the intended environment. Keep the existing reviewed executor identity. New runs must receive the new settings; an existing admitted session is not extended.
 
-After pinned promotion of `0.1.8` and exact version binding/catalog readiness, dry-run **all eight** Agent admissions before applying them:
+After pinned promotion of `0.1.9` and exact version binding/catalog readiness, dry-run **all eight** Agent admissions before applying them:
 
 ```powershell
 $AgentRoles = @(
@@ -208,29 +233,29 @@ $AgentRoles = @(
 foreach ($Role in $AgentRoles) {
   & $AgentAdmit --env-file $ClientEnv `
     --asset-key nusaibah.pharma_company_intelligence_lab `
-    --asset-version 0.1.8 --agent-role $Role --pretty
+    --asset-version 0.1.9 --agent-role $Role --pretty
   if ($LASTEXITCODE -ne 0) { throw "Admission inspection failed: $Role" }
 }
 # After every dry-run passes and the new versions/budgets are correct:
 foreach ($Role in $AgentRoles) {
   & $AgentAdmit --env-file $ClientEnv `
     --asset-key nusaibah.pharma_company_intelligence_lab `
-    --asset-version 0.1.8 --agent-role $Role --apply --pretty
+    --asset-version 0.1.9 --agent-role $Role --apply --pretty
   if ($LASTEXITCODE -ne 0) { throw "Admission failed: $Role" }
 }
 ```
 
-`$AgentAdmit` is the installed `obs-agent-runtime-admit` executable. Reuse the existing company 13 preview inputs; provider timeout fields do not belong in caller variables. Launch `--asset-version 0.1.8 --poll-timeout 2100 --poll-interval 3`. The poll timeout controls client observation only.
+`$AgentAdmit` is the installed `obs-agent-runtime-admit` executable. Reuse the existing company 13 preview inputs; provider timeout fields do not belong in caller variables. Launch `--asset-version 0.1.9 --poll-timeout 2100 --poll-interval 3`. The poll timeout controls client observation only.
 
 ## Live proof boundary
 
 A green intake or promotion PR is not live proof.
 
-After promotion/deployment of `0.1.8`, prove independently:
+After promotion/deployment of `0.1.9`, prove independently:
 
-1. exact `0.1.8` governed Companies binding;
-2. planner `1.0.3` and all other Agent `1.0.2` admissions;
-3. exact worker/runtime catalog identity for `0.1.8`;
+1. exact `0.1.9` governed Companies binding;
+2. planner `1.0.4` and all other Agent `1.0.2` admissions;
+3. exact worker/runtime catalog identity for `0.1.9` with runtime `0.1.93` or later;
 4. company 13 preview;
 5. benchmark reviewer completion followed by methodology planner completion;
 6. remaining roles in execution order;
@@ -239,4 +264,4 @@ After promotion/deployment of `0.1.8`, prove independently:
 
 Inspect safe session/attempt metadata: admitted requests must show 60/120/180 seconds by role, Core must allow 180 seconds, material must cover the selected attempt, and the scoped session must cover the remaining task deadline without extension. Confirm the queue envelope and unchanged Bedrock primitive independently. A synthetic test or a green PR does not establish Vertex latency/capacity or end-to-end live success.
 
-Rollback: stop new `0.1.8` launches and let admitted work finish. Route back to the retained `0.1.7` package, exact binding and Agent versions, and restore the saved environment/policy values. Do not overwrite older published bytes or shorten an active session's authority.
+Rollback: stop new `0.1.9` launches and let admitted work finish. Route back to the retained `0.1.7` package, exact binding and Agent versions, and restore the saved environment/policy values. Do not overwrite older published bytes or shorten an active session's authority.
