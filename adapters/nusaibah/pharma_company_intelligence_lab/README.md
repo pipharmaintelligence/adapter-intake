@@ -93,7 +93,7 @@ For `0.1.9`:
 - `agent_contract.py`, `methodology_contract.py`, `input_contract.py`, `dossier_contract.py`, and `memory_contract.py` remain byte-identical to the published `0.1.6` package;
 - the adapter retains the reviewed optional first-run methodology-read behavior from `0.1.7` and keeps the new iteration guard in its version-owned implementation;
 - `adapter.dependencies.json` raises the runtime floor to `pi-obs-python-runtime>=0.1.93`, which includes the long-request governance from 0.1.91, the corrected isolated-worker watchdog from 0.1.92, and bounded generic Agent-contract proof-detail projection;
-- Assets promotion must retain older versions' dependency bytes and materialize the changed `0.1.8` dependency contract as a version-owned dependency manifest. It must not rewrite dependency metadata used by `0.1.0` through `0.1.7`.
+- Assets promotion must retain older versions' dependency bytes and materialize the changed `0.1.9` dependency contract as a version-owned dependency manifest. It must not rewrite dependency metadata used by `0.1.0` through `0.1.8`.
 
 This keeps the intake package current-version oriented while preserving published-version coexistence.
 
@@ -131,7 +131,7 @@ The approved row/data mapping is `id <- company_ids`. This is not a partition ma
 
 Assets/Core resolves the governed `companies` input before Python starts. The adapter normalizes `id -> company_id` and `company -> company_name`, validates exact requested/resolved ID parity, and processes company contexts independently.
 
-A new asset version requires its own exact governed binding identity; readiness of a `0.1.7` binding does not prove `0.1.8` binding readiness.
+A new asset version requires its own exact governed binding identity; readiness of a `0.1.7` or `0.1.8` binding does not prove `0.1.9` binding readiness.
 
 ## Fixed Skill and Dynamic Skill
 
@@ -255,7 +255,7 @@ After promotion/deployment of `0.1.9`, prove independently:
 
 1. exact `0.1.9` governed Companies binding;
 2. planner `1.0.4` and all other Agent `1.0.2` admissions;
-3. exact worker/runtime catalog identity for `0.1.8`;
+3. exact worker/runtime catalog identity for `0.1.9` with runtime `0.1.93` or later;
 4. company 13 preview;
 5. benchmark reviewer completion followed by methodology planner completion;
 6. remaining roles in execution order;
