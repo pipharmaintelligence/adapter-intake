@@ -11,7 +11,7 @@ This development checklist is not part of promoted runtime bytes.
 - [x] Runtime floor `pi-obs-python-runtime>=0.1.93`.
 - [x] Version-owned adapter adds thread-safe logical call budgets: 12 per company in preview, 13 in apply, at most 5 companies and 4 planner iterations.
 - [x] Guard counts failed dispatches, rejects unknown role/company scope and checks whole-batch committed-benchmark capacity before mutations.
-- [x] Shared helpers, prompts, model/token/thinking/search policy, provider references, call counts and storage contracts unchanged.
+- [x] Shared helpers, non-planner Agent prompts, model/token/thinking/search policy, provider references, call counts and storage contracts unchanged; only the planner prompt changes to expose validator-parity requirements.
 - [x] Task deadline remains 1800 seconds; caller inputs contain no provider timeout overrides.
 - [x] Planner response contract explicitly mirrors validator field types, required values, item minima/maxima, non-empty text, text bounds, normalization and duplicate rules.
 - [x] Planner/iteration failures attach enum-only diagnostic metadata; no model content is embedded.
