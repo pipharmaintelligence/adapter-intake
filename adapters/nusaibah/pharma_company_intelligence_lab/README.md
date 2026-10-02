@@ -1,5 +1,11 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.12 claim identity and diagnostics candidate
+
+The candidate is `0.1.12`, retaining all 0.1.11 agent contracts and budgets. Independent research roles may reuse local claim IDs. The deterministic join now namespaces each ID by its role and a full SHA-256 of the local identifier before analysis, critique and memory-candidate references are created. All claim statements and evidence flags are preserved; within-role duplicates and empty claims still fail. Research payload, citation and join failures carry safe role/stage/rule diagnostics without output values.
+
+This follows `67984280-3382-4d87-92cb-ad849d2043c3`, where all research calls completed but a post-research business check failed before strategy. The old safe trace did not identify the exact check; cross-role ID collision was independently reproduced from valid role-local inputs. No claim is that the hidden historical exception is proven. Business quality gates remain enforced.
+
 ## 0.1.11 bounded synthesis candidate
 
 The candidate is `0.1.11`. It retains the two-step research chains from 0.1.10 and advances the strategic analyst, evidence critic and synthesizer to chain `1.0.3`, each with a 16384-token output budget. Analysis and critique retain high thinking; synthesis uses medium thinking, still one provider step and a 180-second request timeout. Run `d717e0ef-fcbb-4420-bb45-021f62208fcf` reached the final high-thinking, 8192-token synthesizer and terminated with `provider_execution_output_limit_reached`. Run `c7a6f862-b9d7-40bc-9262-9e9aa16adec1` separately proved the critic exhausted its 6144-token budget with 5898 thought tokens and only 232 candidate tokens. This budget change preserves the full typed dossier contract; it does not accept truncated output or bypass quality gates.
