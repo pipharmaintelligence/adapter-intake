@@ -818,7 +818,7 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             raised.exception.proof_failure_detail,
             {
                 "schema_version": "proof_failure_detail.v1",
-                "proof_kind": "pharma_agent_contract",
+                "proof_kind": "agent_contract",
                 "role": "methodology_planner",
                 "stage": "planner_section",
                 "rule": "item_count",
