@@ -156,18 +156,70 @@ PLANNER_MAX_METHODOLOGY_STEPS_PER_SECTION = 2
 
 
 class AgentContractValidationError(RuntimeError):
-    """Bounded 0.1.6 business-contract failure safe for reviewed runtime projection."""
+    """Bounded business-contract failure with optional enum-only proof detail."""
 
-    def __init__(self, code: str, message: str) -> None:
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        proof_failure_detail: dict[str, Any] | None = None,
+    ) -> None:
         self.code = code
+        self.proof_failure_detail = proof_failure_detail
         super().__init__(message)
 
 
+def _agent_contract_proof_detail(
+    *,
+    role: str,
+    stage: str,
+    rule: str,
+    field: str | None = None,
+) -> dict[str, Any]:
+    """Return enum-only proof metadata; never include Agent response values."""
+
+    detail: dict[str, Any] = {
+        "schema_version": "proof_failure_detail.v1",
+        "proof_kind": "pharma_agent_contract",
+        "role": role,
+        "stage": stage,
+        "rule": rule,
+    }
+    if field is not None:
+        detail["field"] = field
+    return detail
+
+
+def _planner_contract_error(
+    message: str,
+    *,
+    rule: str,
+    field: str | None = None,
+) -> None:
+    """Raise one planner validation failure with bounded diagnostic metadata."""
+
+    raise AgentContractValidationError(
+        "pharma_agent_business_schema_invalid",
+        message,
+        proof_failure_detail=_agent_contract_proof_detail(
+            role=PLANNER_ROLE,
+            stage="planner_section",
+            rule=rule,
+            field=field,
+        ),
+    )
+
+
 def _iteration_limit_exceeded() -> None:
-    # Reuse the reviewed adapter-contract code; no runtime allowlist change.
     raise AgentContractValidationError(
         "pharma_agent_business_schema_invalid",
         "Agent iteration limit exceeded for this bounded company run.",
+        proof_failure_detail=_agent_contract_proof_detail(
+            role="orchestration",
+            stage="logical_agent_budget",
+            rule="iteration_limit",
+        ),
     )
 
 
@@ -438,6 +490,85 @@ def planner_section_response_contract(
         "section_id": planner_chunk["section_id"],
         "priority_values": sorted(PLANNER_PRIORITIES),
         "required_priority": priority_hint,
+        "validation_contract": {
+            "exact_fields": True,
+            "text_normalization": "collapse_whitespace_and_trim",
+            "fields": {
+                "schema_version": {
+                    "type": "string",
+                    "required_value": PLANNER_CHUNK_SCHEMA_VERSION,
+                },
+                "company_id": {"type": "integer", "required_value": company_id},
+                "role": {"type": "string", "required_value": PLANNER_ROLE},
+                "status": {"type": "string", "required_value": "completed"},
+                "chunk_id": {
+                    "type": "string",
+                    "required_value": planner_chunk["chunk_id"],
+                },
+                "research_role": {
+                    "type": "string",
+                    "required_value": planner_chunk["research_role"],
+                },
+                "section_id": {
+                    "type": "string",
+                    "required_value": planner_chunk["section_id"],
+                },
+                "priority": {
+                    "type": "string",
+                    "allowed_values": sorted(PLANNER_PRIORITIES),
+                    "required_value": priority_hint,
+                },
+                "questions": {
+                    "type": "array",
+                    "min_items": 1,
+                    "max_items": PLANNER_MAX_QUESTIONS_PER_SECTION,
+                    "items": {
+                        "type": "string",
+                        "nonempty": True,
+                        "max_chars": PLANNER_MAX_TEXT_CHARS,
+                    },
+                    "unique_after_normalization": True,
+                },
+                "freshness_focus": {
+                    "type": "array",
+                    "min_items": 0,
+                    "max_items": PLANNER_MAX_FRESHNESS_FOCUS_ITEMS_PER_SECTION,
+                    "items": {
+                        "type": "string",
+                        "nonempty": True,
+                        "max_chars": PLANNER_MAX_TEXT_CHARS,
+                    },
+                    "unique_after_normalization": True,
+                },
+                "evidence_focus": {
+                    "type": "array",
+                    "min_items": 0,
+                    "max_items": PLANNER_MAX_EVIDENCE_FOCUS_ITEMS_PER_SECTION,
+                    "items": {
+                        "type": "string",
+                        "nonempty": True,
+                        "max_chars": PLANNER_MAX_TEXT_CHARS,
+                    },
+                    "unique_after_normalization": True,
+                },
+                "methodology_steps": {
+                    "type": "array",
+                    "min_items": 1,
+                    "max_items": PLANNER_MAX_METHODOLOGY_STEPS_PER_SECTION,
+                    "items": {
+                        "type": "string",
+                        "nonempty": True,
+                        "max_chars": PLANNER_MAX_TEXT_CHARS,
+                    },
+                    "unique_after_normalization": True,
+                },
+                "priority_rationale": {
+                    "type": "string",
+                    "nonempty": True,
+                    "max_chars": PLANNER_MAX_TEXT_CHARS,
+                },
+            },
+        },
         "compact_limits": {
             "max_questions": PLANNER_MAX_QUESTIONS_PER_SECTION,
             "max_freshness_focus_items": PLANNER_MAX_FRESHNESS_FOCUS_ITEMS_PER_SECTION,
@@ -826,43 +957,54 @@ def _validate_planner_section(
         "priority_rationale",
     }
     if not isinstance(value, dict) or set(value) != expected_keys:
-        raise AgentContractValidationError(
-            "pharma_agent_business_schema_invalid",
+        _planner_contract_error(
             "Methodology planner chunk returned an invalid shape.",
+            rule="shape",
         )
     if value.get("schema_version") != PLANNER_CHUNK_SCHEMA_VERSION:
-        raise AgentContractValidationError(
-            "pharma_agent_business_schema_invalid",
+        _planner_contract_error(
             "Methodology planner chunk returned an invalid schema version.",
+            rule="schema_version",
+            field="schema_version",
         )
     if value.get("company_id") != company_id:
         raise AgentContractValidationError(
             "pharma_agent_company_id_invalid",
             "Methodology planner chunk returned the wrong company_id.",
         )
-    if value.get("role") != PLANNER_ROLE or value.get("status") != "completed":
-        raise AgentContractValidationError(
-            "pharma_agent_business_schema_invalid",
-            "Methodology planner chunk identity or status is invalid.",
+    if value.get("role") != PLANNER_ROLE:
+        _planner_contract_error(
+            "Methodology planner chunk role is invalid.",
+            rule="identity",
+            field="role",
+        )
+    if value.get("status") != "completed":
+        _planner_contract_error(
+            "Methodology planner chunk status is invalid.",
+            rule="identity",
+            field="status",
         )
     for field in ("chunk_id", "research_role", "section_id"):
         if value.get(field) != planner_chunk[field]:
-            raise AgentContractValidationError(
-                "pharma_agent_business_schema_invalid",
+            _planner_contract_error(
                 f"Methodology planner chunk returned the wrong {field}.",
+                rule="identity",
+                field=field,
             )
 
     priority = value.get("priority")
     if priority not in PLANNER_PRIORITIES:
-        raise AgentContractValidationError(
-            "pharma_agent_business_schema_invalid",
+        _planner_contract_error(
             "Methodology planner chunk priority is unsupported.",
+            rule="enum",
+            field="priority",
         )
     priority_hint = planner_chunk.get("priority_hint")
     if priority_hint is not None and priority != priority_hint:
-        raise AgentContractValidationError(
-            "pharma_agent_business_schema_invalid",
+        _planner_contract_error(
             "Methodology planner chunk did not preserve the deterministic priority.",
+            rule="deterministic_value",
+            field="priority",
         )
 
     questions = _planner_chunk_text_list(
@@ -914,15 +1056,23 @@ def _planner_chunk_text(
     """Normalize one bounded planner text field."""
 
     if not isinstance(value, str):
-        raise AgentContractValidationError(
-            "pharma_agent_business_schema_invalid",
+        _planner_contract_error(
             f"Methodology planner chunk {field} must contain text.",
+            rule="field_type",
+            field=field,
         )
     normalized = " ".join(value.split()).strip()
-    if not normalized or len(normalized) > PLANNER_MAX_TEXT_CHARS:
-        raise AgentContractValidationError(
-            "pharma_agent_business_schema_invalid",
+    if not normalized:
+        _planner_contract_error(
+            f"Methodology planner chunk {field} must be non-empty.",
+            rule="nonempty_text",
+            field=field,
+        )
+    if len(normalized) > PLANNER_MAX_TEXT_CHARS:
+        _planner_contract_error(
             f"Methodology planner chunk {field} exceeds the compact text bound.",
+            rule="text_bound",
+            field=field,
         )
     return normalized
 
@@ -936,32 +1086,47 @@ def _planner_chunk_text_list(
 ) -> list[str]:
     """Normalize one compact planner list without using mutable shared helpers."""
 
-    if not isinstance(value, list) or not minimum <= len(value) <= maximum:
-        raise AgentContractValidationError(
-            "pharma_agent_business_schema_invalid",
+    if not isinstance(value, list):
+        _planner_contract_error(
+            f"Methodology planner chunk {field} must be a list.",
+            rule="field_type",
+            field=field,
+        )
+    if not minimum <= len(value) <= maximum:
+        _planner_contract_error(
             f"Methodology planner chunk {field} is outside the compact item bound.",
+            rule="item_count",
+            field=field,
         )
     normalized: list[str] = []
     for raw in value:
         if not isinstance(raw, str):
-            raise AgentContractValidationError(
-                "pharma_agent_business_schema_invalid",
+            _planner_contract_error(
                 f"Methodology planner chunk {field} must contain text.",
+                rule="field_type",
+                field=field,
             )
         text = " ".join(raw.split()).strip()
-        if not text or len(text) > PLANNER_MAX_TEXT_CHARS:
-            raise AgentContractValidationError(
-                "pharma_agent_business_schema_invalid",
+        if not text:
+            _planner_contract_error(
+                f"Methodology planner chunk {field} must contain non-empty text.",
+                rule="nonempty_text",
+                field=field,
+            )
+        if len(text) > PLANNER_MAX_TEXT_CHARS:
+            _planner_contract_error(
                 f"Methodology planner chunk {field} exceeds the compact text bound.",
+                rule="text_bound",
+                field=field,
             )
         normalized.append(text)
     if len(set(normalized)) != len(normalized):
-        raise AgentContractValidationError(
-            "pharma_agent_business_schema_invalid",
+        _planner_contract_error(
             f"Methodology planner chunk {field} contains duplicates.",
+            rule="duplicate",
+            field=field,
         )
     return normalized
-
 
 def _assemble_methodology_plan(
     *,
@@ -1199,6 +1364,12 @@ def extract_agent_json(
         raise AgentContractValidationError(
             "pharma_agent_business_schema_invalid",
             f"Agent role {expected_role} returned an unexpected business schema.",
+            proof_failure_detail=_agent_contract_proof_detail(
+                role=expected_role,
+                stage="agent_business_schema",
+                rule="schema_version",
+                field="schema_version",
+            ),
         )
     if value.get("company_id") != company_id:
         raise AgentContractValidationError(
@@ -1321,7 +1492,7 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.pharma_company_intelligence_lab"
-    version: ClassVar[str] = "0.1.8"
+    version: ClassVar[str] = "0.1.9"
 
     def invoke(self, inputs: Any, context: dict[str, Any]) -> dict[str, Any]:
         """Execute one bounded company batch with two-phase memory mutation."""
