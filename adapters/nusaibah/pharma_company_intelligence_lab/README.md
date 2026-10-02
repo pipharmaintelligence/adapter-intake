@@ -1,6 +1,18 @@
 # Nusaibah Pharma Company Intelligence Lab
 
-## 0.1.12 claim identity and diagnostics candidate
+## Current validated baseline and future review direction
+
+The validated baseline is asset `0.1.12` with runtime wheel `0.1.97`, intake commit `21cc6b39492cbd3c090de537a2ee27c599f0f0ec`. Company-13 preview `6e95802c-2336-47f5-b7c2-1e30476a0fef` completed in 303 execution seconds and produced the `intelligence_dossier` output role. This establishes that preview's execution; it does not establish expert-verified factual quality, large-document review, memory apply or file publication. Assets promotion reached main through [PR #458](https://github.com/piusaibah/assets/pull/458).
+
+The current planner uses four section calls. Three research roles receive their own plan fragments and required sections, but also full bounded company memory. Each research invocation has two provider steps: grounded evidence collection, then structured formatting with the original role input and evidence notes. Analysis, critique and synthesis receive joined evidence. Specialist names therefore do not yet imply fully isolated, minimal context. The existing hard limits below still apply.
+
+The [methodology-driven specialized review design](https://github.com/piusaibah/assets/blob/1eb32db0353a3f20ef2fe5121d8a9258bfaea4be/docs/observability/methodology-specialized-review/README.md) and [PI-1972](https://linear.app/pipharma/issue/PI-1972) define **proposed future work, not shipped behavior**. Priority order is factual faithfulness, precise findings with complete review accounting, bounded execution, specialist relevance, then efficiency. Chunking is a mechanism to preserve evidence and focus review; smaller prompts alone are not a quality metric.
+
+Future implementation should first measure the current graph on domain-adjudicated cases, define evidence/coverage contracts, and project relevant memory into each role. Then introduce source inventories, structure-aware chunks and a finite task plan. Preserve tables, footnotes, dates and cross-section dependencies; distinguish reviewed material from evidence that actually supports a claim. Verify specialist findings, reconcile global contradictions and check the assembled result for newly introduced unsupported claims. A budget stop or unreviewed required material must produce an honest incomplete result. Retain preview/apply separation, company isolation, immutable versions and existing Core/runtime authority boundaries.
+
+Large-document review begins with fixtures or dummy source bindings. Real source access requires a separately reviewed binding contract. No budget reduction, new agent graph, runtime configuration or executable version change is introduced by this documentation. Release entries below preserve historical candidate investigations; their version-specific statements are not a claim that every candidate is currently active.
+
+## Release history: 0.1.12 claim identity and diagnostics candidate
 
 The candidate is `0.1.12`, retaining all 0.1.11 agent contracts and budgets. Independent research roles may reuse local claim IDs. The deterministic join now namespaces each ID by its role and a full SHA-256 of the local identifier before analysis, critique and memory-candidate references are created. All claim statements and evidence flags are preserved; within-role duplicates and empty claims still fail. Research payload, citation and join failures carry safe role/stage/rule diagnostics without output values.
 
@@ -16,7 +28,7 @@ Require Assets PR #456 including the completion/output-limit receipt detail pari
 
 ## 0.1.10 grounded research candidate
 
-The current candidate is `0.1.10`, with runtime floor `0.1.94`. The three research chains advance to `1.0.3`: an evidence step uses native Google Search with text output (8192 tokens, medium thinking, 180 seconds), then a separate non-search formatting step produces typed JSON (8192 tokens, medium thinking, 120 seconds). Native citations from the evidence turn remain in the runtime's existing multi-turn evidence contract and are required by the unchanged quality gate. Planner `1.0.4` and the other role definitions remain unchanged.
+The candidate at this investigation stage was `0.1.10`, with runtime floor `0.1.94`. The three research chains advance to `1.0.3`: an evidence step uses native Google Search with text output (8192 tokens, medium thinking, 180 seconds), then a separate non-search formatting step produces typed JSON (8192 tokens, medium thinking, 120 seconds). Native citations from the evidence turn remain in the runtime's existing multi-turn evidence contract and are required by the unchanged quality gate. Planner `1.0.4` and the other role definitions remain unchanged.
 
 This follows live run `453f2d07-ac67-48a2-8a33-3576439764b3`: the corrected Core lifetime allowed all retries, but combined grounded JSON research returned repeated empty HTTP 200 candidates or exhausted three 120-second attempts. Separation is a compatibility mitigation to verify live, not proof of the provider's internal failure cause.
 
@@ -27,9 +39,9 @@ Deployment requires Core PR #160 and Assets PR #456 (or descendants). Promote th
 
 Canonical adapter-intake source for `nusaibah.pharma_company_intelligence_lab`.
 
-## Current immutable candidate
+## Historical 0.1.9 immutable candidate
 
-`0.1.9` is the current intake candidate. It preserves the `0.1.8` provider budgets and hard orchestration limits, raises the runtime floor to `pi-obs-python-runtime>=0.1.93`, and hardens the methodology-planner response contract after live company-13 preview proved that JSON mode alone did not guarantee the exact business shape enforced by Python. The planner chain advances to `1.0.4`; all other Agent chains remain at `1.0.2`.
+`0.1.9` was the intake candidate at this investigation stage. It preserves the `0.1.8` provider budgets and hard orchestration limits, raises the runtime floor to `pi-obs-python-runtime>=0.1.93`, and hardens the methodology-planner response contract after live company-13 preview proved that JSON mode alone did not guarantee the exact business shape enforced by Python. The planner chain advances to `1.0.4`; all other Agent chains remain at `1.0.2`.
 
 | Role | Provider request timeout | Agent contract/chain version |
 | --- | ---: | --- |
@@ -63,7 +75,7 @@ A single run-local counter covers the complete prepare/apply flow. It reserves e
 
 The planner loop also checks its iteration number directly, including if an erroneous future iterator repeats indefinitely. Excess calls raise `AgentContractValidationError` with the existing reviewed `pharma_agent_business_schema_invalid` code and an iteration-limit message. The successful `logical_agent_invocations` metric comes from the actual counter.
 
-These are business orchestration limits, separate from runtime-owned provider retries and the 1800-second execution deadline. A call-count guard cannot interrupt a stalled network call; the governed transport timeout and worker watchdog provide that bound. The existing one-provider-call/zero-tool-call Agent chain budgets remain unchanged.
+These are business orchestration limits, separate from runtime-owned provider retries and the 1800-second execution deadline. A call-count guard cannot interrupt a stalled network call; the governed transport timeout and worker watchdog provide that bound. In the validated 0.1.12 graph, each research invocation has exactly two provider steps; each other role has one. Every step retains the runtime maximum of three transport attempts. Native search is admitted only by the research evidence-step contract; logical invocation limits do not count individual provider steps or attempts.
 
 ## Live-readiness lessons learned
 
