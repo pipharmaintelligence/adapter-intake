@@ -86,7 +86,7 @@ class AgentIterationLimitTests(unittest.TestCase):
             caught.exception.proof_failure_detail,
             {
                 "schema_version": "proof_failure_detail.v1",
-                "proof_kind": "pharma_agent_contract",
+                "proof_kind": "agent_contract",
                 "role": "orchestration",
                 "stage": "logical_agent_budget",
                 "rule": "iteration_limit",
