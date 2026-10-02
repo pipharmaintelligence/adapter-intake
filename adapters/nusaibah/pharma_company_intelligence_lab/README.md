@@ -1,5 +1,30 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.12 claim identity and diagnostics candidate
+
+The candidate is `0.1.12`, retaining all 0.1.11 agent contracts and budgets. Independent research roles may reuse local claim IDs. The deterministic join now namespaces each ID by its role and a full SHA-256 of the local identifier before analysis, critique and memory-candidate references are created. All claim statements and evidence flags are preserved; within-role duplicates and empty claims still fail. Research payload, citation and join failures carry safe role/stage/rule diagnostics without output values.
+
+This follows `67984280-3382-4d87-92cb-ad849d2043c3`, where all research calls completed but a post-research business check failed before strategy. The old safe trace did not identify the exact check; cross-role ID collision was independently reproduced from valid role-local inputs. No claim is that the hidden historical exception is proven. Business quality gates remain enforced.
+
+## 0.1.11 bounded synthesis candidate
+
+The candidate is `0.1.11`. It retains the two-step research chains from 0.1.10 and advances the strategic analyst, evidence critic and synthesizer to chain `1.0.3`, each with a 16384-token output budget. Analysis and critique retain high thinking; synthesis uses medium thinking, still one provider step and a 180-second request timeout. Run `d717e0ef-fcbb-4420-bb45-021f62208fcf` reached the final high-thinking, 8192-token synthesizer and terminated with `provider_execution_output_limit_reached`. Run `c7a6f862-b9d7-40bc-9262-9e9aa16adec1` separately proved the critic exhausted its 6144-token budget with 5898 thought tokens and only 232 candidate tokens. This budget change preserves the full typed dossier contract; it does not accept truncated output or bypass quality gates.
+
+The existing Vertex registration must admit a bounded 64000-character input and 16384-token output ceiling for these chains. The original 12000-character input ceiling rejected evidence-to-JSON continuations. Set these through Core's guarded provider-policy update command for the exact registration; no client/server dotenv copying is required. Publish both generated catalogs, admit the exact new chain versions and activate the version-specific Companies node-query binding.
+
+Require Assets PR #456 including the completion/output-limit receipt detail parity fix. The worker and smoke CLI load the E: project .env. Company, planner, invocation, retry and task limits remain the same as documented below. Live verification is required before treating this candidate as ready.
+
+## 0.1.10 grounded research candidate
+
+The current candidate is `0.1.10`, with runtime floor `0.1.94`. The three research chains advance to `1.0.3`: an evidence step uses native Google Search with text output (8192 tokens, medium thinking, 180 seconds), then a separate non-search formatting step produces typed JSON (8192 tokens, medium thinking, 120 seconds). Native citations from the evidence turn remain in the runtime's existing multi-turn evidence contract and are required by the unchanged quality gate. Planner `1.0.4` and the other role definitions remain unchanged.
+
+This follows live run `453f2d07-ac67-48a2-8a33-3576439764b3`: the corrected Core lifetime allowed all retries, but combined grounded JSON research returned repeated empty HTTP 200 candidates or exhausted three 120-second attempts. Separation is a compatibility mitigation to verify live, not proof of the provider's internal failure cause.
+
+The adapter still permits at most five companies, four planner chunks and 12 preview/13 apply logical agent invocations per company. Research now has exactly two admitted provider steps per invocation; each step uses the existing maximum of three attempts. The 1800-second task deadline and separate 60-second cleanup budget remain. No automatic whole-workflow retry or memory write is added.
+
+Deployment requires Core PR #160 and Assets PR #456 (or descendants). Promote this exact intake commit, retain all published versions, provision only the three new research chain versions, and prove a company-13 preview before declaring the candidate ready. The notes below preserve the preceding 0.1.9 investigation and deployment history.
+
+
 Canonical adapter-intake source for `nusaibah.pharma_company_intelligence_lab`.
 
 ## Current immutable candidate

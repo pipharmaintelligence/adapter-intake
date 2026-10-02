@@ -9,7 +9,7 @@ MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
 
-ASSET_VERSION = "0.1.9"
+ASSET_VERSION = "0.1.12"
 CANONICAL_PROVIDER_REGISTRY_ENTRY = {
     "handle": "provider:text_generation",
     "type": "provider_execution",
@@ -35,12 +35,12 @@ CANONICAL_PROVIDER_REGISTRY_ENTRY = {
 
 EXPECTED = {
     "methodology_planner": ("gemini-3.8-flash", "medium", 8192, False, 60),
-    "portfolio_researcher": ("gemini-3.8-flash", "medium", 4096, True, 120),
-    "market_researcher": ("gemini-3.8-flash", "medium", 4096, True, 120),
-    "regulatory_risk_researcher": ("gemini-3.8-flash", "high", 6144, True, 120),
-    "strategic_analyst": ("gemini-3.1-pro-preview", "high", 6144, False, 180),
-    "evidence_critic": ("gemini-3.1-pro-preview", "high", 6144, False, 180),
-    "intelligence_synthesizer": ("gemini-3.8-flash", "high", 8192, False, 180),
+    "portfolio_researcher": ("gemini-3.8-flash", "medium", 8192, True, 180),
+    "market_researcher": ("gemini-3.8-flash", "medium", 8192, True, 180),
+    "regulatory_risk_researcher": ("gemini-3.8-flash", "medium", 8192, True, 180),
+    "strategic_analyst": ("gemini-3.1-pro-preview", "high", 16384, False, 180),
+    "evidence_critic": ("gemini-3.1-pro-preview", "high", 16384, False, 180),
+    "intelligence_synthesizer": ("gemini-3.8-flash", "medium", 16384, False, 180),
     "memory_benchmark_reviewer": ("gemini-3.8-flash", "medium", 4096, False, 60),
 }
 
@@ -67,7 +67,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             dependency_manifest["runtime_package"],
             {
                 "name": "pi-obs-python-runtime",
-                "minimum_version": "0.1.93",
+                "minimum_version": "0.1.94",
             },
         )
 
@@ -133,7 +133,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         )
 
         for role, agent in self.agents.items():
-            if role == "methodology_planner":
+            if role == "methodology_planner" or role.endswith("_researcher"):
                 continue
             with self.subTest(role=role):
                 self.assertEqual(
@@ -147,7 +147,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             with self.subTest(role=role):
                 agent = self.agents[role]
                 expected_contract_version = (
-                    "1.0.4" if role == "methodology_planner" else "1.0.2"
+                    "1.0.4" if role == "methodology_planner" else ("1.0.3" if search_enabled or role in {"strategic_analyst", "evidence_critic", "intelligence_synthesizer"} else "1.0.2")
                 )
                 self.assertEqual(agent["contract_version"], expected_contract_version)
                 definition = agent["definition"]
@@ -159,10 +159,10 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
                     chain["budget_policy"],
                     {
                         "max_tool_calls": 0,
-                        "max_provider_calls": 1,
+                        "max_provider_calls": 2 if search_enabled else 1,
                     },
                 )
-                self.assertEqual(len(chain["steps"]), 1)
+                self.assertEqual(len(chain["steps"]), 2 if search_enabled else 1)
 
                 step = chain["steps"][0]
                 self.assertEqual(step["provider"], "vertex_ai")
@@ -174,12 +174,20 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
                 self.assertEqual(policy["model"], model)
                 self.assertEqual(generation["thinking_level"], thinking)
                 self.assertEqual(generation["max_tokens"], max_tokens)
-                self.assertEqual(generation["response_format"], "json_object")
+                self.assertEqual(generation["response_format"], "text" if search_enabled else "json_object")
 
                 if search_enabled:
                     self.assertIs(policy["search_enabled"], True)
                     self.assertEqual(policy["search_mode"], "provider_grounding")
                     self.assertEqual(policy["citation_policy"], "refs_only")
+                    formatter = chain["steps"][1]
+                    self.assertEqual(formatter["provider_policy"]["generation_policy"], {
+                        "max_tokens": 8192, "thinking_level": "medium", "response_format": "json_object",
+                    })
+                    self.assertEqual(formatter["provider_policy"]["timeout_seconds"], 120)
+                    self.assertNotIn("search_enabled", formatter["provider_policy"])
+                    self.assertIn("Previous admitted agent step result", formatter["input"]["text"])
+                    self.assertIn("response_contract", formatter["input"]["text"])
                 else:
                     self.assertNotIn("search_enabled", policy)
                     self.assertNotIn("search_mode", policy)
@@ -220,11 +228,12 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             "1.0.4",
         )
         for role, agent in self.agents.items():
-            if role == "methodology_planner":
+            if role == "methodology_planner" or role.endswith("_researcher"):
                 continue
             with self.subTest(role=role):
-                self.assertEqual(agent["contract_version"], "1.0.2")
-                self.assertEqual(agent["definition"]["chain"]["version"], "1.0.2")
+                expected = "1.0.3" if role in {"strategic_analyst", "evidence_critic", "intelligence_synthesizer"} else "1.0.2"
+                self.assertEqual(agent["contract_version"], expected)
+                self.assertEqual(agent["definition"]["chain"]["version"], expected)
 
     def test_methodology_planner_instruction_preserves_authority_boundaries(self) -> None:
         prompt = (
@@ -288,7 +297,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
     def test_every_role_instruction_requires_exact_supplied_response_contract(self) -> None:
         for role, agent in self.agents.items():
             with self.subTest(role=role):
-                prompt = agent["definition"]["chain"]["steps"][0]["input"]["text"]
+                prompt = agent["definition"]["chain"]["steps"][-1]["input"]["text"]
                 self.assertIn(
                     "response_contract is authoritative for the complete JSON shape",
                     prompt,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
+from hashlib import sha256
 from threading import Lock
 from typing import Any, ClassVar
 
@@ -1492,7 +1493,7 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.pharma_company_intelligence_lab"
-    version: ClassVar[str] = "0.1.9"
+    version: ClassVar[str] = "0.1.12"
 
     def invoke(self, inputs: Any, context: dict[str, Any]) -> dict[str, Any]:
         """Execute one bounded company batch with two-phase memory mutation."""
@@ -1961,8 +1962,26 @@ def _run_research_fanout(
             company_id=company_id,
             expected_schema_version=RESEARCH_SCHEMA_VERSION,
         )
-        payload = validate_research_payload(value, role=role, company_id=company_id)
-        payload["_citations"] = _agent_citations(agent_result)
+        try:
+            payload = validate_research_payload(value, role=role, company_id=company_id)
+        except (ValueError, RuntimeError) as exc:
+            raise AgentContractValidationError(
+                "pharma_agent_business_schema_invalid",
+                "Research payload failed its declared business contract.",
+                proof_failure_detail=_agent_contract_proof_detail(
+                    role=role, stage="research_payload", rule="invalid_schema",
+                ),
+            ) from exc
+        try:
+            payload["_citations"] = _agent_citations(agent_result)
+        except ValueError as exc:
+            raise AgentContractValidationError(
+                "pharma_agent_business_schema_invalid",
+                "Research citation evidence failed its runtime contract.",
+                proof_failure_detail=_agent_contract_proof_detail(
+                    role=role, stage="research_citations", rule="invalid_schema",
+                ),
+            ) from exc
         return payload
 
     with ThreadPoolExecutor(max_workers=3, thread_name_prefix="pharma-research") as pool:
@@ -1984,12 +2003,27 @@ def _join_research(research: dict[str, dict[str, Any]]) -> dict[str, Any]:
     for role in RESEARCH_ROLES:
         payload = research[role]
         if not payload["claims"]:
-            raise RuntimeError(f"Research role {role} returned no claims.")
+            raise AgentContractValidationError(
+                "pharma_agent_business_schema_invalid",
+                "Research role returned no claims.",
+                proof_failure_detail=_agent_contract_proof_detail(
+                    role=role, stage="research_join", rule="missing_claims", field="claims",
+                ),
+            )
         for claim in payload["claims"]:
-            if claim["claim_id"] in seen_claim_ids:
-                raise RuntimeError("Research claim_id values must be unique across roles.")
-            seen_claim_ids.add(claim["claim_id"])
-            claims.append(claim)
+            # Independent research roles own local identifiers. Freeze a bounded
+            # role-qualified identity before any downstream claim references exist.
+            claim_id = f"{role}:{sha256(claim['claim_id'].encode('utf-8')).hexdigest()}"
+            if claim_id in seen_claim_ids:
+                raise AgentContractValidationError(
+                    "pharma_agent_business_schema_invalid",
+                    "Research claim_id values must be unique within one role.",
+                    proof_failure_detail=_agent_contract_proof_detail(
+                        role=role, stage="research_join", rule="duplicate_claim_id", field="claim_id",
+                    ),
+                )
+            seen_claim_ids.add(claim_id)
+            claims.append({**claim, "claim_id": claim_id})
         sections.extend(payload["sections"])
         uncertainties.extend(payload["uncertainties"])
         citations.extend(payload["_citations"])
