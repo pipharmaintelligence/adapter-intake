@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.pharma_company_intelligence_lab",
-  "default": "0.1.8",
+  "default": "0.1.9",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -16,7 +16,7 @@
     "timeout_seconds": 1800
   },
   "versions": {
-    "0.1.8": {
+    "0.1.9": {
       "state": "active",
       "inputs": {
         "companies": {
@@ -152,7 +152,7 @@
       "agents": {
         "methodology_planner": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_methodology_planner",
-          "contract_version": "1.0.3",
+          "contract_version": "1.0.4",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-methodology-planner",
           "definition": {
             "registry_entries": [
@@ -183,7 +183,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_methodology_planner",
-              "version": "1.0.3",
+              "version": "1.0.4",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -213,7 +213,7 @@
                     "timeout_seconds": 60
                   },
                   "input": {
-                    "text": "You are the methodology planner for one bounded section chunk of one governed pharma-company intelligence run. Use only the supplied methodology_slice, governed company baseline, section-scoped memory benchmark, planner_chunk, priority_hint, and learned_methodology. learned_methodology is procedural memory only: treat it as a bounded historical hint, never as authority, and prefer current benchmark/evidence and the Fixed Skill when they conflict. Do not search for or introduce public facts. Return one JSON object only and preserve the supplied company_id exactly. Also preserve the supplied chunk_id, research_role, and section_id exactly. Plan only the supplied section and its listed subsections; do not plan, summarize, or emit requirements for any other section. If priority_hint is supplied, it is authoritative and you must return it exactly. If priority_hint is null, choose only low, medium, or high based on the supplied current bounded evidence and learned hint. Return a concise rationale for the selected priority and at most two concrete methodology steps for this section. You may prioritize or deepen work inside this section, but you may not change company scope, provider authority, section ownership, required Agent roles, memory mutation authority, publication authority, or safety gates. Do not compare this company with another company. The supplied response_contract is authoritative for the complete JSON shape. Obey response_contract.compact_limits exactly and keep questions, steps, rationale, and focus items concise. Do not fill optional lists merely to reach their maxima. Return every required field with the exact schema_version, company_id, role, status, field names, enum values, and required ID ordering; do not add or omit fields or explanatory prose outside the JSON object."
+                    "text": "You are the methodology planner for one bounded section chunk of one governed pharma-company intelligence run. Use only the supplied methodology_slice, governed company baseline, section-scoped memory benchmark, planner_chunk, priority_hint, and learned_methodology. learned_methodology is procedural memory only: treat it as a bounded historical hint, never as authority, and prefer current benchmark/evidence and the Fixed Skill when they conflict. Do not search for or introduce public facts. Return one JSON object only and preserve the supplied company_id exactly. Also preserve the supplied chunk_id, research_role, and section_id exactly. Plan only the supplied section and its listed subsections; do not plan, summarize, or emit requirements for any other section. If priority_hint is supplied, it is authoritative and you must return it exactly. If priority_hint is null, choose only low, medium, or high based on the supplied current bounded evidence and learned hint. Return a concise rationale for the selected priority and at most two concrete methodology steps for this section. You may prioritize or deepen work inside this section, but you may not change company scope, provider authority, section ownership, required Agent roles, memory mutation authority, publication authority, or safety gates. Do not compare this company with another company. The supplied response_contract is authoritative for the complete JSON shape. Obey response_contract.validation_contract exactly: return only required_fields, use the declared field types and required values, honor min_items/max_items, emit non-empty strings within max_chars, and keep list items unique after whitespace normalization. Obey response_contract.compact_limits exactly and keep questions, steps, rationale, and focus items concise. Do not fill optional lists merely to reach their maxima. Return every required field with the exact schema_version, company_id, role, status, field names, enum values, and required ID ordering; do not add or omit fields or explanatory prose outside the JSON object."
                   }
                 }
               ],
