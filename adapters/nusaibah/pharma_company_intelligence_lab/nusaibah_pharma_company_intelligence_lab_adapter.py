@@ -181,7 +181,7 @@ def _agent_contract_proof_detail(
 
     detail: dict[str, Any] = {
         "schema_version": "proof_failure_detail.v1",
-        "proof_kind": "pharma_agent_contract",
+        "proof_kind": "agent_contract",
         "role": role,
         "stage": stage,
         "rule": rule,
