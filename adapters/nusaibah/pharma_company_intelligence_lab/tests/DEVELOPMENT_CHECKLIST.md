@@ -38,7 +38,7 @@ These remain operational acceptance gates, not claims made by offline tests.
 - [ ] Worker uses admission v2; task authority is bounded and never extended by refresh.
 - [ ] Separate cleanup budget 60 seconds, job timeout 1920 seconds, queue reservation greater than job timeout and supervisor grace verified.
 - [ ] Exact 0.1.9 Companies binding and worker catalog are ready.
-- [ ] All eight new Agent versions pass dry-run before application; older chains are retained.
+- [ ] All eight `0.1.9` role admissions pass dry-run before application; planner uses new `1.0.4`, unchanged roles reuse their reviewed `1.0.2` definitions, and older chains are retained.
 - [ ] New session shows requested 60/120/180-second budgets with sufficient material lifetime.
 - [ ] Company 13 preview completes the entire graph without mutation/publication.
 - [ ] Existing Bedrock primitive remains valid under the deployment profile.
