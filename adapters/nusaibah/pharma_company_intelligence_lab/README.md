@@ -1,5 +1,13 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.11 bounded synthesis candidate
+
+The candidate is `0.1.11`. It retains the two-step research chains from 0.1.10 and advances the strategic analyst, evidence critic and synthesizer to chain `1.0.3`, each with a 16384-token output budget. Analysis and critique retain high thinking; synthesis uses medium thinking, still one provider step and a 180-second request timeout. Run `d717e0ef-fcbb-4420-bb45-021f62208fcf` reached the final high-thinking, 8192-token synthesizer and terminated with `provider_execution_output_limit_reached`. Run `c7a6f862-b9d7-40bc-9262-9e9aa16adec1` separately proved the critic exhausted its 6144-token budget with 5898 thought tokens and only 232 candidate tokens. This budget change preserves the full typed dossier contract; it does not accept truncated output or bypass quality gates.
+
+The existing Vertex registration must admit a bounded 64000-character input and 16384-token output ceiling for these chains. The original 12000-character input ceiling rejected evidence-to-JSON continuations. Set these through Core's guarded provider-policy update command for the exact registration; no client/server dotenv copying is required. Publish both generated catalogs, admit the exact new chain versions and activate the version-specific Companies node-query binding.
+
+Require Assets PR #456 including the completion/output-limit receipt detail parity fix. The worker and smoke CLI load the E: project .env. Company, planner, invocation, retry and task limits remain the same as documented below. Live verification is required before treating this candidate as ready.
+
 ## 0.1.10 grounded research candidate
 
 The current candidate is `0.1.10`, with runtime floor `0.1.94`. The three research chains advance to `1.0.3`: an evidence step uses native Google Search with text output (8192 tokens, medium thinking, 180 seconds), then a separate non-search formatting step produces typed JSON (8192 tokens, medium thinking, 120 seconds). Native citations from the evidence turn remain in the runtime's existing multi-turn evidence contract and are required by the unchanged quality gate. Planner `1.0.4` and the other role definitions remain unchanged.

@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.pharma_company_intelligence_lab",
-  "default": "0.1.10",
+  "default": "0.1.11",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -16,7 +16,7 @@
     "timeout_seconds": 1800
   },
   "versions": {
-    "0.1.10": {
+    "0.1.11": {
       "state": "active",
       "inputs": {
         "companies": {
@@ -588,7 +588,7 @@
         },
         "strategic_analyst": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_strategic_analyst",
-          "contract_version": "1.0.2",
+          "contract_version": "1.0.3",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-strategic-analyst",
           "definition": {
             "registry_entries": [
@@ -619,7 +619,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_strategic_analyst",
-              "version": "1.0.2",
+              "version": "1.0.3",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -642,7 +642,7 @@
                       }
                     },
                     "generation_policy": {
-                      "max_tokens": 6144,
+                      "max_tokens": 16384,
                       "thinking_level": "high",
                       "response_format": "json_object"
                     },
@@ -673,7 +673,7 @@
         },
         "evidence_critic": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_evidence_critic",
-          "contract_version": "1.0.2",
+          "contract_version": "1.0.3",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-evidence-critic",
           "definition": {
             "registry_entries": [
@@ -704,7 +704,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_evidence_critic",
-              "version": "1.0.2",
+              "version": "1.0.3",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -727,7 +727,7 @@
                       }
                     },
                     "generation_policy": {
-                      "max_tokens": 6144,
+                      "max_tokens": 16384,
                       "thinking_level": "high",
                       "response_format": "json_object"
                     },
@@ -758,7 +758,7 @@
         },
         "intelligence_synthesizer": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_intelligence_synthesizer",
-          "contract_version": "1.0.2",
+          "contract_version": "1.0.3",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-intelligence-synthesizer",
           "definition": {
             "registry_entries": [
@@ -789,7 +789,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_intelligence_synthesizer",
-              "version": "1.0.2",
+              "version": "1.0.3",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -812,8 +812,8 @@
                       }
                     },
                     "generation_policy": {
-                      "max_tokens": 8192,
-                      "thinking_level": "high",
+                      "max_tokens": 16384,
+                      "thinking_level": "medium",
                       "response_format": "json_object"
                     },
                     "timeout_seconds": 180

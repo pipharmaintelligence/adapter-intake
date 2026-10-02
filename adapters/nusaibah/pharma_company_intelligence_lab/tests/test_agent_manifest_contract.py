@@ -9,7 +9,7 @@ MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
 
-ASSET_VERSION = "0.1.10"
+ASSET_VERSION = "0.1.11"
 CANONICAL_PROVIDER_REGISTRY_ENTRY = {
     "handle": "provider:text_generation",
     "type": "provider_execution",
@@ -38,9 +38,9 @@ EXPECTED = {
     "portfolio_researcher": ("gemini-3.8-flash", "medium", 8192, True, 180),
     "market_researcher": ("gemini-3.8-flash", "medium", 8192, True, 180),
     "regulatory_risk_researcher": ("gemini-3.8-flash", "medium", 8192, True, 180),
-    "strategic_analyst": ("gemini-3.1-pro-preview", "high", 6144, False, 180),
-    "evidence_critic": ("gemini-3.1-pro-preview", "high", 6144, False, 180),
-    "intelligence_synthesizer": ("gemini-3.8-flash", "high", 8192, False, 180),
+    "strategic_analyst": ("gemini-3.1-pro-preview", "high", 16384, False, 180),
+    "evidence_critic": ("gemini-3.1-pro-preview", "high", 16384, False, 180),
+    "intelligence_synthesizer": ("gemini-3.8-flash", "medium", 16384, False, 180),
     "memory_benchmark_reviewer": ("gemini-3.8-flash", "medium", 4096, False, 60),
 }
 
@@ -147,7 +147,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             with self.subTest(role=role):
                 agent = self.agents[role]
                 expected_contract_version = (
-                    "1.0.4" if role == "methodology_planner" else ("1.0.3" if search_enabled else "1.0.2")
+                    "1.0.4" if role == "methodology_planner" else ("1.0.3" if search_enabled or role in {"strategic_analyst", "evidence_critic", "intelligence_synthesizer"} else "1.0.2")
                 )
                 self.assertEqual(agent["contract_version"], expected_contract_version)
                 definition = agent["definition"]
@@ -231,8 +231,9 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             if role == "methodology_planner" or role.endswith("_researcher"):
                 continue
             with self.subTest(role=role):
-                self.assertEqual(agent["contract_version"], "1.0.2")
-                self.assertEqual(agent["definition"]["chain"]["version"], "1.0.2")
+                expected = "1.0.3" if role in {"strategic_analyst", "evidence_critic", "intelligence_synthesizer"} else "1.0.2"
+                self.assertEqual(agent["contract_version"], expected)
+                self.assertEqual(agent["definition"]["chain"]["version"], expected)
 
     def test_methodology_planner_instruction_preserves_authority_boundaries(self) -> None:
         prompt = (
