@@ -82,6 +82,16 @@ class AgentIterationLimitTests(unittest.TestCase):
         with self.assertRaises(adapter.AgentContractValidationError) as caught:
             inputs.invoke_agent("methodology_planner", input={"company_id": 13})
         self.assertEqual(caught.exception.code, "pharma_agent_business_schema_invalid")
+        self.assertEqual(
+            caught.exception.proof_failure_detail,
+            {
+                "schema_version": "proof_failure_detail.v1",
+                "proof_kind": "pharma_agent_contract",
+                "role": "orchestration",
+                "stage": "logical_agent_budget",
+                "rule": "iteration_limit",
+            },
+        )
         self.assertEqual(len(runtime.calls), 4)
 
     def test_parallel_duplicate_role_cannot_race_past_its_limit(self):
