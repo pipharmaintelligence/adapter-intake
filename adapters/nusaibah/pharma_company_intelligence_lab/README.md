@@ -4,7 +4,7 @@ Canonical adapter-intake source for `nusaibah.pharma_company_intelligence_lab`.
 
 ## Current immutable candidate
 
-`0.1.9` is the current intake candidate. It preserves the `0.1.8` provider budgets and hard orchestration limits, raises the runtime floor to `pi-obs-python-runtime>=0.1.92`, and hardens the methodology-planner response contract after live company-13 preview proved that JSON mode alone did not guarantee the exact business shape enforced by Python. The planner chain advances to `1.0.4`; all other Agent chains remain at `1.0.2`.
+`0.1.9` is the current intake candidate. It preserves the `0.1.8` provider budgets and hard orchestration limits, raises the runtime floor to `pi-obs-python-runtime>=0.1.93`, and hardens the methodology-planner response contract after live company-13 preview proved that JSON mode alone did not guarantee the exact business shape enforced by Python. The planner chain advances to `1.0.4`; all other Agent chains remain at `1.0.2`.
 
 | Role | Provider request timeout | Agent contract/chain version |
 | --- | ---: | --- |
@@ -92,7 +92,7 @@ For `0.1.9`:
 
 - `agent_contract.py`, `methodology_contract.py`, `input_contract.py`, `dossier_contract.py`, and `memory_contract.py` remain byte-identical to the published `0.1.6` package;
 - the adapter retains the reviewed optional first-run methodology-read behavior from `0.1.7` and keeps the new iteration guard in its version-owned implementation;
-- `adapter.dependencies.json` raises the runtime floor to `pi-obs-python-runtime>=0.1.92`, which includes the long-request governance from 0.1.91 plus the corrected isolated-worker watchdog for a bounded task+cleanup envelope;
+- `adapter.dependencies.json` raises the runtime floor to `pi-obs-python-runtime>=0.1.93`, which includes the long-request governance from 0.1.91, the corrected isolated-worker watchdog from 0.1.92, and bounded pharma Agent-contract proof-detail projection;
 - Assets promotion must retain older versions' dependency bytes and materialize the changed `0.1.8` dependency contract as a version-owned dependency manifest. It must not rewrite dependency metadata used by `0.1.0` through `0.1.7`.
 
 This keeps the intake package current-version oriented while preserving published-version coexistence.
@@ -171,7 +171,7 @@ Promotion must preserve every already-published pharma version and must not use 
 
 ## Coordinated deployment profile
 
-The manifest is request intent. It cannot raise Core's policy ceiling, material lifetime, or session authority. Deploy Core PR #158 and Assets PR #444/#453 (or descendants) and runtime `0.1.92` or later before enabling this profile. The UI policy preservation fix is needed if editing through the UI; the guarded Core command below preserves omitted policy fields.
+The manifest is request intent. It cannot raise Core's policy ceiling, material lifetime, or session authority. Deploy Core PR #158 and Assets PR #444/#453 (or descendants) and runtime `0.1.93` or later before enabling this profile. The UI policy preservation fix is needed if editing through the UI; the guarded Core command below preserves omitted policy fields.
 
 Apply the following settings in their owning application environments. These affect newly admitted work on that deployment; do not change authority beneath active sessions. Keep the global Assets `OBS_VERTEX_TIMEOUT_SECONDS` default unchanged: this asset now supplies explicit per-role budgets, so unrelated Vertex workloads retain their current request timeouts.
 
