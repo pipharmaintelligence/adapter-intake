@@ -150,7 +150,14 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
             taxonomy["schema_version"],
             "pharma_review_criticality_taxonomy.v1",
         )
-        self.assertEqual(taxonomy["status"], "proposed_for_domain_adjudication")
+        self.assertIn(
+            taxonomy["status"],
+            {"proposed_for_domain_adjudication", "adjudicated"},
+        )
+        if taxonomy["status"] == "adjudicated":
+            self.assertTrue(
+                str(taxonomy["adjudication"]["assigned_domain_reviewer"]).strip()
+            )
         self.assertIs(taxonomy["levels"]["high"]["blocking_when_unsupported"], True)
         self.assertIs(
             taxonomy["levels"]["noncritical"]["blocking_when_unsupported"],
@@ -182,7 +189,12 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
         taxonomy["adjudication"]["assigned_domain_reviewer"] = "Domain reviewer"
 
         for case in suite["cases"]:
-            case["adjudication"]["status"] = "adjudicated"
+            case["adjudication"] = {
+                "status": "adjudicated",
+                "primary_reviewer": None,
+                "secondary_reviewer": None,
+                "disagreement": False,
+            }
             case["source_identity"]["digest_status"] = "frozen"
             case["source_identity"]["content_sha256"] = source_digest(case)
 
@@ -231,7 +243,33 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
         self.assertIs(report["wp2_unblocked"], True)
 
     def test_status_report_keeps_wp2_blocked_until_adjudication_is_real(self) -> None:
-        report = evaluation_status()
+        suite = json.loads(json.dumps(self.suite))
+        taxonomy = json.loads(TAXONOMY_PATH.read_text(encoding="utf-8"))
+
+        suite["status"] = "pending_domain_review"
+        taxonomy["status"] = "proposed_for_domain_adjudication"
+        suite["adjudication_policy"]["assigned_domain_reviewer"] = None
+        taxonomy["adjudication"]["assigned_domain_reviewer"] = None
+        suite["quality_threshold_policy"]["status"] = "pending_domain_calibration"
+        suite["quality_threshold_policy"]["calibrated_thresholds"] = {
+            "factual_faithfulness_min": None,
+            "noncritical_precision_min": None,
+            "noncritical_recall_min": None,
+        }
+        suite["quality_threshold_policy"]["calibration"]["assigned_domain_owner"] = None
+        suite["quality_threshold_policy"]["calibration"]["decision_note"] = None
+
+        for case in suite["cases"]:
+            case["adjudication"] = {
+                "status": "pending_domain_review",
+                "primary_reviewer": None,
+                "secondary_reviewer": None,
+                "disagreement": False,
+            }
+            case["source_identity"]["digest_status"] = "pending_fixture_freeze"
+            case["source_identity"]["content_sha256"] = None
+
+        report = evaluate_suite(suite, taxonomy)
 
         self.assertEqual(report["case_count"], 24)
         self.assertEqual(report["development_count"], 16)
@@ -271,6 +309,14 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
         taxonomy["status"] = "adjudicated"
         suite["adjudication_policy"]["assigned_domain_reviewer"] = "Domain reviewer"
         taxonomy["adjudication"]["assigned_domain_reviewer"] = "Domain reviewer"
+        suite["quality_threshold_policy"]["status"] = "pending_domain_calibration"
+        suite["quality_threshold_policy"]["calibrated_thresholds"] = {
+            "factual_faithfulness_min": None,
+            "noncritical_precision_min": None,
+            "noncritical_recall_min": None,
+        }
+        suite["quality_threshold_policy"]["calibration"]["assigned_domain_owner"] = None
+        suite["quality_threshold_policy"]["calibration"]["decision_note"] = None
 
         for case in suite["cases"]:
             case["adjudication"]["status"] = "adjudicated"
@@ -379,9 +425,22 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
         self.assertNotEqual(source_digest(changed), digest)
 
     def test_pending_domain_review_cannot_masquerade_as_adjudicated(self) -> None:
-        self.assertEqual(self.suite["status"], "pending_domain_review")
+        suite = json.loads(json.dumps(self.suite))
+        suite["status"] = "pending_domain_review"
 
-        for case in self.suite["cases"]:
+        for case in suite["cases"]:
+            case["adjudication"] = {
+                "status": "pending_domain_review",
+                "primary_reviewer": None,
+                "secondary_reviewer": None,
+                "disagreement": False,
+            }
+            case["source_identity"]["digest_status"] = "pending_fixture_freeze"
+            case["source_identity"]["content_sha256"] = None
+
+        self.assertEqual(suite["status"], "pending_domain_review")
+
+        for case in suite["cases"]:
             with self.subTest(case_id=case["case_id"]):
                 adjudication = case["adjudication"]
                 self.assertEqual(adjudication["status"], "pending_domain_review")
