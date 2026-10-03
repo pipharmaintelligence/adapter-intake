@@ -142,7 +142,10 @@ def build_measurement_template(suite: dict[str, Any]) -> dict[str, Any]:
                 "noncritical_true_positive": None,
                 "noncritical_false_positive": None,
                 "noncritical_false_negative": None,
-                "critical_expected": None,
+                "critical_expected": sum(
+                    finding.get("criticality") == "high"
+                    for finding in case["candidate_expected_findings"]
+                ),
                 "critical_recovered": None,
                 "accepted_unsupported_high_impact": None,
                 "expected_complete": case["candidate_expected_complete"],
@@ -252,6 +255,19 @@ def evaluate_baseline_measurement(
         if not isinstance(run_id, str) or not run_id.strip():
             raise BaselineMeasurementError(f"{case_id}.run_id is required.")
 
+        expected_critical = sum(
+            finding.get("criticality") == "high"
+            for finding in expected_case["candidate_expected_findings"]
+        )
+        reported_critical = _nonnegative_int(
+            observation.get("critical_expected"),
+            field=f"{case_id}.critical_expected",
+        )
+        if reported_critical != expected_critical:
+            raise BaselineMeasurementError(
+                f"{case_id}.critical_expected does not match adjudicated truth."
+            )
+
         for field in control_failures:
             control_failures[field] += _nonnegative_int(
                 observation.get(field),
@@ -280,10 +296,7 @@ def evaluate_baseline_measurement(
                     observation.get("noncritical_false_negative"),
                     field=f"{case_id}.noncritical_false_negative",
                 ),
-                "critical_expected": _nonnegative_int(
-                    observation.get("critical_expected"),
-                    field=f"{case_id}.critical_expected",
-                ),
+                "critical_expected": expected_critical,
                 "critical_recovered": _nonnegative_int(
                     observation.get("critical_recovered"),
                     field=f"{case_id}.critical_recovered",
