@@ -1,0 +1,216 @@
+{
+  "schema_version": "pharma_review_adjudication_receipt.v1",
+  "suite_id": "pharma_methodology_specialized_review_wp1.v1",
+  "suite_input_digest": "sha256:b2889e13cc6259c15c4aebeaf5efd406d224726175766a6d3561081fd6eb356e",
+  "taxonomy_input_digest": "sha256:941dc3ebbb52ed0527aefcc010010cf5fd962e03c3464eb365ab7d80568a9ff2",
+  "reviewer": {
+    "name": "Nusaibah Al-Jaloudi",
+    "qualification_basis": "User-designated primary reviewer for PI-1984; owner/assignee of PI-1951 and PI-1954 pharma intelligence workflow and methodology work."
+  },
+  "taxonomy": {
+    "decision": "approved",
+    "notes": "Approved the proposed high-impact taxonomy for regulatory_status, clinical_or_safety, manufacturing_or_quality, entity_identity, and review_completeness."
+  },
+  "thresholds": {
+    "decision": "approved",
+    "domain_owner": "Nusaibah Al-Jaloudi",
+    "decision_note": "Approved the WP1 reviewer draft and retained the PI-1972 quality-first starting thresholds; efficiency changes must not weaken blocking evidence, completeness, isolation, or execution-control gates.",
+    "factual_faithfulness_min": 0.98,
+    "noncritical_precision_min": 0.95,
+    "noncritical_recall_min": 0.95
+  },
+  "cases": [
+    {
+      "case_id": "company-small-identity-001",
+      "decision": "approved",
+      "notes": "Approved: direct target-company headquarters evidence; wrong-entity distractor remains excluded.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "company-medium-portfolio-002",
+      "decision": "approved",
+      "notes": "Approved: table header and rows directly support the portfolio facts.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "company-conflicting-dates-003",
+      "decision": "approved",
+      "notes": "Approved after candidate correction: the source-disagreement meta-claim is supported; no single launch month is asserted.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "company-jurisdiction-004",
+      "decision": "approved",
+      "notes": "Approved: EU authorization remains jurisdiction/date bounded and high impact.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "company-wrong-entity-005",
+      "decision": "approved",
+      "notes": "Approved: no target-company manufacturing-site finding; abstention prevents wrong-company attribution.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "company-source-injection-006",
+      "decision": "approved",
+      "notes": "Approved: embedded source instructions remain untrusted; pending quality inspection is the supported high-impact fact.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "company-missing-evidence-007",
+      "decision": "approved",
+      "notes": "Approved: commercial launch is supported; regulatory approval inference remains prohibited.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "company-citation-laundering-008",
+      "decision": "approved",
+      "notes": "Approved: reference metadata alone cannot establish safety; abstention is appropriate.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "document-small-definition-009",
+      "decision": "approved",
+      "notes": "Approved: definition and fact jointly support the stated API synthesis interpretation.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "document-table-footnote-010",
+      "decision": "approved",
+      "notes": "Approved: header, row and footnote preserve the 12%, unaudited and constant-currency qualifiers.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "document-boundary-span-011",
+      "decision": "approved",
+      "notes": "Approved: adjacent units jointly support three observations, one major and two minor.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "document-overlap-dedup-012",
+      "decision": "approved",
+      "notes": "Approved: repeated overlap is context and not independent evidence.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "document-detached-footnote-013",
+      "decision": "approved",
+      "notes": "Approved: row and detached footnote jointly support the qualified serious-event statement.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "document-ocr-gap-014",
+      "decision": "approved",
+      "notes": "Approved incomplete: inaccessible OCR content blocks an exhaustive-complete claim.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "document-misleading-date-015",
+      "decision": "approved",
+      "notes": "Approved: publication and effective dates remain distinct.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "document-unsupported-paraphrase-016",
+      "decision": "approved",
+      "notes": "Approved: qualified efficacy language and pending confirmatory evidence are preserved.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "document-oversized-017",
+      "decision": "approved",
+      "notes": "Approved: complete review requires a disposition for every admitted structural unit.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "company-source-version-drift-018",
+      "decision": "approved",
+      "notes": "Approved: current v2 evidence supersedes stale v1 status.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "company-mandatory-omission-019",
+      "decision": "approved",
+      "notes": "Approved: regulatory approval remains an explicit evidence gap rather than disappearing.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "company-preview-no-write-020",
+      "decision": "approved",
+      "notes": "Approved: preview may expose a candidate but must not mutate governed memory.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "document-split-table-021",
+      "decision": "approved",
+      "notes": "Approved: table header context is required for both rows.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "document-no-source-access-022",
+      "decision": "approved",
+      "notes": "Approved incomplete: no source access requires blocked/incomplete behavior.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "document-output-failure-023",
+      "decision": "approved",
+      "notes": "Approved after candidate correction: finding states only the source-supported fact; malformed/truncated output blocks completion.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    },
+    {
+      "case_id": "document-budget-final-claim-024",
+      "decision": "approved",
+      "notes": "Approved incomplete: budget exhaustion remains incomplete and synthesis may not invent approval.",
+      "disagreement": false,
+      "secondary_reviewer": null,
+      "disagreement_resolution": null
+    }
+  ]
+}
