@@ -231,6 +231,9 @@ def validate_review_task(
             "logical_call_budget",
             "provider_step_budget",
             "transport_attempt_budget",
+            "input_char_budget",
+            "output_token_budget",
+            "timeout_seconds",
         },
         field="review_task",
     )
@@ -254,7 +257,14 @@ def validate_review_task(
     if not set(chunk_ids).issubset(known_chunk_ids):
         raise ReviewContractError("Task chunk IDs must be admitted.")
     _require_text_list(obj["memory_ref_ids"], field="review_task.memory_ref_ids")
-    for field in ("logical_call_budget", "provider_step_budget", "transport_attempt_budget"):
+    for field in (
+        "logical_call_budget",
+        "provider_step_budget",
+        "transport_attempt_budget",
+        "input_char_budget",
+        "output_token_budget",
+        "timeout_seconds",
+    ):
         _positive_integer(obj[field], field=f"review_task.{field}")
     return dict(obj)
 
@@ -274,6 +284,8 @@ def validate_finding(
             "entity_id",
             "requirement_id",
             "section_id",
+            "proposition_id",
+            "polarity",
             "statement",
             "evidence_refs",
             "contradicting_evidence_refs",
@@ -289,8 +301,17 @@ def validate_finding(
     )
     if obj["schema_version"] != "review_finding.v1":
         raise ReviewContractError("Unsupported finding schema.")
-    for key in ("finding_id", "entity_id", "requirement_id", "section_id", "statement"):
+    for key in (
+        "finding_id",
+        "entity_id",
+        "requirement_id",
+        "section_id",
+        "proposition_id",
+        "statement",
+    ):
         _require_text(obj[key], field=f"finding.{key}")
+    if obj["polarity"] not in {"affirmed", "negated"}:
+        raise ReviewContractError("Finding polarity must be affirmed or negated.")
     if obj["requirement_id"] not in known_requirement_ids:
         raise ReviewContractError("Finding requirement ID is not admitted.")
 
@@ -406,27 +427,37 @@ def validate_review_result(
     if len(finding_ids) != len(set(finding_ids)):
         raise ReviewContractError("Review result finding IDs must be unique.")
 
-    covered_requirements = {
-        item["obligation_id"] for item in coverage if item["obligation_type"] == "requirement"
+    admitted_obligations = {
+        *{("requirement", item) for item in required_requirement_ids},
+        *{("source_unit", item) for item in in_scope_source_ids},
     }
-    covered_sources = {
-        item["obligation_id"] for item in coverage if item["obligation_type"] == "source_unit"
-    }
-    if obj["scope_mode"] == "exhaustive_in_scope":
-        if covered_requirements != required_requirement_ids:
-            raise ReviewContractError("Exhaustive review must account for every requirement.")
-        if covered_sources != in_scope_source_ids:
-            raise ReviewContractError("Exhaustive review must account for every source unit.")
-
-    incomplete = any(
-        item["status"] in {"inaccessible", "unreviewed", "assigned"}
+    covered_obligations = {
+        (item["obligation_type"], item["obligation_id"])
         for item in coverage
-    )
-    if incomplete and obj["review_outcome"] in {
+    }
+    if covered_obligations != admitted_obligations:
+        raise ReviewContractError(
+            "Review coverage must account for every admitted obligation exactly once."
+        )
+
+    admitted_items = [
+        item
+        for item in coverage
+        if (item["obligation_type"], item["obligation_id"]) in admitted_obligations
+    ]
+    if any(item["status"] == "excluded_by_scope" for item in admitted_items):
+        raise ReviewContractError(
+            "An admitted obligation cannot be excluded by scope."
+        )
+
+    complete_outcome = obj["review_outcome"] in {
         "review_complete",
         "review_complete_with_evidence_gaps",
-    }:
-        raise ReviewContractError("Unreviewed/inaccessible work cannot be reported complete.")
+    }
+    if complete_outcome and any(item["status"] != "reviewed" for item in admitted_items):
+        raise ReviewContractError(
+            "A complete review requires every admitted obligation to be reviewed."
+        )
     if obj["review_outcome"] in {"review_complete", "review_complete_with_evidence_gaps"} and obj[
         "execution_state"
     ] != "completed":
