@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Any
 
 
@@ -8,6 +10,71 @@ class EvidenceVerificationError(ValueError):
 
 
 SEMANTIC_STATES = frozenset({"supported", "contradicted", "insufficient"})
+
+
+def _stable_digest(value: Any) -> str:
+    """Return a deterministic digest for JSON-compatible semantic verifier inputs."""
+
+    try:
+        payload = json.dumps(
+            value,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+    except (TypeError, ValueError) as exc:
+        raise EvidenceVerificationError(
+            "Semantic verifier input must be JSON-compatible."
+        ) from exc
+    return f"sha256:{hashlib.sha256(payload).hexdigest()}"
+
+
+def finding_semantic_input_digest(
+    finding: dict[str, Any],
+    evidence_index: dict[str, dict[str, Any]],
+) -> str:
+    """Bind one verifier verdict to the exact finding and evidence content."""
+
+    refs = list(finding.get("evidence_refs", []))
+    contradiction_refs = list(finding.get("contradicting_evidence_refs", []))
+    all_refs = refs + contradiction_refs
+    unknown = [ref for ref in all_refs if ref not in evidence_index]
+    if unknown:
+        raise EvidenceVerificationError("Finding references unknown evidence.")
+
+    material = {
+        "finding": finding,
+        "evidence": [
+            {"ref": ref, "record": evidence_index[ref]}
+            for ref in all_refs
+        ],
+    }
+    return _stable_digest(material)
+
+
+def final_claim_semantic_input_digest(
+    claim: dict[str, Any],
+    accepted_finding: dict[str, Any],
+) -> str:
+    """Bind a final-claim verdict to exact claim text and verified finding input."""
+
+    finding_digest = accepted_finding.get("verification_input_digest")
+    if (
+        not isinstance(finding_digest, str)
+        or not finding_digest.startswith("sha256:")
+        or len(finding_digest) != 71
+    ):
+        raise EvidenceVerificationError(
+            "Accepted finding is missing a valid semantic verification digest."
+        )
+
+    return _stable_digest(
+        {
+            "claim": claim,
+            "accepted_finding_id": accepted_finding.get("finding_id"),
+            "accepted_finding_verification_input_digest": finding_digest,
+        }
+    )
 
 
 def verify_finding(
@@ -21,8 +88,8 @@ def verify_finding(
 
     Deterministic checks establish identity, provenance, and evidence availability.
     They do not establish that evidence text entails a claim. A separate semantic
-    verifier must therefore return a bounded verdict tied to the finding ID and
-    exact evidence references.
+    verifier must therefore return a bounded verdict tied to the exact finding and
+    evidence content digest, not only reusable IDs.
     """
 
     if finding.get("entity_id") != entity_id:
@@ -52,6 +119,12 @@ def verify_finding(
     if not isinstance(verdict_refs, list) or verdict_refs != refs:
         raise EvidenceVerificationError("Semantic verdict must bind to exact supporting evidence refs.")
 
+    verification_input_digest = finding_semantic_input_digest(finding, evidence_index)
+    if semantic_verdict.get("input_digest") != verification_input_digest:
+        raise EvidenceVerificationError(
+            "Semantic verifier verdict does not match the exact finding/evidence content."
+        )
+
     semantic_state = semantic_verdict.get("state")
     if semantic_state not in SEMANTIC_STATES:
         raise EvidenceVerificationError("Invalid semantic verifier state.")
@@ -77,6 +150,7 @@ def verify_finding(
         "polarity": finding["polarity"],
         "accepted": accepted,
         "verification_state": semantic_state,
+        "verification_input_digest": verification_input_digest,
         "semantic_verifier_id": semantic_verdict.get("verifier_id"),
         "reason_code": semantic_verdict.get("reason_code"),
     }
@@ -88,7 +162,7 @@ def final_claim_gate(
     accepted_findings: dict[str, dict[str, Any]],
     semantic_verdicts: dict[str, dict[str, Any]],
 ) -> None:
-    """Block final text unless each claim is semantically equivalent to an accepted finding."""
+    """Block final text unless each claim is equivalent to the exact verified finding."""
 
     if not isinstance(final_claims, list):
         raise EvidenceVerificationError("final_claims must be a list.")
@@ -105,6 +179,12 @@ def final_claim_gate(
                 "Final synthesis references a finding that was not accepted."
             )
 
+        accepted_finding = accepted_findings[finding_id]
+        if accepted_finding.get("accepted") is not True:
+            raise EvidenceVerificationError(
+                "Final synthesis requires a semantically accepted finding."
+            )
+
         verdict = semantic_verdicts.get(claim_id)
         if not isinstance(verdict, dict):
             raise EvidenceVerificationError("Final semantic verifier verdict is required.")
@@ -112,6 +192,12 @@ def final_claim_gate(
             raise EvidenceVerificationError("Unsupported final claim verdict schema.")
         if verdict.get("claim_id") != claim_id or verdict.get("finding_id") != finding_id:
             raise EvidenceVerificationError("Final claim verdict identity mismatch.")
+
+        expected_input_digest = final_claim_semantic_input_digest(claim, accepted_finding)
+        if verdict.get("input_digest") != expected_input_digest:
+            raise EvidenceVerificationError(
+                "Final claim verdict does not match the exact claim/finding content."
+            )
         if verdict.get("equivalent") is not True:
             raise EvidenceVerificationError(
                 "Final claim is not semantically equivalent to its accepted finding."
