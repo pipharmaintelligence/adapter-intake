@@ -8,11 +8,12 @@
       "linear": "PI-1974",
       "title": "Adjudicated quality and usage baseline",
       "artifact_state": "implemented_evaluation_infrastructure",
-      "activation_gate": "qualified domain adjudication of suite and criticality taxonomy",
+      "activation_gate": "adjudicated suite/taxonomy + calibrated thresholds + complete validated baseline measurement",
       "artifacts": [
         "review_evaluation_suite.v1.json",
         "review_criticality_taxonomy.v1.json",
-        "review_evaluation_status.py"
+        "review_evaluation_status.py",
+        "review_baseline_measurement.py"
       ],
       "owner": "adapter-intake evaluation fixtures + domain reviewer"
     },
@@ -21,7 +22,7 @@
       "linear": "PI-1975",
       "title": "Evidence, methodology and coverage contracts",
       "artifact_state": "gated_reference_implementation",
-      "activation_gate": "WP1 wp1_contract_ready=true and reviewed schema/version decision",
+      "activation_gate": "WP1 wp1_complete=true (including validated baseline evidence) and reviewed schema/version decision",
       "artifacts": [
         "reference/review_contracts.py"
       ],
