@@ -3,24 +3,9 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from review_contracts import ReviewContractError, validate_review_result
 
-ALLOWED_EXECUTION_STATES = frozenset({"completed", "incomplete", "blocked", "failed"})
-ALLOWED_REVIEW_OUTCOMES = frozenset(
-    {
-        "review_complete",
-        "review_complete_with_evidence_gaps",
-        "review_incomplete",
-        "blocked",
-        "failed",
-    }
-)
-ALLOWED_SCOPE_MODES = frozenset({"exhaustive_in_scope", "focused"})
-ALLOWED_PERSISTENCE_STATES = frozenset(
-    {"not_requested", "preview_only", "applied", "failed"}
-)
-ALLOWED_COVERAGE_STATES = frozenset(
-    {"assigned", "reviewed", "excluded_by_scope", "inaccessible", "unreviewed"}
-)
+
 SAFE_IDENTIFIER = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
 
 
@@ -32,30 +17,37 @@ def _safe_identifier(value: Any, *, field: str) -> str | None:
     return value
 
 
-def project_review_status(result: dict[str, Any]) -> dict[str, Any]:
-    """Return bounded operator status without prompts, evidence text, or provider payloads."""
+def project_review_status(
+    result: dict[str, Any],
+    *,
+    required_requirement_ids: set[str],
+    in_scope_source_ids: set[str],
+) -> dict[str, Any]:
+    """Return bounded operator status from a canonically validated review result."""
 
-    execution_state = result["execution_state"]
-    review_outcome = result["review_outcome"]
-    scope_mode = result["scope_mode"]
-    persistence_state = result["persistence_state"]
+    if not isinstance(result, dict):
+        raise ValueError("result must be an object.")
 
-    if execution_state not in ALLOWED_EXECUTION_STATES:
-        raise ValueError("Invalid execution state.")
-    if review_outcome not in ALLOWED_REVIEW_OUTCOMES:
-        raise ValueError("Invalid review outcome.")
-    if scope_mode not in ALLOWED_SCOPE_MODES:
-        raise ValueError("Invalid scope mode.")
-    if persistence_state not in ALLOWED_PERSISTENCE_STATES:
-        raise ValueError("Invalid persistence state.")
+    review_result = {
+        "schema_version": result.get("schema_version", "review_result.v1"),
+        "scope_mode": result.get("scope_mode"),
+        "execution_state": result.get("execution_state"),
+        "review_outcome": result.get("review_outcome"),
+        "coverage": result.get("coverage"),
+        "finding_ids": result.get("finding_ids"),
+        "limitations": result.get("limitations"),
+        "persistence_state": result.get("persistence_state"),
+    }
+    try:
+        validated = validate_review_result(
+            review_result,
+            required_requirement_ids=required_requirement_ids,
+            in_scope_source_ids=in_scope_source_ids,
+        )
+    except ReviewContractError as exc:
+        raise ValueError(str(exc)) from exc
 
-    coverage = result["coverage"]
-    if not isinstance(coverage, list):
-        raise ValueError("coverage must be a list.")
-    for item in coverage:
-        if not isinstance(item, dict) or item.get("status") not in ALLOWED_COVERAGE_STATES:
-            raise ValueError("Coverage contains an invalid status.")
-
+    coverage = validated["coverage"]
     counts = {
         "total": len(coverage),
         "assigned": sum(item["status"] == "assigned" for item in coverage),
@@ -65,20 +57,15 @@ def project_review_status(result: dict[str, Any]) -> dict[str, Any]:
         "excluded_by_scope": sum(item["status"] == "excluded_by_scope" for item in coverage),
     }
 
-    finding_ids = result["finding_ids"]
-    limitations = result["limitations"]
-    if not isinstance(finding_ids, list) or not isinstance(limitations, list):
-        raise ValueError("finding_ids and limitations must be lists.")
-
     return {
         "schema_version": "review_status_projection.v1",
-        "execution_state": execution_state,
-        "review_outcome": review_outcome,
-        "scope_mode": scope_mode,
+        "execution_state": validated["execution_state"],
+        "review_outcome": validated["review_outcome"],
+        "scope_mode": validated["scope_mode"],
         "coverage_counts": counts,
-        "finding_count": len(finding_ids),
-        "limitation_count": len(limitations),
-        "persistence_state": persistence_state,
+        "finding_count": len(validated["finding_ids"]),
+        "limitation_count": len(validated["limitations"]),
+        "persistence_state": validated["persistence_state"],
         "stop_reason": _safe_identifier(result.get("stop_reason"), field="stop_reason"),
         "next_action": _safe_identifier(result.get("next_action"), field="next_action"),
         "raw_content_included": False,
