@@ -32,6 +32,47 @@ def adjudication_input_digest(value: Any) -> str:
     return f"sha256:{hashlib.sha256(canonical).hexdigest()}"
 
 
+def build_adjudication_receipt_template(
+    suite: dict[str, Any],
+    taxonomy: dict[str, Any],
+) -> dict[str, Any]:
+    """Build a reviewer-facing receipt bound to the exact candidate inputs."""
+
+    return {
+        "schema_version": RECEIPT_SCHEMA_VERSION,
+        "suite_id": suite["suite_id"],
+        "suite_input_digest": adjudication_input_digest(suite),
+        "taxonomy_input_digest": adjudication_input_digest(taxonomy),
+        "reviewer": {
+            "name": None,
+            "qualification_basis": None,
+        },
+        "taxonomy": {
+            "decision": "pending",
+            "notes": None,
+        },
+        "thresholds": {
+            "decision": "pending",
+            "domain_owner": None,
+            "decision_note": None,
+            "factual_faithfulness_min": None,
+            "noncritical_precision_min": None,
+            "noncritical_recall_min": None,
+        },
+        "cases": [
+            {
+                "case_id": case["case_id"],
+                "decision": "pending",
+                "notes": None,
+                "disagreement": False,
+                "secondary_reviewer": None,
+                "disagreement_resolution": None,
+            }
+            for case in suite["cases"]
+        ],
+    }
+
+
 def _nonempty_text(value: Any, *, field: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise AdjudicationReceiptError(f"{field} must be non-empty text.")
