@@ -1,6 +1,8 @@
 {
   "schema_version": "pharma_review_adjudication_receipt.v1",
   "suite_id": "pharma_methodology_specialized_review_wp1.v1",
+  "suite_input_digest": null,
+  "taxonomy_input_digest": null,
   "reviewer": {
     "name": null,
     "qualification_basis": null
