@@ -93,7 +93,11 @@ def chunk_inventory(
             if index + offset < len(units):
                 selected_indices.add(index + offset)
 
-        selected = [units[i] for i in sorted(selected_indices)]
+        selected = [
+            units[i]
+            for i in sorted(selected_indices)
+            if units[i]["accessible"]
+        ]
         rendered_parts: list[str] = []
         locators: list[str] = []
         context_only_locators: list[str] = []
