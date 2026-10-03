@@ -23,14 +23,15 @@ def source_digest(case: dict[str, Any]) -> str:
     return hashlib.sha256(canonical).hexdigest()
 
 
-def evaluation_status() -> dict[str, Any]:
-    """Return a value-safe WP1 readiness report without source text."""
-
-    suite = json.loads(SUITE_PATH.read_text(encoding="utf-8"))
-    taxonomy = json.loads(TAXONOMY_PATH.read_text(encoding="utf-8"))
+def evaluate_suite(
+    suite: dict[str, Any],
+    taxonomy: dict[str, Any],
+) -> dict[str, Any]:
+    """Evaluate whether WP1 has the evidence required to unblock WP2."""
 
     cases = suite["cases"]
     pending = []
+    missing_primary_reviewer = []
     invalid_frozen_digest = []
     disagreements_without_second_review = []
 
@@ -42,17 +43,38 @@ def evaluation_status() -> dict[str, Any]:
             pending.append(case["case_id"])
             continue
 
+        if not str(adjudication.get("primary_reviewer") or "").strip():
+            missing_primary_reviewer.append(case["case_id"])
+
         if identity["digest_status"] != "frozen":
             invalid_frozen_digest.append(case["case_id"])
-            continue
-
-        if identity["content_sha256"] != source_digest(case):
+        elif identity["content_sha256"] != source_digest(case):
             invalid_frozen_digest.append(case["case_id"])
 
-        if adjudication["disagreement"] and not adjudication["secondary_reviewer"]:
+        if adjudication["disagreement"] and not str(
+            adjudication.get("secondary_reviewer") or ""
+        ).strip():
             disagreements_without_second_review.append(case["case_id"])
 
-    adjudicated_count = len(cases) - len(pending)
+    suite_owner = str(
+        suite.get("adjudication_policy", {}).get("assigned_domain_reviewer") or ""
+    ).strip()
+    taxonomy_owner = str(
+        taxonomy.get("adjudication", {}).get("assigned_domain_reviewer") or ""
+    ).strip()
+
+    blockers = {
+        "suite_not_adjudicated": suite.get("status") != "adjudicated",
+        "taxonomy_not_adjudicated": taxonomy.get("status") != "adjudicated",
+        "domain_reviewer_unassigned": not suite_owner or not taxonomy_owner,
+        "pending_cases": bool(pending),
+        "missing_primary_reviewer": bool(missing_primary_reviewer),
+        "invalid_frozen_digest": bool(invalid_frozen_digest),
+        "disagreement_without_second_review": bool(
+            disagreements_without_second_review
+        ),
+    }
+    ready = not any(blockers.values())
 
     return {
         "schema_version": "pharma_review_evaluation_status.v1",
@@ -65,23 +87,28 @@ def evaluation_status() -> dict[str, Any]:
         "case_count": len(cases),
         "development_count": sum(case["split"] == "development" for case in cases),
         "held_out_count": sum(case["split"] == "held_out" for case in cases),
-        "adjudicated_count": adjudicated_count,
+        "adjudicated_count": sum(
+            case["adjudication"]["status"] == "adjudicated" for case in cases
+        ),
         "pending_domain_review_count": len(pending),
+        "missing_primary_reviewer_count": len(missing_primary_reviewer),
         "invalid_frozen_digest_count": len(invalid_frozen_digest),
-        "disagreement_without_second_review_count": len(disagreements_without_second_review),
-        "wp1_contract_ready": (
-            taxonomy["status"] == "adjudicated"
-            and not pending
-            and not invalid_frozen_digest
-            and not disagreements_without_second_review
+        "disagreement_without_second_review_count": len(
+            disagreements_without_second_review
         ),
-        "wp2_unblocked": (
-            taxonomy["status"] == "adjudicated"
-            and not pending
-            and not invalid_frozen_digest
-            and not disagreements_without_second_review
-        ),
+        "domain_reviewer_assigned": bool(suite_owner and taxonomy_owner),
+        "blockers": blockers,
+        "wp1_contract_ready": ready,
+        "wp2_unblocked": ready,
     }
+
+
+def evaluation_status() -> dict[str, Any]:
+    """Return a value-safe WP1 readiness report without source text."""
+
+    suite = json.loads(SUITE_PATH.read_text(encoding="utf-8"))
+    taxonomy = json.loads(TAXONOMY_PATH.read_text(encoding="utf-8"))
+    return evaluate_suite(suite, taxonomy)
 
 
 def main() -> int:
