@@ -19,6 +19,12 @@ from review_adjudication import (
     apply_adjudication_receipt,
     build_adjudication_receipt_template,
 )
+from review_baseline_measurement import (
+    BaselineMeasurementError,
+    assess_pinned_baseline_compatibility,
+    build_measurement_template,
+    evaluate_baseline_measurement,
+)
 
 EXPECTED_BASELINE = {
     "asset_key": "nusaibah.pharma_company_intelligence_lab",
@@ -410,6 +416,57 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
 
         with self.assertRaises(AdjudicationReceiptError):
             apply_adjudication_receipt(self.suite, taxonomy, receipt)
+
+    def test_pinned_baseline_cannot_directly_execute_adjudicated_fixture_suite(self) -> None:
+        manifest_path = HERE.parent / "nusaibah_pharma_company_intelligence_lab.asset.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        version = manifest["versions"]["0.1.12"]
+
+        report = assess_pinned_baseline_compatibility(self.suite, version)
+
+        self.assertEqual(report["case_count"], 24)
+        self.assertEqual(report["compatible_case_count"], 0)
+        self.assertEqual(report["incompatible_case_count"], 24)
+        self.assertIs(report["direct_fixture_execution_supported"], False)
+        self.assertTrue(
+            any(
+                "document_review_input_contract_absent" in item["reason_codes"]
+                for item in report["cases"]
+            )
+        )
+        self.assertTrue(
+            all(
+                "live_company_selector_absent_from_fixture" in item["reason_codes"]
+                for item in report["cases"]
+            )
+        )
+
+    def test_baseline_measurement_stays_incomplete_for_incompatible_cases(self) -> None:
+        measurement = build_measurement_template(self.suite)
+        for item in measurement["cases"]:
+            item["status"] = "not_executable"
+            item["reason_code"] = "baseline_input_contract_incompatible"
+
+        report = evaluate_baseline_measurement(self.suite, measurement)
+
+        self.assertIs(report["measurement_complete"], False)
+        self.assertEqual(report["measured_case_count"], 0)
+        self.assertEqual(report["not_executable_case_count"], 24)
+        self.assertIsNone(report["quality_metrics"])
+        self.assertIsNone(report["quality_gate"])
+        self.assertIsNone(report["controls_passed"])
+
+    def test_baseline_measurement_rejects_partial_or_stale_case_truth(self) -> None:
+        measurement = build_measurement_template(self.suite)
+        for item in measurement["cases"]:
+            item["status"] = "not_executable"
+            item["reason_code"] = "runtime_evidence_unavailable"
+
+        measurement["cases"][0]["expected_complete"] = not measurement["cases"][0][
+            "expected_complete"
+        ]
+        with self.assertRaises(BaselineMeasurementError):
+            evaluate_baseline_measurement(self.suite, measurement)
 
     def test_source_digest_is_stable_and_depends_only_on_source_units(self) -> None:
         case = self.suite["cases"][0]
