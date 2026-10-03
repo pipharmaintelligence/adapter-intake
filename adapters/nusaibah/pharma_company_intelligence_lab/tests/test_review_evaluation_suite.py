@@ -25,6 +25,12 @@ from review_baseline_measurement import (
     build_measurement_template,
     evaluate_baseline_measurement,
 )
+from review_baseline_replay import (
+    BaselineReplayError,
+    build_replay_company_record,
+    build_replay_inputs,
+    replay_plan,
+)
 
 EXPECTED_BASELINE = {
     "asset_key": "nusaibah.pharma_company_intelligence_lab",
@@ -467,6 +473,95 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
         ]
         with self.assertRaises(BaselineMeasurementError):
             evaluate_baseline_measurement(self.suite, measurement)
+
+    def test_replay_plan_exposes_only_company_cases_as_evaluation_replayable(self) -> None:
+        plan = replay_plan(self.suite)
+
+        self.assertEqual(plan["case_count"], 24)
+        self.assertEqual(plan["replayable_case_count"], 11)
+        self.assertEqual(plan["not_replayable_case_count"], 13)
+        self.assertIs(plan["production_manifest_changed"], False)
+        self.assertIs(plan["production_adapter_changed"], False)
+        self.assertEqual(plan["purpose"], "evaluation_only")
+
+        replayable = {
+            item["case_id"]
+            for item in plan["cases"]
+            if item["replayable"]
+        }
+        self.assertEqual(
+            replayable,
+            {
+                case["case_id"]
+                for case in self.suite["cases"]
+                if case["mode"] == "company_research"
+            },
+        )
+
+        for item in plan["cases"]:
+            if item["mode"] == "document_review":
+                self.assertIn(
+                    "document_review_input_contract_absent",
+                    item["reason_codes"],
+                )
+
+    def test_replay_company_projection_preserves_all_source_units_without_truth(self) -> None:
+        case = next(
+            item
+            for item in self.suite["cases"]
+            if item["case_id"] == "company-medium-portfolio-002"
+        )
+        case_index = self.suite["cases"].index(case)
+
+        record = build_replay_company_record(case, case_index=case_index)
+        inputs = build_replay_inputs(case, case_index=case_index)
+
+        self.assertEqual(record["evaluation_case_id"], case["case_id"])
+        self.assertEqual(inputs["variables"]["memory_mode"], "preview")
+        self.assertIs(inputs["variables"]["publish_dossier"], False)
+        self.assertEqual(
+            inputs["variables"]["company_ids"],
+            [record["company_id"]],
+        )
+        self.assertEqual(inputs["companies"]["records"], [record])
+
+        for index, unit in enumerate(case["source_units"], start=1):
+            prefix = f"evaluation_source_{index:02d}"
+            self.assertEqual(record[f"{prefix}_locator"], unit["locator"])
+            self.assertEqual(record[f"{prefix}_text"], unit["text"])
+            self.assertEqual(
+                record[f"{prefix}_quality_flags"],
+                unit["quality_flags"],
+            )
+
+        serialized = json.dumps(record, sort_keys=True)
+        for finding in case["candidate_expected_findings"]:
+            self.assertNotIn(finding["statement"], serialized)
+
+    def test_replay_refuses_document_mode_and_large_projection_changes(self) -> None:
+        document_case = next(
+            item
+            for item in self.suite["cases"]
+            if item["mode"] == "document_review"
+        )
+        document_index = self.suite["cases"].index(document_case)
+        with self.assertRaises(BaselineReplayError):
+            build_replay_company_record(
+                document_case,
+                case_index=document_index,
+            )
+
+        oversized = next(
+            item
+            for item in self.suite["cases"]
+            if item["case_id"] == "document-oversized-017"
+        )
+        oversized_index = self.suite["cases"].index(oversized)
+        with self.assertRaises(BaselineReplayError):
+            build_replay_company_record(
+                oversized,
+                case_index=oversized_index,
+            )
 
     def test_source_digest_is_stable_and_depends_only_on_source_units(self) -> None:
         case = self.suite["cases"][0]
