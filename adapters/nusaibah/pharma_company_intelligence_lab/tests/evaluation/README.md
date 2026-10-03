@@ -62,3 +62,36 @@ python adapters/nusaibah/pharma_company_intelligence_lab/tests/evaluation/review
 ```
 
 The applicator fails closed if the receipt was created against different suite/taxonomy content, omits a case, lacks reviewer qualification text, leaves taxonomy/thresholds pending, or records a disagreement without a second reviewer. Applying a structurally valid receipt is mechanical evidence processing; it does not independently authenticate the human identity or qualification asserted in the receipt. Reviewer/domain-owner identity must therefore also be traceable in the approved review record (for example PI-1984).
+
+
+## Pinned-baseline replay
+
+`review_baseline_replay.py` is an **evaluation-only** bridge for PI-1986. It does not add a production input, change the 0.1.12 manifest, change Agent definitions, change provider/model policy, or authorize any write.
+
+Current adjudicated-suite compatibility:
+
+- 11 `company_research` cases can be projected into the existing bounded `governed_company_baseline` field for evaluation.
+- 13 `document_review` cases remain `not_executable`; 0.1.12 has no document/file input contract.
+- Synthetic replay uses preview mode, a neutral read-only synthetic company memory, and the production-supported `company_methodology` first-run state.
+- Mutable Dynamic Skill roles are rejected by the replay wrapper.
+- Expected findings, adjudication truth, held-out labels, and release thresholds are never inserted into provider input.
+
+The replay deliberately bypasses the production Companies binding because the fixtures are synthetic. This is an evaluation comparability difference, not production capability. The per-case replay record must retain that difference explicitly.
+
+A runtime delegate used for an actual replay must expose only the normal trusted helpers needed here:
+
+```text
+invoke_agent(...)
+skill(...)
+```
+
+Agent calls still execute the pinned 0.1.12 role graph and validators. The fixed methodology handle must validate to:
+
+```text
+nusaibah.pharma-intelligence-methodology@1.0.0
+sha256:2fa082aca1c100abb60a4bf77aa4cf796da2707bb951a3b51f11948efd2dd564
+```
+
+Do not supply `company_memory_update` or `company_methodology_update` authority to this evaluation lane.
+
+The harness is not itself a quality measurement. PI-1985 remains incomplete until actual provider-backed replay observations are recorded and scored through `review_baseline_measurement.py`. Document cases stay explicitly unmeasured rather than receiving inferred values.
