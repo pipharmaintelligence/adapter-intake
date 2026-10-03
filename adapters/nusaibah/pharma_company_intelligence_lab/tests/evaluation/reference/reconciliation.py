@@ -15,22 +15,17 @@ def _text(value: Any, *, field: str) -> str:
 
 
 def reconcile_findings(findings: list[dict[str, Any]]) -> dict[str, Any]:
-    """Build a compact cross-specialist ledger and preserve global conflicts.
-
-    Conflicts are tracked both within one requirement/date/jurisdiction identity
-    and across date/jurisdiction variants for the same entity + requirement.
-    The function never resolves a disagreement by majority vote.
-    """
+    """Reconcile only semantically verified findings and preserve contradictions."""
 
     if not isinstance(findings, list):
         raise ReconciliationError("findings must be a list.")
 
     finding_ids: set[str] = set()
-    by_exact_key: dict[
-        tuple[str, str, str | None, str | None],
+    by_proposition: dict[
+        tuple[str, str, str, str | None, str | None],
         list[dict[str, Any]],
     ] = defaultdict(list)
-    by_requirement: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    accepted_ids: list[str] = []
 
     for finding in findings:
         if not isinstance(finding, dict):
@@ -42,9 +37,14 @@ def reconcile_findings(findings: list[dict[str, Any]]) -> dict[str, Any]:
 
         entity_id = _text(finding.get("entity_id"), field="entity_id")
         requirement_id = _text(finding.get("requirement_id"), field="requirement_id")
-        state = finding.get("evidence_state")
-        if state not in {"supported", "contradicted", "insufficient", "not_applicable"}:
-            raise ReconciliationError("Invalid finding evidence state.")
+        proposition_id = _text(finding.get("proposition_id"), field="proposition_id")
+        polarity = finding.get("polarity")
+        if polarity not in {"affirmed", "negated"}:
+            raise ReconciliationError("Finding polarity must be affirmed or negated.")
+
+        verification_state = finding.get("verification_state")
+        if verification_state not in {"supported", "contradicted", "insufficient"}:
+            raise ReconciliationError("Finding must carry a semantic verification state.")
 
         date = finding.get("date")
         jurisdiction = finding.get("jurisdiction")
@@ -55,39 +55,37 @@ def reconcile_findings(findings: list[dict[str, Any]]) -> dict[str, Any]:
         ):
             raise ReconciliationError("Finding jurisdiction must be non-empty text or null.")
 
-        exact_key = (entity_id, requirement_id, date, jurisdiction)
-        requirement_key = (entity_id, requirement_id)
-        by_exact_key[exact_key].append(finding)
-        by_requirement[requirement_key].append(finding)
+        key = (entity_id, requirement_id, proposition_id, date, jurisdiction)
+        by_proposition[key].append(finding)
+        if verification_state == "supported":
+            accepted_ids.append(finding_id)
 
     conflicts: list[dict[str, Any]] = []
-    conflict_signatures: set[tuple[Any, ...]] = set()
-    accepted_ids: list[str] = []
+    seen: set[tuple[Any, ...]] = set()
 
-    def add_conflict(
-        *,
-        conflict_type: str,
-        entity_id: str,
-        requirement_id: str,
-        items: list[dict[str, Any]],
-    ) -> None:
+    def add_conflict(conflict_type: str, items: list[dict[str, Any]]) -> None:
         signature = (
             conflict_type,
-            entity_id,
-            requirement_id,
             tuple(sorted(item["finding_id"] for item in items)),
         )
-        if signature in conflict_signatures:
+        if signature in seen:
             return
-        conflict_signatures.add(signature)
+        seen.add(signature)
+        first = items[0]
         conflicts.append(
             {
                 "conflict_type": conflict_type,
-                "entity_id": entity_id,
-                "requirement_id": requirement_id,
+                "entity_id": first["entity_id"],
+                "requirement_id": first["requirement_id"],
+                "proposition_id": first["proposition_id"],
                 "finding_ids": sorted(item["finding_id"] for item in items),
-                "states": sorted({item["evidence_state"] for item in items}),
-                "dates": sorted({item["date"] for item in items if item.get("date") is not None}),
+                "polarities": sorted({item["polarity"] for item in items}),
+                "verification_states": sorted(
+                    {item["verification_state"] for item in items}
+                ),
+                "dates": sorted(
+                    {item["date"] for item in items if item.get("date") is not None}
+                ),
                 "jurisdictions": sorted(
                     {
                         item["jurisdiction"]
@@ -98,41 +96,31 @@ def reconcile_findings(findings: list[dict[str, Any]]) -> dict[str, Any]:
             }
         )
 
-    for key, items in by_exact_key.items():
-        states = {item["evidence_state"] for item in items}
+    for items in by_proposition.values():
+        states = {item["verification_state"] for item in items}
+        supported = [item for item in items if item["verification_state"] == "supported"]
         if "contradicted" in states or (
             "supported" in states and "insufficient" in states
         ):
-            add_conflict(
-                conflict_type="evidence_state",
-                entity_id=key[0],
-                requirement_id=key[1],
-                items=items,
-            )
-        for item in items:
-            if item["evidence_state"] == "supported":
-                accepted_ids.append(item["finding_id"])
+            add_conflict("verification_state", items)
+        if len({item["polarity"] for item in supported}) > 1:
+            add_conflict("opposed_supported_propositions", supported)
 
-    for (entity_id, requirement_id), items in by_requirement.items():
-        supported = [item for item in items if item["evidence_state"] == "supported"]
-        if len(supported) < 2:
-            continue
-        dates = {item.get("date") for item in supported}
-        jurisdictions = {item.get("jurisdiction") for item in supported}
-        if len(dates) > 1:
-            add_conflict(
-                conflict_type="date_variation",
-                entity_id=entity_id,
-                requirement_id=requirement_id,
-                items=supported,
-            )
-        if len(jurisdictions) > 1:
-            add_conflict(
-                conflict_type="jurisdiction_variation",
-                entity_id=entity_id,
-                requirement_id=requirement_id,
-                items=supported,
-            )
+    by_requirement_proposition: dict[
+        tuple[str, str, str], list[dict[str, Any]]
+    ] = defaultdict(list)
+    for items in by_proposition.values():
+        for item in items:
+            if item["verification_state"] == "supported":
+                by_requirement_proposition[
+                    (item["entity_id"], item["requirement_id"], item["proposition_id"])
+                ].append(item)
+
+    for items in by_requirement_proposition.values():
+        if len({item.get("date") for item in items}) > 1:
+            add_conflict("date_variation", items)
+        if len({item.get("jurisdiction") for item in items}) > 1:
+            add_conflict("jurisdiction_variation", items)
 
     return {
         "schema_version": "review_consistency_ledger.v1",
@@ -172,7 +160,7 @@ def gate_memory_candidates(
         }
     return {
         "eligible": True,
-        "reason": "Candidate references only accepted findings.",
+        "reason": "Candidate references only semantically verified findings.",
         "mutation_authorized": False,
         "preview": preview,
     }
