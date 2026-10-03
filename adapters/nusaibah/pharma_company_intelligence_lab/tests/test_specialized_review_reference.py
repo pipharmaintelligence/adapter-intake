@@ -15,6 +15,8 @@ sys.path.insert(0, str(REF_ROOT))
 from evidence_verification import (
     EvidenceVerificationError,
     final_claim_gate,
+    final_claim_semantic_input_digest,
+    finding_semantic_input_digest,
     verify_finding,
 )
 from finite_plan import (
@@ -236,25 +238,29 @@ class SpecializedReviewReferenceTests(unittest.TestCase):
             "requirement_id": "regulatory.approval",
             "proposition_id": "product_q.eu_approval",
             "polarity": "affirmed",
+            "statement": "Product Q is approved in the EU.",
             "evidence_refs": ["ref:1"],
             "contradicting_evidence_refs": [],
             "evidence_state": "supported",
             "high_impact": True,
         }
+        evidence_index = {
+            "ref:1": {
+                "entity_id": "company:13",
+                "strength": "inspected_span",
+                "source_version": "v1",
+                "text": "This span is unrelated to Product Q approval.",
+            }
+        }
         result = verify_finding(
             finding,
             entity_id="company:13",
-            evidence_index={
-                "ref:1": {
-                    "entity_id": "company:13",
-                    "strength": "inspected_span",
-                    "text": "This span is unrelated to Product Q approval.",
-                }
-            },
+            evidence_index=evidence_index,
             semantic_verdict={
                 "schema_version": "review_semantic_verdict.v1",
                 "finding_id": "f1",
                 "evidence_refs": ["ref:1"],
+                "input_digest": finding_semantic_input_digest(finding, evidence_index),
                 "state": "insufficient",
                 "verifier_id": "semantic-reviewer-v1",
                 "reason_code": "not_entailed",
@@ -262,6 +268,61 @@ class SpecializedReviewReferenceTests(unittest.TestCase):
         )
         self.assertIs(result["accepted"], False)
         self.assertEqual(result["verification_state"], "insufficient")
+
+    def test_semantic_verdict_cannot_be_replayed_after_finding_or_evidence_changes(self) -> None:
+        finding = {
+            "finding_id": "f1",
+            "entity_id": "company:13",
+            "requirement_id": "regulatory.approval",
+            "proposition_id": "product_q.eu_approval",
+            "polarity": "affirmed",
+            "statement": "Product Q is approved in the EU.",
+            "evidence_refs": ["ref:1"],
+            "contradicting_evidence_refs": [],
+            "evidence_state": "supported",
+            "high_impact": True,
+        }
+        evidence_index = {
+            "ref:1": {
+                "entity_id": "company:13",
+                "strength": "inspected_span",
+                "source_version": "v1",
+                "text": "Product Q received EU approval.",
+            }
+        }
+        verdict = {
+            "schema_version": "review_semantic_verdict.v1",
+            "finding_id": "f1",
+            "evidence_refs": ["ref:1"],
+            "input_digest": finding_semantic_input_digest(finding, evidence_index),
+            "state": "supported",
+            "verifier_id": "semantic-reviewer-v1",
+            "reason_code": "entailed",
+        }
+
+        mutated_finding = dict(finding, statement="Product Q is approved worldwide.")
+        with self.assertRaises(EvidenceVerificationError):
+            verify_finding(
+                mutated_finding,
+                entity_id="company:13",
+                evidence_index=evidence_index,
+                semantic_verdict=verdict,
+            )
+
+        mutated_evidence = {
+            "ref:1": {
+                **evidence_index["ref:1"],
+                "source_version": "v2",
+                "text": "Product Q approval status is unknown.",
+            }
+        }
+        with self.assertRaises(EvidenceVerificationError):
+            verify_finding(
+                finding,
+                entity_id="company:13",
+                evidence_index=mutated_evidence,
+                semantic_verdict=verdict,
+            )
 
     def test_opposite_semantically_supported_propositions_conflict(self) -> None:
         ledger = reconcile_findings(
@@ -300,26 +361,61 @@ class SpecializedReviewReferenceTests(unittest.TestCase):
                 "finding_id": "f1",
                 "proposition_id": "product_q.eu_approval",
                 "polarity": "affirmed",
+                "accepted": True,
+                "verification_input_digest": "sha256:" + "a" * 64,
             }
+        }
+        claim = {
+            "claim_id": "c1",
+            "finding_id": "f1",
+            "text": "Product Q is approved worldwide.",
         }
         with self.assertRaises(EvidenceVerificationError):
             final_claim_gate(
-                final_claims=[
-                    {
-                        "claim_id": "c1",
-                        "finding_id": "f1",
-                        "text": "Product Q is approved worldwide.",
-                    }
-                ],
+                final_claims=[claim],
                 accepted_findings=accepted,
                 semantic_verdicts={
                     "c1": {
                         "schema_version": "review_final_claim_verdict.v1",
                         "claim_id": "c1",
                         "finding_id": "f1",
+                        "input_digest": final_claim_semantic_input_digest(claim, accepted["f1"]),
                         "equivalent": False,
                     }
                 },
+            )
+
+    def test_final_claim_verdict_cannot_be_replayed_after_claim_text_changes(self) -> None:
+        accepted = {
+            "f1": {
+                "finding_id": "f1",
+                "proposition_id": "product_q.eu_approval",
+                "polarity": "affirmed",
+                "accepted": True,
+                "verification_input_digest": "sha256:" + "b" * 64,
+            }
+        }
+        original_claim = {
+            "claim_id": "c1",
+            "finding_id": "f1",
+            "text": "Product Q is approved in the EU.",
+        }
+        verdict = {
+            "schema_version": "review_final_claim_verdict.v1",
+            "claim_id": "c1",
+            "finding_id": "f1",
+            "input_digest": final_claim_semantic_input_digest(original_claim, accepted["f1"]),
+            "equivalent": True,
+        }
+        changed_claim = {
+            **original_claim,
+            "text": "Product Q is approved worldwide.",
+        }
+        with self.assertRaises(EvidenceVerificationError):
+            final_claim_gate(
+                final_claims=[changed_claim],
+                accepted_findings=accepted,
+                semantic_verdicts={"c1": verdict},
             )
 
     def test_memory_gate_never_grants_mutation_authority(self) -> None:
@@ -378,22 +474,30 @@ class SpecializedReviewReferenceTests(unittest.TestCase):
     def test_safe_projection_counts_assigned_work_and_rejects_free_text_codes(self) -> None:
         projection = project_review_status(
             {
+                "schema_version": "review_result.v1",
                 "scope_mode": "focused",
                 "execution_state": "incomplete",
                 "review_outcome": "review_incomplete",
-                "coverage": [{"status": "assigned"}],
+                "coverage": [
+                    self._coverage("requirement", "portfolio.products", status="assigned"),
+                    self._coverage("source_unit", "p1", status="unreviewed"),
+                ],
                 "finding_ids": [],
                 "limitations": ["Pending work."],
                 "persistence_state": "preview_only",
                 "stop_reason": "budget_exhausted",
                 "next_action": "resume_review",
-            }
+            },
+            required_requirement_ids={"portfolio.products"},
+            in_scope_source_ids={"p1"},
         )
         self.assertEqual(projection["coverage_counts"]["assigned"], 1)
+        self.assertEqual(projection["coverage_counts"]["unreviewed"], 1)
 
         with self.assertRaises(ValueError):
             project_review_status(
                 {
+                    "schema_version": "review_result.v1",
                     "scope_mode": "focused",
                     "execution_state": "failed",
                     "review_outcome": "failed",
@@ -403,7 +507,31 @@ class SpecializedReviewReferenceTests(unittest.TestCase):
                     "persistence_state": "not_requested",
                     "stop_reason": "contains sensitive free text",
                     "next_action": None,
-                }
+                },
+                required_requirement_ids=set(),
+                in_scope_source_ids=set(),
+            )
+
+    def test_safe_projection_rejects_contradictory_completion_data(self) -> None:
+        with self.assertRaises(ValueError):
+            project_review_status(
+                {
+                    "schema_version": "review_result.v1",
+                    "scope_mode": "focused",
+                    "execution_state": "completed",
+                    "review_outcome": "review_complete",
+                    "coverage": [
+                        self._coverage("requirement", "portfolio.products", status="reviewed", outcome="supported"),
+                        self._coverage("source_unit", "p1", status="unreviewed"),
+                    ],
+                    "finding_ids": ["f1"],
+                    "limitations": [],
+                    "persistence_state": "preview_only",
+                    "stop_reason": None,
+                    "next_action": None,
+                },
+                required_requirement_ids={"portfolio.products"},
+                in_scope_source_ids={"p1"},
             )
 
     def test_role_packet_rejects_cross_entity_memory(self) -> None:
