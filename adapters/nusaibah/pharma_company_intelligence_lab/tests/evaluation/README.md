@@ -26,3 +26,13 @@ The test suite deliberately fails closed if a case claims `adjudicated` without 
 ## Scope boundary
 
 These fixtures do not add document input authority, new provider calls, chunking, retries, memory writes, publication, or runtime configuration. WP2 and later work remain dependency-blocked until WP1 adjudication and baseline decisions are complete.
+
+## Readiness report
+
+Run this from the adapter test directory or project root:
+
+```powershell
+python adapters/nusaibah/pharma_company_intelligence_lab/tests/evaluation/review_evaluation_status.py
+```
+
+The report is value-safe and exposes only counts/status. `wp2_unblocked` remains `false` until the criticality taxonomy is adjudicated and all 24 cases have named reviewer evidence plus frozen matching source digests.
