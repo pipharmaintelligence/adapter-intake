@@ -1,0 +1,22 @@
+asset_key: nusaibah.pharma_company_intelligence_lab_evaluation
+asset_version: 0.1.0
+package_target: python_runtime/adapters/intake/nusaibah/pharma_company_intelligence_lab_evaluation
+manifest: nusaibah_pharma_company_intelligence_lab_evaluation.asset.json
+adapter_module: nusaibah_pharma_company_intelligence_lab_evaluation_adapter.py
+
+reviewed_helpers:
+  - evaluation_replay.py
+  - nusaibah_pharma_company_intelligence_lab_adapter.py
+  - input_contract.py
+  - dossier_contract.py
+  - memory_contract.py
+  - agent_contract.py
+  - methodology_contract.py
+
+release_stage: development
+
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false
