@@ -7,7 +7,13 @@ from pathlib import Path
 
 
 HERE = Path(__file__).resolve().parent
-SUITE_PATH = HERE / "evaluation" / "review_evaluation_suite.v1.json"
+EVALUATION_ROOT = HERE / "evaluation"
+SUITE_PATH = EVALUATION_ROOT / "review_evaluation_suite.v1.json"
+TAXONOMY_PATH = EVALUATION_ROOT / "review_criticality_taxonomy.v1.json"
+
+import sys
+sys.path.insert(0, str(EVALUATION_ROOT))
+from review_evaluation_status import evaluation_status, source_digest
 
 EXPECTED_BASELINE = {
     "asset_key": "nusaibah.pharma_company_intelligence_lab",
@@ -121,6 +127,59 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
                         self.assertIn(locator, locators)
                     for locator in finding["contradicting_locators"]:
                         self.assertIn(locator, locators)
+
+    def test_criticality_taxonomy_is_explicit_and_not_self_certifying(self) -> None:
+        taxonomy = json.loads(TAXONOMY_PATH.read_text(encoding="utf-8"))
+
+        self.assertEqual(
+            taxonomy["schema_version"],
+            "pharma_review_criticality_taxonomy.v1",
+        )
+        self.assertEqual(taxonomy["status"], "proposed_for_domain_adjudication")
+        self.assertIs(taxonomy["levels"]["high"]["blocking_when_unsupported"], True)
+        self.assertIs(
+            taxonomy["levels"]["noncritical"]["blocking_when_unsupported"],
+            False,
+        )
+
+        class_ids = {
+            item["class_id"]
+            for item in taxonomy["levels"]["high"]["candidate_classes"]
+        }
+        self.assertEqual(
+            class_ids,
+            {
+                "regulatory_status",
+                "clinical_or_safety",
+                "manufacturing_or_quality",
+                "entity_identity",
+                "review_completeness",
+            },
+        )
+
+    def test_status_report_keeps_wp2_blocked_until_adjudication_is_real(self) -> None:
+        report = evaluation_status()
+
+        self.assertEqual(report["case_count"], 24)
+        self.assertEqual(report["development_count"], 16)
+        self.assertEqual(report["held_out_count"], 8)
+        self.assertEqual(report["adjudicated_count"], 0)
+        self.assertEqual(report["pending_domain_review_count"], 24)
+        self.assertIs(report["wp1_contract_ready"], False)
+        self.assertIs(report["wp2_unblocked"], False)
+
+    def test_source_digest_is_stable_and_depends_only_on_source_units(self) -> None:
+        case = self.suite["cases"][0]
+        digest = source_digest(case)
+
+        self.assertRegex(digest, SHA256_RE)
+
+        changed = json.loads(json.dumps(case))
+        changed["title"] = "A changed display title must not alter source identity."
+        self.assertEqual(source_digest(changed), digest)
+
+        changed["source_units"][0]["text"] += " Changed source bytes."
+        self.assertNotEqual(source_digest(changed), digest)
 
     def test_pending_domain_review_cannot_masquerade_as_adjudicated(self) -> None:
         self.assertEqual(self.suite["status"], "pending_domain_review")
