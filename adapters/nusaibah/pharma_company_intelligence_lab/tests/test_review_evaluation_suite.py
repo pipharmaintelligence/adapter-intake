@@ -1,0 +1,177 @@
+from __future__ import annotations
+
+import json
+import re
+import unittest
+from pathlib import Path
+
+
+HERE = Path(__file__).resolve().parent
+SUITE_PATH = HERE / "evaluation" / "review_evaluation_suite.v1.json"
+
+EXPECTED_BASELINE = {
+    "asset_key": "nusaibah.pharma_company_intelligence_lab",
+    "asset_version": "0.1.12",
+    "runtime_version": "0.1.97",
+    "intake_commit": "21cc6b39492cbd3c090de537a2ee27c599f0f0ec",
+    "assets_promotion_head": "ba2db9b6af9dd4963634861e71335a0d313b8ec0",
+    "assets_merge_commit": "7db8373b2a65a397c5ec01d41c3d440d9dbcd5b1",
+    "core_lifetime_fix": "3d25123b6231954fb40c97097e957ea38a4a5ff3",
+    "preview_run_uuid": "6e95802c-2336-47f5-b7c2-1e30476a0fef",
+    "execution_seconds": 303,
+    "factual_quality_measured": False,
+    "cost_baseline_measured": False,
+}
+
+REQUIRED_STRATA = {
+    "small_source",
+    "medium_source",
+    "oversized_source",
+    "table",
+    "footnote",
+    "time_change",
+    "jurisdiction_change",
+    "conflicting_sources",
+    "missing_evidence",
+    "wrong_company_distractor",
+    "ocr_gap",
+    "source_prompt_injection",
+    "boundary_spanning_claim",
+    "overlap_duplicate",
+    "changed_source_hash",
+    "citation_laundering",
+    "unsupported_paraphrase",
+    "omitted_mandatory_requirement",
+    "malformed_output",
+    "truncation",
+    "no_source_access",
+    "preview_no_write",
+    "timeout_cancellation",
+    "final_synthesis_new_claim",
+}
+
+SAFE_EXPECTED_STATES = {"supported", "contradicted", "insufficient", "not_applicable"}
+SAFE_CRITICALITY = {"noncritical", "high"}
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+class ReviewEvaluationSuiteTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.suite = json.loads(SUITE_PATH.read_text(encoding="utf-8"))
+
+    def test_baseline_is_exact_and_does_not_invent_usage_or_quality(self) -> None:
+        self.assertEqual(self.suite["baseline"], EXPECTED_BASELINE)
+
+        observations = self.suite["usage_observations"]
+        for field in (
+            "source_tokens",
+            "input_characters",
+            "answer_tokens",
+            "thinking_tokens",
+            "provider_reported_cost",
+        ):
+            self.assertIsNone(observations[field], field)
+
+    def test_suite_has_24_cases_with_fixed_development_and_held_out_split(self) -> None:
+        cases = self.suite["cases"]
+        self.assertEqual(len(cases), 24)
+
+        case_ids = [case["case_id"] for case in cases]
+        self.assertEqual(len(case_ids), len(set(case_ids)))
+
+        development = [case for case in cases if case["split"] == "development"]
+        held_out = [case for case in cases if case["split"] == "held_out"]
+
+        self.assertEqual(len(development), 16)
+        self.assertEqual(len(held_out), 8)
+        self.assertEqual(
+            self.suite["split_policy"]["held_out_ids"],
+            [case["case_id"] for case in held_out],
+        )
+
+    def test_required_adversarial_strata_are_present(self) -> None:
+        observed = {
+            stratum
+            for case in self.suite["cases"]
+            for stratum in case["strata"]
+        }
+        self.assertFalse(REQUIRED_STRATA - observed)
+
+    def test_case_identity_and_evidence_locators_are_self_consistent(self) -> None:
+        for case in self.suite["cases"]:
+            with self.subTest(case_id=case["case_id"]):
+                self.assertEqual(
+                    case["schema_version"],
+                    "pharma_review_evaluation_case.v1",
+                )
+                self.assertIn(case["mode"], {"company_research", "document_review"})
+                self.assertIn(case["split"], {"development", "held_out"})
+                self.assertTrue(case["applicable_requirements"])
+
+                source_units = case["source_units"]
+                locators = [item["locator"] for item in source_units]
+                self.assertEqual(len(locators), len(set(locators)))
+
+                for finding in case["candidate_expected_findings"]:
+                    self.assertIn(finding["expected_state"], SAFE_EXPECTED_STATES)
+                    self.assertIn(finding["criticality"], SAFE_CRITICALITY)
+                    self.assertTrue(finding["statement"].strip())
+                    for locator in finding["supporting_locators"]:
+                        self.assertIn(locator, locators)
+                    for locator in finding["contradicting_locators"]:
+                        self.assertIn(locator, locators)
+
+    def test_pending_domain_review_cannot_masquerade_as_adjudicated(self) -> None:
+        self.assertEqual(self.suite["status"], "pending_domain_review")
+
+        for case in self.suite["cases"]:
+            with self.subTest(case_id=case["case_id"]):
+                adjudication = case["adjudication"]
+                self.assertEqual(adjudication["status"], "pending_domain_review")
+                self.assertIsNone(adjudication["primary_reviewer"])
+                self.assertIsNone(adjudication["secondary_reviewer"])
+                self.assertIs(adjudication["disagreement"], False)
+
+                source_identity = case["source_identity"]
+                self.assertEqual(
+                    source_identity["digest_status"],
+                    "pending_fixture_freeze",
+                )
+                self.assertIsNone(source_identity["content_sha256"])
+
+    def test_future_adjudicated_case_requires_frozen_digest_and_reviewers(self) -> None:
+        for case in self.suite["cases"]:
+            adjudication = case["adjudication"]
+            if adjudication["status"] != "adjudicated":
+                continue
+
+            with self.subTest(case_id=case["case_id"]):
+                self.assertTrue(str(adjudication["primary_reviewer"]).strip())
+                if adjudication["disagreement"]:
+                    self.assertTrue(str(adjudication["secondary_reviewer"]).strip())
+
+                digest = case["source_identity"]["content_sha256"]
+                self.assertIsInstance(digest, str)
+                self.assertRegex(digest, SHA256_RE)
+                self.assertEqual(case["source_identity"]["digest_status"], "frozen")
+
+    def test_high_impact_cases_always_define_supported_evidence_or_abstention(self) -> None:
+        for case in self.suite["cases"]:
+            high_impact = any(
+                finding["criticality"] == "high"
+                for finding in case["candidate_expected_findings"]
+            )
+            if not high_impact and "high_impact_claim" not in case["strata"]:
+                continue
+
+            with self.subTest(case_id=case["case_id"]):
+                supported = any(
+                    finding["supporting_locators"]
+                    for finding in case["candidate_expected_findings"]
+                )
+                self.assertTrue(supported or case["acceptable_abstention"])
+
+
+if __name__ == "__main__":
+    unittest.main()
