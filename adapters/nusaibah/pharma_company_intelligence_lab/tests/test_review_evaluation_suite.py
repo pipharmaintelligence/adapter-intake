@@ -13,7 +13,7 @@ TAXONOMY_PATH = EVALUATION_ROOT / "review_criticality_taxonomy.v1.json"
 
 import sys
 sys.path.insert(0, str(EVALUATION_ROOT))
-from review_evaluation_status import evaluation_status, source_digest
+from review_evaluation_status import evaluate_suite, evaluation_status, source_digest
 
 EXPECTED_BASELINE = {
     "asset_key": "nusaibah.pharma_company_intelligence_lab",
@@ -156,6 +156,52 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
                 "review_completeness",
             },
         )
+
+    def test_status_report_rejects_adjudication_without_named_reviewer(self) -> None:
+        suite = json.loads(json.dumps(self.suite))
+        taxonomy = json.loads(TAXONOMY_PATH.read_text(encoding="utf-8"))
+
+        suite["status"] = "adjudicated"
+        taxonomy["status"] = "adjudicated"
+        suite["adjudication_policy"]["assigned_domain_reviewer"] = "Domain reviewer"
+        taxonomy["adjudication"]["assigned_domain_reviewer"] = "Domain reviewer"
+
+        for case in suite["cases"]:
+            case["adjudication"]["status"] = "adjudicated"
+            case["source_identity"]["digest_status"] = "frozen"
+            case["source_identity"]["content_sha256"] = source_digest(case)
+
+        report = evaluate_suite(suite, taxonomy)
+
+        self.assertEqual(report["missing_primary_reviewer_count"], 24)
+        self.assertIs(report["blockers"]["missing_primary_reviewer"], True)
+        self.assertIs(report["wp1_contract_ready"], False)
+        self.assertIs(report["wp2_unblocked"], False)
+
+    def test_status_report_accepts_only_fully_adjudicated_frozen_suite(self) -> None:
+        suite = json.loads(json.dumps(self.suite))
+        taxonomy = json.loads(TAXONOMY_PATH.read_text(encoding="utf-8"))
+
+        suite["status"] = "adjudicated"
+        taxonomy["status"] = "adjudicated"
+        suite["adjudication_policy"]["assigned_domain_reviewer"] = "Domain reviewer"
+        taxonomy["adjudication"]["assigned_domain_reviewer"] = "Domain reviewer"
+
+        for case in suite["cases"]:
+            case["adjudication"]["status"] = "adjudicated"
+            case["adjudication"]["primary_reviewer"] = "Domain reviewer"
+            case["source_identity"]["digest_status"] = "frozen"
+            case["source_identity"]["content_sha256"] = source_digest(case)
+
+        report = evaluate_suite(suite, taxonomy)
+
+        self.assertEqual(report["pending_domain_review_count"], 0)
+        self.assertEqual(report["missing_primary_reviewer_count"], 0)
+        self.assertEqual(report["invalid_frozen_digest_count"], 0)
+        self.assertIs(report["domain_reviewer_assigned"], True)
+        self.assertFalse(any(report["blockers"].values()))
+        self.assertIs(report["wp1_contract_ready"], True)
+        self.assertIs(report["wp2_unblocked"], True)
 
     def test_status_report_keeps_wp2_blocked_until_adjudication_is_real(self) -> None:
         report = evaluation_status()
