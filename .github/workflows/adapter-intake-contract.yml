@@ -48,3 +48,4 @@ jobs:
           python -m unittest discover -s adapters/nusaibah/pharma_company_intelligence_lab/tests -p "test_iteration_limits.py" -v
           python -m unittest discover -s adapters/nusaibah/pharma_company_intelligence_lab/tests -p "test_planner_contract.py" -v
           python -m unittest discover -s adapters/nusaibah/pharma_company_intelligence_lab/tests -p "test_review_evaluation_suite.py" -v
+          python -m unittest discover -s adapters/nusaibah/pharma_company_intelligence_lab/tests -p "test_specialized_review_reference.py" -v
