@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import hashlib
+import json
 from typing import Any
 
 from review_evaluation_status import source_digest
@@ -11,6 +13,23 @@ class AdjudicationReceiptError(ValueError):
 
 
 RECEIPT_SCHEMA_VERSION = "pharma_review_adjudication_receipt.v1"
+
+
+def adjudication_input_digest(value: Any) -> str:
+    """Return a deterministic digest binding reviewer approval to exact input content."""
+
+    try:
+        canonical = json.dumps(
+            value,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+    except (TypeError, ValueError) as exc:
+        raise AdjudicationReceiptError(
+            "Adjudication input must be JSON-compatible."
+        ) from exc
+    return f"sha256:{hashlib.sha256(canonical).hexdigest()}"
 
 
 def _nonempty_text(value: Any, *, field: str) -> str:
@@ -45,6 +64,14 @@ def apply_adjudication_receipt(
         raise AdjudicationReceiptError("Unsupported adjudication receipt schema.")
     if receipt.get("suite_id") != suite.get("suite_id"):
         raise AdjudicationReceiptError("Receipt suite identity mismatch.")
+    if receipt.get("suite_input_digest") != adjudication_input_digest(suite):
+        raise AdjudicationReceiptError(
+            "Receipt does not match the exact suite content reviewed."
+        )
+    if receipt.get("taxonomy_input_digest") != adjudication_input_digest(taxonomy):
+        raise AdjudicationReceiptError(
+            "Receipt does not match the exact taxonomy content reviewed."
+        )
 
     reviewer = receipt.get("reviewer")
     if not isinstance(reviewer, dict):
