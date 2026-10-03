@@ -23,6 +23,7 @@ REVIEW_OUTCOMES = frozenset(
     }
 )
 EXECUTION_STATES = frozenset({"completed", "incomplete", "blocked", "failed"})
+RISK_CLASSES = frozenset({"high", "noncritical"})
 
 
 def _require_mapping(value: Any, *, field: str) -> dict[str, Any]:
@@ -40,6 +41,29 @@ def _require_text(value: Any, *, field: str) -> str:
 def _require_list(value: Any, *, field: str) -> list[Any]:
     if not isinstance(value, list):
         raise ReviewContractError(f"{field} must be a list.")
+    return value
+
+
+def _require_text_list(
+    value: Any,
+    *,
+    field: str,
+    allow_empty: bool = True,
+) -> list[str]:
+    items = [
+        _require_text(item, field=f"{field}[]")
+        for item in _require_list(value, field=field)
+    ]
+    if not allow_empty and not items:
+        raise ReviewContractError(f"{field} must not be empty.")
+    if len(items) != len(set(items)):
+        raise ReviewContractError(f"{field} must contain unique values.")
+    return items
+
+
+def _positive_integer(value: Any, *, field: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        raise ReviewContractError(f"{field} must be a positive integer.")
     return value
 
 
@@ -78,14 +102,15 @@ def validate_source_snapshot(value: Any) -> dict[str, Any]:
     if obj["scope_mode"] not in SCOPE_MODES:
         raise ReviewContractError("Invalid review scope mode.")
 
-    inventory = [_require_text(item, field="inventory_id") for item in _require_list(
-        obj["inventory_ids"], field="source_snapshot.inventory_ids"
-    )]
-    inaccessible = [_require_text(item, field="inaccessible_id") for item in _require_list(
-        obj["inaccessible_ids"], field="source_snapshot.inaccessible_ids"
-    )]
-    if len(inventory) != len(set(inventory)):
-        raise ReviewContractError("Source inventory IDs must be unique.")
+    inventory = _require_text_list(
+        obj["inventory_ids"],
+        field="source_snapshot.inventory_ids",
+        allow_empty=False,
+    )
+    inaccessible = _require_text_list(
+        obj["inaccessible_ids"],
+        field="source_snapshot.inaccessible_ids",
+    )
     if not set(inaccessible).issubset(inventory):
         raise ReviewContractError("Inaccessible source IDs must belong to the inventory.")
     return dict(obj)
@@ -115,21 +140,33 @@ def validate_source_chunk(value: Any, *, snapshot: dict[str, Any]) -> dict[str, 
         raise ReviewContractError("Unsupported source chunk schema.")
     _require_text(obj["chunk_id"], field="source_chunk.chunk_id")
     _require_text(obj["chunk_digest"], field="source_chunk.chunk_digest")
+
+    expected_snapshot_id = f"{snapshot['source_id']}@{snapshot['source_version']}"
+    if obj["snapshot_id"] != expected_snapshot_id:
+        raise ReviewContractError("Chunk snapshot identity does not match the admitted snapshot.")
     if obj["entity_id"] != snapshot["entity_id"] or obj["source_hash"] != snapshot["source_hash"]:
         raise ReviewContractError("Chunk source identity does not match the admitted snapshot.")
-    locators = [_require_text(item, field="source_chunk.locator") for item in _require_list(
-        obj["locators"], field="source_chunk.locators"
-    )]
+
+    locators = _require_text_list(
+        obj["locators"],
+        field="source_chunk.locators",
+        allow_empty=False,
+    )
     if not set(locators).issubset(set(snapshot["inventory_ids"])):
         raise ReviewContractError("Chunk references a locator outside the source inventory.")
-    context_only = [_require_text(item, field="source_chunk.context_only_locator") for item in _require_list(
-        obj["context_only_locators"], field="source_chunk.context_only_locators"
-    )]
+    if set(locators) & set(snapshot["inaccessible_ids"]):
+        raise ReviewContractError("Chunk cannot contain inaccessible source units.")
+
+    context_only = _require_text_list(
+        obj["context_only_locators"],
+        field="source_chunk.context_only_locators",
+    )
     if not set(context_only).issubset(set(locators)):
         raise ReviewContractError("Context-only locators must be part of the chunk.")
+
     if not isinstance(obj["text"], str):
         raise ReviewContractError("source_chunk.text must be a string.")
-    _require_list(obj["quality_flags"], field="source_chunk.quality_flags")
+    _require_text_list(obj["quality_flags"], field="source_chunk.quality_flags")
     return dict(obj)
 
 
@@ -160,12 +197,13 @@ def validate_methodology_requirement(value: Any) -> dict[str, Any]:
         "methodology_digest",
         "requirement_id",
         "role",
-        "risk_class",
         "applicability_rule",
         "expected_evidence_class",
         "acceptance_criterion",
     ):
         _require_text(obj[key], field=f"methodology_requirement.{key}")
+    if obj["risk_class"] not in RISK_CLASSES:
+        raise ReviewContractError("Invalid methodology requirement risk class.")
     if not isinstance(obj["mandatory"], bool):
         raise ReviewContractError("methodology_requirement.mandatory must be boolean.")
     return dict(obj)
@@ -200,16 +238,24 @@ def validate_review_task(
         raise ReviewContractError("Unsupported task schema.")
     for key in ("run_id", "entity_id", "task_id", "role", "output_schema"):
         _require_text(obj[key], field=f"review_task.{key}")
-    requirement_ids = set(_require_list(obj["requirement_ids"], field="review_task.requirement_ids"))
-    chunk_ids = set(_require_list(obj["chunk_ids"], field="review_task.chunk_ids"))
-    if not requirement_ids or not requirement_ids.issubset(known_requirement_ids):
-        raise ReviewContractError("Task requirement IDs must be non-empty and admitted.")
-    if not chunk_ids or not chunk_ids.issubset(known_chunk_ids):
-        raise ReviewContractError("Task chunk IDs must be non-empty and admitted.")
-    _require_list(obj["memory_ref_ids"], field="review_task.memory_ref_ids")
+
+    requirement_ids = _require_text_list(
+        obj["requirement_ids"],
+        field="review_task.requirement_ids",
+        allow_empty=False,
+    )
+    chunk_ids = _require_text_list(
+        obj["chunk_ids"],
+        field="review_task.chunk_ids",
+        allow_empty=False,
+    )
+    if not set(requirement_ids).issubset(known_requirement_ids):
+        raise ReviewContractError("Task requirement IDs must be admitted.")
+    if not set(chunk_ids).issubset(known_chunk_ids):
+        raise ReviewContractError("Task chunk IDs must be admitted.")
+    _require_text_list(obj["memory_ref_ids"], field="review_task.memory_ref_ids")
     for field in ("logical_call_budget", "provider_step_budget", "transport_attempt_budget"):
-        if not isinstance(obj[field], int) or obj[field] < 1:
-            raise ReviewContractError(f"review_task.{field} must be a positive integer.")
+        _positive_integer(obj[field], field=f"review_task.{field}")
     return dict(obj)
 
 
@@ -247,14 +293,18 @@ def validate_finding(
         _require_text(obj[key], field=f"finding.{key}")
     if obj["requirement_id"] not in known_requirement_ids:
         raise ReviewContractError("Finding requirement ID is not admitted.")
-    evidence_refs = set(_require_list(obj["evidence_refs"], field="finding.evidence_refs"))
-    contradictions = set(
-        _require_list(
-            obj["contradicting_evidence_refs"],
-            field="finding.contradicting_evidence_refs",
-        )
+
+    evidence_refs = _require_text_list(
+        obj["evidence_refs"],
+        field="finding.evidence_refs",
     )
-    if not evidence_refs.issubset(known_evidence_refs) or not contradictions.issubset(
+    contradictions = _require_text_list(
+        obj["contradicting_evidence_refs"],
+        field="finding.contradicting_evidence_refs",
+    )
+    if set(evidence_refs) & set(contradictions):
+        raise ReviewContractError("One evidence reference cannot be both supporting and contradicting.")
+    if not set(evidence_refs).issubset(known_evidence_refs) or not set(contradictions).issubset(
         known_evidence_refs
     ):
         raise ReviewContractError("Finding cites an unknown evidence reference.")
@@ -266,10 +316,10 @@ def validate_finding(
         raise ReviewContractError("Finding must distinguish observed from inferred.")
     if not isinstance(obj["high_impact"], bool):
         raise ReviewContractError("finding.high_impact must be boolean.")
-    if obj["date"] is not None and not isinstance(obj["date"], str):
-        raise ReviewContractError("finding.date must be text or null.")
-    if obj["jurisdiction"] is not None and not isinstance(obj["jurisdiction"], str):
-        raise ReviewContractError("finding.jurisdiction must be text or null.")
+    if obj["date"] is not None:
+        _require_text(obj["date"], field="finding.date")
+    if obj["jurisdiction"] is not None:
+        _require_text(obj["jurisdiction"], field="finding.jurisdiction")
     _require_text(obj["verification_reason"], field="finding.verification_reason")
     return dict(obj)
 
@@ -299,9 +349,12 @@ def validate_coverage_entry(value: Any) -> dict[str, Any]:
     if obj["outcome"] is not None and obj["outcome"] not in EVIDENCE_STATES:
         raise ReviewContractError("Invalid coverage evidence outcome.")
     _require_text(obj["reason"], field="coverage_entry.reason")
-    _require_list(obj["task_ids"], field="coverage_entry.task_ids")
+    _require_text_list(obj["task_ids"], field="coverage_entry.task_ids")
+
     if obj["status"] == "reviewed" and obj["outcome"] is None:
         raise ReviewContractError("Reviewed coverage requires an explicit evidence outcome.")
+    if obj["status"] != "reviewed" and obj["outcome"] is not None:
+        raise ReviewContractError("Only reviewed coverage may carry an evidence outcome.")
     return dict(obj)
 
 
@@ -334,13 +387,24 @@ def validate_review_result(
         raise ReviewContractError("Invalid execution state.")
     if obj["review_outcome"] not in REVIEW_OUTCOMES:
         raise ReviewContractError("Invalid review outcome.")
-    coverage = [validate_coverage_entry(item) for item in _require_list(
-        obj["coverage"], field="review_result.coverage"
-    )]
-    _require_list(obj["finding_ids"], field="review_result.finding_ids")
-    _require_list(obj["limitations"], field="review_result.limitations")
+
+    coverage = [
+        validate_coverage_entry(item)
+        for item in _require_list(obj["coverage"], field="review_result.coverage")
+    ]
+    finding_ids = _require_text_list(obj["finding_ids"], field="review_result.finding_ids")
+    _require_text_list(obj["limitations"], field="review_result.limitations")
     if obj["persistence_state"] not in {"not_requested", "preview_only", "applied", "failed"}:
         raise ReviewContractError("Invalid persistence state.")
+
+    obligation_keys = [
+        (item["obligation_type"], item["obligation_id"])
+        for item in coverage
+    ]
+    if len(obligation_keys) != len(set(obligation_keys)):
+        raise ReviewContractError("Coverage contains duplicate obligation dispositions.")
+    if len(finding_ids) != len(set(finding_ids)):
+        raise ReviewContractError("Review result finding IDs must be unique.")
 
     covered_requirements = {
         item["obligation_id"] for item in coverage if item["obligation_type"] == "requirement"
@@ -363,4 +427,12 @@ def validate_review_result(
         "review_complete_with_evidence_gaps",
     }:
         raise ReviewContractError("Unreviewed/inaccessible work cannot be reported complete.")
+    if obj["review_outcome"] in {"review_complete", "review_complete_with_evidence_gaps"} and obj[
+        "execution_state"
+    ] != "completed":
+        raise ReviewContractError("A complete review requires completed execution.")
+    if obj["execution_state"] == "failed" and obj["review_outcome"] != "failed":
+        raise ReviewContractError("Failed execution must project a failed review outcome.")
+    if obj["execution_state"] == "blocked" and obj["review_outcome"] != "blocked":
+        raise ReviewContractError("Blocked execution must project a blocked review outcome.")
     return dict(obj)
