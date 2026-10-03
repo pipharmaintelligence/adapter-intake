@@ -196,6 +196,18 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
         taxonomy["status"] = "adjudicated"
         suite["adjudication_policy"]["assigned_domain_reviewer"] = "Domain reviewer"
         taxonomy["adjudication"]["assigned_domain_reviewer"] = "Domain reviewer"
+        suite["quality_threshold_policy"]["status"] = "calibrated"
+        suite["quality_threshold_policy"]["calibrated_thresholds"] = {
+            "factual_faithfulness_min": 0.98,
+            "noncritical_precision_min": 0.95,
+            "noncritical_recall_min": 0.95,
+        }
+        suite["quality_threshold_policy"]["calibration"]["assigned_domain_owner"] = (
+            "Domain owner"
+        )
+        suite["quality_threshold_policy"]["calibration"]["decision_note"] = (
+            "Synthetic test calibration decision."
+        )
 
         for case in suite["cases"]:
             case["adjudication"]["status"] = "adjudicated"
@@ -219,8 +231,51 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
         self.assertEqual(report["case_count"], 24)
         self.assertEqual(report["development_count"], 16)
         self.assertEqual(report["held_out_count"], 8)
+        self.assertEqual(report["candidate_complete_count"], 20)
+        self.assertEqual(report["candidate_incomplete_count"], 4)
         self.assertEqual(report["adjudicated_count"], 0)
         self.assertEqual(report["pending_domain_review_count"], 24)
+        self.assertIs(report["quality_thresholds_calibrated"], False)
+        self.assertIs(report["blockers"]["quality_thresholds_not_calibrated"], True)
+        self.assertIs(report["wp1_contract_ready"], False)
+        self.assertIs(report["wp2_unblocked"], False)
+
+    def test_completion_expectations_distinguish_complete_and_incomplete_cases(self) -> None:
+        expected_incomplete = {
+            "document-ocr-gap-014",
+            "document-no-source-access-022",
+            "document-output-failure-023",
+            "document-budget-final-claim-024",
+        }
+        actual_incomplete = {
+            case["case_id"]
+            for case in self.suite["cases"]
+            if case["candidate_expected_complete"] is False
+        }
+        self.assertEqual(actual_incomplete, expected_incomplete)
+        for case in self.suite["cases"]:
+            with self.subTest(case_id=case["case_id"]):
+                self.assertIsInstance(case["candidate_expected_complete"], bool)
+                self.assertTrue(case["completion_expectation_reason"].strip())
+
+    def test_status_report_rejects_uncalibrated_quality_thresholds(self) -> None:
+        suite = json.loads(json.dumps(self.suite))
+        taxonomy = json.loads(TAXONOMY_PATH.read_text(encoding="utf-8"))
+
+        suite["status"] = "adjudicated"
+        taxonomy["status"] = "adjudicated"
+        suite["adjudication_policy"]["assigned_domain_reviewer"] = "Domain reviewer"
+        taxonomy["adjudication"]["assigned_domain_reviewer"] = "Domain reviewer"
+
+        for case in suite["cases"]:
+            case["adjudication"]["status"] = "adjudicated"
+            case["adjudication"]["primary_reviewer"] = "Domain reviewer"
+            case["source_identity"]["digest_status"] = "frozen"
+            case["source_identity"]["content_sha256"] = source_digest(case)
+
+        report = evaluate_suite(suite, taxonomy)
+
+        self.assertIs(report["blockers"]["quality_thresholds_not_calibrated"], True)
         self.assertIs(report["wp1_contract_ready"], False)
         self.assertIs(report["wp2_unblocked"], False)
 
