@@ -1,0 +1,120 @@
+{
+  "schema_version": "pharma_specialized_review_work_packages.v1",
+  "branch_scope": "adapter-intake PR #74",
+  "live_asset_behavior_changed": false,
+  "work_packages": [
+    {
+      "id": "WP1",
+      "linear": "PI-1974",
+      "title": "Adjudicated quality and usage baseline",
+      "artifact_state": "implemented_evaluation_infrastructure",
+      "activation_gate": "qualified domain adjudication of suite and criticality taxonomy",
+      "artifacts": [
+        "review_evaluation_suite.v1.json",
+        "review_criticality_taxonomy.v1.json",
+        "review_evaluation_status.py"
+      ],
+      "owner": "adapter-intake evaluation fixtures + domain reviewer"
+    },
+    {
+      "id": "WP2",
+      "linear": "PI-1975",
+      "title": "Evidence, methodology and coverage contracts",
+      "artifact_state": "gated_reference_implementation",
+      "activation_gate": "WP1 wp1_contract_ready=true and reviewed schema/version decision",
+      "artifacts": [
+        "reference/review_contracts.py"
+      ],
+      "owner": "adapter-intake business contracts; generic projections may require Assets/Core follow-up"
+    },
+    {
+      "id": "WP3",
+      "linear": "PI-1976",
+      "title": "Relevant memory and specialist packets",
+      "artifact_state": "gated_reference_implementation",
+      "activation_gate": "WP2 accepted; held-out quality non-regression before live wiring",
+      "artifacts": [
+        "reference/role_packets.py"
+      ],
+      "owner": "adapter-intake orchestration/input contracts"
+    },
+    {
+      "id": "WP4",
+      "linear": "PI-1977",
+      "title": "Source inventory and structure-aware chunks",
+      "artifact_state": "gated_reference_implementation",
+      "activation_gate": "WP2 accepted; document input authority remains fixture-only until separate binding review",
+      "artifacts": [
+        "reference/source_chunks.py"
+      ],
+      "owner": "adapter-intake review policy + governed source contract owner"
+    },
+    {
+      "id": "WP5",
+      "linear": "PI-1978",
+      "title": "Finite task planning and bounded observations",
+      "artifact_state": "gated_reference_implementation",
+      "activation_gate": "WP2+WP4 accepted; runtime reservation/telemetry changes require Assets/Core ownership",
+      "artifacts": [
+        "reference/finite_plan.py"
+      ],
+      "owner": "adapter logical plan; runtime/Core lifecycle remains external"
+    },
+    {
+      "id": "WP6",
+      "linear": "PI-1979",
+      "title": "Specialist findings and evidence verification",
+      "artifact_state": "gated_reference_implementation",
+      "activation_gate": "WP3+WP4+WP5 accepted and adjudicated evidence policy",
+      "artifacts": [
+        "reference/evidence_verification.py"
+      ],
+      "owner": "adapter-intake finding/evidence validation"
+    },
+    {
+      "id": "WP7",
+      "linear": "PI-1980",
+      "title": "Global consistency, assembly and memory gate",
+      "artifact_state": "gated_reference_implementation",
+      "activation_gate": "WP6 accepted; apply still requires existing governed mutation/readback proof",
+      "artifacts": [
+        "reference/reconciliation.py"
+      ],
+      "owner": "adapter business reconciliation; persistence remains runtime/Core governed"
+    },
+    {
+      "id": "WP8",
+      "linear": "PI-1981",
+      "title": "Evaluation, budget tuning and immutable rollout",
+      "artifact_state": "gated_reference_implementation",
+      "activation_gate": "WP1+WP7 complete and calibrated thresholds approved",
+      "artifacts": [
+        "reference/release_evaluation.py"
+      ],
+      "owner": "adapter release owner + domain adjudication"
+    },
+    {
+      "id": "WP9",
+      "linear": "PI-1982",
+      "title": "Truthful review states and operator recovery",
+      "artifact_state": "gated_reference_implementation",
+      "activation_gate": "WP2+WP5+WP7 accepted; production CLI/API/UI projection requires owning repos",
+      "artifacts": [
+        "reference/safe_projection.py"
+      ],
+      "owner": "reference projection here; Assets/Core/UI own production surfaces"
+    },
+    {
+      "id": "WP10",
+      "linear": "PI-1983",
+      "title": "Release documentation and operational checklist",
+      "artifact_state": "gated_reference_implementation",
+      "activation_gate": "WP2+WP8+WP9 release evidence",
+      "artifacts": [
+        "reference/release_checklist.py",
+        "README.md"
+      ],
+      "owner": "adapter README + Assets developer docs + Linear"
+    }
+  ]
+}
