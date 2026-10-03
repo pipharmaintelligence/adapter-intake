@@ -86,5 +86,10 @@
     "Unsupported high-impact findings cannot be accepted merely because another model agrees.",
     "An explicitly incomplete/insufficient result is not a recovered critical finding.",
     "Changes to this taxonomy after held-out evaluation begins require a new taxonomy version."
-  ]
+  ],
+  "adjudication": {
+    "owner_role": "qualified_pharma_domain_reviewer",
+    "assigned_domain_reviewer": null,
+    "second_reviewer_required_for_disagreement": true
+  }
 }
