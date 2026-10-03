@@ -19,6 +19,21 @@ def stable_digest(value: Any) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _text_list(value: Any, *, field: str) -> list[str]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise ChunkingError(f"{field} must be a list.")
+    result: list[str] = []
+    for item in value:
+        if not isinstance(item, str) or not item.strip():
+            raise ChunkingError(f"{field} must contain non-empty text.")
+        result.append(item.strip())
+    if len(result) != len(set(result)):
+        raise ChunkingError(f"{field} must contain unique values.")
+    return result
+
+
 def build_source_inventory(
     *,
     entity_id: str,
@@ -31,10 +46,14 @@ def build_source_inventory(
 
     if not all(str(value).strip() for value in (entity_id, source_id, source_version, extraction_version)):
         raise ChunkingError("Source identity fields are required.")
+    if not isinstance(units, list) or not units:
+        raise ChunkingError("At least one source unit is required.")
 
     normalized: list[dict[str, Any]] = []
     seen: set[str] = set()
     for unit in units:
+        if not isinstance(unit, dict):
+            raise ChunkingError("Source units must be objects.")
         locator = str(unit.get("locator", "")).strip()
         if not locator or locator in seen:
             raise ChunkingError("Source unit locators must be unique and non-empty.")
@@ -42,17 +61,27 @@ def build_source_inventory(
         text = unit.get("text")
         if not isinstance(text, str):
             raise ChunkingError("Source unit text must be a string.")
-        flags = list(unit.get("quality_flags", []))
+        flags = _text_list(unit.get("quality_flags", []), field=f"{locator}.quality_flags")
+        related = _text_list(unit.get("related_locators", []), field=f"{locator}.related_locators")
         normalized.append(
             {
                 "locator": locator,
-                "kind": str(unit.get("kind", "paragraph")),
+                "kind": str(unit.get("kind", "paragraph")).strip() or "paragraph",
                 "text": text,
                 "quality_flags": flags,
+                "related_locators": related,
                 "accessible": "inaccessible" not in flags and "ocr_failed" not in flags,
                 "context_only": bool(unit.get("context_only", False)),
             }
         )
+
+    known = {unit["locator"] for unit in normalized}
+    for unit in normalized:
+        related = set(unit["related_locators"])
+        if unit["locator"] in related:
+            raise ChunkingError("A source unit cannot relate to itself.")
+        if not related.issubset(known):
+            raise ChunkingError("Related locators must belong to the source inventory.")
 
     snapshot_material = {
         "entity_id": entity_id,
@@ -74,47 +103,83 @@ def chunk_inventory(
     max_chars: int,
     neighbor_units: int = 0,
 ) -> list[dict[str, Any]]:
-    """Create structure-aware chunks without dropping inventory units."""
+    """Create structure-aware chunks without dropping source obligations.
 
-    if max_chars < 1 or neighbor_units < 0:
-        raise ChunkingError("Chunk limits must be positive and finite.")
+    Explicit structural relationships such as table-header/footnote links are
+    mandatory context. Neighbors are optional bounded context. Inaccessible
+    units remain visible in the inventory but never enter chunk text.
+    """
+
+    if isinstance(max_chars, bool) or not isinstance(max_chars, int) or max_chars < 1:
+        raise ChunkingError("max_chars must be a positive integer.")
+    if isinstance(neighbor_units, bool) or not isinstance(neighbor_units, int) or neighbor_units < 0:
+        raise ChunkingError("neighbor_units must be a non-negative integer.")
 
     units = inventory["units"]
+    index_by_locator = {unit["locator"]: index for index, unit in enumerate(units)}
     chunks: list[dict[str, Any]] = []
 
     for index, unit in enumerate(units):
         if not unit["accessible"]:
             continue
 
-        selected_indices = {index}
+        required_indices = {index}
+        for locator in unit.get("related_locators", []):
+            related_index = index_by_locator[locator]
+            related_unit = units[related_index]
+            if not related_unit["accessible"]:
+                raise ChunkingError(
+                    "An accessible unit depends on inaccessible required structural context."
+                )
+            required_indices.add(related_index)
+
+        optional_indices: set[int] = set()
         for offset in range(1, neighbor_units + 1):
             if index - offset >= 0:
-                selected_indices.add(index - offset)
+                optional_indices.add(index - offset)
             if index + offset < len(units):
-                selected_indices.add(index + offset)
+                optional_indices.add(index + offset)
+        optional_indices -= required_indices
 
-        selected = [
-            units[i]
-            for i in sorted(selected_indices)
-            if units[i]["accessible"]
-        ]
-        rendered_parts: list[str] = []
-        locators: list[str] = []
-        context_only_locators: list[str] = []
-        for candidate in selected:
-            part = candidate["text"]
-            if sum(len(item) for item in rendered_parts) + len(part) > max_chars:
-                if candidate["locator"] == unit["locator"]:
-                    raise ChunkingError("A source unit exceeds the hard chunk character cap.")
+        selected: list[dict[str, Any]] = []
+        used_chars = 0
+        for candidate_index in sorted(required_indices):
+            candidate = units[candidate_index]
+            if not candidate["accessible"]:
                 continue
-            rendered_parts.append(part)
-            locators.append(candidate["locator"])
-            if candidate["locator"] != unit["locator"] or candidate["context_only"]:
-                context_only_locators.append(candidate["locator"])
+            next_chars = used_chars + len(candidate["text"])
+            if next_chars > max_chars:
+                raise ChunkingError(
+                    "Required source structure exceeds the hard chunk character cap."
+                )
+            selected.append(candidate)
+            used_chars = next_chars
+
+        for candidate_index in sorted(optional_indices):
+            candidate = units[candidate_index]
+            if not candidate["accessible"]:
+                continue
+            next_chars = used_chars + len(candidate["text"])
+            if next_chars > max_chars:
+                continue
+            selected.append(candidate)
+            used_chars = next_chars
+
+        selected.sort(key=lambda item: index_by_locator[item["locator"]])
+        locators = [candidate["locator"] for candidate in selected]
+        required_locators = {
+            units[item_index]["locator"] for item_index in required_indices
+        }
+        context_only_locators = [
+            candidate["locator"]
+            for candidate in selected
+            if candidate["locator"] not in required_locators or candidate["context_only"]
+        ]
 
         material = {
             "snapshot_hash": inventory["source_hash"],
             "primary_locator": unit["locator"],
+            "required_locators": sorted(required_locators),
             "locators": locators,
             "extraction_version": inventory["extraction_version"],
             "policy": {"max_chars": max_chars, "neighbor_units": neighbor_units},
@@ -126,9 +191,11 @@ def chunk_inventory(
                 "snapshot_id": f"{inventory['source_id']}@{inventory['source_version']}",
                 "entity_id": inventory["entity_id"],
                 "source_hash": inventory["source_hash"],
-                "chunk_digest": stable_digest({"material": material, "text": rendered_parts}),
+                "chunk_digest": stable_digest(
+                    {"material": material, "text": [candidate["text"] for candidate in selected]}
+                ),
                 "locators": locators,
-                "text": "\n".join(rendered_parts),
+                "text": "\n".join(candidate["text"] for candidate in selected),
                 "quality_flags": sorted(
                     {
                         flag
