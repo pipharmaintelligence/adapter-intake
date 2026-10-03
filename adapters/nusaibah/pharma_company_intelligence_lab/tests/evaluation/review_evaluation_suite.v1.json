@@ -242,16 +242,13 @@
         {
           "finding_id": "f1",
           "statement": "Available sources disagree on whether Product X launched in January or February 2026.",
-          "expected_state": "contradicted",
+          "expected_state": "supported",
           "criticality": "noncritical",
           "supporting_locators": [
             "source:a",
             "source:b"
           ],
-          "contradicting_locators": [
-            "source:a",
-            "source:b"
-          ]
+          "contradicting_locators": []
         }
       ],
       "acceptable_abstention": [
@@ -1590,7 +1587,7 @@
       "candidate_expected_findings": [
         {
           "finding_id": "f1",
-          "statement": "A structurally valid review must preserve both the supported statement and explicit limitation.",
+          "statement": "The source contains one supported statement and one explicit limitation.",
           "expected_state": "supported",
           "criticality": "noncritical",
           "supporting_locators": [
