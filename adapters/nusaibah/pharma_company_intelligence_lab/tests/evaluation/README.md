@@ -36,3 +36,29 @@ python adapters/nusaibah/pharma_company_intelligence_lab/tests/evaluation/review
 ```
 
 The report is value-safe and exposes only counts/status. `wp2_unblocked` remains `false` until the criticality taxonomy is adjudicated and all 24 cases have named reviewer evidence plus frozen matching source digests.
+
+
+## Adjudication receipt workflow
+
+Do not hand-edit the suite into an adjudicated state. Generate a receipt that is bound to the exact current suite and taxonomy:
+
+```powershell
+python adapters/nusaibah/pharma_company_intelligence_lab/tests/evaluation/review_adjudication.py --emit-template wp1-adjudication-receipt.json
+```
+
+A qualified pharma-domain reviewer must complete the receipt with:
+
+- reviewer name and qualification basis;
+- an explicit taxonomy decision and notes;
+- one decision for every case;
+- a second reviewer and resolution for every disagreement;
+- a named domain owner and calibrated quality-threshold decision.
+
+After independent review is complete, apply the receipt:
+
+```powershell
+python adapters/nusaibah/pharma_company_intelligence_lab/tests/evaluation/review_adjudication.py --apply-receipt wp1-adjudication-receipt.json
+python adapters/nusaibah/pharma_company_intelligence_lab/tests/evaluation/review_evaluation_status.py
+```
+
+The applicator fails closed if the receipt was created against different suite/taxonomy content, omits a case, lacks reviewer qualification text, leaves taxonomy/thresholds pending, or records a disagreement without a second reviewer. Applying a structurally valid receipt is mechanical evidence processing; it does not independently authenticate the human identity or qualification asserted in the receipt. Reviewer/domain-owner identity must therefore also be traceable in the approved review record (for example PI-1984).
