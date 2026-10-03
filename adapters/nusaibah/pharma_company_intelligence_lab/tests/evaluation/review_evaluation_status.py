@@ -9,6 +9,7 @@ from typing import Any
 HERE = Path(__file__).resolve().parent
 SUITE_PATH = HERE / "review_evaluation_suite.v1.json"
 TAXONOMY_PATH = HERE / "review_criticality_taxonomy.v1.json"
+BASELINE_MEASUREMENT_PATH = HERE / "review_baseline_measurement.v1.json"
 
 
 def source_digest(case: dict[str, Any]) -> str:
@@ -48,11 +49,40 @@ def _valid_calibrated_thresholds(policy: dict[str, Any]) -> bool:
     return True
 
 
+def _validated_baseline_ready(
+    suite: dict[str, Any],
+    baseline_measurement: dict[str, Any] | None,
+) -> bool:
+    """Return True only for a complete measurement validated against exact suite truth."""
+
+    if baseline_measurement is None:
+        return False
+
+    # Lazy import avoids the review_adjudication -> review_evaluation_status import cycle.
+    from review_baseline_measurement import (
+        BaselineMeasurementError,
+        evaluate_baseline_measurement,
+    )
+
+    try:
+        report = evaluate_baseline_measurement(suite, baseline_measurement)
+    except BaselineMeasurementError:
+        return False
+
+    return (
+        report.get("measurement_complete") is True
+        and isinstance(report.get("quality_metrics"), dict)
+        and isinstance(report.get("quality_gate"), dict)
+    )
+
+
 def evaluate_suite(
     suite: dict[str, Any],
     taxonomy: dict[str, Any],
+    *,
+    baseline_measurement: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Evaluate whether WP1 has the evidence required to unblock WP2."""
+    """Evaluate WP1 contract readiness separately from full WP1 completion."""
 
     cases = suite["cases"]
     pending = []
@@ -99,7 +129,7 @@ def evaluate_suite(
         and _valid_calibrated_thresholds(threshold_policy)
     )
 
-    blockers = {
+    contract_blockers = {
         "suite_not_adjudicated": suite.get("status") != "adjudicated",
         "taxonomy_not_adjudicated": taxonomy.get("status") != "adjudicated",
         "domain_reviewer_unassigned": not suite_owner or not taxonomy_owner,
@@ -112,7 +142,16 @@ def evaluate_suite(
         "completion_expectations_incomplete": bool(invalid_completion_expectations),
         "quality_thresholds_not_calibrated": not threshold_calibrated,
     }
-    ready = not any(blockers.values())
+    contract_ready = not any(contract_blockers.values())
+    baseline_ready = (
+        contract_ready
+        and _validated_baseline_ready(suite, baseline_measurement)
+    )
+    completion_blockers = {
+        "wp1_contract_not_ready": not contract_ready,
+        "baseline_measurement_missing_or_incomplete": not baseline_ready,
+    }
+    wp1_complete = not any(completion_blockers.values())
 
     return {
         "schema_version": "pharma_review_evaluation_status.v1",
@@ -143,9 +182,12 @@ def evaluate_suite(
         "invalid_completion_expectation_count": len(invalid_completion_expectations),
         "domain_reviewer_assigned": bool(suite_owner and taxonomy_owner),
         "quality_thresholds_calibrated": threshold_calibrated,
-        "blockers": blockers,
-        "wp1_contract_ready": ready,
-        "wp2_unblocked": ready,
+        "blockers": contract_blockers,
+        "completion_blockers": completion_blockers,
+        "wp1_contract_ready": contract_ready,
+        "baseline_measurement_ready": baseline_ready,
+        "wp1_complete": wp1_complete,
+        "wp2_unblocked": wp1_complete,
     }
 
 
@@ -154,7 +196,16 @@ def evaluation_status() -> dict[str, Any]:
 
     suite = json.loads(SUITE_PATH.read_text(encoding="utf-8"))
     taxonomy = json.loads(TAXONOMY_PATH.read_text(encoding="utf-8"))
-    return evaluate_suite(suite, taxonomy)
+    baseline_measurement = (
+        json.loads(BASELINE_MEASUREMENT_PATH.read_text(encoding="utf-8"))
+        if BASELINE_MEASUREMENT_PATH.exists()
+        else None
+    )
+    return evaluate_suite(
+        suite,
+        taxonomy,
+        baseline_measurement=baseline_measurement,
+    )
 
 
 def main() -> int:
