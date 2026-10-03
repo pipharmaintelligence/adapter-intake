@@ -142,24 +142,25 @@ def chunk_inventory(
         optional_indices -= required_indices
 
         selected: list[dict[str, Any]] = []
-        used_chars = 0
+
+        def serialized_length(items: list[dict[str, Any]]) -> int:
+            return len("\n".join(item["text"] for item in items))
         for candidate_index in sorted(required_indices):
             candidate = units[candidate_index]
             if not candidate["accessible"]:
                 continue
-            next_chars = used_chars + len(candidate["text"])
+            next_chars = serialized_length([*selected, candidate])
             if next_chars > max_chars:
                 raise ChunkingError(
                     "Required source structure exceeds the hard chunk character cap."
                 )
             selected.append(candidate)
-            used_chars = next_chars
 
         for candidate_index in sorted(optional_indices):
             candidate = units[candidate_index]
             if not candidate["accessible"]:
                 continue
-            next_chars = used_chars + len(candidate["text"])
+            next_chars = serialized_length([*selected, candidate])
             if next_chars > max_chars:
                 continue
             selected.append(candidate)
