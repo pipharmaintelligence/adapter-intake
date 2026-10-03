@@ -1,0 +1,21 @@
+{
+  "schema_version": "pharma_review_adjudication_receipt.v1",
+  "suite_id": "pharma_methodology_specialized_review_wp1.v1",
+  "reviewer": {
+    "name": null,
+    "qualification_basis": null
+  },
+  "taxonomy": {
+    "decision": "pending",
+    "notes": null
+  },
+  "thresholds": {
+    "decision": "pending",
+    "domain_owner": null,
+    "decision_note": null,
+    "factual_faithfulness_min": null,
+    "noncritical_precision_min": null,
+    "noncritical_recall_min": null
+  },
+  "cases": []
+}
