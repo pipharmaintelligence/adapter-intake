@@ -7,9 +7,9 @@ This folder starts **PI-1974 / WP1**. It is evaluation infrastructure, not a cla
 - Baseline identity is pinned to asset `0.1.12`, runtime `0.1.97`, and preview run `6e95802c-2336-47f5-b7c2-1e30476a0fef`.
 - The suite contains 24 deterministic synthetic cases split into 16 development and 8 held-out cases.
 - Cases cover the planned adversarial strata: company isolation, wrong-entity distractors, tables/footnotes, boundary-spanning claims, duplicated overlap, source-version drift, conflicting dates/jurisdictions, OCR/access gaps, source prompt injection, citation laundering, unsupported paraphrase, mandatory-requirement omission, malformed/truncated output, budget exhaustion, preview no-write, and final-synthesis new-claim rejection.
-- Every case is currently `pending_domain_review`. Synthetic expected findings are **candidates** until a qualified domain reviewer adjudicates them.
-- Source content hashes are intentionally unset until fixtures are frozen after review.
-- Unobserved source/input/answer/thinking/cost counters remain `null`; do not manufacture a baseline from the one successful preview.
+- All 24 cases are adjudicated with a named primary reviewer and frozen matching source digests; the criticality taxonomy is adjudicated and thresholds are calibrated.
+- Adjudication/contract readiness is therefore distinct from WP1 completion.
+- The unchanged `0.1.12` factual-quality and cost baseline is still unmeasured. Unobserved source/input/answer/thinking/cost counters remain `null`; do not manufacture a baseline from the one successful preview.
 
 ## Adjudication workflow
 
@@ -19,7 +19,7 @@ This folder starts **PI-1974 / WP1**. It is evaluation infrastructure, not a cla
 4. Set a named primary domain reviewer and mark the case `adjudicated`.
 5. If there is disagreement, record a second reviewer before resolving the case.
 6. Keep development and held-out cases separate. Do not tune prompts or budgets against held-out truth.
-7. Only after every case is adjudicated may WP1 claim an evaluation baseline exists.
+7. Adjudication establishes the evaluation truth set; it does **not** complete WP1. A complete validated baseline measurement is still required before WP2 can unblock.
 
 The test suite deliberately fails closed if a case claims `adjudicated` without reviewer identity, frozen source digest, expected-finding support locators, or explicit abstention coverage.
 
@@ -35,7 +35,7 @@ Run this from the adapter test directory or project root:
 python adapters/nusaibah/pharma_company_intelligence_lab/tests/evaluation/review_evaluation_status.py
 ```
 
-The report is value-safe and exposes only counts/status. `wp2_unblocked` remains `false` until the criticality taxonomy is adjudicated and all 24 cases have named reviewer evidence plus frozen matching source digests.
+The report is value-safe and exposes only counts/status. `wp1_contract_ready` reports adjudication/taxonomy/calibration readiness. `wp1_complete` and `wp2_unblocked` remain `false` until a complete baseline measurement bound to the exact adjudicated suite validates successfully.
 
 
 ## Adjudication receipt workflow
