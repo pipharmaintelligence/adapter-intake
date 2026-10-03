@@ -14,6 +14,11 @@ TAXONOMY_PATH = EVALUATION_ROOT / "review_criticality_taxonomy.v1.json"
 import sys
 sys.path.insert(0, str(EVALUATION_ROOT))
 from review_evaluation_status import evaluate_suite, evaluation_status, source_digest
+from review_adjudication import (
+    AdjudicationReceiptError,
+    apply_adjudication_receipt,
+    build_adjudication_receipt_template,
+)
 
 EXPECTED_BASELINE = {
     "asset_key": "nusaibah.pharma_company_intelligence_lab",
@@ -278,6 +283,87 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
         self.assertIs(report["blockers"]["quality_thresholds_not_calibrated"], True)
         self.assertIs(report["wp1_contract_ready"], False)
         self.assertIs(report["wp2_unblocked"], False)
+
+    def test_adjudication_receipt_template_is_bound_to_exact_inputs(self) -> None:
+        taxonomy = json.loads(TAXONOMY_PATH.read_text(encoding="utf-8"))
+        receipt = build_adjudication_receipt_template(self.suite, taxonomy)
+
+        self.assertEqual(len(receipt["cases"]), 24)
+        self.assertTrue(receipt["suite_input_digest"].startswith("sha256:"))
+        self.assertTrue(receipt["taxonomy_input_digest"].startswith("sha256:"))
+        self.assertTrue(all(item["decision"] == "pending" for item in receipt["cases"]))
+
+        changed_suite = json.loads(json.dumps(self.suite))
+        changed_suite["cases"][0]["title"] += " changed"
+        with self.assertRaises(AdjudicationReceiptError):
+            apply_adjudication_receipt(changed_suite, taxonomy, receipt)
+
+    def test_adjudication_receipt_requires_complete_human_and_calibration_decisions(self) -> None:
+        taxonomy = json.loads(TAXONOMY_PATH.read_text(encoding="utf-8"))
+        receipt = build_adjudication_receipt_template(self.suite, taxonomy)
+
+        with self.assertRaises(AdjudicationReceiptError):
+            apply_adjudication_receipt(self.suite, taxonomy, receipt)
+
+        receipt["reviewer"] = {
+            "name": "Qualified reviewer",
+            "qualification_basis": "Recorded pharma-domain qualification.",
+        }
+        receipt["taxonomy"] = {
+            "decision": "approved",
+            "notes": "Taxonomy reviewed and accepted.",
+        }
+        receipt["thresholds"] = {
+            "decision": "approved",
+            "domain_owner": "Domain owner",
+            "decision_note": "Calibrated against the adjudicated evaluation design.",
+            "factual_faithfulness_min": 0.98,
+            "noncritical_precision_min": 0.95,
+            "noncritical_recall_min": 0.95,
+        }
+        for item in receipt["cases"]:
+            item["decision"] = "approved"
+            item["notes"] = "Reviewed against source units and expected outcome."
+
+        updated_suite, updated_taxonomy = apply_adjudication_receipt(
+            self.suite,
+            taxonomy,
+            receipt,
+        )
+        report = evaluate_suite(updated_suite, updated_taxonomy)
+
+        self.assertEqual(report["adjudicated_count"], 24)
+        self.assertEqual(report["invalid_frozen_digest_count"], 0)
+        self.assertIs(report["quality_thresholds_calibrated"], True)
+        self.assertIs(report["wp1_contract_ready"], True)
+        self.assertIs(report["wp2_unblocked"], True)
+
+    def test_adjudication_receipt_requires_second_reviewer_for_disagreement(self) -> None:
+        taxonomy = json.loads(TAXONOMY_PATH.read_text(encoding="utf-8"))
+        receipt = build_adjudication_receipt_template(self.suite, taxonomy)
+        receipt["reviewer"] = {
+            "name": "Qualified reviewer",
+            "qualification_basis": "Recorded pharma-domain qualification.",
+        }
+        receipt["taxonomy"] = {
+            "decision": "approved",
+            "notes": "Taxonomy reviewed and accepted.",
+        }
+        receipt["thresholds"] = {
+            "decision": "approved",
+            "domain_owner": "Domain owner",
+            "decision_note": "Calibration decision.",
+            "factual_faithfulness_min": 0.98,
+            "noncritical_precision_min": 0.95,
+            "noncritical_recall_min": 0.95,
+        }
+        for item in receipt["cases"]:
+            item["decision"] = "approved"
+            item["notes"] = "Reviewed."
+        receipt["cases"][0]["disagreement"] = True
+
+        with self.assertRaises(AdjudicationReceiptError):
+            apply_adjudication_receipt(self.suite, taxonomy, receipt)
 
     def test_source_digest_is_stable_and_depends_only_on_source_units(self) -> None:
         case = self.suite["cases"][0]
