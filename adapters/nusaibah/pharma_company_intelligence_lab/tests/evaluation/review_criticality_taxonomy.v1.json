@@ -1,6 +1,6 @@
 {
   "schema_version": "pharma_review_criticality_taxonomy.v1",
-  "status": "proposed_for_domain_adjudication",
+  "status": "adjudicated",
   "purpose": "Identify findings whose unsupported acceptance would block a release-set pass. This taxonomy is an evaluation contract, not a clinical or regulatory decision system.",
   "levels": {
     "high": {
@@ -89,7 +89,8 @@
   ],
   "adjudication": {
     "owner_role": "qualified_pharma_domain_reviewer",
-    "assigned_domain_reviewer": null,
-    "second_reviewer_required_for_disagreement": true
+    "assigned_domain_reviewer": "Nusaibah Al-Jaloudi",
+    "second_reviewer_required_for_disagreement": true,
+    "review_notes": "Approved the proposed high-impact taxonomy for regulatory_status, clinical_or_safety, manufacturing_or_quality, entity_identity, and review_completeness."
   }
 }
