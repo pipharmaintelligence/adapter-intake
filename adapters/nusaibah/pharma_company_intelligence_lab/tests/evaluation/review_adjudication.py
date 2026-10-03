@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import argparse
 import hashlib
 import json
+from pathlib import Path
 from typing import Any
 
-from review_evaluation_status import source_digest
+from review_evaluation_status import SUITE_PATH, TAXONOMY_PATH, source_digest
 
 
 class AdjudicationReceiptError(ValueError):
@@ -243,3 +245,56 @@ def apply_adjudication_receipt(
     updated_taxonomy["adjudication"]["review_notes"] = taxonomy_receipt["notes"].strip()
 
     return updated_suite, updated_taxonomy
+
+
+def main() -> int:
+    """Emit a bound review receipt or apply one after independent approval."""
+
+    parser = argparse.ArgumentParser(
+        description="Prepare or apply the WP1 domain-adjudication receipt."
+    )
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument(
+        "--emit-template",
+        metavar="PATH",
+        help="Write a receipt template bound to the current suite/taxonomy.",
+    )
+    mode.add_argument(
+        "--apply-receipt",
+        metavar="PATH",
+        help="Validate and apply an independently completed receipt.",
+    )
+    args = parser.parse_args()
+
+    suite = json.loads(SUITE_PATH.read_text(encoding="utf-8"))
+    taxonomy = json.loads(TAXONOMY_PATH.read_text(encoding="utf-8"))
+
+    if args.emit_template:
+        receipt = build_adjudication_receipt_template(suite, taxonomy)
+        output_path = Path(args.emit_template)
+        output_path.write_text(
+            json.dumps(receipt, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        return 0
+
+    receipt_path = Path(args.apply_receipt)
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    updated_suite, updated_taxonomy = apply_adjudication_receipt(
+        suite,
+        taxonomy,
+        receipt,
+    )
+    SUITE_PATH.write_text(
+        json.dumps(updated_suite, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    TAXONOMY_PATH.write_text(
+        json.dumps(updated_taxonomy, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
