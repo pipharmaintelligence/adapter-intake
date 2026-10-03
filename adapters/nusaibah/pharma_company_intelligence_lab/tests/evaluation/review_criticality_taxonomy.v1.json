@@ -1,0 +1,90 @@
+{
+  "schema_version": "pharma_review_criticality_taxonomy.v1",
+  "status": "proposed_for_domain_adjudication",
+  "purpose": "Identify findings whose unsupported acceptance would block a release-set pass. This taxonomy is an evaluation contract, not a clinical or regulatory decision system.",
+  "levels": {
+    "high": {
+      "blocking_when_unsupported": true,
+      "description": "A material factual claim whose incorrect acceptance could materially distort regulatory, clinical/safety, quality, company identity, or review-completeness conclusions.",
+      "candidate_classes": [
+        {
+          "class_id": "regulatory_status",
+          "examples": [
+            "approval",
+            "authorization",
+            "submission status",
+            "jurisdiction-specific regulatory state"
+          ],
+          "required_controls": [
+            "jurisdiction_alignment",
+            "date_alignment",
+            "inspectable_support_or_explicit_weaker_state"
+          ]
+        },
+        {
+          "class_id": "clinical_or_safety",
+          "examples": [
+            "efficacy",
+            "safety signal",
+            "serious event interpretation",
+            "clinical outcome"
+          ],
+          "required_controls": [
+            "qualifier_preservation",
+            "population_or_scope_alignment",
+            "inspectable_support_or_explicit_weaker_state"
+          ]
+        },
+        {
+          "class_id": "manufacturing_or_quality",
+          "examples": [
+            "inspection outcome",
+            "quality deficiency",
+            "manufacturing compliance state"
+          ],
+          "required_controls": [
+            "source_authority_class",
+            "date_alignment",
+            "inspectable_support_or_explicit_weaker_state"
+          ]
+        },
+        {
+          "class_id": "entity_identity",
+          "examples": [
+            "company identity",
+            "ownership relationship",
+            "wrong-company attribution"
+          ],
+          "required_controls": [
+            "entity_match",
+            "source_identity",
+            "wrong_entity_rejection"
+          ]
+        },
+        {
+          "class_id": "review_completeness",
+          "examples": [
+            "full-document reviewed",
+            "all mandatory requirements completed",
+            "no unresolved critical work"
+          ],
+          "required_controls": [
+            "itemized_coverage_ledger",
+            "inaccessible_or_unreviewed_units_block_full_completion"
+          ]
+        }
+      ]
+    },
+    "noncritical": {
+      "blocking_when_unsupported": false,
+      "description": "A lower-impact factual or structural claim that still requires evidence/coverage accounting but is reported separately from critical strata."
+    }
+  },
+  "adjudication_rules": [
+    "A qualified domain reviewer may reclassify a candidate finding before the evaluation suite is frozen.",
+    "Criticality must not be inferred from model confidence.",
+    "Unsupported high-impact findings cannot be accepted merely because another model agrees.",
+    "An explicitly incomplete/insufficient result is not a recovered critical finding.",
+    "Changes to this taxonomy after held-out evaluation begins require a new taxonomy version."
+  ]
+}
