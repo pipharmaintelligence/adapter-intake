@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from threading import Lock
 from typing import Any
 
 
@@ -32,6 +33,26 @@ class PlanBudget:
             raise PlanAdmissionError("max_concurrency cannot exceed max_tasks.")
 
 
+@dataclass
+class ReservationLedger:
+    """Thread-safe one-way task reservation ledger."""
+
+    _reserved: set[str] = field(default_factory=set)
+    _lock: Lock = field(default_factory=Lock, repr=False)
+
+    def reserve(self, *, admitted_task_ids: set[str], task_id: str) -> None:
+        with self._lock:
+            if task_id not in admitted_task_ids:
+                raise PlanAdmissionError("Cannot reserve an unknown task.")
+            if task_id in self._reserved:
+                raise PlanAdmissionError("Task capacity is already reserved.")
+            self._reserved.add(task_id)
+
+    def snapshot(self) -> frozenset[str]:
+        with self._lock:
+            return frozenset(self._reserved)
+
+
 def admit_plan(
     tasks: list[dict[str, Any]],
     *,
@@ -47,16 +68,33 @@ def admit_plan(
         raise PlanAdmissionError("Logical task budget exceeded.")
 
     task_ids: set[str] = set()
-    logical_calls = 0
-    provider_steps = 0
-    attempts = 0
-    input_chars = 0
-    output_tokens = 0
+    logical_calls = provider_steps = attempts = input_chars = output_tokens = 0
     max_task_timeout = 0
+
+    required_task_keys = {
+        "schema_version",
+        "run_id",
+        "entity_id",
+        "task_id",
+        "role",
+        "requirement_ids",
+        "chunk_ids",
+        "memory_ref_ids",
+        "output_schema",
+        "logical_call_budget",
+        "provider_step_budget",
+        "transport_attempt_budget",
+        "input_char_budget",
+        "output_token_budget",
+        "timeout_seconds",
+    }
 
     for task in tasks:
         if not isinstance(task, dict):
             raise PlanAdmissionError("Each task must be an object.")
+        if set(task) != required_task_keys:
+            raise PlanAdmissionError("Task shape does not match admitted review-task schema.")
+
         task_id = str(task.get("task_id", "")).strip()
         role = str(task.get("role", "")).strip()
         if not task_id or task_id in task_ids:
@@ -65,30 +103,12 @@ def admit_plan(
             raise PlanAdmissionError("Task role is not admitted.")
         task_ids.add(task_id)
 
-        logical_calls += _positive_int(
-            task.get("logical_call_budget"),
-            field=f"{task_id}.logical_call_budget",
-        )
-        provider_steps += _positive_int(
-            task.get("provider_step_budget"),
-            field=f"{task_id}.provider_step_budget",
-        )
-        attempts += _positive_int(
-            task.get("transport_attempt_budget"),
-            field=f"{task_id}.transport_attempt_budget",
-        )
-        input_chars += _positive_int(
-            task.get("input_char_budget"),
-            field=f"{task_id}.input_char_budget",
-        )
-        output_tokens += _positive_int(
-            task.get("output_token_budget"),
-            field=f"{task_id}.output_token_budget",
-        )
-        timeout_seconds = _positive_int(
-            task.get("timeout_seconds"),
-            field=f"{task_id}.timeout_seconds",
-        )
+        logical_calls += _positive_int(task["logical_call_budget"], field=f"{task_id}.logical_call_budget")
+        provider_steps += _positive_int(task["provider_step_budget"], field=f"{task_id}.provider_step_budget")
+        attempts += _positive_int(task["transport_attempt_budget"], field=f"{task_id}.transport_attempt_budget")
+        input_chars += _positive_int(task["input_char_budget"], field=f"{task_id}.input_char_budget")
+        output_tokens += _positive_int(task["output_token_budget"], field=f"{task_id}.output_token_budget")
+        timeout_seconds = _positive_int(task["timeout_seconds"], field=f"{task_id}.timeout_seconds")
         max_task_timeout = max(max_task_timeout, timeout_seconds)
 
     if logical_calls > budget.max_logical_calls:
@@ -124,16 +144,8 @@ def reserve_task(
     plan: dict[str, Any],
     *,
     task_id: str,
-    reservations: set[str],
+    ledger: ReservationLedger,
 ) -> None:
-    """Reserve a task exactly once before dispatch.
+    """Atomically reserve one admitted task exactly once before dispatch."""
 
-    Reservation is never released here; a failed dispatch therefore still consumes
-    the admitted logical task capacity, matching the fail-closed planning rule.
-    """
-
-    if task_id not in set(plan["task_ids"]):
-        raise PlanAdmissionError("Cannot reserve an unknown task.")
-    if task_id in reservations:
-        raise PlanAdmissionError("Task capacity is already reserved.")
-    reservations.add(task_id)
+    ledger.reserve(admitted_task_ids=set(plan["task_ids"]), task_id=task_id)
