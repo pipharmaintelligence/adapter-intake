@@ -96,6 +96,16 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
             [case["case_id"] for case in held_out],
         )
 
+    def test_oversized_case_is_genuinely_large(self) -> None:
+        case = next(
+            item
+            for item in self.suite["cases"]
+            if item["case_id"] == "document-oversized-017"
+        )
+        total_chars = sum(len(unit["text"]) for unit in case["source_units"])
+        self.assertGreaterEqual(total_chars, 100_000)
+        self.assertGreaterEqual(len(case["source_units"]), 20)
+
     def test_required_adversarial_strata_are_present(self) -> None:
         observed = {
             stratum
