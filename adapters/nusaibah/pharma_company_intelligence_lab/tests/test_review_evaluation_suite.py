@@ -83,6 +83,42 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.suite = json.loads(SUITE_PATH.read_text(encoding="utf-8"))
 
+    @staticmethod
+    def _complete_measurement(suite: dict) -> dict:
+        measurement = build_measurement_template(suite)
+        for case, item in zip(suite["cases"], measurement["cases"], strict=True):
+            expected_findings = case["candidate_expected_findings"]
+            noncritical_expected = sum(
+                finding["criticality"] == "noncritical"
+                for finding in expected_findings
+            )
+            critical_expected = sum(
+                finding["criticality"] == "high"
+                for finding in expected_findings
+            )
+            item.update(
+                {
+                    "status": "measured",
+                    "run_id": f"run:{case['case_id']}",
+                    "reason_code": None,
+                    "material_claim_count": max(1, len(expected_findings)),
+                    "supported_material_claim_count": max(1, len(expected_findings)),
+                    "noncritical_true_positive": noncritical_expected,
+                    "noncritical_false_positive": 0,
+                    "noncritical_false_negative": 0,
+                    "critical_expected": critical_expected,
+                    "critical_recovered": critical_expected,
+                    "accepted_unsupported_high_impact": 0,
+                    "truthful_incomplete": not case["candidate_expected_complete"],
+                    "all_obligations_disposed": True,
+                    "wrong_company_join_count": 0,
+                    "unauthorized_write_count": 0,
+                    "cap_overrun_count": 0,
+                    "false_complete_count": 0,
+                }
+            )
+        return measurement
+
     def test_baseline_is_exact_and_does_not_invent_usage_or_quality(self) -> None:
         self.assertEqual(self.suite["baseline"], EXPECTED_BASELINE)
 
@@ -252,7 +288,10 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
         self.assertIs(report["domain_reviewer_assigned"], True)
         self.assertFalse(any(report["blockers"].values()))
         self.assertIs(report["wp1_contract_ready"], True)
-        self.assertIs(report["wp2_unblocked"], True)
+        self.assertIs(report["baseline_measurement_ready"], False)
+        self.assertIs(report["completion_blockers"]["baseline_measurement_missing_or_incomplete"], True)
+        self.assertIs(report["wp1_complete"], False)
+        self.assertIs(report["wp2_unblocked"], False)
 
     def test_status_report_keeps_wp2_blocked_until_adjudication_is_real(self) -> None:
         suite = json.loads(json.dumps(self.suite))
@@ -294,6 +333,22 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
         self.assertIs(report["blockers"]["quality_thresholds_not_calibrated"], True)
         self.assertIs(report["wp1_contract_ready"], False)
         self.assertIs(report["wp2_unblocked"], False)
+
+    def test_status_report_unblocks_wp2_only_with_complete_validated_baseline(self) -> None:
+        taxonomy = json.loads(TAXONOMY_PATH.read_text(encoding="utf-8"))
+        measurement = self._complete_measurement(self.suite)
+
+        report = evaluate_suite(
+            self.suite,
+            taxonomy,
+            baseline_measurement=measurement,
+        )
+
+        self.assertIs(report["wp1_contract_ready"], True)
+        self.assertIs(report["baseline_measurement_ready"], True)
+        self.assertIs(report["wp1_complete"], True)
+        self.assertIs(report["wp2_unblocked"], True)
+        self.assertFalse(any(report["completion_blockers"].values()))
 
     def test_completion_expectations_distinguish_complete_and_incomplete_cases(self) -> None:
         expected_incomplete = {
@@ -394,7 +449,9 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
         self.assertEqual(report["invalid_frozen_digest_count"], 0)
         self.assertIs(report["quality_thresholds_calibrated"], True)
         self.assertIs(report["wp1_contract_ready"], True)
-        self.assertIs(report["wp2_unblocked"], True)
+        self.assertIs(report["baseline_measurement_ready"], False)
+        self.assertIs(report["wp1_complete"], False)
+        self.assertIs(report["wp2_unblocked"], False)
 
     def test_adjudication_receipt_requires_second_reviewer_for_disagreement(self) -> None:
         taxonomy = json.loads(TAXONOMY_PATH.read_text(encoding="utf-8"))
@@ -461,6 +518,32 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
         self.assertIsNone(report["quality_metrics"])
         self.assertIsNone(report["quality_gate"])
         self.assertIsNone(report["controls_passed"])
+
+    def test_baseline_measurement_rejects_edited_critical_expected_denominator(self) -> None:
+        measurement = self._complete_measurement(self.suite)
+        target_case = next(
+            case
+            for case in self.suite["cases"]
+            if case["candidate_expected_complete"]
+            and any(
+                finding["criticality"] == "high"
+                for finding in case["candidate_expected_findings"]
+            )
+        )
+        target = next(
+            item
+            for item in measurement["cases"]
+            if item["case_id"] == target_case["case_id"]
+        )
+        self.assertGreater(target["critical_expected"], 0)
+
+        target["critical_expected"] = 0
+
+        with self.assertRaisesRegex(
+            BaselineMeasurementError,
+            "critical_expected does not match adjudicated truth",
+        ):
+            evaluate_baseline_measurement(self.suite, measurement)
 
     def test_baseline_measurement_rejects_partial_or_stale_case_truth(self) -> None:
         measurement = build_measurement_template(self.suite)
