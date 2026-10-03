@@ -44,7 +44,9 @@
       "pending_domain_review",
       "adjudicated"
     ],
-    "completion_rule": "The suite cannot be treated as a quality baseline until every case is adjudicated and source digests are frozen."
+    "completion_rule": "The suite cannot be treated as a quality baseline until every case is adjudicated and source digests are frozen.",
+    "owner_role": "qualified_pharma_domain_reviewer",
+    "assigned_domain_reviewer": null
   },
   "cases": [
     {
