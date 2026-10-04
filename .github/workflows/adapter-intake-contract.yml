@@ -49,3 +49,12 @@ jobs:
             -s adapters/nusaibah/pharma_company_intelligence_lab/tests \
             -p "test_*.py" \
             -v
+
+      - name: Validate evaluation asset packaged imports and baseline parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover \
+            -s adapters/nusaibah/pharma_company_intelligence_lab_evaluation/tests \
+            -p "test_*.py" \
+            -v
