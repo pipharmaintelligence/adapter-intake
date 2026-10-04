@@ -7,10 +7,12 @@ from typing import Any
 from devtools.dynamic_skill_runtime import DynamicSkillRuntimeError
 
 if __package__:
+    from .evaluation_failure import project_baseline_failure
     from .frozen_pharma_company_intelligence_lab import (
         NusaibahPharmaCompanyIntelligenceLabAdapter,
     )
 else:  # Assets also supports scoped, flat external adapter-root loading.
+    from evaluation_failure import project_baseline_failure
     from frozen_pharma_company_intelligence_lab import (
         NusaibahPharmaCompanyIntelligenceLabAdapter,
     )
@@ -306,6 +308,7 @@ def run_company_replay_case(
     *,
     case_index: int,
     runtime_delegate: Any,
+    diagnostic_failures: bool = False,
 ) -> dict[str, Any]:
     """Run one company-mode case through the unchanged 0.1.12 adapter in preview."""
 
@@ -324,7 +327,14 @@ def run_company_replay_case(
         case_index=case_index,
         runtime_delegate=runtime_delegate,
     )
-    result = NusaibahPharmaCompanyIntelligenceLabAdapter().invoke(inputs, {})
+    try:
+        result = NusaibahPharmaCompanyIntelligenceLabAdapter().invoke(inputs, {})
+    except (ValueError, RuntimeError) as exc:
+        if diagnostic_failures:
+            projected = project_baseline_failure(exc)
+            if projected is not None:
+                raise projected from None
+        raise
     if any(role.endswith("_update") for role in inputs.dynamic_skill_calls):
         raise BaselineReplayError("Replay attempted a mutable Dynamic Skill role.")
 

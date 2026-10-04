@@ -57,7 +57,7 @@ assert wrapper.NusaibahPharmaCompanyIntelligenceLabEvaluationAdapter.version == 
 assert sys.path == before, 'Package import leaked an asset-directory path'
 """)
 
-    def test_only_the_evaluation_wrapper_is_a_discoverable_adapter(self) -> None:
+    def test_only_the_versioned_evaluation_wrappers_are_discoverable_adapters(self) -> None:
         self._packaged_probe(f"""
 import importlib
 import inspect
@@ -70,7 +70,7 @@ for item in pkgutil.walk_packages(package.__path__, package.__name__ + '.'):
     for _, candidate in inspect.getmembers(module, inspect.isclass):
         if candidate is not Adapter and issubclass(candidate, Adapter) and candidate.__module__ == module.__name__:
             found.append((candidate.key, candidate.version))
-assert found == [('nusaibah.pharma_company_intelligence_lab_evaluation', '0.1.0')], found
+assert sorted(found) == [('nusaibah.pharma_company_intelligence_lab_evaluation', '0.1.0'), ('nusaibah.pharma_company_intelligence_lab_evaluation', '0.1.1')], found
 frozen = importlib.import_module('{PACKAGE}.frozen_pharma_company_intelligence_lab')
 assert not issubclass(frozen.NusaibahPharmaCompanyIntelligenceLabAdapter, Adapter)
 """)
@@ -99,7 +99,9 @@ assert not issubclass(frozen.NusaibahPharmaCompanyIntelligenceLabAdapter, Adapte
     def test_evaluation_manifest_preserves_agent_policy_and_fixed_skill_parity(self) -> None:
         baseline = json.loads((BASELINE_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json").read_text(encoding="utf-8"))
         evaluation = json.loads((ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_evaluation.asset.json").read_text(encoding="utf-8"))
-        current = evaluation["versions"]["0.1.0"]
+        self.assertEqual(evaluation["default"], "0.1.1")
+        self.assertEqual(evaluation["versions"]["0.1.1"], evaluation["versions"]["0.1.0"])
+        current = evaluation["versions"]["0.1.1"]
         proven = baseline["versions"]["0.1.12"]
         self.assertEqual(current["agents"], proven["agents"])
         self.assertEqual(current["published_skills"], proven["published_skills"])
@@ -149,6 +151,98 @@ except BaselineReplayError:
     pass
 else:
     raise AssertionError('Unpinned methodology must be rejected')
+""")
+
+    def test_evaluation_quality_rejections_keep_all_six_stop_rules(self) -> None:
+        self._packaged_probe(f"""
+from {PACKAGE} import evaluation_failure as diagnostics
+from {PACKAGE} import frozen_pharma_company_intelligence_lab as frozen
+research = {{role: {{'_citations': [{{}}]}} for role in frozen.RESEARCH_ROLES}}
+critic = {{'recommendation': 'pass', 'citation_coverage': {{'status': 'sufficient'}}, 'unsupported_claim_ids': [], 'missing_section_ids': [], 'unmet_plan_requirements': []}}
+cases = [
+    ('research_citations_missing', {{**research, frozen.RESEARCH_ROLES[0]: {{'_citations': []}}}}, critic),
+    ('critic_rejected', research, {{**critic, 'recommendation': 'fail'}}),
+    ('citation_coverage_insufficient', research, {{**critic, 'citation_coverage': {{'status': 'insufficient'}}}}),
+    ('unsupported_claims', research, {{**critic, 'unsupported_claim_ids': ['claim_1']}}),
+    ('mandatory_sections_missing', research, {{**critic, 'missing_section_ids': ['section_1']}}),
+    ('methodology_requirements_unsatisfied', research, {{**critic, 'unmet_plan_requirements': [{{'disposition': 'unsatisfied'}}]}}),
+]
+for rule, evidence, decision in cases:
+    try:
+        frozen._require_pre_synthesis_quality(evidence, decision)
+    except RuntimeError as original:
+        projected = diagnostics.project_baseline_failure(original)
+        assert projected.code == 'pharma_evaluation_quality_rejected'
+        assert projected.proof_failure_detail['stage'] == 'pre_synthesis_quality'
+        assert projected.proof_failure_detail['rule'] == rule
+        assert str(projected) == projected.code
+    else:
+        raise AssertionError('Frozen guard stopped rejecting: ' + rule)
+frozen._require_pre_synthesis_quality(research, critic)
+""")
+
+    def test_evaluation_critic_validation_preserves_safe_rules_and_redacts_values(self) -> None:
+        self._packaged_probe(f"""
+from {PACKAGE} import agent_contract as contract
+from {PACKAGE} import evaluation_failure as diagnostics
+valid = {{'unsupported_claim_ids': [], 'stale_claim_ids': [], 'missing_section_ids': [], 'unmet_plan_requirements': [], 'recommendation': 'pass', 'citation_coverage': {{'status': 'sufficient', 'notes': ''}}}}
+cases = [
+    ('unknown_claim_id', {{**valid, 'unsupported_claim_ids': ['private_claim']}}),
+    ('unknown_section_id', {{**valid, 'missing_section_ids': ['private_section']}}),
+    ('unknown_requirement_id', {{**valid, 'unmet_plan_requirements': [{{'requirement_id': 'private_requirement', 'disposition': 'unsatisfied', 'notes': 'private_text'}}]}}),
+    ('duplicate_requirement_id', {{**valid, 'unmet_plan_requirements': [{{'requirement_id': 'req_1', 'disposition': 'unsatisfied', 'notes': 'private_text'}}] * 2}}),
+    ('disposition_invalid', {{**valid, 'unmet_plan_requirements': [{{'requirement_id': 'req_1', 'disposition': 'private_disposition', 'notes': 'private_text'}}]}}),
+    ('recommendation_invalid', {{**valid, 'recommendation': 'private_decision'}}),
+    ('coverage_status_invalid', {{**valid, 'citation_coverage': {{'status': 'private_status'}}}}),
+    ('string_required', {{**valid, 'recommendation': 7}}),
+    ('token_shape', {{**valid, 'recommendation': 'private token'}}),
+    ('list_bound', {{**valid, 'unsupported_claim_ids': 'private_text'}}),
+    ('duplicate_values', {{**valid, 'unsupported_claim_ids': ['claim_1', 'claim_1']}}),
+]
+for rule, payload in cases:
+    try:
+        contract.validate_critic_payload(payload, company_id=900001, known_claim_ids={{'claim_1'}}, known_section_ids={{'section_1'}}, known_plan_requirement_ids={{'req_1'}})
+    except ValueError as original:
+        projected = diagnostics.project_baseline_failure(original)
+        assert projected.code == 'pharma_evaluation_critic_schema_invalid'
+        assert projected.proof_failure_detail['stage'] == 'critic_validation'
+        assert projected.proof_failure_detail['rule'] == rule
+        assert 'private' not in str(projected.proof_failure_detail)
+    else:
+        raise AssertionError(rule)
+""")
+
+    def test_diagnostics_are_opt_in_and_do_not_change_success_or_unknown_errors(self) -> None:
+        self._packaged_probe(f"""
+from unittest.mock import patch
+from {PACKAGE} import evaluation_replay as replay
+from {PACKAGE} import evaluation_failure as diagnostics
+from {PACKAGE} import frozen_pharma_company_intelligence_lab as frozen
+case = {{'case_id': 'company-small-identity-001', 'mode': 'company_research', 'source_units': [{{'locator': 'section:1', 'text': 'Synthetic company evidence.', 'quality_flags': []}}]}}
+expected = {{'status': 'success', 'outputs': {{'intelligence_dossier': {{}}}}}}
+with patch.object(replay.NusaibahPharmaCompanyIntelligenceLabAdapter, 'invoke', return_value=expected) as invoke:
+    old = replay.run_company_replay_case(case, case_index=0, runtime_delegate=object())
+    new = replay.run_company_replay_case(case, case_index=0, runtime_delegate=object(), diagnostic_failures=True)
+    assert old == new
+    assert invoke.call_count == 2
+def reject(*args):
+    research = {{role: {{'_citations': [{{}}]}} for role in frozen.RESEARCH_ROLES}}
+    frozen._require_pre_synthesis_quality(research, {{'recommendation': 'fail'}})
+with patch.object(replay.NusaibahPharmaCompanyIntelligenceLabAdapter, 'invoke', side_effect=reject):
+    for enabled in (False, True):
+        try:
+            replay.run_company_replay_case(case, case_index=0, runtime_delegate=object(), diagnostic_failures=enabled)
+        except RuntimeError as error:
+            assert isinstance(error, diagnostics.EvaluationFailure) is enabled
+            if enabled:
+                assert error.proof_failure_detail['rule'] == 'critic_rejected'
+        else:
+            raise AssertionError('A rejected review became successful')
+for error in [RuntimeError('Evidence critic rejected the company evidence package.'), ValueError('Critic referenced an unknown claim_id.'), RuntimeError('private unclassified error')]:
+    try:
+        raise error
+    except Exception as original:
+        assert diagnostics.project_baseline_failure(original) is None
 """)
 
 
