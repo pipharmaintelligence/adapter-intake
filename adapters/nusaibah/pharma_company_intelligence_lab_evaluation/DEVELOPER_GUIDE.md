@@ -93,3 +93,8 @@ flowchart TD
 ```
 
 Existing finite limits remain: twelve preview logical calls per company, four planner iterations, three transport attempts per step, 1,800-second task deadline and separate 60-second cleanup budget. No retry or repair loop is added.
+
+
+## Separate supplied-source lane 0.2.0
+
+See [SUPPLIED_SOURCE_REVIEW.md](SUPPLIED_SOURCE_REVIEW.md) for strict inputs, exact-span and semantic verification, source/requirement coverage, finite 17-call topology, no-provider preflight and deployment commands. This new synthetic preview disables search and accepts reviewed evidence gaps. It does not change the frozen citation gate or satisfy WP1 comparability. Use a new inputs-only JSON and admit the new Agent contracts. No new environment values, mutations, publication or real document authority are introduced.
