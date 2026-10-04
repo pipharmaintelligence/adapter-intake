@@ -385,6 +385,25 @@ class SuppliedSourceReviewTests(unittest.TestCase):
             self.assertLessEqual(len(encoded.decode("utf-8")), 60000)
 
 
+    def test_transitive_context_and_cycles_are_bounded_and_preserved(self):
+        inputs = fixture()
+        inputs["evaluation_case"]["records"][0]["source_units"] = [
+            {"locator": "source:a", "entity_id": "ficta", "text": "Primary statement.",
+             "related_locators": ["source:b"]},
+            {"locator": "source:b", "entity_id": "ficta", "text": "First qualification.",
+             "related_locators": ["source:c"]},
+            {"locator": "source:c", "entity_id": "ficta", "text": "Final limitation.",
+             "related_locators": ["source:a"]},
+        ]
+        frozen = review.prepare_review(inputs)
+        self.assertEqual(len(frozen["chunks"]), 3)
+        self.assertEqual([u["locator"] for u in frozen["chunks"][0]["units"]],
+                         ["source:a", "source:b", "source:c"])
+        for chunk in frozen["chunks"]:
+            self.assertEqual(len(chunk["units"]), 3)
+            self.assertLessEqual(len(chunk["units"]), review.MAX_UNITS)
+
+
 class SuppliedSourcePackagingTests(unittest.TestCase):
     _packaged_probe = packaging.EvaluationPackagingTests._packaged_probe
     def test_new_wrapper_uses_real_packaged_namespace(self):

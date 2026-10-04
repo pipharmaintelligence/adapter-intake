@@ -164,7 +164,16 @@ def prepare_review(inputs: Any) -> dict[str, Any]:
         if unit["entity_id"] != case["entity_id"]:
             inventory.append({"locator": unit["locator"], "disposition": "excluded_by_entity"})
             continue
-        locators = [unit["locator"], *unit["related_locators"]]
+        locators = [unit["locator"]]
+        # Preserve transitive qualifiers without recursive or open-ended walks.
+        # Every locator is admitted once; at most MAX_UNITS iterations.
+        for cursor in range(MAX_UNITS):
+            if cursor >= len(locators):
+                break
+            for related in index[locators[cursor]]["related_locators"]:
+                if related not in locators:
+                    locators.append(related)
+        _require(len(locators) <= MAX_UNITS, "source_context_limit_exceeded")
         selected = [index[loc] for loc in locators]
         if not all(u["accessible"] for u in selected):
             inventory.append({"locator": unit["locator"], "disposition": "inaccessible"})

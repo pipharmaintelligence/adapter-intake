@@ -66,7 +66,7 @@ Source units require `locator`, `entity_id` and `text`; optional `accessible` is
 
 Use a new inputs-only JSON. Baseline `case_index`/`diagnostic_baseline_replay` inputs are deliberately incompatible. Expected findings, held-out truth, thresholds, reviewer notes, provider references, credentials, publication requests and unknown fields are rejected.
 
-Snapshot/chunk IDs hash exact input identity, text, accessibility and context. Units and required context remain intact. Oversized context blocks before calls instead of truncating; missing/cross-entity context is rejected. Inaccessible units remain in coverage; an entirely inaccessible target cannot execute.
+Snapshot/chunk IDs hash exact input identity, text, accessibility and context. Units and transitive required context remain intact; qualifier cycles are resolved with at most 12 iterations and each locator is included once. Oversized context blocks before calls instead of truncating; missing/cross-entity context is rejected. Inaccessible units remain in coverage; an entirely inaccessible target cannot execute.
 
 ## Evidence and outcomes
 
