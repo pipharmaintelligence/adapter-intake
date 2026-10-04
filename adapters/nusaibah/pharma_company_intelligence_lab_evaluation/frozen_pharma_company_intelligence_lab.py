@@ -6,7 +6,6 @@ from hashlib import sha256
 from threading import Lock
 from typing import Any, ClassVar
 
-from adapters.base import Adapter
 
 try:
     from .agent_contract import (
@@ -1483,7 +1482,9 @@ def _normalize_governed_company_record(record: dict[str, Any]) -> dict[str, Any]
     return normalized
 
 
-class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
+# Frozen business executor, not a runtime-discoverable Adapter subclass.
+# The evaluation wrapper alone owns the registered execution identity.
+class NusaibahPharmaCompanyIntelligenceLabAdapter:
     """Run a governed multi-company intelligence and memory-improvement pipeline.
 
     The adapter owns deterministic orchestration, schema validation, section

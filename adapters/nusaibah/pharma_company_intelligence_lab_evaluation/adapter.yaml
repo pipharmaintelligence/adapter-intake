@@ -13,6 +13,9 @@ reviewed_helpers:
   - agent_contract.py
   - methodology_contract.py
 
+optional_files:
+  - README.md
+
 release_stage: development
 
 forbidden:

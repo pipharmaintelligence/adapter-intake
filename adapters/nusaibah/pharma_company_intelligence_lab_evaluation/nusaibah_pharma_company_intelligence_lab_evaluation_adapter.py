@@ -6,11 +6,18 @@ from adapters.base import Adapter
 
 AGENT_ORCHESTRATION_OWNER = "python_adapter"
 
-from evaluation_replay import (
-    COMPANY_CASE_MODE,
-    BaselineReplayError,
-    run_company_replay_case,
-)
+if __package__:
+    from .evaluation_replay import (
+        COMPANY_CASE_MODE,
+        BaselineReplayError,
+        run_company_replay_case,
+    )
+else:  # Assets scopes sys.path while loading an external adapter root.
+    from evaluation_replay import (
+        COMPANY_CASE_MODE,
+        BaselineReplayError,
+        run_company_replay_case,
+    )
 
 
 class NusaibahPharmaCompanyIntelligenceLabEvaluationAdapter(Adapter):

@@ -2,18 +2,18 @@ from __future__ import annotations
 
 import hashlib
 import json
-from pathlib import Path
-import sys
 from typing import Any
 
-ASSET_ROOT = Path(__file__).resolve().parents[2]
-if str(ASSET_ROOT) not in sys.path:
-    sys.path.insert(0, str(ASSET_ROOT))
-
 from devtools.dynamic_skill_runtime import DynamicSkillRuntimeError
-from frozen_pharma_company_intelligence_lab import (
-    NusaibahPharmaCompanyIntelligenceLabAdapter,
-)
+
+if __package__:
+    from .frozen_pharma_company_intelligence_lab import (
+        NusaibahPharmaCompanyIntelligenceLabAdapter,
+    )
+else:  # Assets also supports scoped, flat external adapter-root loading.
+    from frozen_pharma_company_intelligence_lab import (
+        NusaibahPharmaCompanyIntelligenceLabAdapter,
+    )
 
 
 class BaselineReplayError(ValueError):
