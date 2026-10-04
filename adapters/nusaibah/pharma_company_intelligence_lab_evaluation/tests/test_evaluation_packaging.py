@@ -70,7 +70,7 @@ for item in pkgutil.walk_packages(package.__path__, package.__name__ + '.'):
     for _, candidate in inspect.getmembers(module, inspect.isclass):
         if candidate is not Adapter and issubclass(candidate, Adapter) and candidate.__module__ == module.__name__:
             found.append((candidate.key, candidate.version))
-assert sorted(found) == [('nusaibah.pharma_company_intelligence_lab_evaluation', '0.1.0'), ('nusaibah.pharma_company_intelligence_lab_evaluation', '0.1.1')], found
+assert sorted(found) == [('nusaibah.pharma_company_intelligence_lab_evaluation', '0.1.0'), ('nusaibah.pharma_company_intelligence_lab_evaluation', '0.1.1'), ('nusaibah.pharma_company_intelligence_lab_evaluation', '0.1.2')], found
 frozen = importlib.import_module('{PACKAGE}.frozen_pharma_company_intelligence_lab')
 assert not issubclass(frozen.NusaibahPharmaCompanyIntelligenceLabAdapter, Adapter)
 """)
@@ -99,7 +99,8 @@ assert not issubclass(frozen.NusaibahPharmaCompanyIntelligenceLabAdapter, Adapte
     def test_evaluation_manifest_preserves_agent_policy_and_fixed_skill_parity(self) -> None:
         baseline = json.loads((BASELINE_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json").read_text(encoding="utf-8"))
         evaluation = json.loads((ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_evaluation.asset.json").read_text(encoding="utf-8"))
-        self.assertEqual(evaluation["default"], "0.1.1")
+        self.assertEqual(evaluation["default"], "0.1.2")
+        self.assertEqual(evaluation["versions"]["0.1.2"], evaluation["versions"]["0.1.1"])
         self.assertEqual(evaluation["versions"]["0.1.1"], evaluation["versions"]["0.1.0"])
         current = evaluation["versions"]["0.1.1"]
         proven = baseline["versions"]["0.1.12"]

@@ -70,7 +70,7 @@ The applicator fails closed if the receipt was created against different suite/t
 
 Current adjudicated-suite compatibility:
 
-- 11 `company_research` cases can be projected into the existing bounded `governed_company_baseline` field for evaluation.
+- 11 `company_research` cases can be projected into the existing bounded `governed_company_baseline` field for evaluation. This is structural compatibility, not proof that any case can pass a positive public-web smoke. The synthetic identity fixture conflicts with the frozen citation requirement; keep the positive completion gate open pending a reviewed acceptance decision.
 - 13 `document_review` cases remain `not_executable`; 0.1.12 has no document/file input contract.
 - Synthetic replay uses preview mode, a neutral read-only synthetic company memory, and the production-supported `company_methodology` first-run state.
 - Mutable Dynamic Skill roles are rejected by the replay wrapper.
@@ -95,3 +95,5 @@ sha256:2fa082aca1c100abb60a4bf77aa4cf796da2707bb951a3b51f11948efd2dd564
 Do not supply `company_memory_update` or `company_methodology_update` authority to this evaluation lane.
 
 The harness is not itself a quality measurement. PI-1985 remains incomplete until actual provider-backed replay observations are recorded and scored through `review_baseline_measurement.py`. Document cases stay explicitly unmeasured rather than receiving inferred values.
+
+Evaluation asset 0.1.2 requires explicit `diagnostic_baseline_replay` purpose and supplies a no-provider preflight. See [evaluation developer guide](../../../pharma_company_intelligence_lab_evaluation/DEVELOPER_GUIDE.md). Do not change expected findings or convert supplied-source locators into provider citations to force completion.
