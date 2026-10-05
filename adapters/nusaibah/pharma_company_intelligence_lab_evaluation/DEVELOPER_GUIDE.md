@@ -98,3 +98,14 @@ Existing finite limits remain: twelve preview logical calls per company, four pl
 ## Separate supplied-source lane 0.2.0
 
 See [SUPPLIED_SOURCE_REVIEW.md](SUPPLIED_SOURCE_REVIEW.md) for strict inputs, exact-span and semantic verification, source/requirement coverage, finite 17-call topology, no-provider preflight and deployment commands. This new synthetic preview disables search and accepts reviewed evidence gaps. It does not change the frozen citation gate or satisfy WP1 comparability. Use a new inputs-only JSON and admit the new Agent contracts. No new environment values, mutations, publication or real document authority are introduced.
+
+
+## Result visibility in evaluation 0.2.1
+
+Version 0.2.1 reuses the 0.2.0 supplied-source review engine and Agent contracts unchanged. Its required `evaluation_summary` object contains only the actual outcome, execution state, call and finding counts, and preview/publication/comparability flags. Source text, findings, evidence spans, case IDs, and entity IDs remain outside this summary.
+
+Inspect the authorized result with `--output-role evaluation_summary`. This bounded projection is not full findings or independent external truth. `review_complete_with_evidence_gaps` remains a completed review with gaps; no quality gate is weakened.
+
+Original evaluation versions and frozen production 0.1.12 replay remain available. Register/admit the exact new version after official Assets promotion, then verify the installed wheel catalog resolves 0.2.1. An old completed 0.2.0 run cannot acquire a business summary retroactively.
+
+Future full-preview inspection requires explicit governed Core retention and authorized reference reads. Never copy source documents into PHP checkpoints or interpret workflow-state archives as full business results.
