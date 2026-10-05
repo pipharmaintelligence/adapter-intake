@@ -63,3 +63,14 @@ the 1800-second task deadline and separate 60-second cleanup budget.
 The new version validates explicit diagnostic intent and bounded synthetic inputs before any Agent or Skill call. Projection compatibility is separate from positive web-smoke eligibility. Unsupported positive smoke requests fail with `pharma_evaluation_preflight_rejected`, stage `evaluation_preflight`; missing citations still fail through the unchanged frozen gate. Existing versions, frozen code, Agent/Skill declarations and finite budgets remain unchanged.
 
 The runtime companion adds generic, text-free per-role citation observations to receipts, failed-run status/results and smoke output. Package the reviewed intake commit through the official materializer and install only the final artifact containing both changes. No new .env values or live provider retries are required. Follow [the developer guide](DEVELOPER_GUIDE.md) for proof lanes, commands, deployment gates and future source-review priorities.
+
+
+## Result visibility in evaluation 0.2.1
+
+Version 0.2.1 reuses the 0.2.0 supplied-source review engine and Agent contracts unchanged. Its required `evaluation_summary` object contains only the actual outcome, execution state, call and finding counts, and preview/publication/comparability flags. Source text, findings, evidence spans, case IDs, and entity IDs remain outside this summary.
+
+Inspect the authorized result with `--output-role evaluation_summary`. This bounded projection is not full findings or independent external truth. `review_complete_with_evidence_gaps` remains a completed review with gaps; no quality gate is weakened.
+
+Original evaluation versions and frozen production 0.1.12 replay remain available. Register/admit the exact new version after official Assets promotion, then verify the installed wheel catalog resolves 0.2.1. An old completed 0.2.0 run cannot acquire a business summary retroactively.
+
+Future full-preview inspection requires explicit governed Core retention and authorized reference reads. Never copy source documents into PHP checkpoints or interpret workflow-state archives as full business results.
