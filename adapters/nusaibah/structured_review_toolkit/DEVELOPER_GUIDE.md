@@ -110,6 +110,10 @@ If a case blocks, inspect its bounded input and the stable toolkit error class, 
 
 ## WP alignment
 
+The companion PR80 evaluator consumes retained pharma evaluation 0.2.1 artifacts with `evaluation_result` and `evaluation_summary`. This toolkit emits `review_tool_result.v1`; the synthetic demo previews do not satisfy that domain evaluator's contract. A future toolkit-assisted domain asset needs an explicit evaluation/result contract and independent semantic review. Keep domain quality scoring in evaluation tooling and generic deterministic checks in this callable.
+
+The source repository coordination plan is `docs/reviews/PR80-PR81-Readiness-and-Next-Steps-2026-10-06.md`. It records merge order, combined checks, the separate SFDA test drift, WP1 scope/measurement work and the toolkit's promotion dependency sequence. That source-only plan is not a runtime support file.
+
 This change extracts and proves reuse of deterministic reference components. It leaves the historical pharma baseline, PR80 scoring, fixture truth and all WP readiness gates unchanged. WP1 scope/comparability and independent measurements, domain-specialist integration, generic runtime lifecycle proof, held-out admission and production operator states remain required.
 
 The next generalization layer can reuse these operations for admitted specialist packets and authenticated semantic outputs. It must preserve the same authority and result-boundary distinctions.
