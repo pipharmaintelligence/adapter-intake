@@ -6,6 +6,8 @@ on:
     paths:
       - "adapters/**"
       - "tests/test_adapter_intake_contract.py"
+      - "tests/test_structured_review_toolkit.py"
+      - "tests/prove_review_toolkit_worker.py"
       - ".github/workflows/adapter-intake-contract.yml"
   push:
     branches:
@@ -13,6 +15,8 @@ on:
     paths:
       - "adapters/**"
       - "tests/test_adapter_intake_contract.py"
+      - "tests/test_structured_review_toolkit.py"
+      - "tests/prove_review_toolkit_worker.py"
       - ".github/workflows/adapter-intake-contract.yml"
 
 permissions:
@@ -49,6 +53,14 @@ jobs:
             -s adapters/nusaibah/pharma_company_intelligence_lab/tests \
             -p "test_*.py" \
             -v
+
+      - name: Validate shared review toolkit and two synthetic consumers
+        shell: bash
+        env:
+          PYTHONPATH: adapters/nusaibah/pharma_company_intelligence_lab/tests/stubs
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p "test_structured_review_toolkit.py" -v
 
       - name: Validate evaluation asset packaged imports and baseline parity
         shell: bash

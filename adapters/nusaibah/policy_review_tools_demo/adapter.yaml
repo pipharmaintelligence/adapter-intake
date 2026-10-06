@@ -1,0 +1,15 @@
+asset_key: nusaibah.policy_review_tools_demo
+asset_version: 0.1.0
+package_target: python_runtime/adapters/intake/nusaibah/policy_review_tools_demo
+manifest: policy_review_tools_demo.asset.json
+adapter_module: policy_review_tools_demo_adapter.py
+dependency_manifest: adapter.dependencies.json
+optional_files:
+  - README.md
+  - DEVELOPER_GUIDE.md
+release_stage: development
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false
