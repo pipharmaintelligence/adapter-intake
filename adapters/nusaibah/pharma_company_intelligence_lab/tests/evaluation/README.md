@@ -101,6 +101,14 @@ Evaluation asset 0.1.2 requires explicit `diagnostic_baseline_replay` purpose an
 
 ## Supplied-source 0.2.1 candidate evaluation
 
+### Explicit quote-selection candidate 0.2.2
+
+The projector and evaluator now also accept `--candidate-version 0.2.2`; defaults remain 0.2.1. The new proposed `development_input_bindings.v2.json` pins the same original fixture/source bytes and five-case set to the new candidate identity. Input values are identical, but its methodology/plan and retained result schemas differ. Do not combine versions or methods in one measurement batch. See [candidate developer guide](../../../pharma_company_intelligence_lab_evaluation/DEVELOPER_GUIDE.md#quote-selection-candidate-022) for the bounded signed toolkit integration and release order.
+
+Add `--candidate-version 0.2.2` to the preparation, template and scoring commands when deliberately evaluating that new version. Receipt validation includes every chunk's exact-span tool result, source/request digests, unique literal quotes, accepted/withheld evidence accounting and child-call count. The original 0.2.1 validator, frozen baseline, truth, held-out sealing and threshold/readiness rules remain intact. A source preflight or fake-Agent test cannot authorize execution or supply independent semantic review.
+
+CI exports both declared versions' batches independently and retains only their text-free manifests for seven days. A resolver rejection is a blocked case with its safe rule, not a completed/evaluated result. No repeated provider execution is needed to inspect the lost response from run `0455965f-eaf3-4f73-8bc2-9d21a7cdbc92`.
+
 ### Prepare exact development inputs first
 
 `project_development_inputs.py` provides offline preflight and optional inputs-only export for the five explicitly proposed bindings in `development_input_bindings.v1.json`. The [WP1 scope/comparability proposal](../../../../../docs/reviews/WP1-Scope-and-Comparability-Decision.v1.md) explains the pending domain decision, preserved legacy gate, finite denominators and measurement sequence.

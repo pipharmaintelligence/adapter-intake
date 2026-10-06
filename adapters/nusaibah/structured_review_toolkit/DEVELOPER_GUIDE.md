@@ -29,6 +29,7 @@ Every operation uses exactly `schema_version`, `operation`, and an `arguments` o
 
 | Operation | Exact argument fields | Output |
 | --- | --- | --- |
+| `resolve_exact_spans` (0.1.1) | `entity_id`, `snapshot_id`, `source_units`, `source_digest`, `requests` | Closed resolved/rejected outcome with bound exact spans or no spans |
 | `prepare_sources` | `source`, `policy` | Inventory, chunks, inaccessible IDs |
 | `prepare_packet` | `entity_id`, `role`, `requirement_ids`, `allowed_section_ids`, `global_rules`, `domain_rules`, `memory_records`, `evidence_refs`, `selected_memory_ids`, `omitted_context_reasons` | Selected role packet |
 | `verify_findings` | `source`, `policy`, `source_hash`, `methodology`, `evidence`, `findings`, `semantic_verdicts` | Checked findings and methodology/source digests |
@@ -54,7 +55,7 @@ Accepted findings cannot cite unreviewed or not-applicable obligations. A withhe
 
 ## Adding another asset
 
-1. Declare an exact `callable_assets.review_toolkit` target, currently `nusaibah.structured_review_toolkit:0.1.0`, result key `tool_result` and object result shape.
+1. Declare an exact `callable_assets.review_toolkit` target: `nusaibah.structured_review_toolkit:0.1.1` for quote resolution, or the unchanged `0.1.0` for an existing consumer. Result key is `tool_result`, shape object. Never select an implicit latest version.
 2. Keep domain methodology and requirements in the consumer's reviewed configuration. Do not introduce asset identity dispatch into the toolkit.
 3. Obtain source inputs through approved fixture/dummy contracts initially. Real lake/file authority requires its own review; a variables dictionary is not a governed-source grant.
 4. Validate the consumer's expected entity scope and call the tool through the runtime bridge.
@@ -66,7 +67,7 @@ Compatible new domains can reuse the same toolkit version. Behavior/schema chang
 
 ## Count and loop policy
 
-There are six toolkit operations, independent of the number of registered assets. Each demo executes one deterministic `assemble_preview` child; its internal finite checks do not invoke more assets or Agents.
+There are six operations in 0.1.0 and seven in 0.1.1, independent of the number of registered assets. Each existing demo executes one deterministic `assemble_preview` child; evaluation 0.2.2 executes at most one `resolve_exact_spans` child per chunk. Internal finite checks do not invoke more assets or Agents.
 
 The current direct callable builder defaults to eight uncached child executions and admits 1-256. This is an implementation ceiling, not a workload recommendation. Start with the smallest admitted plan; this proof uses one. The development proof constructs that plan locally; the consumer manifest alone does not set Core's live run budget. Any future parent loop needs explicit iteration/deadline bounds even when repeated calls hit the cache.
 
@@ -92,7 +93,7 @@ Run the independent no-provider worker proof with `pi-obs-python-runtime >= 0.1.
 & $Python tests\prove_review_toolkit_worker.py --report "$env:TEMP\review-toolkit-worker-proof.json"
 ```
 
-No env file is loaded. The proof materializes only declared adapter/helper/manifest files through the official promotion planner, builds a catalog with exactly three identities, executes both synthetic domains through signed local-worker requests and actual isolated callable subprocesses, and verifies response signatures. It uses a fresh temporary test identity/secret, not live Core admission.
+No env file is loaded. The proof materializes only declared adapter/helper/manifest files through the official promotion planner, builds a catalog with four identities (both toolkit versions plus the two historical demos), executes both synthetic domains through signed local-worker requests and actual isolated callable subprocesses, and verifies response signatures. It uses a fresh temporary test identity/secret, not live Core admission.
 
 The same proof rejects missing callable authority, a modified source digest, the wrong consumer domain, an unavailable role and a modified reviewed helper. A real runtime session separately proves that cached results cannot be mutated through returned copies and a second uncached call exceeds the one-child budget. That session probe uses runtime-private APIs only in the integration test, not business adapters; review it when the runtime changes.
 
@@ -102,7 +103,7 @@ It reports the shared child hash, zero Agent/mutable calls, signed-response chec
 
 Review and merge source changes, then use official intake promotion/materialization for the toolkit and required consumers. Review the resulting Assets promotion PR, package the runtime/bundle, verify catalog identities and module/helper hashes, and admit only the required parent/child contracts.
 
-Generic source utilities belong in this intake; packaged copies belong to the Assets promotion output. Core changes are only necessary when live capability admission or plan controls need a separately reviewed adjustment. Existing provider transport code and pharma adapters are not modified by this package.
+Generic utilities and source-owned consumer versions belong in intake; packaged copies belong to Assets promotion output. Core changes are only necessary when live capability admission or plan controls need a separately reviewed adjustment. The quote-selection integration adds an evaluation version without changing historical adapters or provider transport code.
 
 Do not install a wheel built from unmerged local edits into the running worker or mix helper revisions. Registration, consumer binding and live positive/negative proof remain separate. No new environment variables are introduced by these source assets.
 
@@ -110,10 +111,32 @@ If a case blocks, inspect its bounded input and the stable toolkit error class, 
 
 ## WP alignment
 
-The companion PR80 evaluator consumes retained pharma evaluation 0.2.1 artifacts with `evaluation_result` and `evaluation_summary`. This toolkit emits `review_tool_result.v1`; the synthetic demo previews do not satisfy that domain evaluator's contract. A future toolkit-assisted domain asset needs an explicit evaluation/result contract and independent semantic review. Keep domain quality scoring in evaluation tooling and generic deterministic checks in this callable.
+The PR80 evaluator retains its explicit 0.2.1 default and also accepts the separately selected 0.2.2 result/methodology contract. Both require `evaluation_result`, `evaluation_summary` and independently reviewed receipts. This toolkit emits `review_tool_result.v1`; generic demo previews do not satisfy the domain evaluator. Keep domain quality scoring in evaluation tooling and deterministic checks in this callable.
 
 The source repository coordination plan is `docs/reviews/PR80-PR81-Readiness-and-Next-Steps-2026-10-06.md`. It records merge order, combined checks, the separate SFDA test drift, WP1 scope/measurement work and the toolkit's promotion dependency sequence. That source-only plan is not a runtime support file.
 
 This change extracts and proves reuse of deterministic reference components. It leaves the historical pharma baseline, PR80 scoring, fixture truth and all WP readiness gates unchanged. WP1 scope/comparability and independent measurements, domain-specialist integration, generic runtime lifecycle proof, held-out admission and production operator states remain required.
 
 The next generalization layer can reuse these operations for admitted specialist packets and authenticated semantic outputs. It must preserve the same authority and result-boundary distinctions.
+
+## Literal quote resolution (0.1.1)
+
+The exact argument object contains `entity_id`, `snapshot_id`, `source_units`, `source_digest` and `requests`. Each source unit has exactly `locator`, `entity_id`, original `text`, and Boolean `accessible`. Locators are unique. Maximum source units/text are 32 / 24,000 characters, with at most 6,000 characters per unit. The caller must select the admitted chunk; the resolver never retrieves, expands, normalizes or truncates context.
+
+Compute `source_digest` as lowercase SHA256 of UTF-8 JSON of `{entity_id, snapshot_id, source_units}`, with `sort_keys=True`, `ensure_ascii=False`, compact separators `(',', ':')` and no nonfinite values. This is a separate chunk-resolution view digest, not the legacy `prepare_sources` inventory hash or a source-access grant. Snapshot/source identity and the signed callable plan must be bound by the trusted orchestrator.
+
+Each request has exactly `{request_id, locator, quote}`. Request IDs are unique, bounded identifiers generated by the caller, never model-selected authority. A batch has 0–16 requests; quotes are nonblank literal strings of at most 600 characters. Validate the whole closed batch before searching. Match only inside that locator and entity. An occurrence is unique only when a second search starting at `start + 1` fails; overlapping occurrences also reject. Offsets are Python Unicode code points, start inclusive/end exclusive, with original CRLF/Unicode bytes preserved in input artifacts.
+
+The output has exactly `entity_id`, `snapshot_id`, `source_digest`, `semantic_authority_verified=false`, `status`, `reason_code`, `rejected_request_index` and `spans`. `status=resolved` requires null reason/index and one ordered span per request; spans add strict integer `start` and `end` to the request fields. `status=rejected` requires empty spans, a strict integer index into the request batch, and one of `evidence_quote_missing`, `evidence_quote_ambiguous`, `evidence_locator_invalid`, `evidence_entity_mismatch`, `evidence_inaccessible`. The orchestrator can map this bounded index to its own fixed specialist role without logging the quote or a model-selected ID. The entire batch rejects without partial evidence. The successful transport/envelope status describes tool execution, not a completed review.
+
+Return these valid-data rejection decisions through the typed result so the callable boundary can retain their specific safe reason. Malformed schema/quote bounds, credentials, authority fields, stale source digest, duplicate IDs, depth and byte overflow remain contract errors. Never echo source values or exception prose into status/logs. Consumers validate version/operation/request digest, source binding, status/reason, ordered cardinality, integer ranges, exact slices and uniqueness before using any span. Matching text does not establish entailment or textual company attribution.
+
+Run the new deterministic tests and independent installed-runtime proof:
+
+```powershell
+$Python = 'E:\nusaibah_projects\demo_asset_project\.venv\Scripts\python.exe'
+& $Python -m unittest discover -s tests -p 'test_review_exact_spans.py' -v
+& $Python tests\prove_exact_span_worker.py --report (Join-Path $env:TEMP ('exact-span-proof-' + (Get-Date -Format 'yyyyMMdd-HHmmss') + '.json'))
+```
+
+The latter uses the official copy planner and installed runtime to resolve all six evaluation identities, both toolkit versions and both historical demos. A temporary test-only bridge parent adds the eleventh identity. It proves signed company/policy calls to the actual isolated 0.1.1 child, specific safe quote rejection, authority/source/helper tamper rejection, cache isolation and a one-child budget. The temporary parent is never promoted or registered. It loads no env file, invokes no provider and does not establish live evaluation execution, model quality or server admission. Source/module verification precedes live promotion and remains distinct from a provider run.

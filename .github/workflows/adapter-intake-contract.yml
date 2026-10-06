@@ -7,6 +7,8 @@ on:
       - "adapters/**"
       - "tests/test_adapter_intake_contract.py"
       - "tests/test_structured_review_toolkit.py"
+      - "tests/test_review_exact_spans.py"
+      - "tests/prove_exact_span_worker.py"
       - "tests/prove_review_toolkit_worker.py"
       - ".github/workflows/adapter-intake-contract.yml"
   push:
@@ -16,6 +18,8 @@ on:
       - "adapters/**"
       - "tests/test_adapter_intake_contract.py"
       - "tests/test_structured_review_toolkit.py"
+      - "tests/test_review_exact_spans.py"
+      - "tests/prove_exact_span_worker.py"
       - "tests/prove_review_toolkit_worker.py"
       - ".github/workflows/adapter-intake-contract.yml"
 
@@ -77,6 +81,30 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Preflight the quote-selection candidate without providers
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          set -euo pipefail
+          python adapters/nusaibah/pharma_company_intelligence_lab/tests/evaluation/project_development_inputs.py \
+            --candidate-version 0.2.2 \
+            --case-id company-small-identity-001 \
+            --case-id company-wrong-entity-005 \
+            --case-id company-source-injection-006 \
+            --case-id company-missing-evidence-007 \
+            --case-id company-conflicting-dates-003 \
+            --output-dir "$RUNNER_TEMP/wp1-quote-inputs" \
+            --pretty
+
+      - name: Retain quote-candidate preflight manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: wp1-quote-input-preflight
+          path: ${{ runner.temp }}/wp1-quote-inputs/projection-manifest.json
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Validate shared review toolkit and two synthetic consumers
         shell: bash
         env:
@@ -84,6 +112,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m unittest discover -s tests -p "test_structured_review_toolkit.py" -v
+          python -m unittest discover -s tests -p "test_review_exact_spans.py" -v
 
       - name: Validate evaluation asset packaged imports and baseline parity
         shell: bash

@@ -1,0 +1,42 @@
+{
+  "schema_version": "pharma_development_input_bindings.v1",
+  "decision_status": "proposed",
+  "suite_id": "pharma_methodology_specialized_review_wp1.v1",
+  "suite_byte_sha256": [
+    "3af30dc8547fe8db5845b5f357edcaf756563b281a8003456593d1d5b470c70f",
+    "90734a2e5b2c74faefe16f01ba395b082fddf65def9b31d782ea245eab80d826"
+  ],
+  "candidate_identity": "nusaibah.pharma_company_intelligence_lab_evaluation:0.2.2",
+  "bindings": [
+    {
+      "case_id": "company-small-identity-001",
+      "entity_id": "ficta-therapeutics",
+      "entity_name": "Ficta Therapeutics Ltd.",
+      "source_sha256": "d4d4ad434430cd48948ceb788816656ab65081b39f15645684d5c187e78e14a4"
+    },
+    {
+      "case_id": "company-wrong-entity-005",
+      "entity_id": "ficta-therapeutics",
+      "entity_name": "Ficta Therapeutics",
+      "source_sha256": "73c695b8edcefa9c078992fd4b6cf3f08cef30b7d884de10789010518e6fccb0"
+    },
+    {
+      "case_id": "company-source-injection-006",
+      "entity_id": "synthetic-target-company-source-injection-006",
+      "entity_name": "Synthetic target company",
+      "source_sha256": "ac8e4fa5d1bb9dfd0da07ccbed3575afcdc18c6d71ecc497e6c00f9df7f2de42"
+    },
+    {
+      "case_id": "company-missing-evidence-007",
+      "entity_id": "synthetic-target-company-missing-evidence-007",
+      "entity_name": "Synthetic target company",
+      "source_sha256": "cec1665c348b435dd4c35a7f2955fc92ceae09d747ed51a3d386db18c44cf357"
+    },
+    {
+      "case_id": "company-conflicting-dates-003",
+      "entity_id": "synthetic-target-company-conflicting-dates-003",
+      "entity_name": "Synthetic target company",
+      "source_sha256": "ad38459f3a1606ddf040c88e1dc6f9263fba8e6b16f807eb0573aec1c5b143c4"
+    }
+  ]
+}
