@@ -1,0 +1,22 @@
+asset_key: nusaibah.structured_review_toolkit
+asset_version: 0.1.0
+package_target: python_runtime/adapters/intake/nusaibah/structured_review_toolkit
+manifest: structured_review_toolkit.asset.json
+adapter_module: structured_review_toolkit_adapter.py
+reviewed_helpers:
+  - source_chunks.py
+  - role_packets.py
+  - evidence_verification.py
+  - reconciliation.py
+  - review_contracts.py
+  - tool_operations.py
+dependency_manifest: adapter.dependencies.json
+optional_files:
+  - README.md
+  - DEVELOPER_GUIDE.md
+release_stage: development
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false
