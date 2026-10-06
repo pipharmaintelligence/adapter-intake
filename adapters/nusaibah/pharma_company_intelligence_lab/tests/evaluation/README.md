@@ -101,6 +101,45 @@ Evaluation asset 0.1.2 requires explicit `diagnostic_baseline_replay` purpose an
 
 ## Supplied-source 0.2.1 candidate evaluation
 
+### Prepare exact development inputs first
+
+`project_development_inputs.py` provides offline preflight and optional inputs-only export for the five explicitly proposed bindings in `development_input_bindings.v1.json`. The [WP1 scope/comparability proposal](../../../../../docs/reviews/WP1-Scope-and-Comparability-Decision.v1.md) explains the pending domain decision, preserved legacy gate, finite denominators and measurement sequence.
+
+Run this after the source PR is merged into the existing E: checkout. This command creates a **new** export directory; it will not overwrite one from an earlier run:
+
+```powershell
+$ProjectRoot = "E:\nusaibah_projects\demo_asset_project"
+$IntakeRoot = "$ProjectRoot\adapter-intake-work"
+$Python = "$ProjectRoot\.venv\Scripts\python.exe"
+$Projector = "$IntakeRoot\adapters\nusaibah\pharma_company_intelligence_lab\tests\evaluation\project_development_inputs.py"
+$BatchRoot = Join-Path "$ProjectRoot\runtime-artifacts" ("wp1-development-inputs-" + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+
+& $Python $Projector `
+  --case-id company-small-identity-001 `
+  --case-id company-wrong-entity-005 `
+  --case-id company-source-injection-006 `
+  --case-id company-missing-evidence-007 `
+  --case-id company-conflicting-dates-003 `
+  --output-dir $BatchRoot `
+  --pretty
+if ($LASTEXITCODE -ne 0) { throw "Stop: development projection/preflight is blocked." }
+
+$Manifest = Get-Content -LiteralPath "$BatchRoot\projection-manifest.json" -Raw | ConvertFrom-Json
+$InputsFile = Join-Path $BatchRoot 'company-small-identity-001.inputs.json'
+$ActualHash = (Get-FileHash -LiteralPath $InputsFile -Algorithm SHA256).Hash.ToLowerInvariant()
+$ExpectedHash = ($Manifest.cases | Where-Object case_id -eq 'company-small-identity-001').inputs_sha256
+if ($ActualHash -ne $ExpectedHash) { throw "Stop: exported input bytes changed." }
+$Manifest | Select-Object status, declared_case_count, ready_case_count, inputs_exported, execution_allowed, scope_decision_status, wp1_complete, wp2_unblocked
+```
+
+The parent `runtime-artifacts` directory must already exist. Omit `--output-dir` for a report-only preflight that writes no files. Exit 0 / `status=prepared` means input compatibility; `execution_allowed=false` still requires the domain scope decision and runtime admission before any run. Incompatibility returns exit 2, keeps negative case classifications and exports no partial batch. Other invalid evidence also returns a safe blocked reason without echoing file/source/error values.
+
+Inputs contain only the candidate's closed `variables` and `evaluation_case` fields. Original source text, locators, related context and accessibility remain exact; wrong-entity sources remain separate. Expected findings, criticality, reviewer notes, abstention answers and thresholds are excluded. Anonymous company labels are explicit proposed synthetic bindings; they do not establish textual identity. Held-out cases, undeclared bindings, duplicate case IDs, suite/source drift and export inside this checkout fail closed. No runtime dependency, wheel version, provider call, env setting, registration or worker restart changes here.
+
+Preserve the input file, manifest, exact suite snapshot and binding file in the offline evaluation evidence record for subsequent receipt binding. Only the `.inputs.json` file is a runtime input; the suite contains adjudicated answers and must stay out of provider context. The fixed binding accepts the reviewed LF and CRLF encodings; the manifest hashes the actual bytes used. Use one exact suite snapshot across a measured batch, as PR80 rejects mixed suite digests. After scope/admission approval, begin with at most one preview and retain its original result bytes before the independent review steps below. The five-case batch is a development pilot, never full WP1 baseline evidence.
+
+Intake CI tests the projector and exports this five-case batch in the runner's temporary directory. Its seven-day `wp1-development-input-preflight` artifact retains only the text-free manifest. This artifact is an input-contract receipt, not provider, quality, domain-approval or runtime-promotion evidence.
+
 `supplied_source_candidate_evaluation.py` scores retained `0.2.1` preview artifacts against this adjudicated truth set without executing providers. This is a separate candidate-quality track; it does not complete or replace the frozen `0.1.12` WP1 baseline.
 
 The evaluator fails closed unless it can bind the exact adjudicated fixture, truth-free input JSON, retained preview bytes, run identity, candidate asset identity, source digest and methodology digest. It verifies exact supplied-source citation spans, wrong-company exclusion, coverage accounting, summary agreement and logical-call bounds before quality scoring.
