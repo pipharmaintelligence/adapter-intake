@@ -1,0 +1,27 @@
+{
+  "schema_version": "pharma_supplied_source_candidate_review.v1",
+  "suite_id": null,
+  "suite_input_digest": null,
+  "case_id": null,
+  "split": null,
+  "fixture_source_sha256": null,
+  "methodology_digest": null,
+  "candidate_asset": {
+    "asset_key": "nusaibah.pharma_company_intelligence_lab_evaluation",
+    "asset_version": "0.2.1"
+  },
+  "run_uuid": null,
+  "inputs_file_sha256": null,
+  "retained_result_file_sha256": null,
+  "reviewer": {
+    "name": null,
+    "qualification_basis": null
+  },
+  "expected_finding_decisions": [],
+  "observed_finding_decisions": [],
+  "fixture_obligations": [],
+  "truthful_incomplete": null,
+  "case_status": "pending_review",
+  "status_reason": null,
+  "notes": null
+}

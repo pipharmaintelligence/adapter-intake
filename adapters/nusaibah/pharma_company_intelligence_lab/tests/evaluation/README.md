@@ -97,3 +97,38 @@ Do not supply `company_memory_update` or `company_methodology_update` authority 
 The harness is not itself a quality measurement. PI-1985 remains incomplete until actual provider-backed replay observations are recorded and scored through `review_baseline_measurement.py`. Document cases stay explicitly unmeasured rather than receiving inferred values.
 
 Evaluation asset 0.1.2 requires explicit `diagnostic_baseline_replay` purpose and supplies a no-provider preflight. See [evaluation developer guide](../../../pharma_company_intelligence_lab_evaluation/DEVELOPER_GUIDE.md). Do not change expected findings or convert supplied-source locators into provider citations to force completion.
+
+
+## Supplied-source 0.2.1 candidate evaluation
+
+`supplied_source_candidate_evaluation.py` scores retained `0.2.1` preview artifacts against this adjudicated truth set without executing providers. This is a separate candidate-quality track; it does not complete or replace the frozen `0.1.12` WP1 baseline.
+
+The evaluator fails closed unless it can bind the exact adjudicated fixture, truth-free input JSON, retained preview bytes, run identity, candidate asset identity, source digest and methodology digest. It verifies exact supplied-source citation spans, wrong-company exclusion, coverage accounting, summary agreement and logical-call bounds before quality scoring.
+
+Semantic claim matching is never inferred from substrings or from the candidate model's own verifier verdict. Generate a bound review receipt and have an independent qualified reviewer complete the expected/observed finding decisions and obligation accounting:
+
+```powershell
+python adapters/nusaibah/pharma_company_intelligence_lab/tests/evaluation/supplied_source_candidate_evaluation.py `
+  --case-id company-small-identity-001 `
+  --inputs <truth-free-inputs.json> `
+  --retained-result <retained-preview.json> `
+  --emit-review-template <candidate-review.json> `
+  --pretty
+```
+
+After independent review, evaluate the exact same bytes:
+
+```powershell
+python adapters/nusaibah/pharma_company_intelligence_lab/tests/evaluation/supplied_source_candidate_evaluation.py `
+  --case-id company-small-identity-001 `
+  --inputs <truth-free-inputs.json> `
+  --retained-result <retained-preview.json> `
+  --review-file <candidate-review.json> `
+  --usage <existing-run-usage.json> `
+  --safe-status-output <candidate-safe-status.json> `
+  --pretty
+```
+
+Cases that cannot enter the focused company-review contract are reported as `not_executable`; blocked or pending-review cases remain explicit and are never dropped from a finite batch. Missing usage values remain unknown. The candidate evaluator computes finite-set quality metrics but intentionally does not apply the frozen WP1 release gate: candidate thresholds require an explicit compatibility/calibration decision.
+
+Keep held-out truth sealed until the development configuration is frozen. Expected findings, abstentions, reviewer labels and held-out answers must never be inserted into Agent inputs.
