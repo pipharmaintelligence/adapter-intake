@@ -109,3 +109,9 @@ Inspect the authorized result with `--output-role evaluation_summary`. This boun
 Original evaluation versions and frozen production 0.1.12 replay remain available. Register/admit the exact new version after official Assets promotion, then verify the installed wheel catalog resolves 0.2.1. An old completed 0.2.0 run cannot acquire a business summary retroactively.
 
 Future full-preview inspection requires explicit governed Core retention and authorized reference reads. Never copy source documents into PHP checkpoints or interpret workflow-state archives as full business results.
+
+## Adjudicated development input preparation
+
+The source-only [development projector workflow](../pharma_company_intelligence_lab/tests/evaluation/README.md#prepare-exact-development-inputs-first) now exports exact 0.2.1 inputs for an explicit finite proposed case set and runs the unchanged source/evaluator preflight. It needs no env file, runtime update or provider execution. Preserve its manifest and exact input/suite bytes for PR80's independent retained-result evaluation. Existing output directories are never reused; source fixtures and production adapters remain unchanged.
+
+Read the [WP1 scope/comparability proposal](../../../docs/reviews/WP1-Scope-and-Comparability-Decision.v1.md) before interpreting `status=prepared`. Source compatibility does not grant execution or establish quality. Keep the legacy baseline incomplete, held-out truth sealed and dependent WP gates closed until the approved measurement/scope contract supplies the required evidence. Generic deterministic-tool integration and data/storage authority retain their existing owners.
