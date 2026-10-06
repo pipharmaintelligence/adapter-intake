@@ -6,6 +6,7 @@
   "split": null,
   "fixture_source_sha256": null,
   "methodology_digest": null,
+  "candidate_methodology_digest": null,
   "candidate_asset": {
     "asset_key": "nusaibah.pharma_company_intelligence_lab_evaluation",
     "asset_version": "0.2.1"

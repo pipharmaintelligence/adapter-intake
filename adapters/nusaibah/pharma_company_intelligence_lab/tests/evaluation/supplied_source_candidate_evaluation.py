@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 from reference.release_evaluation import evaluate_cases
 
@@ -33,6 +35,13 @@ MAX_UNIT_CHARS = 6000
 MAX_SOURCE_CHARS = 24000
 MAX_RELATED_LOCATORS = 3
 
+# Reuse only the unchanged, standard-library-only source preparation contract.
+# Loading this module and calling prepare_review never invokes an Agent.
+_SOURCE_PATH = HERE.parents[2] / "pharma_company_intelligence_lab_evaluation" / "supplied_source_review.py"
+_SOURCE_SPEC = importlib.util.spec_from_file_location("candidate_source_contract", _SOURCE_PATH)
+SOURCE_REVIEW = importlib.util.module_from_spec(_SOURCE_SPEC)
+_SOURCE_SPEC.loader.exec_module(SOURCE_REVIEW)
+
 
 class CandidateEvaluationError(ValueError):
     """Raised when retained candidate evidence is incomplete or inconsistent."""
@@ -45,26 +54,24 @@ def _canonical_digest(value: Any) -> str:
             ensure_ascii=False,
             separators=(",", ":"),
             sort_keys=True,
+            allow_nan=False,
         ).encode("utf-8")
     except (TypeError, ValueError) as exc:
         raise CandidateEvaluationError("Evaluation evidence must be JSON-compatible.") from exc
     return f"sha256:{hashlib.sha256(payload).hexdigest()}"
 
 
-def _file_sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for block in iter(lambda: handle.read(64 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
 def load_json(path: Path) -> dict[str, Any]:
     """Load one JSON object from disk."""
-    value = json.loads(path.read_text(encoding="utf-8"))
+    return _load_json_with_digest(path)[0]
+
+
+def _load_json_with_digest(path: Path) -> tuple[dict[str, Any], str]:
+    payload = path.read_bytes()
+    value = json.loads(payload.decode("utf-8-sig"))
     if not isinstance(value, dict):
         raise CandidateEvaluationError(f"{path.name} must contain a JSON object.")
-    return value
+    return value, hashlib.sha256(payload).hexdigest()
 
 
 def _nonempty_text(value: Any, *, field: str) -> str:
@@ -90,8 +97,15 @@ def find_fixture(suite: dict[str, Any], case_id: str) -> dict[str, Any]:
         raise CandidateEvaluationError(f"Expected exactly one fixture for case_id={case_id!r}.")
 
     case = matches[0]
+    _require_development_case(case)
     if case.get("adjudication", {}).get("status") != "adjudicated":
         raise CandidateEvaluationError("Candidate evaluation requires an adjudicated fixture.")
+    adjudication = case["adjudication"]
+    _nonempty_text(adjudication.get("primary_reviewer"), field="fixture.primary_reviewer")
+    if adjudication.get("disagreement"):
+        _nonempty_text(adjudication.get("secondary_reviewer"), field="fixture.secondary_reviewer")
+    if case.get("source_identity", {}).get("digest_status") != "frozen":
+        raise CandidateEvaluationError("Candidate fixture source digest must be frozen.")
 
     expected_digest = case.get("source_identity", {}).get("content_sha256")
     actual_digest = hashlib.sha256(
@@ -106,6 +120,16 @@ def find_fixture(suite: dict[str, Any], case_id: str) -> dict[str, Any]:
         raise CandidateEvaluationError("Fixture source digest no longer matches adjudicated content.")
 
     return case
+
+
+def _require_development_case(case: dict[str, Any]) -> None:
+    if case.get("split") == "held_out":
+        raise CandidateEvaluationError(
+            "Held-out evaluation requires a reviewed development-freeze contract; "
+            "this evaluator admits development cases only."
+        )
+    if case.get("split") != "development":
+        raise CandidateEvaluationError("Fixture split must be development.")
 
 
 def assess_fixture_compatibility(case: dict[str, Any]) -> dict[str, Any]:
@@ -154,6 +178,14 @@ def validate_inputs_against_fixture(
     inputs: dict[str, Any],
 ) -> dict[str, Any]:
     """Validate a truth-free 0.2.1 input projection against one adjudicated fixture."""
+    _require_development_case(case)
+    try:
+        prepared = SOURCE_REVIEW.prepare_review(inputs)
+    except SOURCE_REVIEW.SourceReviewError as exc:
+        raise CandidateEvaluationError(
+            "Candidate preflight rejected the input projection: "
+            + exc.proof_failure_detail["rule"]
+        ) from exc
     _require_exact_keys(inputs, {"evaluation_case", "variables"}, field="inputs")
     variables = _require_exact_keys(
         inputs["variables"],
@@ -259,6 +291,7 @@ def validate_inputs_against_fixture(
         "target_entity_name": record["entity_name"],
         "source_units_by_locator": projected_by_locator,
         "target_chunk_count": target_chunk_count,
+        "prepared_review": prepared,
     }
 
 
@@ -279,7 +312,7 @@ def _validate_summary_agreement(
         "withheld_finding_count": len(result.get("withheld_findings", [])),
     }
     for field, expected in comparisons.items():
-        if summary.get(field) != expected:
+        if type(summary.get(field)) is not type(expected) or summary.get(field) != expected:
             raise CandidateEvaluationError(f"evaluation_summary disagrees with evaluation_result on {field}.")
 
 
@@ -293,6 +326,11 @@ def validate_retained_result(
         raise CandidateEvaluationError("Unexpected retained preview schema.")
 
     run_uuid = _nonempty_text(retained.get("run_uuid"), field="retained.run_uuid")
+    try:
+        if str(UUID(run_uuid)) != run_uuid:
+            raise ValueError("noncanonical UUID")
+    except ValueError as exc:
+        raise CandidateEvaluationError("retained.run_uuid must be a canonical UUID.") from exc
     if retained.get("asset_identity") != CANDIDATE_ASSET_IDENTITY:
         raise CandidateEvaluationError("Retained result is not for the 0.2.1 candidate asset.")
 
@@ -303,6 +341,11 @@ def validate_retained_result(
     summary = outputs.get("evaluation_summary")
     if not isinstance(result, dict) or not isinstance(summary, dict):
         raise CandidateEvaluationError("Retained result must include evaluation_result and evaluation_summary.")
+    if (result.get("schema_version") != "supplied_source_review_result.v1"
+            or summary.get("schema_version") != "pharma_supplied_source_review_summary.v1"
+            or result.get("scope") != "focused_company_review"
+            or result.get("synthetic") is not True):
+        raise CandidateEvaluationError("Retained result scope or schema differs from the candidate contract.")
 
     if result.get("case_id") != case["case_id"]:
         raise CandidateEvaluationError("Retained result case_id does not match the fixture.")
@@ -327,6 +370,13 @@ def validate_retained_result(
     if not isinstance(coverage, list) or not isinstance(inventory, list) or not isinstance(plan, dict):
         raise CandidateEvaluationError("Retained coverage, source inventory and plan are required.")
 
+    prepared = input_context["prepared_review"]
+    if result.get("snapshot_id") != prepared["snapshot_id"]:
+        raise CandidateEvaluationError("Retained snapshot does not bind to the exact input projection.")
+    if _canonical_digest(plan) != _canonical_digest(prepared["plan"]):
+        raise CandidateEvaluationError("Retained plan does not match the candidate's canonical finite plan.")
+    chunks = {chunk["chunk_id"]: chunk for chunk in prepared["chunks"]}
+
     _validate_summary_agreement(result, summary)
 
     source_units = input_context["source_units_by_locator"]
@@ -350,20 +400,61 @@ def validate_retained_result(
             if disposition != "inaccessible":
                 raise CandidateEvaluationError("Inaccessible target source was not accounted for as inaccessible.")
 
+    for expected in prepared["inventory"]:
+        actual = inventory_by_locator[expected["locator"]]
+        expected = dict(expected)
+        if expected["disposition"] == "assigned":
+            if actual.get("disposition") not in {"reviewed", "unreviewed"}:
+                raise CandidateEvaluationError("Target source disposition is inconsistent with its plan.")
+            expected["disposition"] = actual["disposition"]
+        if actual != expected:
+            raise CandidateEvaluationError("Source inventory differs from the canonical source/chunk mapping.")
+
     accepted_by_id: dict[str, dict[str, Any]] = {}
     accepted_ids_in_coverage: set[str] = set()
     runtime_obligations_disposed = True
+    expected_rows = {
+        (chunk["chunk_id"], role, requirement): chunk["primary_locator"]
+        for chunk in chunks.values()
+        for role, requirements in SOURCE_REVIEW.ROLES.items()
+        for requirement in requirements
+    }
+    rows_by_identity = {}
+    all_finding_ids = set()
     for row in coverage:
         if not isinstance(row, dict):
             raise CandidateEvaluationError("coverage rows must be objects.")
+        identity = (row.get("chunk_id"), row.get("role"), row.get("requirement_id"))
+        if (not all(isinstance(value, str) for value in identity)
+                or identity not in expected_rows or identity in rows_by_identity
+                or row.get("primary_locator") != expected_rows[identity]):
+            raise CandidateEvaluationError("Coverage must represent each planned obligation exactly once.")
+        rows_by_identity[identity] = row
+        if type(row.get("reviewed")) is not bool or type(row.get("unrepresented_evidence")) is not bool:
+            raise CandidateEvaluationError("Coverage review flags must be booleans.")
         if row.get("reviewed") is not True or row.get("unrepresented_evidence") is True:
             runtime_obligations_disposed = False
         ids = row.get("accepted_finding_ids", [])
         if not isinstance(ids, list):
             raise CandidateEvaluationError("coverage.accepted_finding_ids must be a list.")
+        finding_ids = row.get("finding_ids")
+        if (not isinstance(finding_ids, list)
+                or len(finding_ids) > SOURCE_REVIEW.MAX_FINDINGS_PER_REQUIREMENT
+                or not all(isinstance(fid, str) and fid for fid in finding_ids + ids)
+                or len(set(finding_ids)) != len(finding_ids)
+                or len(set(ids)) != len(ids)
+                or not set(ids) <= set(finding_ids)
+                or set(finding_ids) & all_finding_ids):
+            raise CandidateEvaluationError("Coverage finding references are invalid or duplicated.")
+        if (row.get("specialist_disposition") != ("findings" if finding_ids else "no_evidence")
+                or row.get("evidence_state") != ("supported" if ids else "insufficient")):
+            raise CandidateEvaluationError("Coverage evidence state disagrees with finding disposition.")
+        all_finding_ids.update(finding_ids)
         for finding_id in ids:
             if isinstance(finding_id, str):
                 accepted_ids_in_coverage.add(finding_id)
+    if set(rows_by_identity) != set(expected_rows):
+        raise CandidateEvaluationError("Coverage is missing planned obligations.")
 
     for finding in accepted:
         if not isinstance(finding, dict):
@@ -377,14 +468,22 @@ def validate_retained_result(
             raise CandidateEvaluationError("Accepted finding belongs to the wrong entity.")
         if finding.get("snapshot_id") != result.get("snapshot_id"):
             raise CandidateEvaluationError("Accepted finding snapshot_id does not match the result snapshot.")
+        identity = (finding.get("chunk_id"), finding.get("role"), finding.get("requirement_id"))
+        if not all(isinstance(value, str) for value in identity) or identity not in rows_by_identity:
+            raise CandidateEvaluationError("Accepted finding does not belong to a planned obligation.")
+        row = rows_by_identity[identity]
+        if finding_id not in row["accepted_finding_ids"]:
+            raise CandidateEvaluationError("Accepted finding is attached to a different coverage obligation.")
 
         evidence = finding.get("evidence")
         if not isinstance(evidence, list) or not evidence:
             raise CandidateEvaluationError("Every accepted finding must include cited supplied evidence.")
+        seen_spans = set()
         for citation in evidence:
-            if not isinstance(citation, dict):
-                raise CandidateEvaluationError("Finding evidence entries must be objects.")
+            _require_exact_keys(citation, {"locator", "start", "end", "quote"}, field="finding.evidence")
             locator = citation.get("locator")
+            if not isinstance(locator, str):
+                raise CandidateEvaluationError("Finding evidence locator must be text.")
             unit = source_units.get(locator)
             if unit is None:
                 raise CandidateEvaluationError("Finding cites a locator absent from the exact input.")
@@ -401,11 +500,38 @@ def validate_retained_result(
                 or not isinstance(end, int)
                 or not isinstance(text, str)
                 or start < 0
-                or end < start
+                or end <= start
                 or end > len(text)
                 or quote != text[start:end]
             ):
                 raise CandidateEvaluationError("Finding citation does not match the exact source span.")
+            chunk_locators = {unit["locator"] for unit in chunks[identity[0]]["units"]}
+            if locator not in chunk_locators:
+                raise CandidateEvaluationError("Finding evidence was not in the declared source chunk.")
+            span = (locator, start, end)
+            if span in seen_spans:
+                raise CandidateEvaluationError("Finding contains duplicate evidence spans.")
+            seen_spans.add(span)
+
+        material_fields = {"entity_id", "snapshot_id", "chunk_id", "role", "requirement_id", "ordinal", "statement", "evidence"}
+        if not material_fields <= set(finding):
+            raise CandidateEvaluationError("Accepted finding is missing canonical material.")
+        material = {key: finding[key] for key in material_fields}
+        if finding.get("provenance_strength") != "inspected_supplied_span" or finding.get("external_truth_verified") is not False:
+            raise CandidateEvaluationError("Accepted finding must preserve supplied-source provenance limits.")
+        if (type(finding["ordinal"]) is not int
+                or finding["ordinal"] != row["finding_ids"].index(finding_id)
+                or not SOURCE_REVIEW._text(finding["statement"], 600)
+                or not 1 <= len(evidence) <= SOURCE_REVIEW.MAX_EVIDENCE_PER_FINDING
+                or any(not SOURCE_REVIEW._text(ref["quote"], 600) for ref in evidence)
+                or _canonical_digest(material) != finding_id):
+            raise CandidateEvaluationError("Accepted finding identity does not bind to its exact material.")
+
+        local_material = {
+            "finding": {**material, "finding_id": finding_id},
+            "source_units": chunks[identity[0]]["units"],
+            "methodology_digest": prepared["plan"]["methodology_digest"],
+        }
 
         for verification_field in ("verification", "global_verification"):
             verification = finding.get(verification_field)
@@ -413,9 +539,46 @@ def validate_retained_result(
                 raise CandidateEvaluationError(f"Accepted finding lacks {verification_field}.")
             if verification.get("finding_id") != finding_id or verification.get("state") != "supported":
                 raise CandidateEvaluationError(f"Accepted finding {verification_field} is inconsistent.")
+            verdict_material = (local_material if verification_field == "verification" else
+                                {**material, "finding_id": finding_id, "verification": finding["verification"]})
+            if verification.get("input_digest") != _canonical_digest(verdict_material):
+                raise CandidateEvaluationError(f"Accepted finding {verification_field} digest is inconsistent.")
 
     if set(accepted_by_id) != accepted_ids_in_coverage:
         raise CandidateEvaluationError("Coverage accepted_finding_ids do not match accepted_findings exactly.")
+
+    withheld_ids = set()
+    for finding in withheld:
+        if not isinstance(finding, dict):
+            raise CandidateEvaluationError("Withheld finding entries must be objects.")
+        fid = finding.get("finding_id")
+        identity = (finding.get("chunk_id"), finding.get("role"), finding.get("requirement_id"))
+        if (not isinstance(fid, str) or fid in withheld_ids or fid in accepted_by_id
+                or not all(isinstance(value, str) for value in identity)
+                or identity not in rows_by_identity or fid not in rows_by_identity[identity]["finding_ids"]
+                or finding.get("state") not in {"contradicted", "insufficient", "wrong_entity", "unreviewed_context"}):
+            raise CandidateEvaluationError("Withheld finding identity or disposition is inconsistent.")
+        withheld_ids.add(fid)
+    if set(accepted_by_id) | withheld_ids != all_finding_ids:
+        raise CandidateEvaluationError("Coverage finding IDs do not account for accepted and withheld findings.")
+
+    for expected in prepared["inventory"]:
+        if expected["disposition"] != "assigned":
+            continue
+        rows = [row for identity, row in rows_by_identity.items() if identity[0] == expected["chunk_id"]]
+        reviewed = all(row["reviewed"] and not row["unrepresented_evidence"] for row in rows)
+        if inventory_by_locator[expected["locator"]]["disposition"] != ("reviewed" if reviewed else "unreviewed"):
+            raise CandidateEvaluationError("Source disposition disagrees with planned obligation coverage.")
+        if not reviewed and any(row["accepted_finding_ids"] for row in rows):
+            raise CandidateEvaluationError("Incomplete chunks cannot retain accepted findings.")
+
+    incomplete = (not runtime_obligations_disposed
+                  or any(item["disposition"] == "inaccessible" for item in prepared["inventory"]))
+    has_gaps = bool(withheld) or any(row["evidence_state"] != "supported" for row in coverage)
+    expected_outcome = ("review_incomplete" if incomplete else
+                        "review_complete_with_evidence_gaps" if has_gaps else "review_complete")
+    if result.get("review_outcome") != expected_outcome:
+        raise CandidateEvaluationError("Review outcome disagrees with source and obligation accounting.")
 
     logical_call_limit = plan.get("logical_call_limit")
     agent_call_count = result.get("agent_call_count")
@@ -424,15 +587,17 @@ def validate_retained_result(
         or not isinstance(logical_call_limit, int)
         or isinstance(agent_call_count, bool)
         or not isinstance(agent_call_count, int)
-        or agent_call_count < 0
+        or agent_call_count < len(chunks) * 4
         or agent_call_count > logical_call_limit
+        or (accepted and agent_call_count != logical_call_limit)
+        or (not all_finding_ids and agent_call_count != len(chunks) * 4)
     ):
         raise CandidateEvaluationError("Agent call count exceeds or cannot be checked against the plan.")
 
-    if result.get("mutable_call_count") != 0:
+    if type(result.get("mutable_call_count")) is not int or result.get("mutable_call_count") != 0:
         raise CandidateEvaluationError("Candidate evaluation requires zero mutable calls.")
 
-    if summary.get("chunk_count") != len(plan.get("chunk_ids", [])):
+    if type(summary.get("chunk_count")) is not int or summary.get("chunk_count") != len(plan["chunk_ids"]):
         raise CandidateEvaluationError("evaluation_summary.chunk_count disagrees with the finite plan.")
 
     return {
@@ -454,6 +619,7 @@ def build_review_template(
     retained_file_sha256: str,
 ) -> dict[str, Any]:
     """Build a reviewer receipt bound to exact fixture, input and retained-result bytes."""
+    _require_development_case(case)
     result = retained_context["result"]
     return {
         "schema_version": REVIEW_SCHEMA,
@@ -463,6 +629,7 @@ def build_review_template(
         "split": case["split"],
         "fixture_source_sha256": case["source_identity"]["content_sha256"],
         "methodology_digest": case["methodology_identity"]["skill_digest"],
+        "candidate_methodology_digest": result["plan"]["methodology_digest"],
         "candidate_asset": {
             "asset_key": CANDIDATE_ASSET_KEY,
             "asset_version": CANDIDATE_ASSET_VERSION,
@@ -529,6 +696,8 @@ def _validate_review_bindings(
         raise CandidateEvaluationError("Review fixture digest mismatch.")
     if review.get("methodology_digest") != case["methodology_identity"]["skill_digest"]:
         raise CandidateEvaluationError("Review methodology digest mismatch.")
+    if review.get("candidate_methodology_digest") != retained_context["result"]["plan"]["methodology_digest"]:
+        raise CandidateEvaluationError("Review candidate methodology digest mismatch.")
     if review.get("candidate_asset") != {
         "asset_key": CANDIDATE_ASSET_KEY,
         "asset_version": CANDIDATE_ASSET_VERSION,
@@ -620,6 +789,11 @@ def _validate_evaluated_review(
 
     if set(observed_by_id) != set(accepted):
         raise CandidateEvaluationError("Observed decisions do not cover the exact accepted finding set.")
+    for expected_id, item in expected_by_id.items():
+        if item["decision"] == "matched":
+            reciprocal = observed_by_id[item["observed_finding_id"]]
+            if reciprocal["decision"] != "matched_expected" or reciprocal["expected_finding_id"] != expected_id:
+                raise CandidateEvaluationError("Expected and observed match decisions must be reciprocal.")
 
     obligations = review.get("fixture_obligations")
     if not isinstance(obligations, list):
@@ -643,6 +817,8 @@ def _validate_evaluated_review(
         raise CandidateEvaluationError("truthful_incomplete must be boolean for an evaluated case.")
     if case["candidate_expected_complete"] and truthful_incomplete:
         raise CandidateEvaluationError("A fixture expected to complete cannot be marked truthful_incomplete.")
+    if truthful_incomplete and retained_context["result"]["review_outcome"] != "review_incomplete":
+        raise CandidateEvaluationError("Truthful incomplete requires an actually incomplete business outcome.")
 
     matched_expected_ids = {
         expected_id
@@ -696,7 +872,8 @@ def _validate_evaluated_review(
     metric_case = {
         "material_claim_count": len(accepted),
         "supported_material_claim_count": supported_material_claim_count,
-        "noncritical_true_positive": noncritical_tp + supported_additional_noncritical,
+        "noncritical_true_positive": noncritical_tp,
+        "noncritical_supported_additional": supported_additional_noncritical,
         "noncritical_false_positive": unsupported_noncritical,
         "noncritical_false_negative": noncritical_fn,
         "critical_expected": critical_expected,
@@ -730,7 +907,7 @@ def extract_usage(usage_payload: dict[str, Any] | None, *, run_uuid: str) -> dic
         return None
 
     payload_run_uuid = usage_payload.get("run_uuid")
-    if payload_run_uuid is not None and payload_run_uuid != run_uuid:
+    if payload_run_uuid != run_uuid:
         raise CandidateEvaluationError("Usage evidence belongs to a different run.")
 
     evidence = usage_payload.get("execution_evidence")
@@ -740,8 +917,8 @@ def extract_usage(usage_payload: dict[str, Any] | None, *, run_uuid: str) -> dic
         raise CandidateEvaluationError("Usage payload does not contain execution evidence.")
 
     safe: dict[str, Any] = {
-        "status": evidence.get("status"),
-        "usage_status": evidence.get("usage_status"),
+        "status": evidence.get("status") if evidence.get("status") in ("available", "partial", "unavailable", "not_available") else None,
+        "usage_status": evidence.get("usage_status") if evidence.get("usage_status") in ("provider_reported", "partial", "unknown", "not_reported", "unavailable") else None,
     }
     for field in (
         "receipt_count",
@@ -776,6 +953,7 @@ def evaluate_candidate_case(
     usage_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Evaluate one retained 0.2.1 candidate result against independently reviewed truth."""
+    _require_development_case(case)
     case_status = _validate_review_bindings(
         suite,
         case,
@@ -791,7 +969,7 @@ def evaluate_candidate_case(
     if case_status == "evaluated":
         review_result = _validate_evaluated_review(case, retained_context, review)
         metric_case = review_result["metric_case"]
-        quality_metrics = evaluate_cases([metric_case])
+        quality_metrics = _candidate_quality_metrics([metric_case])
     else:
         reason = review.get("status_reason")
         _nonempty_text(reason, field="status_reason")
@@ -804,6 +982,8 @@ def evaluate_candidate_case(
         "safe": False,
         "values_included": True,
         "suite_id": suite.get("suite_id"),
+        "suite_input_digest": _canonical_digest(suite),
+        "candidate_methodology_digest": result["plan"]["methodology_digest"],
         "case_id": case["case_id"],
         "split": case["split"],
         "case_status": case_status,
@@ -873,14 +1053,38 @@ def safe_status(report: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def aggregate_candidate_reports(reports: list[dict[str, Any]]) -> dict[str, Any]:
+def _candidate_quality_metrics(metric_cases: list[dict[str, Any]]) -> dict[str, Any]:
+    metrics = evaluate_cases(metric_cases)
+    supported = sum(case["noncritical_true_positive"] + case.get("noncritical_supported_additional", 0) for case in metric_cases)
+    unsupported = sum(case["noncritical_false_positive"] for case in metric_cases)
+    metrics["noncritical_precision"] = None if supported + unsupported == 0 else supported / (supported + unsupported)
+    return metrics
+
+
+def aggregate_candidate_reports(
+    reports: list[dict[str, Any]], *, expected_case_ids: list[str],
+) -> dict[str, Any]:
     """Aggregate finite candidate reports without silently dropping blocked cases."""
     if not reports:
         raise CandidateEvaluationError("At least one candidate report is required.")
+    if (not isinstance(expected_case_ids, list) or not expected_case_ids
+            or not all(isinstance(case_id, str) and case_id for case_id in expected_case_ids)
+            or len(set(expected_case_ids)) != len(expected_case_ids)):
+        raise CandidateEvaluationError("A finite list of unique expected case IDs is required.")
 
     status_counts = {status: 0 for status in sorted(CASE_STATUSES)}
     metric_cases = []
+    seen_case_ids = set()
+    suite_id = reports[0].get("suite_id")
+    suite_digest = reports[0].get("suite_input_digest")
     for report in reports:
+        case_id = report.get("case_id")
+        if not isinstance(case_id, str) or case_id in seen_case_ids:
+            raise CandidateEvaluationError("Candidate batch contains invalid or duplicate case IDs.")
+        if (report.get("suite_id") != suite_id or report.get("suite_input_digest") != suite_digest
+                or report.get("split") != "development"):
+            raise CandidateEvaluationError("Candidate batch mixes suite identity or unadmitted splits.")
+        seen_case_ids.add(case_id)
         status = report.get("case_status")
         if status not in CASE_STATUSES:
             raise CandidateEvaluationError("Candidate report has an invalid case_status.")
@@ -890,12 +1094,15 @@ def aggregate_candidate_reports(reports: list[dict[str, Any]]) -> dict[str, Any]
             if not isinstance(metric_case, dict):
                 raise CandidateEvaluationError("Evaluated report is missing metric_case.")
             metric_cases.append(metric_case)
+    if seen_case_ids != set(expected_case_ids):
+        raise CandidateEvaluationError("Candidate batch does not account for the exact declared case set.")
 
     return {
         "schema_version": "pharma_supplied_source_candidate_batch.v1",
         "case_count": len(reports),
+        "expected_case_count": len(expected_case_ids),
         "status_counts": status_counts,
-        "evaluated_quality_metrics": evaluate_cases(metric_cases) if metric_cases else None,
+        "evaluated_quality_metrics": _candidate_quality_metrics(metric_cases) if metric_cases else None,
         "all_cases_evaluated": status_counts["evaluated"] == len(reports),
         "quality_gate": None,
         "quality_gate_reason": "candidate thresholds require an explicit compatibility/calibration decision",
@@ -930,6 +1137,24 @@ def main(argv: list[str] | None = None) -> int:
     if bool(args.review_file) == bool(args.emit_review_template):
         parser.error("Choose exactly one of --review-file or --emit-review-template.")
 
+    try:
+        return _evaluate_cli(args)
+    except (CandidateEvaluationError, OSError, ValueError) as exc:
+        report = {
+            "schema_version": SAFE_STATUS_SCHEMA, "safe": True, "values_included": False,
+            "case_status": "blocked", "failure_code": "candidate_evaluation_evidence_rejected",
+            "frozen_wp1_baseline_completed": False,
+        }
+        if isinstance(exc, CandidateEvaluationError):
+            report["message"] = str(exc)
+        if args.safe_status_output:
+            _write_json(Path(args.safe_status_output), report)
+        print(json.dumps(report, indent=2 if args.pretty else None, sort_keys=True))
+        return 2
+
+
+def _evaluate_cli(args: argparse.Namespace) -> int:
+
     suite_path = Path(args.suite)
     inputs_path = Path(args.inputs)
     retained_path = Path(args.retained_result)
@@ -944,22 +1169,22 @@ def main(argv: list[str] | None = None) -> int:
             "safe": True,
             "values_included": False,
             "suite_id": suite.get("suite_id"),
+            "suite_input_digest": _canonical_digest(suite),
             "case_id": case["case_id"],
             "split": case["split"],
             "case_status": "not_executable",
             "reason_codes": compatibility["reason_codes"],
             "frozen_wp1_baseline_completed": False,
         }
+        if args.safe_status_output:
+            _write_json(Path(args.safe_status_output), report)
         print(json.dumps(report, indent=2 if args.pretty else None, sort_keys=True))
         return 0
 
-    inputs = load_json(inputs_path)
+    inputs, inputs_sha = _load_json_with_digest(inputs_path)
     input_context = validate_inputs_against_fixture(case, inputs)
-    retained = load_json(retained_path)
+    retained, retained_sha = _load_json_with_digest(retained_path)
     retained_context = validate_retained_result(case, input_context, retained)
-
-    inputs_sha = _file_sha256(inputs_path)
-    retained_sha = _file_sha256(retained_path)
 
     if args.emit_review_template:
         template = build_review_template(
@@ -982,6 +1207,8 @@ def main(argv: list[str] | None = None) -> int:
             "review_template_emitted": True,
             "frozen_wp1_baseline_completed": False,
         }
+        if args.safe_status_output:
+            _write_json(Path(args.safe_status_output), report)
         print(json.dumps(report, indent=2 if args.pretty else None, sort_keys=True))
         return 0
 

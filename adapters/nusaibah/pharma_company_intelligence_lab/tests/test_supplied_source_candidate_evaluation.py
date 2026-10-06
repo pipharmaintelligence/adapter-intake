@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import copy
+import contextlib
+import io
 import json
 import sys
+import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -115,10 +119,11 @@ def inputs() -> dict:
 
 
 def retained() -> dict:
+    prepared = candidate.SOURCE_REVIEW.prepare_review(inputs())
     quote = "Ficta Therapeutics is a synthetic company."
     finding_id = "sha256:" + "b" * 64
-    snapshot_id = "sha256:" + "c" * 64
-    chunk_id = "sha256:" + "d" * 64
+    snapshot_id = prepared["snapshot_id"]
+    chunk_id = prepared["chunks"][0]["chunk_id"]
     result = {
         "schema_version": "supplied_source_review_result.v1",
         "case_id": "candidate-test-001",
@@ -132,24 +137,7 @@ def retained() -> dict:
         "baseline_comparable": False,
         "external_truth_verified": False,
         "publication_allowed": False,
-        "plan": {
-            "schema_version": "supplied_source_plan.v1",
-            "snapshot_id": snapshot_id,
-            "methodology_id": "supplied_source_methodology.v1",
-            "methodology_digest": "sha256:" + "e" * 64,
-            "chunk_ids": [chunk_id],
-            "roles": [
-                "source_portfolio_reviewer",
-                "source_commercial_reviewer",
-                "source_regulatory_reviewer",
-            ],
-            "verifier_role": "source_evidence_verifier",
-            "logical_call_limit": 5,
-            "max_concurrency": 3,
-            "deadline_seconds": 1800,
-            "repair_iterations": 0,
-            "plan_digest": "sha256:" + "f" * 64,
-        },
+        "plan": prepared["plan"],
         "source_inventory": [
             {
                 "locator": "source:identity",
@@ -212,6 +200,38 @@ def retained() -> dict:
         "mutable_call_count": 0,
         "limitations": [],
     }
+    finding = result["accepted_findings"][0]
+    material = {key: finding[key] for key in (
+        "entity_id", "snapshot_id", "chunk_id", "role", "requirement_id", "ordinal", "statement", "evidence",
+    )}
+    finding_id = candidate._canonical_digest(material)
+    finding["finding_id"] = finding_id
+    finding["verification"] = {
+        "finding_id": finding_id, "state": "supported",
+        "input_digest": candidate._canonical_digest({
+            "finding": {**material, "finding_id": finding_id},
+            "source_units": prepared["chunks"][0]["units"],
+            "methodology_digest": prepared["plan"]["methodology_digest"],
+        }),
+    }
+    finding["global_verification"] = {
+        "finding_id": finding_id, "state": "supported",
+        "input_digest": candidate._canonical_digest({
+            **material, "finding_id": finding_id, "verification": finding["verification"],
+        }),
+    }
+    result["coverage"][0]["finding_ids"] = [finding_id]
+    result["coverage"][0]["accepted_finding_ids"] = [finding_id]
+    for role, requirements in candidate.SOURCE_REVIEW.ROLES.items():
+        for requirement in requirements:
+            if requirement == "company_identity":
+                continue
+            result["coverage"].append({
+                "chunk_id": chunk_id, "primary_locator": "source:identity", "role": role,
+                "requirement_id": requirement, "finding_ids": [], "specialist_disposition": "no_evidence",
+                "reviewed": True, "unrepresented_evidence": False, "accepted_finding_ids": [],
+                "evidence_state": "insufficient",
+            })
     summary = {
         "review_outcome": result["review_outcome"],
         "agent_call_count": 5,
@@ -448,9 +468,12 @@ class CandidateEvaluationTests(unittest.TestCase):
         evaluated = self.evaluate(ready_review(self.suite, self.case, self.retained_context))
         pending_review = copy.deepcopy(evaluated)
         pending_review["case_status"] = "pending_review"
+        pending_review["case_id"] = "candidate-test-002"
         pending_review["metric_case"] = None
         pending_review["quality_metrics"] = None
-        aggregate = candidate.aggregate_candidate_reports([evaluated, pending_review])
+        aggregate = candidate.aggregate_candidate_reports(
+            [evaluated, pending_review], expected_case_ids=["candidate-test-001", "candidate-test-002"],
+        )
         self.assertEqual(aggregate["case_count"], 2)
         self.assertEqual(aggregate["status_counts"]["evaluated"], 1)
         self.assertEqual(aggregate["status_counts"]["pending_review"], 1)
@@ -469,6 +492,218 @@ class CandidateEvaluationTests(unittest.TestCase):
         self.assertEqual(review["inputs_file_sha256"], "1" * 64)
         self.assertEqual(review["retained_result_file_sha256"], "2" * 64)
         self.assertEqual(review["case_status"], "pending_review")
+
+    def test_missing_coverage_cannot_claim_complete_accounting(self):
+        broken = copy.deepcopy(self.retained)
+        broken["outputs"]["evaluation_result"]["coverage"] = []
+        broken["outputs"]["evaluation_result"]["accepted_findings"] = []
+        broken["outputs"]["evaluation_summary"]["accepted_finding_count"] = 0
+        with self.assertRaises(candidate.CandidateEvaluationError):
+            candidate.validate_retained_result(self.case, self.input_context, broken)
+
+    def test_declared_call_budget_cannot_bypass_candidate_limit(self):
+        broken = copy.deepcopy(self.retained)
+        broken["outputs"]["evaluation_result"]["plan"]["logical_call_limit"] = 100
+        broken["outputs"]["evaluation_result"]["agent_call_count"] = 99
+        broken["outputs"]["evaluation_summary"]["agent_call_count"] = 99
+        with self.assertRaises(candidate.CandidateEvaluationError):
+            candidate.validate_retained_result(self.case, self.input_context, broken)
+
+    def test_snapshot_must_be_derived_from_exact_input(self):
+        broken = copy.deepcopy(self.retained)
+        result = broken["outputs"]["evaluation_result"]
+        result["snapshot_id"] = "sha256:" + "0" * 64
+        result["plan"]["snapshot_id"] = result["snapshot_id"]
+        result["accepted_findings"][0]["snapshot_id"] = result["snapshot_id"]
+        with self.assertRaises(candidate.CandidateEvaluationError):
+            candidate.validate_retained_result(self.case, self.input_context, broken)
+
+    def test_verifier_digest_must_bind_to_the_actual_finding(self):
+        broken = copy.deepcopy(self.retained)
+        broken["outputs"]["evaluation_result"]["accepted_findings"][0]["verification"]["input_digest"] = "sha256:" + "0" * 64
+        with self.assertRaises(candidate.CandidateEvaluationError):
+            candidate.validate_retained_result(self.case, self.input_context, broken)
+
+    def test_one_observed_claim_cannot_recover_two_expected_findings(self):
+        self.case["candidate_expected_findings"].append({
+            **self.case["candidate_expected_findings"][0], "finding_id": "f2",
+        })
+        review = ready_review(self.suite, self.case, self.retained_context)
+        review["expected_finding_decisions"].append({
+            **review["expected_finding_decisions"][0], "expected_finding_id": "f2",
+        })
+        with self.assertRaisesRegex(candidate.CandidateEvaluationError, "reciprocal"):
+            self.evaluate(review)
+
+    def test_supported_additional_claim_does_not_recover_missed_truth(self):
+        review = ready_review(self.suite, self.case, self.retained_context)
+        review["expected_finding_decisions"][0].update(
+            decision="missed", observed_finding_id=None,
+        )
+        review["observed_finding_decisions"][0].update(
+            decision="supported_additional", expected_finding_id=None,
+        )
+        report = self.evaluate(review)
+        self.assertEqual(report["quality_metrics"]["noncritical_recall"], 0.0)
+        self.assertEqual(report["quality_metrics"]["noncritical_precision"], 1.0)
+
+    def test_usage_requires_explicit_matching_run_identity(self):
+        review = ready_review(self.suite, self.case, self.retained_context)
+        with self.assertRaisesRegex(candidate.CandidateEvaluationError, "run"):
+            self.evaluate(review, usage={"execution_evidence": {"status": "available"}})
+
+    def test_held_out_truth_cannot_be_opened_without_a_freeze_contract(self):
+        self.case["split"] = "held_out"
+        with self.assertRaisesRegex(candidate.CandidateEvaluationError, "Held-out"):
+            candidate.find_fixture(self.suite, self.case["case_id"])
+
+    def test_duplicate_batch_cases_cannot_inflate_finite_coverage(self):
+        report = self.evaluate(ready_review(self.suite, self.case, self.retained_context))
+        with self.assertRaisesRegex(candidate.CandidateEvaluationError, "duplicate"):
+            candidate.aggregate_candidate_reports(
+                [report, copy.deepcopy(report)], expected_case_ids=[self.case["case_id"]],
+            )
+
+    def test_freeform_usage_status_cannot_leak_into_safe_projection(self):
+        review = ready_review(self.suite, self.case, self.retained_context)
+        usage = {
+            "run_uuid": self.retained_context["run_uuid"],
+            "execution_evidence": {"status": "available", "usage_status": "source secret text"},
+        }
+        status = candidate.safe_status(self.evaluate(review, usage=usage))
+        self.assertNotIn("source secret text", json.dumps(status))
+
+    def test_duplicate_coverage_rows_fail_closed(self):
+        broken = copy.deepcopy(self.retained)
+        rows = broken["outputs"]["evaluation_result"]["coverage"]
+        rows.append(copy.deepcopy(rows[0]))
+        with self.assertRaisesRegex(candidate.CandidateEvaluationError, "obligation"):
+            candidate.validate_retained_result(self.case, self.input_context, broken)
+
+    def test_zero_calls_cannot_claim_a_completed_review(self):
+        broken = copy.deepcopy(self.retained)
+        broken["outputs"]["evaluation_result"]["agent_call_count"] = 0
+        broken["outputs"]["evaluation_summary"]["agent_call_count"] = 0
+        with self.assertRaisesRegex(candidate.CandidateEvaluationError, "call count"):
+            candidate.validate_retained_result(self.case, self.input_context, broken)
+
+    def test_boolean_counts_cannot_masquerade_as_integers(self):
+        for field in ("mutable_call_count", "chunk_count"):
+            broken = copy.deepcopy(self.retained)
+            broken["outputs"]["evaluation_summary"][field] = False if field == "mutable_call_count" else True
+            with self.subTest(field=field), self.assertRaises(candidate.CandidateEvaluationError):
+                candidate.validate_retained_result(self.case, self.input_context, broken)
+
+    def test_finding_identity_cannot_be_reused_for_changed_statement(self):
+        broken = copy.deepcopy(self.retained)
+        broken["outputs"]["evaluation_result"]["accepted_findings"][0]["statement"] = "An invented statement."
+        with self.assertRaisesRegex(candidate.CandidateEvaluationError, "exact material"):
+            candidate.validate_retained_result(self.case, self.input_context, broken)
+
+    def test_global_verdict_must_bind_the_locally_verified_finding(self):
+        broken = copy.deepcopy(self.retained)
+        broken["outputs"]["evaluation_result"]["accepted_findings"][0]["global_verification"]["input_digest"] = "sha256:" + "0" * 64
+        with self.assertRaisesRegex(candidate.CandidateEvaluationError, "global_verification digest"):
+            candidate.validate_retained_result(self.case, self.input_context, broken)
+
+    def test_empty_citation_does_not_establish_evidence(self):
+        broken = copy.deepcopy(self.retained)
+        broken["outputs"]["evaluation_result"]["accepted_findings"][0]["evidence"][0].update(start=0, end=0, quote="")
+        with self.assertRaisesRegex(candidate.CandidateEvaluationError, "source span"):
+            candidate.validate_retained_result(self.case, self.input_context, broken)
+
+    def test_review_receipt_binds_candidate_method_separately_from_fixture_method(self):
+        review = ready_review(self.suite, self.case, self.retained_context)
+        self.assertNotEqual(review["methodology_digest"], review["candidate_methodology_digest"])
+        review["candidate_methodology_digest"] = review["methodology_digest"]
+        with self.assertRaisesRegex(candidate.CandidateEvaluationError, "candidate methodology"):
+            self.evaluate(review)
+
+    def test_batch_cannot_omit_a_declared_case(self):
+        report = self.evaluate(ready_review(self.suite, self.case, self.retained_context))
+        with self.assertRaisesRegex(candidate.CandidateEvaluationError, "declared case set"):
+            candidate.aggregate_candidate_reports(
+                [report], expected_case_ids=[self.case["case_id"], "missing-case"],
+            )
+
+    def test_batch_rejects_mixed_suite_digests(self):
+        report = self.evaluate(ready_review(self.suite, self.case, self.retained_context))
+        other = copy.deepcopy(report)
+        other["case_id"] = "other-case"
+        other["suite_input_digest"] = "sha256:" + "0" * 64
+        with self.assertRaisesRegex(candidate.CandidateEvaluationError, "suite identity"):
+            candidate.aggregate_candidate_reports(
+                [report, other], expected_case_ids=[self.case["case_id"], "other-case"],
+            )
+
+    def test_find_fixture_requires_frozen_adjudication_provenance(self):
+        for section, field, value in (
+            ("adjudication", "primary_reviewer", ""),
+            ("source_identity", "digest_status", "pending"),
+        ):
+            changed = copy.deepcopy(self.suite)
+            changed["cases"][0][section][field] = value
+            with self.subTest(field=field), self.assertRaises(candidate.CandidateEvaluationError):
+                candidate.find_fixture(changed, self.case["case_id"])
+
+    def test_cli_emits_bound_pending_review_status(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for name, value in (("suite", self.suite), ("inputs", self.inputs), ("retained", self.retained)):
+                (root / f"{name}.json").write_text(json.dumps(value), encoding="utf-8")
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                code = candidate.main([
+                    "--suite", str(root / "suite.json"), "--case-id", self.case["case_id"],
+                    "--inputs", str(root / "inputs.json"), "--retained-result", str(root / "retained.json"),
+                    "--emit-review-template", str(root / "review.json"),
+                    "--safe-status-output", str(root / "status.json"),
+                ])
+            self.assertEqual(code, 0)
+            self.assertEqual(json.loads(output.getvalue())["case_status"], "pending_review")
+            receipt = candidate.load_json(root / "review.json")
+            self.assertEqual(receipt["candidate_methodology_digest"], self.retained_context["result"]["plan"]["methodology_digest"])
+            self.assertEqual(candidate.load_json(root / "status.json")["case_status"], "pending_review")
+
+    def test_cli_rejects_held_out_without_emitting_truth_template(self):
+        held_out = copy.deepcopy(self.suite)
+        held_out["cases"][0]["split"] = "held_out"
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / "suite.json").write_text(json.dumps(held_out), encoding="utf-8")
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                code = candidate.main([
+                    "--suite", str(root / "suite.json"), "--case-id", self.case["case_id"],
+                    "--inputs", str(root / "absent.json"), "--retained-result", str(root / "absent.json"),
+                    "--emit-review-template", str(root / "review.json"),
+                ])
+            self.assertEqual(code, 2)
+            self.assertEqual(json.loads(output.getvalue())["case_status"], "blocked")
+            self.assertFalse((root / "review.json").exists())
+
+    def test_cli_binds_the_bytes_validated_before_a_file_changes(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for name, value in (("suite", self.suite), ("inputs", self.inputs), ("retained", self.retained)):
+                (root / f"{name}.json").write_text(json.dumps(value), encoding="utf-8")
+            original_sha = candidate.hashlib.sha256((root / "inputs.json").read_bytes()).hexdigest()
+            validate = candidate.validate_retained_result
+
+            def change_input_after_validation(*args):
+                result = validate(*args)
+                (root / "inputs.json").write_text('{"changed":true}', encoding="utf-8")
+                return result
+
+            with mock.patch.object(candidate, "validate_retained_result", side_effect=change_input_after_validation):
+                with contextlib.redirect_stdout(io.StringIO()):
+                    code = candidate.main([
+                        "--suite", str(root / "suite.json"), "--case-id", self.case["case_id"],
+                        "--inputs", str(root / "inputs.json"), "--retained-result", str(root / "retained.json"),
+                        "--emit-review-template", str(root / "review.json"),
+                    ])
+            self.assertEqual(code, 0)
+            self.assertEqual(candidate.load_json(root / "review.json")["inputs_file_sha256"], original_sha)
 
 
 if __name__ == "__main__":

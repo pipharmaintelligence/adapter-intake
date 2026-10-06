@@ -131,4 +131,22 @@ python adapters/nusaibah/pharma_company_intelligence_lab/tests/evaluation/suppli
 
 Cases that cannot enter the focused company-review contract are reported as `not_executable`; blocked or pending-review cases remain explicit and are never dropped from a finite batch. Missing usage values remain unknown. The candidate evaluator computes finite-set quality metrics but intentionally does not apply the frozen WP1 release gate: candidate thresholds require an explicit compatibility/calibration decision.
 
-Keep held-out truth sealed until the development configuration is frozen. Expected findings, abstentions, reviewer labels and held-out answers must never be inserted into Agent inputs.
+This evaluator currently admits **development cases only**. Held-out fixture lookup, template emission and scoring fail closed until a reviewed development-freeze/admission contract is implemented. Freezing a local prompt or changing the receipt's split does not bypass this boundary. Expected findings, abstentions, reviewer labels and held-out answers must never be inserted into Agent inputs.
+
+### Integrity and scoring boundaries
+
+The evaluator reuses the unchanged, standard-library-only supplied-source `prepare_review` contract to derive the exact snapshot, chunks, methodology and finite plan from the input. This imports source code from this checkout; it calls no Agent. Retained plans cannot choose their own call limit, concurrency, deadline or repair count. All four domain obligations must appear exactly once for every planned chunk, including reviewed questions with no findings. Inventory, accepted/withheld findings, exact citation spans and local/global verdict digests must agree with that plan.
+
+The bound reviewer receipt records both `methodology_digest` (the fixture's Fixed Skill) and `candidate_methodology_digest` (the actual supplied-source method). Each input/result file is read once so the receipt hashes the same bytes that were parsed and validated, even if the file changes afterwards. These different methods are not made equivalent by sharing a company name or source locator. Expected/observed matches must be reciprocal and one-to-one. Additional supported findings contribute to candidate precision, but never count as recovering missed expected truth or increase recall.
+
+The reviewer name and qualification text are a required recorded assertion, not independent identity authentication. Keep the qualified reviewer decision traceable in the approved review record. Exact source matching establishes provenance; human adjudication establishes semantic quality for the evaluated set.
+
+Usage evidence must explicitly contain the matching `run_uuid`; a missing run identity is rejected. Unknown usage/counter values remain unknown. Free-form usage status text is excluded from the safe projection.
+
+For finite batches, call `aggregate_candidate_reports(reports, expected_case_ids=[...])` with an explicitly enumerated case set. Every declared case must occur exactly once; duplicate cases, omitted cases and mixed suite digests are rejected. Blocked, not-executable and pending-review cases remain visible. This API does not launch providers or infer a full-suite release gate from a selected subset.
+
+CLI evidence failures return a structured `blocked` status and exit code 2. A zero exit code can also mean `pending_review` or `not_executable`; inspect `case_status` before drawing conclusions. `--safe-status-output` writes the safe status for template emission and non-executable cases as well as scoring.
+
+### Existing smoke artifacts
+
+The retained identity smoke with case ID `synthetic-source-review-001` is operational retention/contract evidence. It is not the frozen `company-small-identity-001` fixture. Their source text and identities differ. Do not edit an old retained result, inputs, suite case ID or fixture truth to force a match. New case measurements must use an exact, truth-free input projection of the adjudicated development fixture, and retain the original output bytes. Real document binding, held-out admission, candidate threshold calibration and frozen WP1 baseline completion remain separate work.
