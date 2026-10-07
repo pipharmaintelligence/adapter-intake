@@ -40,6 +40,10 @@ Release sequence: merge source → official promotion of **both** toolkit 0.1.1 
 
 After an admitted new run produces original retained bytes, use the existing evaluator commands with `--candidate-version 0.2.2` for template emission and scoring. A typed rejected run produces no completed preview; preserve its rule and stop before other cases. A successful preview establishes execution, not calibrated quality or WP1 completion. The original unknown subcause of the failed 0.2.1 commercial span remains unknown; invented/ambiguous quotes deliberately remain blockers.
 
+## Commercial role ownership proposal
+
+See [COMMERCIAL_ROLE_SCOPE.md](COMMERCIAL_ROLE_SCOPE.md) for the first measured role-overlap issue, proposed narrowed questions, deterministic regressions and the runtime-adoption decision. The contract proposal and scripted responses live under `tests/`; they are not provider inputs, an admitted candidate or a promotion request. The tests distinguish exact-span correctness from semantic ownership and preserve legitimate commercial claims sharing a citation with an identity claim. Do not change historical 0.2.2 questions/digests, add a quote-based deduplication heuristic, or infer that local canned-response tests establish model compliance.
+
 ## Three distinct proof lanes
 
 | Lane | Evidence and authority | What completion proves |

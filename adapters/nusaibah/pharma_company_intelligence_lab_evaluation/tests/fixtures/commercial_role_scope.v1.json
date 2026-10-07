@@ -1,0 +1,122 @@
+{
+  "schema_version": "supplied_source_role_boundary_regression.v1",
+  "scope": "offline_contract_and_protocol_only",
+  "contract_proposal": {
+    "schema_version": "supplied_source_role_scope_proposal.v1",
+    "status": "offline_proposal",
+    "questions": {
+      "company_identity": "What legal-name, headquarters, registered-address, incorporation or other company-profile identity facts does this source explicitly state about the target company? Location alone does not establish a sales market, customer market or distribution territory.",
+      "commercial_signals": "What explicitly stated sales or customer markets, distribution territories, commercial launches, revenue, market-access facts, or commercialization/licensing partnerships relate to the target company? Geography is commercial only when explicitly tied to one of those activities. Headquarters, registered addresses, incorporation and identity-only location belong to company_identity. If the source contains only identity facts, return no_evidence with an empty findings list for commercial_signals."
+    },
+    "requirement_scopes": {
+      "company_identity": {
+        "included_fact_types": [
+          "legal_name",
+          "headquarters",
+          "registered_address",
+          "incorporation",
+          "company_profile_identity"
+        ],
+        "excluded_fact_types": [
+          "sales_market",
+          "customer_market",
+          "distribution_territory",
+          "commercialization_partnership",
+          "licensing",
+          "market_access",
+          "commercial_launch",
+          "revenue"
+        ],
+        "rules": [
+          "Report company-profile identity facts in company_identity.",
+          "Do not infer commercial presence from a headquarters or registered address."
+        ]
+      },
+      "commercial_signals": {
+        "included_fact_types": [
+          "sales_market",
+          "customer_market",
+          "distribution_territory",
+          "commercialization_partnership",
+          "licensing",
+          "market_access",
+          "commercial_launch",
+          "revenue"
+        ],
+        "excluded_fact_types": [
+          "legal_name",
+          "headquarters",
+          "registered_address",
+          "incorporation",
+          "identity_only_geography"
+        ],
+        "rules": [
+          "Require an explicit commercial activity, market relationship or commercialization agreement.",
+          "Headquarters and identity-only geography belong to company_identity.",
+          "Geography alone is not evidence of commercial presence.",
+          "A headquarters-only or registered-address-only source requires no_evidence and an empty commercial_signals findings list.",
+          "A source may support distinct identity and commercial claims using the same literal span; preserve each claim in its owning requirement."
+        ]
+      }
+    }
+  },
+  "cases": [
+    {
+      "case_id": "role-scope-headquarters-only",
+      "source_text": "Ficta Therapeutics Ltd. is headquartered in Amman, Jordan.",
+      "scripted_findings": {
+        "company_identity": [
+          {
+            "statement": "Ficta Therapeutics Ltd. is headquartered in Amman, Jordan.",
+            "quote": "Ficta Therapeutics Ltd. is headquartered in Amman, Jordan."
+          }
+        ],
+        "commercial_signals": []
+      }
+    },
+    {
+      "case_id": "role-scope-registered-address-only",
+      "source_text": "Ficta Therapeutics Ltd.'s registered office is in Amman, Jordan.",
+      "scripted_findings": {
+        "company_identity": [
+          {
+            "statement": "Ficta Therapeutics Ltd.'s registered office is in Amman, Jordan.",
+            "quote": "Ficta Therapeutics Ltd.'s registered office is in Amman, Jordan."
+          }
+        ],
+        "commercial_signals": []
+      }
+    },
+    {
+      "case_id": "role-scope-explicit-market-geography",
+      "source_text": "Ficta Therapeutics Ltd. sells its products in Jordan and Saudi Arabia.",
+      "scripted_findings": {
+        "company_identity": [],
+        "commercial_signals": [
+          {
+            "statement": "Ficta Therapeutics Ltd. sells its products in Jordan and Saudi Arabia.",
+            "quote": "Ficta Therapeutics Ltd. sells its products in Jordan and Saudi Arabia."
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "role-scope-distinct-claims-shared-span",
+      "source_text": "Ficta Therapeutics Ltd. is headquartered in Amman, Jordan and has an exclusive distribution agreement with PartnerCo for Jordan.",
+      "scripted_findings": {
+        "company_identity": [
+          {
+            "statement": "Ficta Therapeutics Ltd. is headquartered in Amman, Jordan.",
+            "quote": "Ficta Therapeutics Ltd. is headquartered in Amman, Jordan and has an exclusive distribution agreement with PartnerCo for Jordan."
+          }
+        ],
+        "commercial_signals": [
+          {
+            "statement": "Ficta Therapeutics Ltd. has an exclusive distribution agreement with PartnerCo for Jordan.",
+            "quote": "Ficta Therapeutics Ltd. is headquartered in Amman, Jordan and has an exclusive distribution agreement with PartnerCo for Jordan."
+          }
+        ]
+      }
+    }
+  ]
+}

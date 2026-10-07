@@ -4,6 +4,10 @@ Current development candidate: **0.2.2**, using unique literal quote selection a
 
 This development-only asset retains the frozen execution boundary in PI-1988. Version 0.2.0 adds a separate synthetic supplied-source company review; its result is not comparable to the frozen baseline. See [SUPPLIED_SOURCE_REVIEW.md](SUPPLIED_SOURCE_REVIEW.md) for evidence rules, the bounded model, commands and rollout gates. It replays one synthetic company case through the pinned `0.1.12` business executor using runtime-owned Agent and Fixed Skill authority. Frozen replay does not establish WP1 baseline measurements. The new lane is a narrow preview capability, not completion of the specialized-review plan. The design and delivery gates remain in PI-1972.
 
+## Commercial role overlap: next local quality step
+
+The first reviewed 0.2.2 development case recovered its expected headquarters fact but also accepted a redundant commercial headquarters claim. [The role-ownership proposal and regressions](COMMERCIAL_ROLE_SCOPE.md) reserve headquarters/registered-address facts for `company_identity`, while preserving explicitly supported sales and distribution geography. This is offline contract evidence; historical runtime definitions and retained evaluation bindings remain unchanged. Choose and review a versioned repair before another live case.
+
 ## Baseline and discovery boundary
 
 - Baseline intake commit: `21cc6b39492cbd3c090de537a2ee27c599f0f0ec`.
