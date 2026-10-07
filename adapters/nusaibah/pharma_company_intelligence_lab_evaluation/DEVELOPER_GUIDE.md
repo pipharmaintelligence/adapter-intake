@@ -1,6 +1,53 @@
 # Evaluation developer guide
 
+## Role-scoped candidate (0.2.3)
+
+The new source candidate addresses the measured headquarters overlap through a narrowed prompt/ownership contract. `company_identity` owns legal-name, headquarters, registered-address, incorporation and company-profile identity facts. `commercial_signals` requires explicit sales/customer markets, distribution territories, market access, revenue, commercial launches or commercialization/licensing activity. Identity-only geography requires a reviewed commercial `no_evidence` disposition. A commercial claim remains eligible when its quote also contains identity context.
+
+`supplied_source_scoped_review.py` defines `supplied_source_methodology.v3` with the questions and requirement scopes included in its digest. Specialists receive only their assigned scopes; the existing local and global verifier stages receive the bound scopes as well. An out-of-scope claim is insufficient for its assigned requirement even if its words are source-supported. This remains model-assessed semantic authority: structural validation and canned-response tests cannot guarantee a noncompliant model will reject a misrouted claim. No quote-based or keyword-based semantic filter is introduced.
+
+The source-owned `quote_review_orchestration.py` takes a trusted source-owned profile and reuses historical exact-quote/span and validation primitives. The old 0.2.2 orchestration file is unchanged. A legacy-profile parity regression compares complete results, packets, child calls and stage ordering, and a concurrent old/new regression proves profile selection does not mutate shared module globals. This permits later role-profile revisions to reuse one finite orchestrator.
+
+Agent definitions for the new candidate:
+
+| Role | Contract/chain version | Change |
+| --- | --- | --- |
+| `source_portfolio_reviewer` | `1.2.0` | Explicit ownership of company-profile identity |
+| `source_commercial_reviewer` | `1.2.0` | Explicit commercial activity; identity-only abstention |
+| `source_regulatory_reviewer` | `1.1.0` | Exact historical definition retained |
+| `source_evidence_verifier` | `1.1.0` | Bound ownership rules in local/global checks |
+
+Provider/model, generation settings, timeouts, budgets, no-store policies and tool permissions are unchanged. The existing toolkit `0.1.1 / resolve_exact_spans`, one child per chunk, four-chunk ceiling, three parallel specialists, `4N + 1` Agent ceiling (maximum 17), 1,800-second deadline and zero repair iterations remain in effect. Output/result and scalar-summary schemas remain v2; only the methodology identity and candidate identity change.
+
+Select `--candidate-version 0.2.3` for the existing offline projector and evaluator. `development_input_bindings.v3.json` pins the same suite and source bytes to the new asset identity. The original 0.2.1 CLI default and old bindings remain unchanged. A historical 0.2.2 result/review cannot be relabelled as 0.2.3 evidence; exact candidate, methodology, plan and span receipts are checked. A new independent review is required after an admitted retained run. Do not send the reviewer decisions or expected fixture answers to any Agent.
+
+### Official workflow promotion
+
+This source change does not upgrade the Python runtime package, manually bump its version, build/install a local wheel, restart a worker or modify an env file. After reviewing and merging the intake PR, dispatch the existing Assets workflow against its exact merge commit. This creates a separately reviewable packaged Assets PR; it does not deploy.
+
+```powershell
+$IntakePr = gh pr view 85 --repo pipharmaintelligence/adapter-intake --json state,mergeCommit | ConvertFrom-Json
+if ($IntakePr.state -ne 'MERGED' -or -not $IntakePr.mergeCommit.oid) {
+    throw 'Merge the reviewed intake PR before promotion.'
+}
+$IntakeRef = $IntakePr.mergeCommit.oid
+gh workflow run adapter-intake-promote-pr.yml `
+    --repo piusaibah/assets `
+    --ref main `
+    -f intake_repository=pipharmaintelligence/adapter-intake `
+    -f intake_ref=$IntakeRef `
+    -f intake_adapter_yaml=adapters/nusaibah/pharma_company_intelligence_lab_evaluation/adapter.yaml `
+    -f base_branch=main `
+    -f draft=false `
+    -f allow_manifest_removals=false
+if ($LASTEXITCODE -ne 0) { throw 'Official promotion dispatch failed.' }
+```
+
+Verify materialization, both catalog publications and package validation in that workflow before reviewing the generated Assets PR. After its review/merge, verify the exact packaged 0.2.3 identity and module hashes, the existing toolkit identity, and the exact Agent versions above using the established admission/worker path. Source readiness alone does not authorize a provider run. Keep the next live case pending until those delivery/admission gates and its scope are reviewed; WP1 remains incomplete.
+
 ## Quote-selection candidate (0.2.2)
+
+This section records the historical 0.2.2 contract and delivery. Current 0.2.3 promotion instructions are above.
 
 This source-owned development version addresses model-offset arithmetic without weakening evidence checks. Specialists return `supplied_source_specialist.v2` with exact `locator`/`quote` pairs only. Extra `start`/`end` or the old specialist schema rejects before the child call. The orchestrator validates every specialist's closed proposal, makes one signed callable `review_toolkit` call per chunk to `nusaibah.structured_review_toolkit:0.1.1 / resolve_exact_spans`, checks its bound result, and only then builds canonical integer spans for strict validation and local semantic verification.
 
@@ -39,6 +86,10 @@ if ($LASTEXITCODE -ne 0) { throw 'Stop: quote-candidate projection is blocked.' 
 Release sequence: merge source → official promotion of **both** toolkit 0.1.1 and evaluation 0.2.2 from the same exact commit → review/merge the generated Assets promotion → passed complete wheel and installed module/helper/catalog checks → owned idle worker replacement → exact registration/binding and four-role Agent admission → approved single-case diagnostic execution → retain original preview/usage → independent semantic review and offline evaluation. No manual wheel-version bump, source-only patch to Assets, new env values or S3 changes are part of this repair. The active worker cannot discover these versions merely because source tests pass.
 
 After an admitted new run produces original retained bytes, use the existing evaluator commands with `--candidate-version 0.2.2` for template emission and scoring. A typed rejected run produces no completed preview; preserve its rule and stop before other cases. A successful preview establishes execution, not calibrated quality or WP1 completion. The original unknown subcause of the failed 0.2.1 commercial span remains unknown; invented/ambiguous quotes deliberately remain blockers.
+
+## Commercial role ownership evidence
+
+See [COMMERCIAL_ROLE_SCOPE.md](COMMERCIAL_ROLE_SCOPE.md) for the measured overlap, original offline proposal, implemented 0.2.3 source contract and regressions. Scripted response fixtures remain test-side only. Source preparation and candidate scoring stay separate from promotion, admission and live semantic review. Historical 0.2.2 questions/digests are preserved, and shared-span regressions prevent an unsafe quote-based deduplication shortcut.
 
 ## Three distinct proof lanes
 

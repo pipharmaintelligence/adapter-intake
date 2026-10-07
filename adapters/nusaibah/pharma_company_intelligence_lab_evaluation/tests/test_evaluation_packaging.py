@@ -21,6 +21,61 @@ PACKAGE = "adapters.intake.nusaibah.pharma_company_intelligence_lab_evaluation"
 
 
 class EvaluationPackagingTests(unittest.TestCase):
+    def test_version_023_packaged_import_uses_scoped_engine_and_scalar_summary(self):
+        self._packaged_probe(f"""
+import importlib
+import sys
+from unittest.mock import patch
+before = list(sys.path)
+module = importlib.import_module('{PACKAGE}.nusaibah_pharma_company_intelligence_lab_evaluation_v0_2_3_adapter')
+scoped = importlib.import_module('{PACKAGE}.supplied_source_scoped_review')
+assert module.run_review is scoped.run_review
+assert sys.path == before
+assert module.NusaibahPharmaCompanyIntelligenceLabEvaluationV023Adapter.version == '0.2.3'
+result = {{'review_outcome':'review_complete_with_evidence_gaps', 'agent_call_count':5,
+  'mutable_call_count':0, 'child_call_count':1, 'execution_state':'completed',
+  'preview_only':True, 'publication_allowed':False, 'baseline_comparable':False,
+  'external_truth_verified':False, 'accepted_findings':[{{'statement':'private evidence'}}],
+  'withheld_findings':[], 'plan':{{'chunk_ids':['chunk-1']}}}}
+with patch.object(module, 'run_review', return_value=result):
+    response = module.NusaibahPharmaCompanyIntelligenceLabEvaluationV023Adapter().invoke({{}}, {{}})
+summary = response['outputs']['evaluation_summary']
+assert summary['schema_version'] == 'pharma_supplied_source_review_summary.v2'
+assert summary['agent_call_count'] == 5 and summary['child_call_count'] == 1
+assert all(isinstance(value, (str, bool, int)) for value in summary.values())
+assert 'private' not in str(summary)
+assert response['outputs']['evaluation_result'] is result
+""")
+
+    def test_version_023_changes_only_ownership_prompts_and_agent_versions(self):
+        import copy
+        manifest = json.loads((ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_evaluation.asset.json").read_text())
+        old, new = manifest["versions"]["0.2.2"], manifest["versions"]["0.2.3"]
+        self.assertEqual({k: v for k, v in old.items() if k != "agents"},
+                         {k: v for k, v in new.items() if k != "agents"})
+        self.assertEqual(old["agents"]["source_regulatory_reviewer"], new["agents"]["source_regulatory_reviewer"])
+        for role, version in (("source_portfolio_reviewer", "1.2.0"),
+                              ("source_commercial_reviewer", "1.2.0"),
+                              ("source_evidence_verifier", "1.1.0")):
+            actual = copy.deepcopy(new["agents"][role])
+            expected = old["agents"][role]
+            self.assertEqual(version, actual["contract_version"])
+            self.assertEqual(version, actual["definition"]["chain"]["version"])
+            self.assertIn("requirement_scopes", actual["definition"]["chain"]["steps"][0]["input"]["text"])
+            actual["contract_version"] = expected["contract_version"]
+            actual["definition"]["chain"]["version"] = expected["definition"]["chain"]["version"]
+            actual["definition"]["chain"]["steps"][0]["input"] = expected["definition"]["chain"]["steps"][0]["input"]
+            self.assertEqual(expected, actual)
+
+    def test_version_023_promotion_declares_all_new_helpers_and_retains_022_wrapper(self):
+        contract = (ASSET_ROOT / "adapter.yaml").read_text(encoding="utf-8")
+        self.assertIn("asset_version: 0.2.3", contract)
+        self.assertIn("  - COMMERCIAL_ROLE_SCOPE.md\n", contract)
+        for filename in ("quote_review_orchestration.py", "supplied_source_scoped_review.py",
+                         "nusaibah_pharma_company_intelligence_lab_evaluation_v0_2_2_adapter.py"):
+            self.assertEqual(1, contract.count("  - " + filename + "\n"))
+        self.assertIn("adapter_module: nusaibah_pharma_company_intelligence_lab_evaluation_v0_2_3_adapter.py", contract)
+
     def test_version_022_package_import_and_bounded_summary_preserve_source_separation(self):
         self._packaged_probe(f"""
 import importlib
@@ -118,7 +173,7 @@ for item in pkgutil.walk_packages(package.__path__, package.__name__ + '.'):
     for _, candidate in inspect.getmembers(module, inspect.isclass):
         if candidate is not Adapter and issubclass(candidate, Adapter) and candidate.__module__ == module.__name__:
             found.append((candidate.key, candidate.version))
-assert sorted(found) == [('nusaibah.pharma_company_intelligence_lab_evaluation', '0.1.0'), ('nusaibah.pharma_company_intelligence_lab_evaluation', '0.1.1'), ('nusaibah.pharma_company_intelligence_lab_evaluation', '0.1.2'), ('nusaibah.pharma_company_intelligence_lab_evaluation', '0.2.0'), ('nusaibah.pharma_company_intelligence_lab_evaluation', '0.2.1'), ('nusaibah.pharma_company_intelligence_lab_evaluation', '0.2.2')], found
+assert sorted(found) == [('nusaibah.pharma_company_intelligence_lab_evaluation', '0.1.0'), ('nusaibah.pharma_company_intelligence_lab_evaluation', '0.1.1'), ('nusaibah.pharma_company_intelligence_lab_evaluation', '0.1.2'), ('nusaibah.pharma_company_intelligence_lab_evaluation', '0.2.0'), ('nusaibah.pharma_company_intelligence_lab_evaluation', '0.2.1'), ('nusaibah.pharma_company_intelligence_lab_evaluation', '0.2.2'), ('nusaibah.pharma_company_intelligence_lab_evaluation', '0.2.3')], found
 frozen = importlib.import_module('{PACKAGE}.frozen_pharma_company_intelligence_lab')
 assert not issubclass(frozen.NusaibahPharmaCompanyIntelligenceLabAdapter, Adapter)
 """)
@@ -182,7 +237,7 @@ for outcome, calls in [('review_complete', 5), ('review_complete_with_evidence_g
     def test_evaluation_manifest_preserves_agent_policy_and_fixed_skill_parity(self) -> None:
         baseline = json.loads((BASELINE_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json").read_text(encoding="utf-8"))
         evaluation = json.loads((ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_evaluation.asset.json").read_text(encoding="utf-8"))
-        self.assertEqual(evaluation["default"], "0.2.2")
+        self.assertEqual(evaluation["default"], "0.2.3")
         self.assertEqual(evaluation["versions"]["0.1.2"], evaluation["versions"]["0.1.1"])
         self.assertEqual(evaluation["versions"]["0.1.1"], evaluation["versions"]["0.1.0"])
         current = evaluation["versions"]["0.1.1"]

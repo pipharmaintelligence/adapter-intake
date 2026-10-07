@@ -28,6 +28,36 @@ class PoisonTruth(dict):
 
 
 class DevelopmentProjectorTests(unittest.TestCase):
+    def test_scoped_candidate_uses_new_identity_and_method_without_changing_source_inputs(self):
+        suite, suite_hash = projector.load_snapshot(projector.candidate.SUITE_PATH)
+        old_bindings, old_hash = projector.load_snapshot(EVALUATION_ROOT / "development_input_bindings.v2.json")
+        bindings, binding_hash = projector.load_snapshot(EVALUATION_ROOT / "development_input_bindings.v3.json")
+        old_report, old_outputs = projector.project_batch(suite, old_bindings, CASE_IDS,
+            suite_sha256=suite_hash, binding_sha256=old_hash, candidate_version="0.2.2")
+        report, outputs = projector.project_batch(suite, bindings, CASE_IDS,
+            suite_sha256=suite_hash, binding_sha256=binding_hash, candidate_version="0.2.3")
+        self.assertEqual(old_outputs, outputs)
+        self.assertEqual("nusaibah.pharma_company_intelligence_lab_evaluation:0.2.3", report["candidate_identity"])
+        self.assertNotEqual(old_report["cases"][0]["plan"]["methodology_digest"], report["cases"][0]["plan"]["methodology_digest"])
+        self.assertEqual([5, 5, 5, 5, 9], [c["plan"]["logical_call_limit"] for c in report["cases"]])
+        self.assertEqual([1, 1, 1, 1, 2], [c["plan"]["child_call_limit"] for c in report["cases"]])
+        self.assertFalse(report["execution_allowed"])
+        self.assertEqual(0, report["provider_invocations"])
+        self.assertFalse(report["wp1_complete"])
+        with self.assertRaisesRegex(projector.ProjectionError, "candidate_identity_mismatch"):
+            projector.project_batch(suite, old_bindings, CASE_IDS,
+                suite_sha256=suite_hash, binding_sha256=old_hash, candidate_version="0.2.3")
+
+    def test_scoped_candidate_cli_selects_its_own_bindings_and_preserves_historical_default(self):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            code = projector.main(["--case-id", CASE_IDS[0], "--candidate-version", "0.2.3"])
+        report = json.loads(output.getvalue())
+        self.assertEqual(0, code)
+        self.assertEqual("prepared", report["status"])
+        self.assertEqual(0, report["provider_invocations"])
+        self.assertEqual("0.2.1", projector.candidate.CANDIDATE_ASSET_VERSION)
+
     def test_explicit_quote_candidate_uses_new_bindings_and_plan_without_changing_inputs(self):
         suite, suite_hash = projector.load_snapshot(projector.candidate.SUITE_PATH)
         bindings, binding_hash = projector.load_snapshot(EVALUATION_ROOT / "development_input_bindings.v2.json")

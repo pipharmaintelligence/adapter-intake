@@ -101,6 +101,12 @@ Evaluation asset 0.1.2 requires explicit `diagnostic_baseline_replay` purpose an
 
 ## Supplied-source 0.2.1 candidate evaluation
 
+### Explicit role-scoped candidate 0.2.3
+
+Select `--candidate-version 0.2.3` to prepare or evaluate the new role-owned candidate. `development_input_bindings.v3.json` retains the same original suite/source/input bytes and finite five-case set, while binding the new asset and `supplied_source_methodology.v3`. The evaluator checks the exact scoped plan and existing v2 exact-span receipts. Old results or reviewer receipts cannot be relabelled, and mixed methods cannot form one measured batch. Defaults remain 0.2.1.
+
+Candidate 0.2.3 narrows headquarters/address evidence to company identity and requires explicit commercial activity for commercial geography. Source/protocol tests are not model-compliance measurements. Follow [the source candidate's official workflow promotion](../../../pharma_company_intelligence_lab_evaluation/DEVELOPER_GUIDE.md#official-workflow-promotion); this repair does not manually upgrade the runtime package or update a local wheel. Execution admission, independent review, threshold calibration, held-out access and WP1 completion remain separate gates.
+
 ### Explicit quote-selection candidate 0.2.2
 
 The projector and evaluator now also accept `--candidate-version 0.2.2`; defaults remain 0.2.1. The new proposed `development_input_bindings.v2.json` pins the same original fixture/source bytes and five-case set to the new candidate identity. Input values are identical, but its methodology/plan and retained result schemas differ. Do not combine versions or methods in one measurement batch. See [candidate developer guide](../../../pharma_company_intelligence_lab_evaluation/DEVELOPER_GUIDE.md#quote-selection-candidate-022) for the bounded signed toolkit integration and release order.

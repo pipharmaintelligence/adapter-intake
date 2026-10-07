@@ -1,14 +1,18 @@
 # Pharma evaluation: frozen replay and supplied-source preview
 
-Current development candidate: **0.2.2**, using unique literal quote selection and the shared `nusaibah.structured_review_toolkit:0.1.1` to compute exact spans. It preserves specialized parallel reviewers, strict provenance, sequential semantic verification and finite controls. Historical 0.2.0/0.2.1 retain their model-offset contracts. See [quote-candidate developer guide](DEVELOPER_GUIDE.md#quote-selection-candidate-022) for result schemas, offline evaluation and official promotion order. Source tests and installed-runtime bridge proofs do not establish live admission, measured quality or WP1 completion.
+Current source candidate: **0.2.3**, adding explicit identity/commercial role ownership to the unique-quote path and shared `nusaibah.structured_review_toolkit:0.1.1` span resolver. Headquarters and registered addresses belong to `company_identity`; commercial geography requires explicit commercial activity. Historical 0.2.2 code and its retained evidence bindings remain unchanged. See [the role-scope developer guide](DEVELOPER_GUIDE.md#role-scoped-candidate-023) for schemas, exact Agent versions and official workflow promotion. Source tests establish contract behavior with canned responses; live quality still requires independent evaluation after admission.
 
 This development-only asset retains the frozen execution boundary in PI-1988. Version 0.2.0 adds a separate synthetic supplied-source company review; its result is not comparable to the frozen baseline. See [SUPPLIED_SOURCE_REVIEW.md](SUPPLIED_SOURCE_REVIEW.md) for evidence rules, the bounded model, commands and rollout gates. It replays one synthetic company case through the pinned `0.1.12` business executor using runtime-owned Agent and Fixed Skill authority. Frozen replay does not establish WP1 baseline measurements. The new lane is a narrow preview capability, not completion of the specialized-review plan. The design and delivery gates remain in PI-1972.
+
+## Commercial role overlap: next local quality step
+
+The first reviewed 0.2.2 development case recovered its expected headquarters fact but also accepted a redundant commercial headquarters claim. [The role-ownership repair and regressions](COMMERCIAL_ROLE_SCOPE.md) define candidate 0.2.3 with narrowed specialist questions and bound verifier scope. They preserve explicitly supported sales/distribution geography and distinct claims sharing one exact quote. Promote the reviewed source through the official workflow and verify exact admission before any further live case.
 
 ## Baseline and discovery boundary
 
 - Baseline intake commit: `21cc6b39492cbd3c090de537a2ee27c599f0f0ec`.
 - Baseline asset/runtime: `nusaibah.pharma_company_intelligence_lab@0.1.12` / `0.1.97`.
-- Current intake candidate: `nusaibah.pharma_company_intelligence_lab_evaluation@0.2.2`; supplied-source `0.2.0`/`0.2.1` and frozen replay `0.1.0`, `0.1.1`, `0.1.2` remain available.
+- Current intake candidate: `nusaibah.pharma_company_intelligence_lab_evaluation@0.2.3`; supplied-source `0.2.0`/`0.2.1`/`0.2.2` and frozen replay `0.1.0`, `0.1.1`, `0.1.2` remain available.
 - The frozen executor is an ordinary Python component. Its only structural differences from the baseline are removal of the runtime `Adapter` import and inheritance. An AST parity test checks every remaining executable statement; helper contracts, Agent definitions, provider policies, budgets and Fixed Skill declarations must match the baseline.
 - Only the declared versioned evaluation wrappers inherit `Adapter`. Package-relative imports support the materialized namespace; scoped external-root loading uses a flat import fallback. Importing replay code must not modify `sys.path`.
 
@@ -21,7 +25,7 @@ Accept exactly one `evaluation_case.records` entry with `case_id`, `mode=company
 ## Required proof and next gates
 
 1. Run promotion-shape, full pharma and evaluation packaging tests in intake CI.
-2. Materialize the exact reviewed intake commit in an isolated Assets checkout. Run the existing P5 package tests, build wheel/sdist, inspect and scan them, then import the complete installed wheel without an asset-directory path workaround. Verify one production `0.1.12` identity, all six evaluation identities and both toolkit identities. The 0.2.2 parent and its exact 0.1.1 child must ship together.
+2. Materialize the exact reviewed intake commit in an isolated Assets checkout. Run the existing P5 package tests, build wheel/sdist, inspect and scan them, then import the complete installed wheel without an asset-directory path workaround. Verify one production `0.1.12` identity, all seven evaluation identities and both toolkit identities. The 0.2.3 parent requires the already versioned 0.1.1 toolkit child; verify that exact child remains packaged and admitted.
 3. Promote through the official workflow after source review/merge; package validation must pass before downstream reconciliation or PR creation. Do not hand-edit generated Assets modules or catalogs to bypass P5.
 4. Prove exact registration, baseline-equivalent Agent admission, Fixed Skill digest and trusted worker authority. The designated synthetic fixture cannot establish positive public-web research completion. Keep the positive/no-write gate open until a separate admission/acceptance decision is reviewed; do not launch the remaining ten cases merely because diagnostic execution works.
 5. Record source-backed observations in PI-1985/PI-1987. The thirteen document cases remain `not_executable`; eleven company executions alone do not satisfy the current all-24 WP1 completion gate. Resolve that comparability/scope decision explicitly rather than dropping cases or inventing measurements.
