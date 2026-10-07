@@ -23,7 +23,7 @@ REVIEW_SCHEMA = "pharma_supplied_source_candidate_review.v1"
 CANDIDATE_ASSET_KEY = "nusaibah.pharma_company_intelligence_lab_evaluation"
 CANDIDATE_ASSET_VERSION = "0.2.1"
 CANDIDATE_ASSET_IDENTITY = f"{CANDIDATE_ASSET_KEY}:{CANDIDATE_ASSET_VERSION}"
-CANDIDATE_VERSIONS = ("0.2.1", "0.2.2")
+CANDIDATE_VERSIONS = ("0.2.1", "0.2.2", "0.2.3")
 
 CASE_STATUSES = frozenset({"evaluated", "blocked", "not_executable", "pending_review"})
 EXPECTED_DECISIONS = frozenset({"matched", "missed"})
@@ -64,7 +64,8 @@ def _source_contract(version: str) -> Any:
         package = ModuleType(package_name)
         package.__path__ = [str(folder)]
         sys.modules[package_name] = package
-    return importlib.import_module(package_name + ".supplied_source_quote_review")
+    module = ".supplied_source_scoped_review" if version == "0.2.3" else ".supplied_source_quote_review"
+    return importlib.import_module(package_name + module)
 
 
 def _candidate_version(context: dict[str, Any]) -> str:
@@ -375,7 +376,7 @@ def validate_retained_result(
     summary = outputs.get("evaluation_summary")
     if not isinstance(result, dict) or not isinstance(summary, dict):
         raise CandidateEvaluationError("Retained result must include evaluation_result and evaluation_summary.")
-    suffix = "v2" if version == "0.2.2" else "v1"
+    suffix = "v2" if version in ("0.2.2", "0.2.3") else "v1"
     if (result.get("schema_version") != f"supplied_source_review_result.{suffix}"
             or summary.get("schema_version") != f"pharma_supplied_source_review_summary.{suffix}"
             or result.get("scope") != "focused_company_review"
@@ -635,7 +636,7 @@ def validate_retained_result(
     if type(summary.get("chunk_count")) is not int or summary.get("chunk_count") != len(plan["chunk_ids"]):
         raise CandidateEvaluationError("evaluation_summary.chunk_count disagrees with the finite plan.")
 
-    if version == "0.2.2":
+    if version in ("0.2.2", "0.2.3"):
         try:
             source_contract.validate_resolution_receipts(result, prepared)
         except (source_contract.SourceReviewError, KeyError, TypeError, ValueError) as exc:

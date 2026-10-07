@@ -19,8 +19,8 @@ sys.path.insert(0, str(EVALUATION_ROOT))
 import supplied_source_candidate_evaluation as candidate
 
 
-def quote_candidate_retained(*, supported=True):
-    engine = candidate._source_contract("0.2.2")
+def quote_candidate_retained(*, supported=True, version="0.2.2"):
+    engine = candidate._source_contract(version)
     tool_folder = EVALUATION_ROOT.parents[2] / "structured_review_toolkit"
     name = "_candidate_exact_span_test_tool"
     if name not in sys.modules:
@@ -29,7 +29,7 @@ def quote_candidate_retained(*, supported=True):
         sys.modules[name] = package
     tool = importlib.import_module(name + ".tool_operations_v0_1_1")
     wrapper = importlib.import_module(engine.__package__ +
-        ".nusaibah_pharma_company_intelligence_lab_evaluation_v0_2_2_adapter")
+        ".nusaibah_pharma_company_intelligence_lab_evaluation_v" + version.replace(".", "_") + "_adapter")
     class Inputs(dict):
         def invoke_agent(self, role, *, input, on_error):
             contract = input["response_contract"]
@@ -54,10 +54,11 @@ def quote_candidate_retained(*, supported=True):
                 "kind": "json", "content": [{"type": "json", "value": value}], "citations": []}}
         def invoke_asset(self, role, *, variables, on_error):
             return {"status": "success", "result": tool.execute_operation(variables)}
-    response = wrapper.NusaibahPharmaCompanyIntelligenceLabEvaluationV022Adapter().invoke(Inputs(inputs()), {})
+    adapter_name = "NusaibahPharmaCompanyIntelligenceLabEvaluationV" + version.replace(".", "") + "Adapter"
+    response = getattr(wrapper, adapter_name)().invoke(Inputs(inputs()), {})
     return {"schema_version": "adapter_preview_result.v1",
             "run_uuid": "0455965f-eaf3-4f73-8bc2-9d21a7cdbc93",
-            "asset_identity": candidate.CANDIDATE_ASSET_KEY + ":0.2.2", "outputs": response["outputs"]}
+            "asset_identity": candidate.CANDIDATE_ASSET_KEY + ":" + version, "outputs": response["outputs"]}
 
 
 class QuoteCandidateEvaluationTests(unittest.TestCase):
@@ -162,6 +163,73 @@ class QuoteCandidateEvaluationTests(unittest.TestCase):
             review = candidate.load_json(root / "review.json")
             self.assertEqual("0.2.2", review["candidate_asset"]["asset_version"])
             self.assertEqual("pending_review", review["case_status"])
+
+
+class RoleScopedCandidateEvaluationTests(unittest.TestCase):
+    def setUp(self):
+        self.suite, self.case, self.inputs = suite(), fixture_case(), inputs()
+        self.context = candidate.validate_inputs_against_fixture(self.case, self.inputs, candidate_version="0.2.3")
+        self.retained = quote_candidate_retained(version="0.2.3")
+
+    def validate(self, retained=None):
+        return candidate.validate_retained_result(self.case, self.context, retained or self.retained)
+
+    def test_scoped_candidate_receipt_and_quality_score_bind_to_the_distinct_method_and_asset(self):
+        retained_context = self.validate()
+        review = ready_review(self.suite, self.case, retained_context)
+        self.assertEqual("0.2.3", review["candidate_asset"]["asset_version"])
+        report = candidate.evaluate_candidate_case(self.suite, self.case, self.context, retained_context, review,
+            inputs_file_sha256="1" * 64, retained_file_sha256="2" * 64)
+        self.assertEqual("evaluated", report["case_status"])
+        self.assertEqual("0.2.3", candidate.safe_status(report)["asset_version"])
+        self.assertEqual(1, report["review_counts"]["matched_expected_count"])
+        self.assertFalse(report["frozen_wp1_baseline_completed"])
+        self.assertNotEqual(candidate._source_contract("0.2.2").digest(candidate._source_contract("0.2.2").METHOD),
+                            report["candidate_methodology_digest"])
+
+    def test_historical_identity_plan_and_review_cannot_be_relabelled_as_scoped_evidence(self):
+        old_context = candidate.validate_inputs_against_fixture(self.case, self.inputs, candidate_version="0.2.2")
+        with self.assertRaises(candidate.CandidateEvaluationError):
+            candidate.validate_retained_result(self.case, old_context, self.retained)
+        broken = copy.deepcopy(self.retained)
+        broken["outputs"]["evaluation_result"]["plan"] = old_context["prepared_review"]["plan"]
+        with self.assertRaisesRegex(candidate.CandidateEvaluationError, "finite plan"):
+            self.validate(broken)
+        scoped_context = self.validate()
+        review = ready_review(self.suite, self.case, scoped_context)
+        review["candidate_asset"]["asset_version"] = "0.2.2"
+        with self.assertRaisesRegex(candidate.CandidateEvaluationError, "asset identity"):
+            candidate.evaluate_candidate_case(self.suite, self.case, self.context, scoped_context, review,
+                inputs_file_sha256="1" * 64, retained_file_sha256="2" * 64)
+
+    def test_scoped_candidate_still_rejects_missing_or_tampered_exact_span_receipts(self):
+        for variant in ("missing", "digest", "offset"):
+            broken = copy.deepcopy(self.retained)
+            receipts = broken["outputs"]["evaluation_result"]["span_resolution_receipts"]
+            if variant == "missing":
+                receipts.clear()
+            elif variant == "digest":
+                receipts[0]["result"]["request_digest"] = "0" * 64
+            else:
+                receipts[0]["result"]["output"]["spans"][0]["start"] = True
+            with self.subTest(variant=variant), self.assertRaises(candidate.CandidateEvaluationError):
+                self.validate(broken)
+
+    def test_scoped_cli_emits_only_pending_review_until_independent_attestation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name, value in (("suite", self.suite), ("inputs", self.inputs), ("retained", self.retained)):
+                (root / (name + ".json")).write_text(json.dumps(value), encoding="utf-8")
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = candidate.main(["--candidate-version", "0.2.3", "--suite", str(root / "suite.json"),
+                    "--case-id", self.case["case_id"], "--inputs", str(root / "inputs.json"),
+                    "--retained-result", str(root / "retained.json"),
+                    "--emit-review-template", str(root / "review.json")])
+            self.assertEqual(0, code)
+            review = candidate.load_json(root / "review.json")
+            self.assertEqual("0.2.3", review["candidate_asset"]["asset_version"])
+            self.assertEqual("pending_review", review["case_status"])
+            self.assertIsNone(review["reviewer"]["name"])
 
 
 def fixture_case() -> dict:

@@ -1,10 +1,13 @@
 asset_key: nusaibah.pharma_company_intelligence_lab_evaluation
-asset_version: 0.2.2
+asset_version: 0.2.3
 package_target: python_runtime/adapters/intake/nusaibah/pharma_company_intelligence_lab_evaluation
 manifest: nusaibah_pharma_company_intelligence_lab_evaluation.asset.json
-adapter_module: nusaibah_pharma_company_intelligence_lab_evaluation_v0_2_2_adapter.py
+adapter_module: nusaibah_pharma_company_intelligence_lab_evaluation_v0_2_3_adapter.py
 
 reviewed_helpers:
+  - nusaibah_pharma_company_intelligence_lab_evaluation_v0_2_2_adapter.py
+  - supplied_source_scoped_review.py
+  - quote_review_orchestration.py
   - nusaibah_pharma_company_intelligence_lab_evaluation_v0_2_1_adapter.py
   - supplied_source_quote_review.py
   - nusaibah_pharma_company_intelligence_lab_evaluation_v0_2_0_adapter.py
@@ -25,6 +28,7 @@ reviewed_helpers:
 optional_files:
   - README.md
   - DEVELOPER_GUIDE.md
+  - COMMERCIAL_ROLE_SCOPE.md
   - SUPPLIED_SOURCE_REVIEW.md
 
 release_stage: development

@@ -227,8 +227,10 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         suite, suite_hash = load_snapshot(args.suite)
-        binding_path = args.bindings or (HERE / "development_input_bindings.v2.json"
-                         if args.candidate_version == "0.2.2" else BINDINGS_PATH)
+        binding_files = {"0.2.1": BINDINGS_PATH,
+                         "0.2.2": HERE / "development_input_bindings.v2.json",
+                         "0.2.3": HERE / "development_input_bindings.v3.json"}
+        binding_path = args.bindings or binding_files[args.candidate_version]
         bindings, binding_hash = load_snapshot(binding_path)
         report, outputs = project_batch(suite, bindings, args.case_id,
                                         suite_sha256=suite_hash, binding_sha256=binding_hash,

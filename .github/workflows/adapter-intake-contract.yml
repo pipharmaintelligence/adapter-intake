@@ -105,6 +105,30 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Preflight the role-scoped candidate without providers
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          set -euo pipefail
+          python adapters/nusaibah/pharma_company_intelligence_lab/tests/evaluation/project_development_inputs.py \
+            --candidate-version 0.2.3 \
+            --case-id company-small-identity-001 \
+            --case-id company-wrong-entity-005 \
+            --case-id company-source-injection-006 \
+            --case-id company-missing-evidence-007 \
+            --case-id company-conflicting-dates-003 \
+            --output-dir "$RUNNER_TEMP/wp1-role-scoped-inputs" \
+            --pretty
+
+      - name: Retain role-scoped candidate preflight manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: wp1-role-scoped-input-preflight
+          path: ${{ runner.temp }}/wp1-role-scoped-inputs/projection-manifest.json
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Validate shared review toolkit and two synthetic consumers
         shell: bash
         env:
