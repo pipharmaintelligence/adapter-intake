@@ -62,7 +62,7 @@ def load_snapshot(path: Path) -> tuple[dict[str, Any], str]:
 
 
 def _binding_index(suite: dict[str, Any], bindings: dict[str, Any],
-                   suite_sha256: str) -> dict[str, dict[str, Any]]:
+                   suite_sha256: str, candidate_version: str) -> dict[str, dict[str, Any]]:
     _require(set(bindings) == {"schema_version", "decision_status", "suite_id",
                               "suite_byte_sha256", "candidate_identity", "bindings"},
              "binding_fields_invalid")
@@ -78,7 +78,8 @@ def _binding_index(suite: dict[str, Any], bindings: dict[str, Any],
              and len(set(pinned_hashes)) == len(pinned_hashes), "suite_digest_pins_invalid")
     _require(isinstance(suite_sha256, str) and suite_sha256 in pinned_hashes,
              "suite_digest_mismatch")
-    _require(bindings["candidate_identity"] == candidate.CANDIDATE_ASSET_IDENTITY,
+    _require(candidate_version in candidate.CANDIDATE_VERSIONS
+             and bindings["candidate_identity"] == f"{candidate.CANDIDATE_ASSET_KEY}:{candidate_version}",
              "candidate_identity_mismatch")
     raw = bindings["bindings"]
     _require(isinstance(raw, list) and 1 <= len(raw) <= MAX_CASES, "binding_count_invalid")
@@ -100,7 +101,8 @@ def _binding_index(suite: dict[str, Any], bindings: dict[str, Any],
 
 
 def project_batch(suite: dict[str, Any], bindings: dict[str, Any], case_ids: list[str], *,
-                  suite_sha256: str, binding_sha256: str) -> tuple[dict[str, Any], dict[str, bytes]]:
+                  suite_sha256: str, binding_sha256: str,
+                  candidate_version: str = candidate.CANDIDATE_ASSET_VERSION) -> tuple[dict[str, Any], dict[str, bytes]]:
     """Return a text-free manifest and exact inputs; held-out truth is never consulted."""
     _require(isinstance(case_ids, list) and 1 <= len(case_ids) <= MAX_CASES,
              "case_count_invalid")
@@ -109,7 +111,7 @@ def project_batch(suite: dict[str, Any], bindings: dict[str, Any], case_ids: lis
     _require(len(set(case_ids)) == len(case_ids), "duplicate_case")
     _require(isinstance(binding_sha256, str) and SHA256.fullmatch(binding_sha256) is not None,
              "binding_digest_invalid")
-    index = _binding_index(suite, bindings, suite_sha256)
+    index = _binding_index(suite, bindings, suite_sha256, candidate_version)
     _require(isinstance(suite.get("cases"), list), "suite_cases_invalid")
     receipts = []
     outputs: dict[str, bytes] = {}
@@ -158,7 +160,7 @@ def project_batch(suite: dict[str, Any], bindings: dict[str, Any], case_ids: lis
                       "source_units": units}]}}
         try:
             # Reuse PR80's unchanged validator, including prepare_review's context bounds.
-            context = candidate.validate_inputs_against_fixture(case, inputs)
+            context = candidate.validate_inputs_against_fixture(case, inputs, candidate_version=candidate_version)
         except candidate.CandidateEvaluationError:
             receipts.append({**receipt, "projection_status": "not_executable",
                              "reason_codes": ["candidate_input_preflight_rejected"]})
@@ -180,7 +182,7 @@ def project_batch(suite: dict[str, Any], bindings: dict[str, Any], case_ids: lis
               "status": "prepared" if ready else "blocked",
               "suite_id": suite["suite_id"], "suite_sha256": suite_sha256,
               "bindings_sha256": binding_sha256,
-              "candidate_identity": candidate.CANDIDATE_ASSET_IDENTITY,
+              "candidate_identity": f"{candidate.CANDIDATE_ASSET_KEY}:{candidate_version}",
               "expected_case_ids": list(case_ids), "declared_case_count": len(case_ids),
               "ready_case_count": len(outputs), "cases": receipts,
               "execution_allowed": False, "scope_decision_status": "proposed",
@@ -216,16 +218,21 @@ def export_batch(output_dir: Path, report: dict[str, Any], outputs: dict[str, by
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--suite", type=Path, default=candidate.SUITE_PATH)
-    parser.add_argument("--bindings", type=Path, default=BINDINGS_PATH)
+    parser.add_argument("--bindings", type=Path)
+    parser.add_argument("--candidate-version", choices=candidate.CANDIDATE_VERSIONS,
+                        default=candidate.CANDIDATE_ASSET_VERSION)
     parser.add_argument("--case-id", action="append", required=True)
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--pretty", action="store_true")
     args = parser.parse_args(argv)
     try:
         suite, suite_hash = load_snapshot(args.suite)
-        bindings, binding_hash = load_snapshot(args.bindings)
+        binding_path = args.bindings or (HERE / "development_input_bindings.v2.json"
+                         if args.candidate_version == "0.2.2" else BINDINGS_PATH)
+        bindings, binding_hash = load_snapshot(binding_path)
         report, outputs = project_batch(suite, bindings, args.case_id,
-                                        suite_sha256=suite_hash, binding_sha256=binding_hash)
+                                        suite_sha256=suite_hash, binding_sha256=binding_hash,
+                                        candidate_version=args.candidate_version)
         if report["status"] == "prepared" and args.output_dir is not None:
             export_batch(args.output_dir, report, outputs)
             report["inputs_exported"] = True

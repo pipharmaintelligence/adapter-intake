@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib
 import importlib.util
 import json
 from pathlib import Path
+import sys
+from types import ModuleType
 from typing import Any
 from uuid import UUID
 
@@ -20,6 +23,7 @@ REVIEW_SCHEMA = "pharma_supplied_source_candidate_review.v1"
 CANDIDATE_ASSET_KEY = "nusaibah.pharma_company_intelligence_lab_evaluation"
 CANDIDATE_ASSET_VERSION = "0.2.1"
 CANDIDATE_ASSET_IDENTITY = f"{CANDIDATE_ASSET_KEY}:{CANDIDATE_ASSET_VERSION}"
+CANDIDATE_VERSIONS = ("0.2.1", "0.2.2")
 
 CASE_STATUSES = frozenset({"evaluated", "blocked", "not_executable", "pending_review"})
 EXPECTED_DECISIONS = frozenset({"matched", "missed"})
@@ -45,6 +49,29 @@ _SOURCE_SPEC.loader.exec_module(SOURCE_REVIEW)
 
 class CandidateEvaluationError(ValueError):
     """Raised when retained candidate evidence is incomplete or inconsistent."""
+
+
+def _source_contract(version: str) -> Any:
+    if version not in CANDIDATE_VERSIONS:
+        raise CandidateEvaluationError("Unsupported candidate version.")
+    if version == "0.2.1":
+        return SOURCE_REVIEW
+    # Private package namespace permits reviewed relative imports without
+    # inserting an asset directory into sys.path or importing runtime adapters.
+    folder = _SOURCE_PATH.parent
+    package_name = "_quote_candidate_" + hashlib.sha256(str(folder).encode()).hexdigest()[:16]
+    if package_name not in sys.modules:
+        package = ModuleType(package_name)
+        package.__path__ = [str(folder)]
+        sys.modules[package_name] = package
+    return importlib.import_module(package_name + ".supplied_source_quote_review")
+
+
+def _candidate_version(context: dict[str, Any]) -> str:
+    version = context.get("candidate_asset_version", CANDIDATE_ASSET_VERSION)
+    if not isinstance(version, str) or version not in CANDIDATE_VERSIONS:
+        raise CandidateEvaluationError("Unsupported candidate version.")
+    return version
 
 
 def _canonical_digest(value: Any) -> str:
@@ -176,12 +203,14 @@ def assess_fixture_compatibility(case: dict[str, Any]) -> dict[str, Any]:
 def validate_inputs_against_fixture(
     case: dict[str, Any],
     inputs: dict[str, Any],
+    *, candidate_version: str = CANDIDATE_ASSET_VERSION,
 ) -> dict[str, Any]:
     """Validate a truth-free 0.2.1 input projection against one adjudicated fixture."""
     _require_development_case(case)
+    source_contract = _source_contract(candidate_version)
     try:
-        prepared = SOURCE_REVIEW.prepare_review(inputs)
-    except SOURCE_REVIEW.SourceReviewError as exc:
+        prepared = source_contract.prepare_review(inputs)
+    except source_contract.SourceReviewError as exc:
         raise CandidateEvaluationError(
             "Candidate preflight rejected the input projection: "
             + exc.proof_failure_detail["rule"]
@@ -286,6 +315,7 @@ def validate_inputs_against_fixture(
         raise CandidateEvaluationError("Input projection exceeds the 0.2.1 source character limit.")
 
     return {
+        "candidate_asset_version": candidate_version,
         "case_id": record["case_id"],
         "target_entity_id": target_entity_id,
         "target_entity_name": record["entity_name"],
@@ -311,6 +341,8 @@ def _validate_summary_agreement(
         "accepted_finding_count": len(result.get("accepted_findings", [])),
         "withheld_finding_count": len(result.get("withheld_findings", [])),
     }
+    if result.get("schema_version") == "supplied_source_review_result.v2":
+        comparisons["child_call_count"] = result.get("child_call_count")
     for field, expected in comparisons.items():
         if type(summary.get(field)) is not type(expected) or summary.get(field) != expected:
             raise CandidateEvaluationError(f"evaluation_summary disagrees with evaluation_result on {field}.")
@@ -331,8 +363,10 @@ def validate_retained_result(
             raise ValueError("noncanonical UUID")
     except ValueError as exc:
         raise CandidateEvaluationError("retained.run_uuid must be a canonical UUID.") from exc
-    if retained.get("asset_identity") != CANDIDATE_ASSET_IDENTITY:
-        raise CandidateEvaluationError("Retained result is not for the 0.2.1 candidate asset.")
+    version = _candidate_version(input_context)
+    source_contract = _source_contract(version)
+    if retained.get("asset_identity") != f"{CANDIDATE_ASSET_KEY}:{version}":
+        raise CandidateEvaluationError("Retained result is not for the explicitly selected candidate asset.")
 
     outputs = retained.get("outputs")
     if not isinstance(outputs, dict):
@@ -341,8 +375,9 @@ def validate_retained_result(
     summary = outputs.get("evaluation_summary")
     if not isinstance(result, dict) or not isinstance(summary, dict):
         raise CandidateEvaluationError("Retained result must include evaluation_result and evaluation_summary.")
-    if (result.get("schema_version") != "supplied_source_review_result.v1"
-            or summary.get("schema_version") != "pharma_supplied_source_review_summary.v1"
+    suffix = "v2" if version == "0.2.2" else "v1"
+    if (result.get("schema_version") != f"supplied_source_review_result.{suffix}"
+            or summary.get("schema_version") != f"pharma_supplied_source_review_summary.{suffix}"
             or result.get("scope") != "focused_company_review"
             or result.get("synthetic") is not True):
         raise CandidateEvaluationError("Retained result scope or schema differs from the candidate contract.")
@@ -600,7 +635,14 @@ def validate_retained_result(
     if type(summary.get("chunk_count")) is not int or summary.get("chunk_count") != len(plan["chunk_ids"]):
         raise CandidateEvaluationError("evaluation_summary.chunk_count disagrees with the finite plan.")
 
+    if version == "0.2.2":
+        try:
+            source_contract.validate_resolution_receipts(result, prepared)
+        except (source_contract.SourceReviewError, KeyError, TypeError, ValueError) as exc:
+            raise CandidateEvaluationError("Candidate span-resolution receipts are invalid.") from exc
+
     return {
+        "candidate_asset_version": version,
         "run_uuid": run_uuid,
         "result": result,
         "summary": summary,
@@ -632,7 +674,7 @@ def build_review_template(
         "candidate_methodology_digest": result["plan"]["methodology_digest"],
         "candidate_asset": {
             "asset_key": CANDIDATE_ASSET_KEY,
-            "asset_version": CANDIDATE_ASSET_VERSION,
+            "asset_version": _candidate_version(retained_context),
         },
         "run_uuid": retained_context["run_uuid"],
         "inputs_file_sha256": inputs_file_sha256,
@@ -700,7 +742,7 @@ def _validate_review_bindings(
         raise CandidateEvaluationError("Review candidate methodology digest mismatch.")
     if review.get("candidate_asset") != {
         "asset_key": CANDIDATE_ASSET_KEY,
-        "asset_version": CANDIDATE_ASSET_VERSION,
+        "asset_version": _candidate_version(retained_context),
     }:
         raise CandidateEvaluationError("Review candidate asset identity mismatch.")
     if review.get("run_uuid") != retained_context["run_uuid"]:
@@ -990,7 +1032,7 @@ def evaluate_candidate_case(
         "status_reason": review.get("status_reason"),
         "candidate_asset": {
             "asset_key": CANDIDATE_ASSET_KEY,
-            "asset_version": CANDIDATE_ASSET_VERSION,
+            "asset_version": _candidate_version(retained_context),
             "baseline_comparable": False,
         },
         "run_uuid": retained_context["run_uuid"],
@@ -1039,7 +1081,7 @@ def safe_status(report: dict[str, Any]) -> dict[str, Any]:
         "case_status": report.get("case_status"),
         "run_uuid": report.get("run_uuid"),
         "asset_key": CANDIDATE_ASSET_KEY,
-        "asset_version": CANDIDATE_ASSET_VERSION,
+        "asset_version": (report.get("candidate_asset") or {}).get("asset_version", CANDIDATE_ASSET_VERSION),
         "baseline_comparable": False,
         "review_outcome": business.get("review_outcome"),
         "accepted_finding_count": business.get("accepted_finding_count"),
@@ -1077,13 +1119,17 @@ def aggregate_candidate_reports(
     seen_case_ids = set()
     suite_id = reports[0].get("suite_id")
     suite_digest = reports[0].get("suite_input_digest")
+    candidate_asset = reports[0].get("candidate_asset")
+    candidate_methodology = reports[0].get("candidate_methodology_digest")
     for report in reports:
         case_id = report.get("case_id")
         if not isinstance(case_id, str) or case_id in seen_case_ids:
             raise CandidateEvaluationError("Candidate batch contains invalid or duplicate case IDs.")
         if (report.get("suite_id") != suite_id or report.get("suite_input_digest") != suite_digest
-                or report.get("split") != "development"):
-            raise CandidateEvaluationError("Candidate batch mixes suite identity or unadmitted splits.")
+                or report.get("split") != "development"
+                or report.get("candidate_asset") != candidate_asset
+                or report.get("candidate_methodology_digest") != candidate_methodology):
+            raise CandidateEvaluationError("Candidate batch mixes suite identity, candidate identity, methodology or unadmitted splits.")
         seen_case_ids.add(case_id)
         status = report.get("case_status")
         if status not in CASE_STATUSES:
@@ -1124,6 +1170,7 @@ def main(argv: list[str] | None = None) -> int:
         description="Evaluate retained 0.2.1 supplied-source previews against adjudicated fixtures."
     )
     parser.add_argument("--suite", default=str(SUITE_PATH))
+    parser.add_argument("--candidate-version", choices=CANDIDATE_VERSIONS, default=CANDIDATE_ASSET_VERSION)
     parser.add_argument("--case-id", required=True)
     parser.add_argument("--inputs", required=True)
     parser.add_argument("--retained-result", required=True)
@@ -1173,6 +1220,10 @@ def _evaluate_cli(args: argparse.Namespace) -> int:
             "case_id": case["case_id"],
             "split": case["split"],
             "case_status": "not_executable",
+            "candidate_asset": {"asset_key": CANDIDATE_ASSET_KEY,
+                                "asset_version": args.candidate_version, "baseline_comparable": False},
+            "candidate_methodology_digest": _source_contract(args.candidate_version).digest(
+                _source_contract(args.candidate_version).METHOD),
             "reason_codes": compatibility["reason_codes"],
             "frozen_wp1_baseline_completed": False,
         }
@@ -1182,7 +1233,7 @@ def _evaluate_cli(args: argparse.Namespace) -> int:
         return 0
 
     inputs, inputs_sha = _load_json_with_digest(inputs_path)
-    input_context = validate_inputs_against_fixture(case, inputs)
+    input_context = validate_inputs_against_fixture(case, inputs, candidate_version=args.candidate_version)
     retained, retained_sha = _load_json_with_digest(retained_path)
     retained_context = validate_retained_result(case, input_context, retained)
 
@@ -1203,6 +1254,9 @@ def _evaluate_cli(args: argparse.Namespace) -> int:
             "case_id": case["case_id"],
             "split": case["split"],
             "case_status": "pending_review",
+            "candidate_asset": {"asset_key": CANDIDATE_ASSET_KEY,
+                                "asset_version": args.candidate_version, "baseline_comparable": False},
+            "candidate_methodology_digest": retained_context["result"]["plan"]["methodology_digest"],
             "run_uuid": retained_context["run_uuid"],
             "review_template_emitted": True,
             "frozen_wp1_baseline_completed": False,

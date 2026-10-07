@@ -28,6 +28,36 @@ class PoisonTruth(dict):
 
 
 class DevelopmentProjectorTests(unittest.TestCase):
+    def test_explicit_quote_candidate_uses_new_bindings_and_plan_without_changing_inputs(self):
+        suite, suite_hash = projector.load_snapshot(projector.candidate.SUITE_PATH)
+        bindings, binding_hash = projector.load_snapshot(EVALUATION_ROOT / "development_input_bindings.v2.json")
+        report, outputs = projector.project_batch(suite, bindings, CASE_IDS,
+            suite_sha256=suite_hash, binding_sha256=binding_hash, candidate_version="0.2.2")
+        old_bindings, old_hash = projector.load_snapshot(projector.BINDINGS_PATH)
+        old_report, old_outputs = projector.project_batch(suite, old_bindings, CASE_IDS,
+            suite_sha256=suite_hash, binding_sha256=old_hash)
+        self.assertEqual(old_outputs, outputs)
+        self.assertEqual("nusaibah.pharma_company_intelligence_lab_evaluation:0.2.2",
+                         report["candidate_identity"])
+        self.assertEqual([1, 1, 1, 1, 2], [c["plan"]["child_call_limit"] for c in report["cases"]])
+        self.assertTrue(all(c["plan"]["schema_version"] == "supplied_source_plan.v2" for c in report["cases"]))
+        self.assertNotEqual(old_report["cases"][0]["plan"]["methodology_digest"],
+                            report["cases"][0]["plan"]["methodology_digest"])
+        self.assertFalse(report["execution_allowed"])
+        with self.assertRaisesRegex(projector.ProjectionError, "candidate_identity_mismatch"):
+            projector.project_batch(suite, bindings, CASE_IDS, suite_sha256=suite_hash,
+                                    binding_sha256=binding_hash)
+
+    def test_quote_candidate_cli_selects_version_specific_bindings_without_providers(self):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            code = projector.main(["--case-id", CASE_IDS[0], "--candidate-version", "0.2.2"])
+        report = json.loads(output.getvalue())
+        self.assertEqual(0, code)
+        self.assertEqual("prepared", report["status"])
+        self.assertEqual(0, report["provider_invocations"])
+        self.assertFalse(report["wp1_complete"])
+
     def setUp(self):
         self.suite, self.suite_hash = projector.load_snapshot(projector.candidate.SUITE_PATH)
         self.bindings, self.binding_hash = projector.load_snapshot(projector.BINDINGS_PATH)

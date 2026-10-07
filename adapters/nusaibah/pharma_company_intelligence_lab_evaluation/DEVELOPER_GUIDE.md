@@ -1,12 +1,52 @@
 # Evaluation developer guide
 
+## Quote-selection candidate (0.2.2)
+
+This source-owned development version addresses model-offset arithmetic without weakening evidence checks. Specialists return `supplied_source_specialist.v2` with exact `locator`/`quote` pairs only. Extra `start`/`end` or the old specialist schema rejects before the child call. The orchestrator validates every specialist's closed proposal, makes one signed callable `review_toolkit` call per chunk to `nusaibah.structured_review_toolkit:0.1.1 / resolve_exact_spans`, checks its bound result, and only then builds canonical integer spans for strict validation and local semantic verification.
+
+The resolver returns `resolved` or a closed `rejected` outcome. Missing or ambiguous quotes stop with `evidence_quote_missing` / `evidence_quote_ambiguous` in safe `proof_failure_detail`; no raw response text or offsets are logged. No partial span batch, fuzzy matching, whitespace/Unicode normalization, first-occurrence selection or quote invention is allowed. Valid-looking exact quotes still require semantic support, textual entity attribution, context/qualifier checks, global consistency and independent quality review. This contract does not silently repair historical 0.2.1 responses.
+
+The unchanged source parser freezes the exact snapshot and intact related context. New `supplied_source_methodology.v2` and `supplied_source_plan.v2` identify the resolver version/operation and finite child budget. Maximum four chunks, 6,000 characters per chunk, three specialists in parallel, `4N + 1` logical Agent ceiling (maximum 17), one child per chunk (maximum four), 16 span requests per chunk, 1,800-second deadline and zero repair iterations. Call charges occur before execution. Runtime retry/cancellation/admission remains generic; the parent cannot enlarge a signed child budget.
+
+Specialist Agent chain/contracts use **1.1.0**; their provider/model/generation/timeouts/budgets and no-store policies are unchanged. The semantic verifier remains **1.0.0**, including its definition. The model may not invoke tools; the deterministic call belongs to trusted Python orchestration. All historical adapter modules, the frozen baseline executor and historical manifest version definitions remain unchanged.
+
+Outputs are `supplied_source_review_result.v2` and `pharma_supplied_source_review_summary.v2`. The full result adds `child_call_count`, `toolkit_identity` and one bound `span_resolution_receipts` entry per chunk. Each receipt retains the tool result/request digest, source digest, ordered request IDs and literal spans, including evidence for withheld findings. It does not retain complete prompts or unbounded provider responses. The scalar summary adds only the child count; no source/model text enters that projection. Missing full preview bytes still prevent quality scoring.
+
+The offline projector/evaluator keep their explicit **0.2.1 default**. Select `--candidate-version 0.2.2` to use `development_input_bindings.v2.json`, the new canonical plan and the v2 result schemas. Input source bytes and adjudication do not change; the candidate/methodology and finite plan do. Review templates pin the chosen asset, method, source, input and retained-result identities. The evaluator verifies span-receipt completeness, literal uniqueness, source/request binding, accepted/withheld accounting and child count. Mixed candidate versions or methods cannot form one measured batch. Held-out admission, thresholds, domain scope approval and baseline readiness remain separate gates.
+
+After this source PR is merged, prepare a new offline batch from E: main. This command does not load an env file or invoke OBS/providers:
+
+```powershell
+$ProjectRoot = 'E:\nusaibah_projects\demo_asset_project'
+$IntakeRoot = "$ProjectRoot\adapter-intake-work"
+$Python = "$ProjectRoot\.venv\Scripts\python.exe"
+$Projector = "$IntakeRoot\adapters\nusaibah\pharma_company_intelligence_lab\tests\evaluation\project_development_inputs.py"
+$BatchRoot = Join-Path "$ProjectRoot\runtime-artifacts" ('wp1-quote-inputs-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+& $Python $Projector `
+  --candidate-version 0.2.2 `
+  --case-id company-small-identity-001 `
+  --case-id company-wrong-entity-005 `
+  --case-id company-source-injection-006 `
+  --case-id company-missing-evidence-007 `
+  --case-id company-conflicting-dates-003 `
+  --output-dir $BatchRoot `
+  --pretty
+if ($LASTEXITCODE -ne 0) { throw 'Stop: quote-candidate projection is blocked.' }
+```
+
+`prepared` proves compatibility, with `execution_allowed=false`, `wp1_complete=false`, `wp2_unblocked=false`. The new batch requires the same pending scope/binding review. Do not relabel the first failed 0.2.1 run, use old smoke outputs as this fixture, or fabricate a review receipt.
+
+Release sequence: merge source → official promotion of **both** toolkit 0.1.1 and evaluation 0.2.2 from the same exact commit → review/merge the generated Assets promotion → passed complete wheel and installed module/helper/catalog checks → owned idle worker replacement → exact registration/binding and four-role Agent admission → approved single-case diagnostic execution → retain original preview/usage → independent semantic review and offline evaluation. No manual wheel-version bump, source-only patch to Assets, new env values or S3 changes are part of this repair. The active worker cannot discover these versions merely because source tests pass.
+
+After an admitted new run produces original retained bytes, use the existing evaluator commands with `--candidate-version 0.2.2` for template emission and scoring. A typed rejected run produces no completed preview; preserve its rule and stop before other cases. A successful preview establishes execution, not calibrated quality or WP1 completion. The original unknown subcause of the failed 0.2.1 commercial span remains unknown; invented/ambiguous quotes deliberately remain blockers.
+
 ## Three distinct proof lanes
 
 | Lane | Evidence and authority | What completion proves |
 | --- | --- | --- |
 | Synthetic baseline diagnostics | Synthetic source units; pinned 0.1.12 roles; preview; no mutation/publication | Executed or classified rejected review. It does not establish a positive dossier or WP1 quality measurements. |
 | Positive public-web smoke | Separate reviewed public-company identity/admission and runtime-owned execution | All baseline evidence/quality requirements pass and no writes occur. This lane is not admitted by the synthetic-only evaluation asset. |
-| Future supplied-source review | New source/reference contract, specialist work and evidence-gap outcomes | Findings refer to admitted supplied sources. This capability is not implemented by 0.1.2. |
+| Supplied-source development review | Versioned source/reference contract, specialist work and evidence-gap outcomes | Findings refer to admitted supplied sources; 0.2.2 delegates exact offsets to a deterministic toolkit. This is separate from frozen 0.1.2 replay and independent quality measurement. |
 
 Projection compatibility means bounded inputs fit the frozen executor. It does not establish positive-smoke eligibility. The small identity fixture describes a fictional company; replay searches under `WP1 Synthetic Evaluation company-small-identity-001`. The suite permits complete-with-evidence-gaps outcomes, while frozen 0.1.12 requires provider citations from every research specialist. Preserve the fixture/adjudication and correct the acceptance design; never invent sources or force pass.
 

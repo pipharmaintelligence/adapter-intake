@@ -31,21 +31,26 @@ from test_structured_review_toolkit import fixture
 
 ROOT = Path(__file__).resolve().parents[1]
 SLUGS = ("structured_review_toolkit", "company_review_tools_demo", "policy_review_tools_demo")
-IDENTITIES = tuple("nusaibah." + slug + ":0.1.0" for slug in SLUGS)
+IDENTITIES = (*("nusaibah." + slug + ":0.1.0" for slug in SLUGS),
+              "nusaibah.structured_review_toolkit:0.1.1")
 
 
-def materialize(stage: Path) -> None:
-    for slug in SLUGS:
+def materialize(stage: Path, *, slugs: tuple[str, ...] = SLUGS) -> None:
+    for slug in slugs:
         source = ROOT / "adapters" / "nusaibah" / slug
         yaml = source / "adapter.yaml"
         inspected = inspect_adapter_intake_folder(yaml)
         if inspected.get("status") != "ready":
             raise AssertionError("intake_not_ready: " + json.dumps(inspected))
         options = promotion_options_from_adapter_yaml(yaml)
-        manifest_path = source / (slug + ".asset.json")
+        manifests = list(source.glob("*.asset.json"))
+        if len(manifests) != 1:
+            raise AssertionError("one_intake_manifest_required")
+        manifest_path = manifests[0]
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        selected = manifest["default"]
         plan = build_file_plan(root=source, manifest_path=manifest_path,
-            asset_key=manifest["key"], asset_version="0.1.0", version_manifest=manifest["versions"]["0.1.0"],
+            asset_key=manifest["key"], asset_version=selected, version_manifest=manifest["versions"][selected],
             target_package="python_runtime/adapters/intake/nusaibah/" + slug,
             include_reviewed_helpers=True, reviewed_helpers=options["reviewed_helpers"],
             declared_support_files=options["declared_support_files"])
@@ -81,7 +86,7 @@ def assert_signed_response(response: dict, headers: dict, request: dict, config)
         raise AssertionError("response_digest_mismatch")
     canonical = "\n".join((config.signature_version, runtime_worker.RESPONSE_SCOPE,
         headers[runtime_worker.TIMESTAMP_HEADER], headers[runtime_worker.NONCE_HEADER], digest,
-        request["run"]["workflow_run_uuid"], request["adapter"]["key"], "0.1.0", response["status"]))
+        request["run"]["workflow_run_uuid"], request["adapter"]["key"], request["adapter"]["version"], response["status"]))
     expected = hmac.new(config.shared_secret.encode(), canonical.encode(), hashlib.sha256).hexdigest()
     if not hmac.compare_digest(expected, headers[runtime_worker.SIGNATURE_HEADER]):
         raise AssertionError("response_signature_mismatch")
