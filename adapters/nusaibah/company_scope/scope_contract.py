@@ -138,6 +138,8 @@ def _source_envelope(companies: Any) -> tuple[list[Any], str]:
 
     Envelope conformance is not authentication. Assets/Core must establish
     binding origin, fixed query predicates, and projection before hydration.
+    Assets/Core own page budgets; pages_read is metadata, not iteration.
+    Complete bounded results may span several server-retrieved pages.
     """
     if not isinstance(companies, dict) or set(companies) != _ENVELOPE_FIELDS:
         _fail("source_invalid")
@@ -156,7 +158,7 @@ def _source_envelope(companies: Any) -> tuple[list[Any], str]:
     if (provenance["source"] != "dlm_node" or provenance["authority"] != "dlm_node"
             or provenance["node_key"] != "companies"
             or not isinstance(lake_id, str) or _SAFE_REFERENCE.fullmatch(lake_id) is None
-            or type(provenance["pages_read"]) is not int or provenance["pages_read"] != 1
+            or type(provenance["pages_read"]) is not int or provenance["pages_read"] <= 0
             or provenance.get("input_mode") not in (None, "bounded_query")):
         _fail("source_invalid")
     return records, lake_id

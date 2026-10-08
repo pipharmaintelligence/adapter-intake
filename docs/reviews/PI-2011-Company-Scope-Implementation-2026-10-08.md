@@ -15,7 +15,8 @@ PI-2011's overall live milestone is not closed by local tests.
 - Required id/company/corporate_id with corporate integer 1; approved optional
   address, numeric headquarters country FK, website, and source updated text.
 - Exact returned ID-set checks. Missing/extra/duplicate/wrong-corporate rows,
-  partial envelopes, unapproved fields, and extra pages fail without outputs.
+  partial envelopes, unapproved fields, and invalid page metadata fail without
+  outputs. Complete bounded results may span several server-retrieved pages.
 - Immutable typed intermediate contracts, fresh per-company outputs, and
   reproducible content digests. No fabricated schema revision/retrieval time.
 - Full CompanyContext result plus scalar summary, explicitly resolved_rows_only
@@ -25,7 +26,7 @@ PI-2011's overall live milestone is not closed by local tests.
 - README and developer guide covering contracts, limits, server gates,
   official promotion, and later CompanyContext-aware consumer integration.
 
-## Validation
+## Initial implementation validation
 
 | Check | Result |
 | --- | --- |
@@ -76,3 +77,54 @@ promotion workflow when promotion is authorized and these gates are proven.
 6. Separate existing governed memory preview/apply/readback/history proof.
 
 No provider/live run or promotion workflow was dispatched for this implementation.
+
+## Multi-page contract revision — 2026-10-08
+
+The first candidate unnecessarily required pages_read=1. Regression tests
+reproduced rejection of otherwise complete multi-page results in direct, flat,
+and packaged execution. The validation now accepts any positive strict integer
+page count while retaining complete-envelope, exact-ID, corporate, field, and
+25-company batch checks. Page count is transport metadata, not authenticated
+policy or an instruction to loop. Output content/digests remain identical for
+the same normalized selector and resolved records across page layouts.
+
+Reuse the existing Core signed pagination and Assets bounded_query aggregation.
+The binding descriptor's limit=25 is a page size, not the platform's total
+company ceiling. Server page/row/time limits remain authoritative; partial
+results after a cap are rejected even if requested rows happen to be present.
+README/developer guide separate page size, adapter batch size, and whole-workflow
+scope and document the existing async checkpoint path and future batch gates.
+
+Missing/empty selection still fails. All-company selection, larger total scopes,
+a coordinator, full_dump_async input, downstream execution, and server-policy
+changes are not implemented by this revision. No runtime upgrade is needed.
+The PR remains draft with the original governed live/promotion gates open.
+
+### Pagination source references (not promoted)
+
+- [Core query and signed cursor policy](https://github.com/piusaibah/dlm_core/blob/cbf42257b1b6906e35e8e88fc82e05c97d824d5c/app/Services/Lake/Dlm/Operations/DlmNodeBrokeredQueryRuntimeService.php).
+- [Assets cursor aggregation and policy caps](https://github.com/piusaibah/assets/blob/82c45db96330766e223d7ca1af45da4af5b69447/app/Services/Observability/Dlm/DlmNodeOperationRuntimeClient.php).
+- [Assets input delivery and async page checkpoints](https://github.com/piusaibah/assets/blob/82c45db96330766e223d7ca1af45da4af5b69447/app/Ai/Actions/PythonAdapterInputResolver.php).
+
+The declared package guide uses repository/path/commit references because
+the installed intake guard forbids URLs in all declared package files.
+No guard exception or runtime change was needed.
+
+### Revision validation
+
+- PASS: 33 Company Scope tests, including multi-page order/digest parity,
+  the 25-company boundary, malformed page counts, cap-limited partial inputs,
+  exact result-set/corporate checks, no invocation, and flat/packaged imports.
+- PASS: existing 264 pharma, 90 evaluation, 41 toolkit, 12 exact-span, and 1
+  intake-contract tests. Total local unit tests after this revision: 441.
+- PASS: real installed SDK fixture discovery/invocation/response validation for
+  two synthetic companies delivered across two source pages, with socket
+  connections blocked and zero Agent/child/mutable/adapter-query calls.
+- PASS: exact obs-adapter-intake-check and local obs-asset-diagnose --quick;
+  no network, mutation, or remote admission check. E runtime remains 0.1.104.
+- PASS: diff/declared-file checks. Only Scope validation, Scope tests, and its
+  documentation/report changed; manifest, dependencies, server source, bindings,
+  workers, runtime wheel, and existing pharma/evaluation/toolkit are unchanged.
+
+These are offline contract/package proofs, not real Companies pagination,
+binding authorization, source projection, or downstream live evidence.

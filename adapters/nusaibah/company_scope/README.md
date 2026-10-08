@@ -66,6 +66,7 @@ Rules:
 - Ascending inclusive ranges; reject reversed ranges before expansion.
 - Reject extra options, fields, corporate overrides, and mixed selector forms.
 - All requested IDs must resolve after corporate scoping. No partial mode.
+- Missing selectors and empty lists fail; neither means all companies.
 
 `normalize_selector()` is a pure specification for server preparation and
 adapter defense. Using it during adapter execution does not supply the missing
@@ -78,8 +79,10 @@ single/range live preparation is not established by this candidate.
 `records`, `row_count`, `exactness`, `partial_reason`, and `provenance`.
 Require exactness `exact`, no partial reason, at most 25 rows, matching count,
 source/authority `dlm_node`, node key `companies`, a safe logical lake ID,
-and one source page. Optional input mode may be `bounded_query`.
-Bare lists, lazy descriptors, full dumps, extra pages, and unknown fields fail.
+and a positive integer `pages_read` (excluding booleans). Optional input mode
+may be `bounded_query`. Complete results aggregated by Assets across multiple
+pages are accepted; pagination limits and cursor handling remain server-owned.
+Bare lists, lazy descriptors, full dumps, partial results, and unknown fields fail.
 
 Approved row fields:
 
@@ -98,6 +101,25 @@ fields. Strings are bounded and never silently truncated. Missing optional
 fields become null. Country names, city, registration number, and status are
 not fabricated. Corporate membership is a business invariant, separate from
 client/lake authorization.
+
+## Page size, batch size, and larger selections
+
+These are separate controls:
+
+- **Page size:** Assets/Core determine how many rows each query request returns.
+  The reviewed binding descriptor uses 25 as its page size. Existing Assets
+  pagination can aggregate further pages under the authorized server policy.
+- **Adapter batch size:** at most 25 raw requested IDs, 25 IDs in an inclusive
+  range, and 25 returned rows per Scope invocation. Multiple source pages do
+  not increase this ceiling or initiate another query from Python.
+- **Total workflow scope:** larger selections need explicit server coordination,
+  a total company cap, checkpoints, and per-company execution budgets. This
+  candidate does not implement that coordinator or an all-companies selector.
+
+Use existing Assets/Core pagination; do not duplicate cursor or retry loops in
+this adapter. Hitting a page, row, or time cap yields an incomplete source and
+must fail Scope even when some requested records are already present.
+See DEVELOPER_GUIDE.md for the existing paths and future batch handoff rules.
 
 ## Outputs
 

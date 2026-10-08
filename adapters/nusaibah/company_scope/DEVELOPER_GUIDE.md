@@ -23,8 +23,10 @@ Source inspection established:
 - Assets node_query uses ordinary `filters_from_variables.id = company_ids`.
   Arrays reach Core's governed whereIn implementation. This is not a partition
   filter and requires no artificial materialized projection.
-- Reviewed Assets descriptors cap rows at 25 but do not provide a locked
-  corporate predicate or selected columns. Core's default projection includes
+- Reviewed Assets binding descriptors set page size 25, not a total-result
+  ceiling. The existing Assets query client follows cursors and aggregates
+  bounded results. These descriptors do not provide a locked corporate
+  predicate or selected columns. Core's default projection includes
   schema columns; its reviewed exact-key denylist does not exclude remember_token.
 - The safe node-query envelope includes rows, exactness, count, and logical
   provenance. It does not expose retrieved_at or source schema version.
@@ -71,8 +73,10 @@ The only selectors are company_id, company_ids, or from_company_id plus
 to_company_id. Unknown fields are rejected. Positive integer ceiling is
 2**63-1. List raw length and inclusive range width are capped at 25 before
 normalization/expansion. Input duplicates are removed in first-occurrence order;
-duplicate returned rows always fail. No resumable cursor, pagination, while loop,
-automatic retry, partial selection, or mutable operation exists in this asset.
+duplicate returned rows always fail. Missing selectors and empty lists are
+invalid, never an implicit all-companies request. This asset consumes complete
+server-aggregated results; it owns no cursor, pagination loop, automatic retry,
+partial selection, or mutable operation.
 
 Resolved envelope required keys:
 
@@ -81,7 +85,8 @@ Resolved envelope required keys:
 - exactness: exact;
 - partial_reason: null;
 - provenance: source=dlm_node, authority=dlm_node, node_key=companies, a safe
-  logical lake_id, pages_read=1; optional input_mode=bounded_query or null.
+  logical lake_id, and positive strict integer pages_read; optional
+  input_mode=bounded_query or null. Multi-page bounded results are accepted.
 
 No broader envelopes or materialization extensions are silently accepted.
 Schema/projection changes require explicit contract review and new versioning.
@@ -93,6 +98,71 @@ website max 2048, updated_at max 64. Null/blank optional strings become null;
 other types or oversized values fail instead of being truncated. headquarter
 is a country ID, never a country name or a city. updated_at is preserved source
 text, not a verified timezone or freshness claim.
+
+## Reuse existing server pagination
+
+Pagination is already implemented. The relevant reviewed source is below.
+Clickable source links are retained in the non-promoted PI-2011 review
+report; declared package files follow the intake guard's no-URL policy.
+
+- Core governed query and cursor policy,
+  `dlm_core:app/Services/Lake/Dlm/Operations/DlmNodeBrokeredQueryRuntimeService.php`
+  at `cbf42257b1b6906e35e8e88fc82e05c97d824d5c`:
+  the current minted defaults are up to 500 rows per page, 20 client pages,
+  10,000 client rows, and a 30-second query budget. Signed cursors bind the query
+  selector, page size, and client/lake/node authority. These are defaults in
+  this service, not permission for an asset to process every company.
+- Assets query client,
+  `assets:app/Services/Observability/Dlm/DlmNodeOperationRuntimeClient.php`
+  at `82c45db96330766e223d7ca1af45da4af5b69447`:
+  bounded_query already follows next_cursor and aggregates records under the
+  supplied page/row/time policy. It reports pages_read and exactness, and marks
+  cap-limited results partial. Smaller page sizes also reduce the effective
+  maximum reachable under the page cap: 25 rows times 20 pages is at most 500
+  rows, even if the row-policy ceiling is 10,000. Time/policy may reduce it further.
+- Assets input resolver and checkpoints,
+  `assets:app/Ai/Actions/PythonAdapterInputResolver.php`
+  at `82c45db96330766e223d7ca1af45da4af5b69447`:
+  full_dump_async has page/checkpoint handling. That mode emits a different
+  envelope and is not admitted by this Scope contract. Reusing its orchestration
+  for a future batch handoff needs an explicit compatible server contract.
+
+Scope checks that pages_read is a positive integer; it does not authenticate
+that metadata, recreate the signed policy, impose its own page ceiling, or
+iterate pages_read times. Adapter work is bounded by the selector/row limit 25
+and field-size limits. Assets/Core remain responsible for enforced pagination
+budgets and trusted input origin. DTO/result content digests are independent of
+page count when the resolved records and selector are identical.
+
+A partial_reason such as more_pages_available, client_pagination_cap_reached,
+max_pages_reached, max_rows_reached, or timeout_reached fails Scope. Completing
+one source page is not proof of complete company selection. Never relabel a
+partial source exact or strip its metadata to bypass validation.
+
+### Future larger-scope batch handoff (not implemented)
+
+Keep the 25-company limit per Scope invocation. A larger explicit list, wider
+range, or future all selector belongs to an authorized server coordinator:
+
+1. Admit the whole selection before retrieval, enforce a total company cap,
+   fixed corporate_id=1, client/lake authorization, and approved columns.
+2. Establish stable selected membership and ordering; offset pagination alone
+   does not guarantee a snapshot if the source changes between requests.
+3. Reuse existing server paging/checkpoints to prepare batches of at most 25
+   selected IDs and their complete, exact records. Scope validates each batch
+   against its own declared IDs. No Companies re-query occurs downstream.
+4. Track batch completion separately from overall selection completion. Reaching
+   a cap, missing records, or unfinished continuation must remain incomplete.
+   Version any new handoff envelope explicitly; full_dump_async cannot be passed
+   directly or disguised as a bounded-query proof.
+5. Persist server-owned progress and prevent duplicate processing on resume.
+   Define finite retry/deadline/concurrency and total Agent/tool budgets separately
+   from retrieval limits; batch selection alone authorizes no paid execution.
+
+None of these future coordination rules introduces Python SQL/HTTP, a second
+pagination engine, new persistence authority, or an implicit all default. Use
+standard promotion after the standalone server gates; no runtime upgrade is
+required for accepting an already-complete multi-page bounded-query envelope.
 
 ## Digest and authority
 
@@ -121,7 +191,8 @@ The intake workflow runs tests/test_company_scope.py with the existing
 import-time Adapter stub for Python-only CI. Tests cover selector equivalence,
 pre-allocation caps, strict types, ordering/deduplication, actual field mappings,
 unknown/sensitive fields, corporate checks, exact result sets, partial query
-metadata, source identity, safe errors, digest binding, output isolation,
+metadata, positive page counts, complete multi-page aggregation, unchanged
+batch caps, source identity, safe errors, digest binding, output isolation,
 zero invocation, and flat/packaged imports. CI still runs the existing pharma,
 evaluation, and shared-toolkit suites.
 

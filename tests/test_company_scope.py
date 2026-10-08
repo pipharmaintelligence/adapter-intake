@@ -39,13 +39,13 @@ def row(identifier=1001):
     return {"id": identifier, "company": f"Synthetic Company {identifier}", "corporate_id": 1}
 
 
-def envelope(records=None):
+def envelope(records=None, *, pages_read=1):
     records = copy.deepcopy(records if records is not None else [row()])
     return {"records": records, "row_count": len(records), "exactness": "exact",
             "partial_reason": None,
             "provenance": {"source": "dlm_node", "authority": "dlm_node",
                            "lake_id": "synthetic_companies_lake", "node_key": "companies",
-                           "pages_read": 1}}
+                           "pages_read": pages_read}}
 
 
 class CompanyScopeContractTests(unittest.TestCase):
@@ -214,11 +214,18 @@ class CompanyScopeContractTests(unittest.TestCase):
                              {"company_id": 1001}, envelope([record]))
 
     def test_partial_query_is_rejected_even_when_requested_rows_are_present(self):
-        for changes in ({"exactness": "partial"}, {"partial_reason": "more_pages_available"},
-                        {"exactness": "unknown"}):
-            source = envelope()
-            source.update(changes)
-            self.assert_code("source_incomplete", contract.build_scope_result, {"company_id": 1001}, source)
+        for pages_read in (1, 3):
+            for changes in ({"exactness": "partial"}, {"exactness": "unknown"},
+                            {"partial_reason": "more_pages_available"},
+                            {"partial_reason": "client_pagination_cap_reached"},
+                            {"partial_reason": "max_pages_reached"},
+                            {"partial_reason": "max_rows_reached"},
+                            {"partial_reason": "timeout_reached"}):
+                with self.subTest(pages_read=pages_read, changes=changes):
+                    source = envelope(pages_read=pages_read)
+                    source.update(changes)
+                    self.assert_code("source_incomplete", contract.build_scope_result,
+                                     {"company_id": 1001}, source)
 
     def test_incomplete_or_unknown_envelope_metadata_is_rejected(self):
         for value in ([row()], {"records": [row()]}, None):
@@ -231,10 +238,9 @@ class CompanyScopeContractTests(unittest.TestCase):
         source["token"] = "PRIVATE_SENTINEL_DO_NOT_ECHO"
         self.assert_code("source_invalid", contract.build_scope_result, {"company_id": 1001}, source)
 
-    def test_source_identity_full_dump_or_extra_pages_are_rejected(self):
+    def test_source_identity_and_full_dump_are_rejected(self):
         for field, value in (("source", "direct"), ("authority", "caller"), ("node_key", "other_node"),
                              ("lake_id", "https://private.invalid/path"), ("lake_id", 1),
-                             ("pages_read", 2), ("pages_read", True), ("pages_read", 0),
                              ("input_mode", "full_dump_async"), ("token", "PRIVATE_SENTINEL_DO_NOT_ECHO")):
             source = envelope()
             source["provenance"][field] = value
@@ -245,6 +251,55 @@ class CompanyScopeContractTests(unittest.TestCase):
         source = envelope()
         del source["provenance"]["node_key"]
         self.assert_code("source_invalid", contract.build_scope_result, {"company_id": 1001}, source)
+
+    def test_complete_multipage_results_preserve_order_and_content_digests(self):
+        selector = {"company_ids": [1003, 1001, 1003, 1002]}
+        records = [row(1001), row(1002), row(1003)]
+        expected = contract.build_scope_result(selector, envelope(records))
+        for pages_read in (2, 3):
+            with self.subTest(pages_read=pages_read):
+                source = envelope(records, pages_read=pages_read)
+                source["provenance"]["input_mode"] = "bounded_query"
+                before = copy.deepcopy(source)
+                response = adapter_module.CompanyScopeAdapter().invoke(
+                    {"variables": selector, "companies": source}, {})
+                self.assertEqual(expected, response["outputs"]["company_scope_result"])
+                self.assertEqual([1003, 1001, 1002],
+                                 [item["company_id"] for item in expected["contexts"]])
+                self.assertEqual(1, expected["duplicate_id_count"])
+                self.assertFalse(response["outputs"]["company_scope_summary"]["runtime_authority_verified"])
+                self.assertEqual(before, source)
+
+    def test_complete_multipage_batch_at_company_limit_is_accepted(self):
+        identifiers = list(range(1001, 1026))
+        result = contract.build_scope_result(
+            {"company_ids": identifiers},
+            envelope([row(identifier) for identifier in reversed(identifiers)], pages_read=5))
+        self.assertEqual(25, result["company_count"])
+        self.assertEqual(identifiers, [item["company_id"] for item in result["contexts"]])
+        self.assertTrue(result["complete"])
+
+    def test_multipage_input_cannot_bypass_batch_and_record_checks(self):
+        wrong_corporate = row(1002)
+        wrong_corporate["corporate_id"] = 2
+        for records, code in (([row(i) for i in range(1001, 1027)], "rows_invalid"),
+                              ([row(1001)], "result_set_mismatch"),
+                              ([row(1001), row(1003)], "result_set_mismatch"),
+                              ([row(1001), row(1001)], "row_duplicate"),
+                              ([row(1001), wrong_corporate], "corporate_scope_mismatch")):
+            with self.subTest(code=code):
+                self.assert_code(code, contract.build_scope_result,
+                                 {"company_ids": [1001, 1002]},
+                                 envelope(records, pages_read=2))
+        self.assert_code("selector_limit_exceeded", contract.build_scope_result,
+                         {"company_ids": list(range(1001, 1027))},
+                         envelope([row(i) for i in range(1001, 1026)], pages_read=5))
+
+    def test_pages_read_requires_a_positive_strict_integer(self):
+        for value in (None, True, False, 0, -1, "2", 2.0, [], {}):
+            with self.subTest(value=value):
+                self.assert_code("source_invalid", contract.build_scope_result,
+                                 {"company_id": 1001}, envelope(pages_read=value))
 
     def test_context_and_result_digests_are_reproducible_and_content_bound(self):
         result = contract.build_scope_result({"company_id": 1001}, envelope())
@@ -278,7 +333,8 @@ class CompanyScopeContractTests(unittest.TestCase):
             def forbidden(self, *args, **kwargs):
                 raise AssertionError("Scope must only consume prepared roles")
             invoke = invoke_agent = invoke_asset = invoke_tool = forbidden
-        inputs = NoInvocationInputs(variables={"company_id": 1001}, companies=envelope())
+        inputs = NoInvocationInputs(variables={"company_ids": [1001, 1002]},
+                                    companies=envelope([row(1001), row(1002)], pages_read=2))
         response = adapter_module.CompanyScopeAdapter().invoke(inputs, {})
         self.assertEqual("success", response["status"])
         self.assertEqual(0, response["metrics"]["agent_call_count"])
@@ -354,14 +410,15 @@ class CompanyScopePackagingTests(unittest.TestCase):
                     module = "adapters.intake.nusaibah.company_scope.company_scope_adapter"
                 for filename in ("company_scope_adapter.py", "scope_contract.py"):
                     shutil.copy2(ASSET / filename, destination / filename)
-                inputs = {"variables": {"company_id": 1001}, "companies": envelope()}
+                inputs = {"variables": {"company_ids": [1001, 1002]},
+                          "companies": envelope([row(1002), row(1001)], pages_read=2)}
                 code = f"""
 import importlib, json, sys
 before = list(sys.path)
 module = importlib.import_module({module!r})
 assert before == sys.path
 response = module.CompanyScopeAdapter().invoke(json.loads({json.dumps(inputs)!r}), {{}})
-assert response['outputs']['company_scope_result']['company_count'] == 1
+assert response['outputs']['company_scope_result']['company_count'] == 2
 assert response['metrics']['agent_call_count'] == 0
 """
                 env = os.environ.copy()
