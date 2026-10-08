@@ -1,0 +1,25 @@
+{
+  "key": "nusaibah.company_scope",
+  "default": "0.1.0",
+  "allowed_surfaces": ["v1_asset_execute"],
+  "allowed_modes": ["balanced"],
+  "execution": {
+    "allowed_substrates": ["local_worker"],
+    "default_substrate": "local_worker",
+    "timeout_seconds": 60
+  },
+  "versions": {
+    "0.1.0": {
+      "state": "active",
+      "allow_resume": false,
+      "inputs": {
+        "companies": {"required": true, "source": "binding", "shape": "object"},
+        "variables": {"required": true, "source": "direct", "shape": "object"}
+      },
+      "outputs": {
+        "company_scope_result": {"required": true, "shape": "object"},
+        "company_scope_summary": {"required": true, "shape": "object"}
+      }
+    }
+  }
+}

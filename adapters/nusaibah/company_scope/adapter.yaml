@@ -1,0 +1,17 @@
+asset_key: nusaibah.company_scope
+asset_version: 0.1.0
+package_target: python_runtime/adapters/intake/nusaibah/company_scope
+manifest: company_scope.asset.json
+adapter_module: company_scope_adapter.py
+reviewed_helpers:
+  - scope_contract.py
+dependency_manifest: adapter.dependencies.json
+optional_files:
+  - README.md
+  - DEVELOPER_GUIDE.md
+release_stage: development
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false
