@@ -164,10 +164,13 @@ def _source_envelope(companies: Any) -> tuple[list[Any], str]:
     return records, lake_id
 
 
-def assemble_contexts(request: ScopeRequest, companies: Any) -> tuple[CompanyContext, ...]:
-    records, lake_id = _source_envelope(companies)
+def assemble_record_contexts(
+    records: Any, lake_id: str, *, requested_ids: set[int] | None = None,
+) -> tuple[CompanyContext, ...]:
+    """Shared bounded row validation; source admission stays with each envelope."""
+    if not isinstance(records, list) or len(records) > MAX_COMPANY_IDS:
+        _fail("rows_invalid")
     by_id: dict[int, CompanyContext] = {}
-    requested_ids = set(request.company_ids)
     for row in records:
         if not isinstance(row, dict):
             _fail("rows_invalid")
@@ -176,7 +179,7 @@ def assemble_contexts(request: ScopeRequest, companies: Any) -> tuple[CompanyCon
         company_id = _positive_id(row["id"])
         if company_id in by_id:
             _fail("row_duplicate")
-        if company_id not in requested_ids:
+        if requested_ids is not None and company_id not in requested_ids:
             _fail("result_set_mismatch")
         if type(row["corporate_id"]) is not int or row["corporate_id"] != CORPORATE_ID:
             _fail("corporate_scope_mismatch")
@@ -194,6 +197,14 @@ def assemble_contexts(request: ScopeRequest, companies: Any) -> tuple[CompanyCon
             source_updated_at=_text(row.get("updated_at"), 64),
             lake_id=lake_id,
         )
+    return tuple(by_id.values())
+
+
+def assemble_contexts(request: ScopeRequest, companies: Any) -> tuple[CompanyContext, ...]:
+    records, lake_id = _source_envelope(companies)
+    requested_ids = set(request.company_ids)
+    contexts = assemble_record_contexts(records, lake_id, requested_ids=requested_ids)
+    by_id = {item.company_id: item for item in contexts}
     if set(by_id) != requested_ids:
         _fail("result_set_mismatch")
     return tuple(by_id[company_id] for company_id in request.company_ids)

@@ -128,3 +128,10 @@ No guard exception or runtime change was needed.
 
 These are offline contract/package proofs, not real Companies pagination,
 binding authorization, source projection, or downstream live evidence.
+
+## Native full-dump follow-up
+
+Development 0.1.1 now projects native full-dump pages; 0.1.0 retains bounded
+selection. See PI-2011-Company-Scope-Full-Dump-Compatibility-2026-10-08.md
+for the implemented page contract, verified framework lifecycle, and exact
+governed binding admission/retention gates. No live/full-selection proof is claimed.

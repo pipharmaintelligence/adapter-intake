@@ -1,4 +1,4 @@
-# Company Scope 0.1.0
+# Company Scope â€” bounded 0.1.0 and native-page 0.1.1
 
 PI-2011: additive, deterministic CompanyContext assembly from the existing
 binding-only Companies input. The working pharma/evaluation 0.2.3 path and its
@@ -11,7 +11,7 @@ Keep the intake PR draft and do not promote, register, enable, or live-launch
 until the server readiness gates in DEVELOPER_GUIDE.md have evidence.
 
 The runtime requires an active default in a valid manifest. Consequently
-`versions.0.1.0.state = active` is a supported manifest declaration, not proof
+`versions.*.state = active` is a supported manifest declaration, not proof
 that a server binding, query policy, or downstream handoff has been installed.
 `release_stage: development` is intake metadata; it is not a runtime security
 switch. The required `companies` role is binding-only, never caller-provided
@@ -20,8 +20,9 @@ live data.
 Python validates the rows it receives. It cannot enforce which rows/columns
 Core fetched before hydration, authenticate a copied provenance object, or
 retroactively prepare a selector for an already-executed query. Every output
-therefore says `validation_scope = resolved_rows_only` and
-`runtime_authority_verified = false`.
+therefore keeps `runtime_authority_verified = false`. Bounded outputs use
+`validation_scope = resolved_rows_only`; native-page outputs use
+`validation_scope = resolved_page_only`.
 
 ## Responsibilities
 
@@ -41,9 +42,9 @@ Dynamic Skill calls, callable children, retries, or downstream orchestration.
 The Companies operation remains Core-owned. Memory/history remains owned by
 Core/Dynamic Skill. The memory boundary denotes write authority, not failure.
 
-## Selectors
+## Bounded selection â€” version 0.1.0
 
-Supply exactly one form in `variables`:
+Use asset version `0.1.0` and supply exactly one form in `variables`:
 
 ```json
 {"company_id": 1001}
@@ -73,7 +74,7 @@ adapter defense. Using it during adapter execution does not supply the missing
 pre-query server stage. Current `id <- company_ids` list membership is supported;
 single/range live preparation is not established by this candidate.
 
-## Resolved Companies contract
+## Resolved bounded Companies contract â€” version 0.1.0
 
 `companies` must match the current Assets `safeDlmNodePythonInputPayload`:
 `records`, `row_count`, `exactness`, `partial_reason`, and `provenance`.
@@ -114,14 +115,56 @@ These are separate controls:
   not increase this ceiling or initiate another query from Python.
 - **Total workflow scope:** larger selections need explicit server coordination,
   a total company cap, checkpoints, and per-company execution budgets. This
-  candidate does not implement that coordinator or an all-companies selector.
+  candidate does not implement whole-selection coordination. Version 0.1.1
+  below accepts explicit all_authorized intent and one already-prepared page;
+  it does not enable server dump admission.
 
 Use existing Assets/Core pagination; do not duplicate cursor or retry loops in
 this adapter. Hitting a page, row, or time cap yields an incomplete source and
 must fail Scope even when some requested records are already present.
 See DEVELOPER_GUIDE.md for the existing paths and future batch handoff rules.
 
-## Outputs
+## Native full-dump pages â€” development version 0.1.1
+
+Version 0.1.1 requires an explicit semantic selection:
+
+```json
+{"selection": "all_authorized"}
+```
+
+The required Companies role remains binding-only. Caller selection does not
+switch server query mode, authorize a dump, or supply company records. The
+current governed binding service rejects full-dump enablement and fixes its
+query mode to bounded_query; this candidate is not live-admitted there.
+
+The new adapter consumes the existing safe full_dump_async page envelope:
+records, row_count, exactness, partial_reason, and provenance containing logical
+source/authority/lake/node, pages_read=1, input_mode=full_dump_async, page_index,
+and record_offset. No cursor, next URL, credential, or checkpoint is passed to
+Python. Every page is capped at 25 approved company rows with corporate_id=1.
+
+Normal continuation (partial / more_pages_available) is accepted without
+relabeling the source exact. Policy/time caps, unknown/inconsistent states,
+malformed positions, and an empty nonterminal page fail. An empty exact terminal
+page is valid. Server ordering is preserved and the same row checks/DTOs used by
+0.1.0 apply. Cross-page membership, progress, and retries remain server-owned.
+
+Output `company_scope_page` uses company_scope_page.v1:
+
+- batch_complete=true: all rows in this delivered page were validated;
+- source_exhausted=false for continuation, true for an exact terminal page;
+- selection_complete=null: the adapter cannot attest earlier-page processing;
+- completion_scope=current_page, original source exactness/partial reason,
+  page position, bounded contexts, and a deterministic content/position digest.
+
+The scalar company_scope_summary contains no company names, IDs, or digests.
+Resume is declared for 0.1.1 so the framework can invoke another prepared page;
+the adapter has no resume loop, checkpoint persistence, or accumulated history.
+Declare/enable no live binding until the developer-guide admission, asynchronous
+queue, per-page retention/readback, scope/projection, and total-budget gates pass.
+An active default or allow_resume declaration does not satisfy those gates.
+
+## Outputs â€” bounded version 0.1.0
 
 - `company_scope_result`: versioned envelope containing caller-ordered
   `contexts`, requested IDs, counts, complete status, and content digest.
@@ -144,7 +187,7 @@ and every invocation receives fresh mutable output dictionaries.
 $IntakeRoot = 'E:\nusaibah_projects\demo_asset_project\adapter-intake-work'
 $Python = 'E:\nusaibah_projects\demo_asset_project\.venv\Scripts\python.exe'
 Set-Location -LiteralPath $IntakeRoot
-& $Python -m unittest discover -s tests -p 'test_company_scope.py' -v
+& $Python -m unittest discover -s tests -p 'test_company_scope*.py' -v
 & 'E:\nusaibah_projects\demo_asset_project\.venv\Scripts\obs-adapter-intake-check.exe' `
     --adapter-yaml "$IntakeRoot\adapters\nusaibah\company_scope\adapter.yaml" --pretty
 ```
@@ -160,7 +203,7 @@ Use the official adapter-intake promotion workflow after server gates are
 proven. Do not hand-copy this candidate into Assets, edit packaged source,
 upgrade the E runtime, or replace existing production bindings.
 
-The manifest currently admits `local_worker` only and does not declare a
+Both versions admit `local_worker` only and do not declare a
 callable contract. A parent around the existing 0.2.3/toolkit chain conflicts
 with the reviewed nesting restriction. Workflow handoff and a future
 CompanyContext-aware consumer need separate manifest, authority, and regression
