@@ -29,7 +29,7 @@ therefore keeps `runtime_authority_verified = false`. Bounded outputs use
 ```text
 Caller selector
   -> Assets: validate/normalize before retrieval [server gate]
-  -> Core: authorized Companies query, corporate_id=1, approved columns [server gate]
+  -> Core: authorized Companies query, source `corporate=1`, approved columns [server gate]
   -> Company Scope: exact-set checks and CompanyContext[] [this asset]
   -> OBS: future bounded handoff [separate proof]
   -> compatible analysis consumer -> existing governed memory flow
@@ -85,13 +85,14 @@ may be `bounded_query`. Complete results aggregated by Assets across multiple
 pages are accepted; pagination limits and cursor handling remain server-owned.
 Bare lists, lazy descriptors, full dumps, partial results, and unknown fields fail.
 
-Approved row fields:
+Approved row fields (the source has both `corporate` and `corporate_id`; only
+`corporate` expresses membership and is projected):
 
 | Source | CompanyContext |
 | --- | --- |
 | `id` | `company_id` (required) |
 | `company` | `company_name` (required, nonblank) |
-| `corporate_id` | `corporate_id` (required integer 1) |
+| `corporate` | `corporate_id` (required integer 1) |
 | `address_line1`, `address_line2` | Same names, optional |
 | `headquarter` | `headquarters_country_id`, optional positive country FK |
 | `website` | `website`, optional |
@@ -141,7 +142,7 @@ The new adapter consumes the existing safe full_dump_async page envelope:
 records, row_count, exactness, partial_reason, and provenance containing logical
 source/authority/lake/node, pages_read=1, input_mode=full_dump_async, page_index,
 and record_offset. No cursor, next URL, credential, or checkpoint is passed to
-Python. Every page is capped at 25 approved company rows with corporate_id=1.
+Python. Every page is capped at 25 approved company rows with source `corporate=1`.
 
 Normal continuation (partial / more_pages_available) is accepted without
 relabeling the source exact. Policy/time caps, unknown/inconsistent states,

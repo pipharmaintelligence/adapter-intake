@@ -22,7 +22,7 @@ upgrade, add a runtime wheel, or claim ECS/callable admission.
 Source inspection established:
 
 - Canonical published `companies` metadata: primary `id`, name `company`,
-  corporate FK `corporate_id`, address fields, and country FK `headquarter`.
+  corporate membership field `corporate` (distinct from source `corporate_id`), address fields, and country FK `headquarter`.
   This is published metadata, not a fresh physical-table introspection proof.
 - Assets node_query uses ordinary `filters_from_variables.id = company_ids`.
   Arrays reach Core's governed whereIn implementation. This is not a partition
@@ -53,10 +53,10 @@ safe-field rejection as proof that unsafe fields never reached Python.
    prefetched input. The primitive intentionally calls neither inputs.invoke
    nor a new remote callback. Server preparation remains work in Assets/Core.
 3. **Non-overridable predicate:** Core/Assets enforce id membership AND
-   corporate_id=1 through trusted policy. Reject caller predicate conflicts;
-   do not map corporate_id from launch variables. Corporate group is not a
+   corporate=1 through trusted policy. Reject caller predicate conflicts;
+   do not map corporate from launch variables. Corporate group is not a
    substitute for tenant/client/lake access policy.
-4. **Projection before hydration:** fetch only id, company, corporate_id,
+4. **Projection before hydration:** fetch only id, company, corporate,
    address_line1, address_line2, headquarter, website, and updated_at (or an
    approved subset containing the three required fields). Keep remember_token
    and unrelated account/admin columns outside Python, logs, and output.
@@ -178,7 +178,7 @@ it neither requests continuation nor authorizes a binding. Keep these gates open
    reviewed generic server contract, not direct Companies data, a model-role
    workaround, or removal of the rejection to get a run accepted.
 2. **Scope/projection:** preserve the mandatory approved binding, fixed
-   corporate_id=1, authorized client/lake, and approved fields before hydration.
+   corporate=1, authorized client/lake, and approved fields before hydration.
 3. **Continuation:** reuse existing success-validated InputPageCommitPlan,
    checkpoint coordinator, completion guard, and dispatcher. Automatic dispatch
    requires an asynchronous queue; sync leaves an explicit waiting state.
@@ -207,7 +207,7 @@ Keep the 25-company limit per Scope invocation. A larger explicit list, wider
 range, or admitted all_authorized selection belongs to authorized server coordination:
 
 1. Admit the whole selection before retrieval, enforce a total company cap,
-   fixed corporate_id=1, client/lake authorization, and approved columns.
+   fixed corporate=1, client/lake authorization, and approved columns.
 2. Establish stable selected membership and ordering; offset pagination alone
    does not guarantee a snapshot if the source changes between requests.
 3. Reuse existing server paging/checkpoints. For selected-ID batches, prepare

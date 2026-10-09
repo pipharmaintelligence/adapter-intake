@@ -7,12 +7,12 @@
       {
         "id": 1001,
         "company": "Synthetic Alpha",
-        "corporate_id": 1
+        "corporate": 1
       },
       {
         "id": 1002,
         "company": "Synthetic Beta",
-        "corporate_id": 1
+        "corporate": 1
       }
     ],
     "row_count": 2,

@@ -13,10 +13,10 @@ CORPORATE_ID = 1
 CONTEXT_SCHEMA = "company_context.v1"
 RESULT_SCHEMA = "company_scope_result.v1"
 ROW_FIELDS = frozenset({
-    "id", "company", "corporate_id", "address_line1", "address_line2",
+    "id", "company", "corporate", "address_line1", "address_line2",
     "headquarter", "website", "updated_at",
 })
-_REQUIRED_ROW_FIELDS = frozenset({"id", "company", "corporate_id"})
+_REQUIRED_ROW_FIELDS = frozenset({"id", "company", "corporate"})
 _ENVELOPE_FIELDS = frozenset({"records", "row_count", "exactness", "partial_reason", "provenance"})
 _PROVENANCE_REQUIRED = frozenset({"source", "authority", "lake_id", "node_key", "pages_read"})
 _PROVENANCE_FIELDS = _PROVENANCE_REQUIRED | {"input_mode"}
@@ -181,7 +181,7 @@ def assemble_record_contexts(
             _fail("row_duplicate")
         if requested_ids is not None and company_id not in requested_ids:
             _fail("result_set_mismatch")
-        if type(row["corporate_id"]) is not int or row["corporate_id"] != CORPORATE_ID:
+        if type(row["corporate"]) is not int or row["corporate"] != CORPORATE_ID:
             _fail("corporate_scope_mismatch")
         headquarter = row.get("headquarter")
         if headquarter is not None:

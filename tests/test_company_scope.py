@@ -36,7 +36,7 @@ adapter_module = load("adapter", "company_scope_adapter.py")
 
 
 def row(identifier=1001):
-    return {"id": identifier, "company": f"Synthetic Company {identifier}", "corporate_id": 1}
+    return {"id": identifier, "company": f"Synthetic Company {identifier}", "corporate": 1}
 
 
 def envelope(records=None, *, pages_read=1):
@@ -168,8 +168,18 @@ class CompanyScopeContractTests(unittest.TestCase):
     def test_wrong_nullable_or_coerced_corporate_ids_are_rejected(self):
         for value in (2, 0, None, True, "1", 1.0):
             record = row()
-            record["corporate_id"] = value
+            record["corporate"] = value
             self.assert_code("corporate_scope_mismatch", contract.build_scope_result,
+                             {"company_id": 1001}, envelope([record]))
+
+    def test_source_corporate_is_mapped_to_canonical_corporate_id(self):
+        result = contract.build_scope_result({"company_id": 1001}, envelope([row()]))
+        self.assertEqual(1, result["contexts"][0]["corporate_id"])
+        self.assertNotIn("corporate", result["contexts"][0])
+        # Both source columns exist; corporate_id is not the corporate membership field.
+        for record in ({"id": 1001, "company": "Synthetic", "corporate_id": 1},
+                       dict(row(), corporate_id=99)):
+            self.assert_code("row_fields_invalid", contract.build_scope_result,
                              {"company_id": 1001}, envelope([record]))
 
     def test_returned_ids_and_country_references_are_strict(self):
@@ -190,7 +200,7 @@ class CompanyScopeContractTests(unittest.TestCase):
                              {"company_id": 1001}, envelope([record]))
 
     def test_required_fields_and_row_types_are_enforced(self):
-        for field in ("id", "company", "corporate_id"):
+        for field in ("id", "company", "corporate"):
             record = row()
             del record[field]
             self.assert_code("row_fields_invalid", contract.build_scope_result,
@@ -281,7 +291,7 @@ class CompanyScopeContractTests(unittest.TestCase):
 
     def test_multipage_input_cannot_bypass_batch_and_record_checks(self):
         wrong_corporate = row(1002)
-        wrong_corporate["corporate_id"] = 2
+        wrong_corporate["corporate"] = 2
         for records, code in (([row(i) for i in range(1001, 1027)], "rows_invalid"),
                               ([row(1001)], "result_set_mismatch"),
                               ([row(1001), row(1003)], "result_set_mismatch"),
@@ -349,7 +359,7 @@ class CompanyScopeContractTests(unittest.TestCase):
 
     def test_adapter_never_returns_partial_outputs_after_later_company_failure(self):
         bad = row(1002)
-        bad["corporate_id"] = 2
+        bad["corporate"] = 2
         inputs = {"variables": {"company_ids": [1001, 1002]}, "companies": envelope([row(1001), bad])}
         self.assert_code("corporate_scope_mismatch", adapter_module.CompanyScopeAdapter().invoke, inputs, {})
 

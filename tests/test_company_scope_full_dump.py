@@ -157,7 +157,7 @@ class CompanyScopeFullDumpTests(unittest.TestCase):
 
     def test_shared_company_validation_applies_to_native_pages(self):
         wrong_corporate = row(1002)
-        wrong_corporate["corporate_id"] = 2
+        wrong_corporate["corporate"] = 2
         unsafe = row(1002)
         unsafe["remember_token"] = "PRIVATE_SENTINEL_DO_NOT_ECHO"
         bad_name = row(1002)

@@ -12,7 +12,7 @@ scope = fixtures.load(ROOT.parent / "company_scope", "scope_contract.py", "_cont
 
 
 def handoff():
-    companies = {"records": [{"id": 13, "company": "Synthetic Contract Company", "corporate_id": 1,
+    companies = {"records": [{"id": 13, "company": "Synthetic Contract Company", "corporate": 1,
                              "address_line1": "Registered office, Example Street", "headquarter": 7}],
                  "row_count": 1, "exactness": "exact", "partial_reason": None,
                  "provenance": {"source": "dlm_node", "authority": "dlm_node", "lake_id": "synthetic_lake",
