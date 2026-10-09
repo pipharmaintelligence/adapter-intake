@@ -57,9 +57,10 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         self.assertIn(f"asset_version: {ASSET_VERSION}", adapter_yaml)
         self.assertIn(f'version: ClassVar[str] = "{ASSET_VERSION}"', adapter_module)
         self.assertEqual(self.manifest["default"], ASSET_VERSION)
-        self.assertEqual(set(self.manifest["versions"]), {"0.1.14", ASSET_VERSION})
-        retained = json.loads((ASSET_ROOT / "tests/fixtures/baseline-production-0.1.14.manifest.json").read_text(encoding="utf-8"))
-        self.assertEqual(self.manifest["versions"]["0.1.14"], retained)
+        # Intake supplies the current adapter only. The official materializer
+        # preserves all existing packaged versions omitted from this manifest.
+        # Listing 0.1.14 here would suppress preservation of its adapter module.
+        self.assertEqual(set(self.manifest["versions"]), {ASSET_VERSION})
         baseline = json.loads((ASSET_ROOT / "tests/fixtures/baseline-production-0.1.13.asset.json").read_text(encoding="utf-8"))
         self.assertEqual(
             {k: v for k, v in self.manifest["versions"][ASSET_VERSION].items() if k != "inputs"},
