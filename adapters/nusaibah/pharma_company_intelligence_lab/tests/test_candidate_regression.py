@@ -13,10 +13,11 @@ class RetainedBaselineRegressionTests(unittest.TestCase):
     def test_retained_baseline_passes_existing_orchestration_apply_and_budget_suites(self):
         self.run_retained_baseline("0.1.12")
         self.run_retained_baseline("0.1.13")
+        self.run_retained_baseline("0.1.14")
 
     def run_retained_baseline(self, version):
         # Run the pinned historical source in a separate process; the ordinary
-        # suite runs against the current 0.1.14 production candidate.
+        # suite runs against the current 0.1.15 production candidate.
         code = textwrap.dedent(f"""
             import importlib.util, sys, unittest
             from pathlib import Path

@@ -120,3 +120,27 @@ batch handoff with ordering/checkpoint semantics before this consumer can use
 them. Do not call a capped/partial export complete, widen the five-company
 intelligence limit, or introduce a second data acquisition lane as a workaround.
 No `.env` change is required by 0.1.14.
+
+## Runtime Skill dependency compatibility — 0.1.15
+
+The caller still supplies only `company_context` and `variables`. Assets adds
+four manifest-declared Runtime Skill slots before SDK invocation:
+`company_memory`, `company_memory_update`, `company_methodology`, and
+`company_methodology_update`. These are dependency slots, not caller inputs or
+additional Companies acquisition.
+
+Version 0.1.14's exact two-key check rejected that legitimate six-role map before
+any provider call. Version 0.1.15 preserves the two required business roles and
+permits only those four optional runtime-owned names. Their values remain opaque
+to CompanyContext validation and never become research evidence. SDK
+`dynamic_skill(...)` retains all read/mutation authority. Unknown roles, caller
+Skill overrides, raw contexts, partial scopes and digest mismatches remain
+rejected. The server manifest boundary still rejects caller Skill slots with 422;
+local role-name acceptance does not establish runtime authority.
+
+Before a provider test, validate the complete runtime input map including
+manifest dependency slots, not just an inputs-only fixture. Regressions cover
+all slot subsets, opaque values, unknown and missing roles, the full two-company
+preview with 24 Agent calls and zero mutation, real installed SDK RuntimeInputs,
+and retained 0.1.12/0.1.13/0.1.14 business suites. Publish through the official
+workflow. Runtime 0.1.104 and previous version/helper bytes remain unchanged.
