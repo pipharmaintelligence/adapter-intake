@@ -66,7 +66,7 @@ def build_scope_page(variables: Any, companies: Any) -> dict[str, Any]:
         "selection": "all_authorized",
         "corporate_id": CORPORATE_ID,
         "company_count": len(contexts),
-        "contexts": [item.to_dict() for item in contexts],
+        "records": [item.to_dict() for item in contexts],
         "page": {"page_index": page_index, "record_offset": record_offset},
         "source_exactness": companies["exactness"],
         "source_partial_reason": companies["partial_reason"],

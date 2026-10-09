@@ -209,3 +209,13 @@ callable contract. A parent around the existing 0.2.3/toolkit chain conflicts
 with the reviewed nesting restriction. Workflow handoff and a future
 CompanyContext-aware consumer need separate manifest, authority, and regression
 proof. No memory preview/apply or provider launch is part of this candidate.
+
+## Structured business records and retention
+
+The new Scope result/page exposes `records: List[CompanyContext]`. This uses
+the shared runtime business-data convention, including literal website URLs.
+The DTO is unchanged; `corporate` in the source maps to `corporate_id` in each
+record. Do not rename the list to an arbitrary control-plane container or strip
+URLs to evade validation. Validate a URL-bearing output with the installed SDK
+before promotion and live execution. Runtime credential/control fields remain
+forbidden. These development versions have not been merged/released.

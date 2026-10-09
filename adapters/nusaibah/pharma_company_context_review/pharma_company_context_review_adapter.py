@@ -23,6 +23,6 @@ class NusaibahPharmaCompanyContextReviewAdapter(Adapter):
         summary.update({"schema_version": "company_context_review_summary.v1",
             "accepted_finding_count": len(result["accepted_findings"]), "withheld_finding_count": len(result["withheld_findings"])})
         return {"response_version": "1", "status": "success", "outputs": {
-            "evaluation_result": result, "evaluation_summary": summary}, "metrics": {
+            "evaluation_result": {"record": result}, "evaluation_summary": summary}, "metrics": {
             "agent_call_count": result["agent_call_count"], "tool_call_count": result["child_call_count"],
             "mutable_dynamic_skill_call_count": 0, "company_count": 1}}

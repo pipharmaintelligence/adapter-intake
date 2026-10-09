@@ -50,6 +50,19 @@ class CompanyContextReviewTests(unittest.TestCase):
         self.assertNotIn("country_name", json.dumps(inputs.calls))
         self.assertNotIn("evaluation_case", inputs)
 
+    def test_report_record_retains_literal_business_urls_under_existing_sdk(self):
+        from devtools.response_validator import validate_response
+        inputs = fixtures.FakeInputs(handoff(), findings=True, transform=identity_only)
+        result = review.run_review(inputs)
+        result["accepted_findings"][0]["claim"] = "Website recorded as https://company.example.test"
+        validate_response({"response_version": "1", "status": "success",
+                           "outputs": {"evaluation_result": {"record": result}}})
+        adapter = fixtures.load(ROOT, "pharma_company_context_review_adapter.py", "_context_adapter_test")
+        response = adapter.NusaibahPharmaCompanyContextReviewAdapter().invoke(
+            fixtures.FakeInputs(handoff(), findings=True, transform=identity_only), {})
+        self.assertEqual("company_context_review_result.v1", response["outputs"]["evaluation_result"]["record"]["schema_version"])
+        validate_response(response)
+
     def test_absent_findings_are_retained_as_truthful_gaps(self):
         inputs = fixtures.FakeInputs(handoff(), findings=False)
         result = review.run_review(inputs)
@@ -59,7 +72,7 @@ class CompanyContextReviewTests(unittest.TestCase):
 
     def test_invalid_or_tampered_context_aborts_before_any_helper(self):
         def invalid_count(value): value["company_context"]["value"]["company_count"] = 2
-        def bad_digest(value): value["company_context"]["value"]["contexts"][0]["company_name"] = "Other company"
+        def bad_digest(value): value["company_context"]["value"]["records"][0]["company_name"] = "Other company"
         def wrong_origin(value): value["company_context"]["provenance"]["asset_identity"] = "example.other:0.1.0"
         def raw(value): value["company_context"] = value["company_context"]["value"]
         for mutate in (invalid_count, bad_digest, wrong_origin, raw):

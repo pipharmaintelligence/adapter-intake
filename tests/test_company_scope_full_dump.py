@@ -44,7 +44,7 @@ class CompanyScopeFullDumpTests(unittest.TestCase):
         response = page_adapter.CompanyScopeFullDumpAdapter().invoke(inputs(source), {})
         result = response["outputs"]["company_scope_page"]
         self.assertEqual("company_scope_page.v1", result["schema_version"])
-        self.assertEqual([1002, 1001], [item["company_id"] for item in result["contexts"]])
+        self.assertEqual([1002, 1001], [item["company_id"] for item in result["records"]])
         self.assertTrue(result["batch_complete"])
         self.assertFalse(result["source_exhausted"])
         self.assertIsNone(result["selection_complete"])
@@ -69,7 +69,7 @@ class CompanyScopeFullDumpTests(unittest.TestCase):
         for page_index, offset in ((0, 0), (1, 2)):
             result = page_contract.build_scope_page({"selection": "all_authorized"},
                 native_page([], final=True, page_index=page_index, record_offset=offset))
-            self.assertEqual([], result["contexts"])
+            self.assertEqual([], result["records"])
             self.assertEqual(0, result["company_count"])
             self.assertTrue(result["source_exhausted"])
             self.assertIsNone(result["selection_complete"])
@@ -180,10 +180,10 @@ class CompanyScopeFullDumpTests(unittest.TestCase):
         next_position["provenance"].update(page_index=1, record_offset=2)
         moved = page_contract.build_scope_page({"selection": "all_authorized"}, next_position)
         self.assertNotEqual(result["digest"], moved["digest"])
-        self.assertEqual(result["contexts"], moved["contexts"])
-        result["contexts"][0]["source"]["node_key"] = "Changed output"
+        self.assertEqual(result["records"], moved["records"])
+        result["records"][0]["source"]["node_key"] = "Changed output"
         fresh = page_contract.build_scope_page({"selection": "all_authorized"}, source)
-        self.assertEqual("companies", fresh["contexts"][0]["source"]["node_key"])
+        self.assertEqual("companies", fresh["records"][0]["source"]["node_key"])
 
     def test_page_execution_is_stateless_and_does_not_invoke_runtime_helpers(self):
         class NoInvocationInputs(dict):

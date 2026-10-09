@@ -53,15 +53,15 @@ def prepare_review(inputs: Any) -> dict[str, Any]:
              "retained_provenance_invalid")
     scope = handoff["value"]
     _keys(scope, {"schema_version", "selector_kind", "requested_company_ids", "duplicate_id_count", "company_count",
-                  "corporate_id", "complete", "validation_scope", "runtime_authority_verified", "contexts", "digest"},
+                  "corporate_id", "complete", "validation_scope", "runtime_authority_verified", "records", "digest"},
           "company_scope_invalid")
     _require(scope["schema_version"] == "company_scope_result.v1" and scope["complete"] is True
              and type(scope["company_count"]) is int and scope["company_count"] == 1
              and type(scope["corporate_id"]) is int and scope["corporate_id"] == 1
              and scope["validation_scope"] == "resolved_rows_only" and scope["runtime_authority_verified"] is False
-             and isinstance(scope["contexts"], list) and len(scope["contexts"]) == 1
+             and isinstance(scope["records"], list) and len(scope["records"]) == 1
              and _digest_valid(scope), "one_complete_company_context_required")
-    company = scope["contexts"][0]
+    company = scope["records"][0]
     _keys(company, {"schema_version", "company_id", "company_name", "corporate_id", "address_line1", "address_line2",
                     "headquarters_country_id", "website", "source_updated_at", "source", "digest"}, "company_context_invalid")
     _require(company["schema_version"] == "company_context.v1" and type(company["company_id"]) is int

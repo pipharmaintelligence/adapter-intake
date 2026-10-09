@@ -59,3 +59,12 @@ this review, retained findings readback, and semantic assessment. Preserve each
 run UUID and receipt. Poll an existing run after interruption; never relaunch to
 recover retained values. Memory apply, full dumps, ECS and large parallel batches
 remain separate qualification gates.
+
+## Output data convention
+
+Scope supplies canonical CompanyContext values in `company_scope_result.records`.
+The review returns its complete business report at `evaluation_result.record`,
+plus the existing scalar `evaluation_summary`. These are the shared business-data
+containers understood by runtime 0.1.104 and preview retention. Literal website
+values and evidence quotes remain data; source/authority metadata and credentials
+remain separately validated. Historical evaluation output is unchanged.

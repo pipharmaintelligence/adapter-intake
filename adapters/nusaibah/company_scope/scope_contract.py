@@ -223,7 +223,7 @@ def build_scope_result(variables: Any, companies: Any) -> dict[str, Any]:
         "complete": True,
         "validation_scope": "resolved_rows_only",
         "runtime_authority_verified": False,
-        "contexts": [company.to_dict() for company in contexts],
+        "records": [company.to_dict() for company in contexts],
     }
     result["digest"] = canonical_digest(result)
     return result

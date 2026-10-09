@@ -23,7 +23,7 @@ globals are changed, so existing profiles can execute concurrently.
 
 A governed Scope binding supplies integer_selector and query_constraints.
 Configure single/list/range variable names, max_items=25, reject_unknown_variables,
-fixed_filters={corporate_id: 1}, and the approved column projection. These are
+fixed_filters={corporate: 1}, and the approved column projection. These are
 approved binding configuration; they are not launch variables. Validation and
 normalization must finish before the Core query. Do not enable a full dump or
 repurpose another asset's binding for this proof.
@@ -60,3 +60,12 @@ Add approved independent research evidence in a future version when needed.
 That version must bind sources, preserve entity/provenance boundaries and enforce
 finite chunks/calls. Large collections should use the common iteration engine
 and durable joins when qualified; do not place a long or unbounded loop here.
+
+## Output data convention
+
+Scope supplies canonical CompanyContext values in `company_scope_result.records`.
+The review returns its complete business report at `evaluation_result.record`,
+plus the existing scalar `evaluation_summary`. These are the shared business-data
+containers understood by runtime 0.1.104 and preview retention. Literal website
+values and evidence quotes remain data; source/authority metadata and credentials
+remain separately validated. Historical evaluation output is unchanged.

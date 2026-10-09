@@ -299,3 +299,13 @@ Existing memory preview/apply, expected digest, authorization, per-company
 partition isolation, fresh readback, and history remain in Dynamic Skill/Core.
 This asset neither creates a memory coordinator nor promises global batch
 rollback. Memory composition and mutable apply are outside this implementation.
+
+## Structured business records and retention
+
+The new Scope result/page exposes `records: List[CompanyContext]`. This uses
+the shared runtime business-data convention, including literal website URLs.
+The DTO is unchanged; `corporate` in the source maps to `corporate_id` in each
+record. Do not rename the list to an arbitrary control-plane container or strip
+URLs to evade validation. Validate a URL-bearing output with the installed SDK
+before promotion and live execution. Runtime credential/control fields remain
+forbidden. These development versions have not been merged/released.

@@ -118,7 +118,7 @@ class CompanyScopeContractTests(unittest.TestCase):
                       address_line2=None, headquarter=197, website="example.invalid",
                       updated_at="2026-10-08 10:30:00")
         result = contract.build_scope_result({"company_id": 1001}, envelope([source]))
-        context = result["contexts"][0]
+        context = result["records"][0]
         self.assertEqual("company_context.v1", context["schema_version"])
         self.assertEqual("Synthetic Unicode \u0623", context["company_name"])
         self.assertEqual("First address", context["address_line1"])
@@ -130,7 +130,7 @@ class CompanyScopeContractTests(unittest.TestCase):
             self.assertNotIn(unavailable, context)
 
     def test_optional_fields_are_null_and_source_metadata_is_not_invented(self):
-        context = contract.build_scope_result({"company_id": 1001}, envelope())["contexts"][0]
+        context = contract.build_scope_result({"company_id": 1001}, envelope())["records"][0]
         for key in ("address_line1", "address_line2", "headquarters_country_id", "website", "source_updated_at"):
             self.assertIsNone(context[key])
         self.assertIsNone(context["source"]["retrieved_at"])
@@ -143,14 +143,14 @@ class CompanyScopeContractTests(unittest.TestCase):
         before = copy.deepcopy(source)
         result = contract.build_scope_result({"company_ids": [1003, 1001, 1003, 1002]}, source)
         self.assertEqual([1003, 1001, 1002], result["requested_company_ids"])
-        self.assertEqual([1003, 1001, 1002], [c["company_id"] for c in result["contexts"]])
+        self.assertEqual([1003, 1001, 1002], [c["company_id"] for c in result["records"]])
         self.assertEqual(1, result["duplicate_id_count"])
         self.assertEqual(source, before)
 
     def test_range_result_requires_every_id(self):
         result = contract.build_scope_result({"from_company_id": 1001, "to_company_id": 1003},
                                             envelope([row(1003), row(1002), row(1001)]))
-        self.assertEqual([1001, 1002, 1003], [c["company_id"] for c in result["contexts"]])
+        self.assertEqual([1001, 1002, 1003], [c["company_id"] for c in result["records"]])
         self.assert_code("result_set_mismatch", contract.build_scope_result,
                          {"from_company_id": 1001, "to_company_id": 1003}, envelope([row(1001), row(1003)]))
 
@@ -174,13 +174,21 @@ class CompanyScopeContractTests(unittest.TestCase):
 
     def test_source_corporate_is_mapped_to_canonical_corporate_id(self):
         result = contract.build_scope_result({"company_id": 1001}, envelope([row()]))
-        self.assertEqual(1, result["contexts"][0]["corporate_id"])
-        self.assertNotIn("corporate", result["contexts"][0])
+        self.assertEqual(1, result["records"][0]["corporate_id"])
+        self.assertNotIn("corporate", result["records"][0])
         # Both source columns exist; corporate_id is not the corporate membership field.
         for record in ({"id": 1001, "company": "Synthetic", "corporate_id": 1},
                        dict(row(), corporate_id=99)):
             self.assert_code("row_fields_invalid", contract.build_scope_result,
                              {"company_id": 1001}, envelope([record]))
+
+    def test_standard_output_records_preserve_business_website_urls(self):
+        from devtools.response_validator import validate_response
+        record = dict(row(), website="https://company.example.test")
+        response = adapter_module.CompanyScopeAdapter().invoke(
+            {"variables": {"company_id": 1001}, "companies": envelope([record])}, {})
+        validate_response(response)
+        self.assertEqual(record["website"], response["outputs"]["company_scope_result"]["records"][0]["website"])
 
     def test_returned_ids_and_country_references_are_strict(self):
         for value in (True, "1001", 1001.0, 0, -1, None):
@@ -275,7 +283,7 @@ class CompanyScopeContractTests(unittest.TestCase):
                     {"variables": selector, "companies": source}, {})
                 self.assertEqual(expected, response["outputs"]["company_scope_result"])
                 self.assertEqual([1003, 1001, 1002],
-                                 [item["company_id"] for item in expected["contexts"]])
+                                 [item["company_id"] for item in expected["records"]])
                 self.assertEqual(1, expected["duplicate_id_count"])
                 self.assertFalse(response["outputs"]["company_scope_summary"]["runtime_authority_verified"])
                 self.assertEqual(before, source)
@@ -286,7 +294,7 @@ class CompanyScopeContractTests(unittest.TestCase):
             {"company_ids": identifiers},
             envelope([row(identifier) for identifier in reversed(identifiers)], pages_read=5))
         self.assertEqual(25, result["company_count"])
-        self.assertEqual(identifiers, [item["company_id"] for item in result["contexts"]])
+        self.assertEqual(identifiers, [item["company_id"] for item in result["records"]])
         self.assertTrue(result["complete"])
 
     def test_multipage_input_cannot_bypass_batch_and_record_checks(self):
@@ -314,15 +322,15 @@ class CompanyScopeContractTests(unittest.TestCase):
     def test_context_and_result_digests_are_reproducible_and_content_bound(self):
         result = contract.build_scope_result({"company_id": 1001}, envelope())
         self.assertEqual(result, contract.build_scope_result({"company_id": 1001}, envelope()))
-        for value in (result, result["contexts"][0]):
+        for value in (result, result["records"][0]):
             unhashed = {key: item for key, item in value.items() if key != "digest"}
             encoded = json.dumps(unhashed, ensure_ascii=False, sort_keys=True,
                                  separators=(",", ":"), allow_nan=False).encode("utf-8")
             self.assertEqual("sha256:" + hashlib.sha256(encoded).hexdigest(), value["digest"])
         changed = row()
         changed["company"] = "Different Synthetic Name"
-        self.assertNotEqual(result["contexts"][0]["digest"],
-                            contract.build_scope_result({"company_id": 1001}, envelope([changed]))["contexts"][0]["digest"])
+        self.assertNotEqual(result["records"][0]["digest"],
+                            contract.build_scope_result({"company_id": 1001}, envelope([changed]))["records"][0]["digest"])
         # A copied provenance envelope is not cryptographic authorization.
         self.assertFalse(result["runtime_authority_verified"])
         self.assertEqual("resolved_rows_only", result["validation_scope"])
@@ -330,13 +338,13 @@ class CompanyScopeContractTests(unittest.TestCase):
     def test_contexts_and_runs_do_not_share_mutable_state(self):
         source = envelope([row(1001), row(1002)])
         result = contract.build_scope_result({"company_ids": [1001, 1002]}, source)
-        second_before = copy.deepcopy(result["contexts"][1])
-        result["contexts"][0]["company_name"] = "Changed output"
-        result["contexts"][0]["source"]["node_key"] = "Changed output"
-        self.assertEqual(second_before, result["contexts"][1])
+        second_before = copy.deepcopy(result["records"][1])
+        result["records"][0]["company_name"] = "Changed output"
+        result["records"][0]["source"]["node_key"] = "Changed output"
+        self.assertEqual(second_before, result["records"][1])
         fresh = contract.build_scope_result({"company_ids": [1001, 1002]}, source)
-        self.assertEqual("Synthetic Company 1001", fresh["contexts"][0]["company_name"])
-        self.assertEqual("companies", fresh["contexts"][0]["source"]["node_key"])
+        self.assertEqual("Synthetic Company 1001", fresh["records"][0]["company_name"])
+        self.assertEqual("companies", fresh["records"][0]["source"]["node_key"])
 
     def test_adapter_does_not_invoke_query_provider_child_or_mutation(self):
         class NoInvocationInputs(dict):
