@@ -151,6 +151,15 @@ jobs:
           python -m unittest discover -s tests -p "test_structured_review_toolkit.py" -v
           python -m unittest discover -s tests -p "test_review_exact_spans.py" -v
 
+      - name: Validate real CompanyContext handoff without providers
+        shell: bash
+        env:
+          PYTHONPATH: adapters/nusaibah/pharma_company_intelligence_lab_evaluation/tests:adapters/nusaibah/pharma_company_intelligence_lab/tests/stubs
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s adapters/nusaibah/pharma_company_context_review/tests -p "test_*.py" -v
+
       - name: Validate evaluation asset packaged imports and baseline parity
         shell: bash
         run: |
