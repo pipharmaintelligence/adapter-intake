@@ -118,7 +118,7 @@ class FakeMethodology:
         return "sha256:" + format(self.company_id + 1000, "064x")[-64:]
 
 class FakeInputs(dict):
-    def __init__(self, *, wrong_company_role: str | None = None) -> None:
+    def __init__(self, *, wrong_company_role: str | None = None, legacy: bool | None = None) -> None:
         super().__init__(
             {
                 "variables": {
@@ -137,10 +137,21 @@ class FakeInputs(dict):
                 },
             }
         )
+        self.legacy = (adapter_module.NusaibahPharmaCompanyIntelligenceLabAdapter.version != "0.1.14") if legacy is None else legacy
+        if not self.legacy:
+            from company_context_fixture import handoff
+            self["company_context"] = handoff(self.pop("companies")["records"])
         self.wrong_company_role = wrong_company_role
         self.agent_calls: list[tuple[str, int]] = []
         self.agent_inputs: list[tuple[str, int, dict]] = []
         self.dynamic_skill_calls: list[tuple[str, int]] = []
+
+    def set_company_records(self, records):
+        if self.legacy:
+            self["companies"] = {"records": records}
+        else:
+            from company_context_fixture import handoff
+            self["company_context"] = handoff(records)
 
     def skill(self, selector: str):
         self.assert_equal(selector, "nusaibah.pharma-intelligence-methodology")
@@ -429,10 +440,10 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
     def test_five_company_preview_uses_exactly_sixty_logical_calls(self) -> None:
         inputs = FakeInputs()
         inputs["variables"]["company_ids"] = [1, 2, 3, 4, 5]
-        inputs["companies"]["records"] = [
+        inputs.set_company_records([
             {"id": company_id, "company": f"Synthetic {company_id}"}
             for company_id in inputs["variables"]["company_ids"]
-        ]
+        ])
         with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
             response = NusaibahPharmaCompanyIntelligenceLabAdapter().invoke(inputs, {})
         self.assertEqual(response["metrics"]["logical_agent_invocations"], 60)

@@ -183,7 +183,7 @@ class CriticDiagnosticContractTests(unittest.TestCase):
         spec.loader.exec_module(baseline)
         outputs = []
         for module in (baseline, adapter):
-            inputs = orchestration.FirstRunMethodologyInputs()
+            inputs = orchestration.FirstRunMethodologyInputs(legacy=module is baseline)
             with patch.object(module, "_agent_citations", side_effect=orchestration._fake_citations):
                 outputs.append(module.NusaibahPharmaCompanyIntelligenceLabAdapter().invoke(inputs, {}))
             self.assertFalse(any(role.endswith("_update") for role, _ in inputs.dynamic_skill_calls))
@@ -197,7 +197,7 @@ class CriticDiagnosticContractTests(unittest.TestCase):
                 inputs = orchestration.FirstRunMethodologyInputs()
                 inputs["variables"]["company_ids"] = [13]
                 inputs["variables"]["memory_mode"] = "apply"
-                inputs["companies"]["records"] = [r for r in inputs["companies"]["records"] if r["id"] == 13]
+                inputs.set_company_records([{"id": 13, "company": "Tabuk Pharmaceuticals"}])
 
                 def failing_value(role, company_id, input_value):
                     value = original(role, company_id, input_value)

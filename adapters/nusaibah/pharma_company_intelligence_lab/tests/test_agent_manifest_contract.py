@@ -9,7 +9,7 @@ MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
 
-ASSET_VERSION = "0.1.13"
+ASSET_VERSION = "0.1.14"
 CANONICAL_PROVIDER_REGISTRY_ENTRY = {
     "handle": "provider:text_generation",
     "type": "provider_execution",
@@ -58,8 +58,11 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         self.assertIn(f'version: ClassVar[str] = "{ASSET_VERSION}"', adapter_module)
         self.assertEqual(self.manifest["default"], ASSET_VERSION)
         self.assertEqual(set(self.manifest["versions"]), {ASSET_VERSION})
-        baseline = json.loads((ASSET_ROOT / "tests/fixtures/baseline-production-0.1.12.asset.json").read_text(encoding="utf-8"))
-        self.assertEqual(self.manifest["versions"][ASSET_VERSION], baseline["versions"]["0.1.12"])
+        baseline = json.loads((ASSET_ROOT / "tests/fixtures/baseline-production-0.1.13.asset.json").read_text(encoding="utf-8"))
+        self.assertEqual(
+            {k: v for k, v in self.manifest["versions"][ASSET_VERSION].items() if k != "inputs"},
+            {k: v for k, v in baseline["versions"]["0.1.13"].items() if k != "inputs"},
+        )
 
     def test_runtime_floor_requires_current_trusted_runtime_support(self) -> None:
         dependency_manifest = json.loads(
@@ -88,13 +91,15 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             ],
         )
 
-    def test_input_roles_freeze_governed_binding_and_direct_variables(self) -> None:
+    def test_input_roles_require_retained_context_and_direct_variables(self) -> None:
         inputs = self.manifest["versions"][ASSET_VERSION]["inputs"]
+        self.assertEqual(set(inputs), {"company_context", "variables"})
         self.assertEqual(
-            inputs["companies"],
+            inputs["company_context"],
             {
                 "required": True,
-                "source": "binding",
+                "source": "direct",
+                "retained_output": {"asset_identity": "nusaibah.company_scope:0.1.0", "output_role": "company_scope_result"},
                 "shape": "object",
             },
         )
