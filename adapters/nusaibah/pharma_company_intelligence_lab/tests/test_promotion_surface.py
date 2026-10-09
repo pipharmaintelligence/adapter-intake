@@ -12,17 +12,19 @@ EXPECTED_REVIEWED_HELPERS = {
     "dossier_contract.py",
     "memory_contract.py",
     "agent_contract.py",
+    "critic_diagnostics_v0_1_13.py",
     "methodology_contract.py",
 }
 
 EXPECTED_RUNTIME_FILES = {
-    "nusaibah_pharma_company_intelligence_lab_adapter.py",
+    "nusaibah_pharma_company_intelligence_lab_v0_1_13_adapter.py",
     "nusaibah_pharma_company_intelligence_lab.asset.json",
     "adapter.dependencies.json",
     "input_contract.py",
     "dossier_contract.py",
     "memory_contract.py",
     "agent_contract.py",
+    "critic_diagnostics_v0_1_13.py",
     "methodology_contract.py",
     "README.md",
 }
@@ -55,7 +57,7 @@ class PromotionSurfaceTests(unittest.TestCase):
         self.assertNotIn("stubs", text)
 
         declared_runtime_files = {
-            "nusaibah_pharma_company_intelligence_lab_adapter.py",
+            "nusaibah_pharma_company_intelligence_lab_v0_1_13_adapter.py",
             "nusaibah_pharma_company_intelligence_lab.asset.json",
             "adapter.dependencies.json",
             *reviewed_helpers,

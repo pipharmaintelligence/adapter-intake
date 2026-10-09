@@ -1,5 +1,31 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.13 critic diagnostics candidate
+
+This additive production version identifies the critic payload field or
+pre-synthesis quality rule that failed. It reuses the existing generic
+`proof_failure_detail.v1` contract and reviewed
+`pharma_agent_business_schema_invalid` code. `stage=critic_payload` denotes
+business-shape validation; `stage=pre_synthesis_quality` denotes a valid critic
+payload that cannot pass the existing quality gate. Fields and rules are static
+identifiers, without company values, claim IDs, notes or provider responses.
+
+This follows run `8ff89da6-2870-431a-8e2a-94d4e60a745d`, which completed the critic
+call but failed before synthesis without a retained rule. That historical rule
+remains unknown. Absence of a methodology partition is not its established cause:
+the supported first-run read path had already passed. First-object creation and
+quality remediation remain separate work.
+
+Agent definitions, prompts, chains, provider budgets, Fixed/Dynamic Skills,
+validation decisions, write ordering and iteration limits are unchanged from
+0.1.12. Shared helpers and the frozen evaluation baseline remain unchanged.
+Deliver the new version through the pinned adapter-intake promotion workflow;
+do not hand-edit packaged adapters or upgrade the installed runtime wheel.
+No new environment values are required.
+
+See [the diagnostic developer guide](DEVELOPER_GUIDE.md) for release gates,
+interpretation and recovery.
+
 ## Current validated baseline and future review direction
 
 The validated baseline is asset `0.1.12` with runtime wheel `0.1.97`, intake commit `21cc6b39492cbd3c090de537a2ee27c599f0f0ec`. Company-13 preview `6e95802c-2336-47f5-b7c2-1e30476a0fef` completed in 303 execution seconds and produced the `intelligence_dossier` output role. This establishes that preview's execution; it does not establish expert-verified factual quality, large-document review, memory apply or file publication. Assets promotion reached main through [PR #458](https://github.com/piusaibah/assets/pull/458).

@@ -21,6 +21,31 @@ HELPERS = (
 
 
 class ImportContextTests(unittest.TestCase):
+    def test_candidate_imports_in_flat_and_packaged_contexts(self) -> None:
+        candidate = "nusaibah_pharma_company_intelligence_lab_v0_1_13_adapter.py"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            package = root / "candidate_package"
+            package.mkdir()
+            (package / "__init__.py").write_text("", encoding="utf-8")
+            for name in (*HELPERS, candidate, "critic_diagnostics_v0_1_13.py"):
+                shutil.copy2(ASSET_ROOT / name, package / name)
+            code = textwrap.dedent(f"""
+                import importlib, sys, types
+                base = types.ModuleType("adapters.base")
+                base.Adapter = type("Adapter", (), {{}})
+                sys.modules["adapters.base"] = base
+                sys.path.insert(0, {str(root)!r})
+                sys.path.insert(0, {str(package)!r})
+                for name in ["candidate_package.{candidate[:-3]}", "{candidate[:-3]}"]:
+                    module = importlib.import_module(name)
+                    assert module.NusaibahPharmaCompanyIntelligenceLabAdapter.version == "0.1.13"
+                    helper = importlib.import_module("candidate_package.critic_diagnostics_v0_1_13")
+                    error = helper.CriticContractValidationError("field_invalid", "recommendation")
+                    assert error.proof_failure_detail["stage"] == "critic_payload"
+            """)
+            subprocess.run([sys.executable, "-c", code], check=True)
+
     def test_local_root_import(self) -> None:
         code = textwrap.dedent(
             f"""
