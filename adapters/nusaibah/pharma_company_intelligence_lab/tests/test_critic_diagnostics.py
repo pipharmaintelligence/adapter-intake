@@ -12,7 +12,7 @@ sys.path.insert(0, str(ASSET_ROOT))
 
 import agent_contract as legacy
 import critic_diagnostics_v0_1_13 as diagnostic
-import nusaibah_pharma_company_intelligence_lab_v0_1_13_adapter as adapter
+import nusaibah_pharma_company_intelligence_lab_adapter as adapter
 import test_orchestration_preview as orchestration
 from test_critic_plan_contract import _critic_payload
 
@@ -175,7 +175,12 @@ class CriticDiagnosticContractTests(unittest.TestCase):
         adapter._require_pre_synthesis_quality(research, _critic_payload())
 
     def test_successful_first_run_preview_matches_retained_baseline(self):
-        baseline = orchestration.adapter_module
+        import importlib.util
+        name = "_retained_pharma_production_012"
+        spec = importlib.util.spec_from_file_location(name, ASSET_ROOT / "tests/fixtures/baseline-production-0.1.12.py")
+        baseline = importlib.util.module_from_spec(spec)
+        sys.modules[name] = baseline
+        spec.loader.exec_module(baseline)
         outputs = []
         for module in (baseline, adapter):
             inputs = orchestration.FirstRunMethodologyInputs()

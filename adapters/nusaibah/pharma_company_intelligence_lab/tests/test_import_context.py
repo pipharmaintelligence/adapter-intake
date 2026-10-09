@@ -10,19 +10,20 @@ from pathlib import Path
 
 ASSET_ROOT = Path(__file__).resolve().parents[1]
 ADAPTER_MODULE = "nusaibah_pharma_company_intelligence_lab_adapter.py"
-ASSET_VERSION = "0.1.12"
+ASSET_VERSION = "0.1.13"
 HELPERS = (
     "input_contract.py",
     "dossier_contract.py",
     "memory_contract.py",
     "agent_contract.py",
+    "critic_diagnostics_v0_1_13.py",
     "methodology_contract.py",
 )
 
 
 class ImportContextTests(unittest.TestCase):
     def test_candidate_imports_in_flat_and_packaged_contexts(self) -> None:
-        candidate = "nusaibah_pharma_company_intelligence_lab_v0_1_13_adapter.py"
+        candidate = "nusaibah_pharma_company_intelligence_lab_adapter.py"
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             package = root / "candidate_package"

@@ -7,7 +7,7 @@ from pathlib import Path
 ASSET_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
-ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_v0_1_13_adapter.py"
+ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
 
 ASSET_VERSION = "0.1.13"
 CANONICAL_PROVIDER_REGISTRY_ENTRY = {

@@ -214,7 +214,7 @@ for outcome, calls in [('review_complete', 5), ('review_complete_with_evidence_g
         self.assertEqual(old, new)
 
     def test_frozen_business_ast_matches_pinned_baseline_with_only_registration_removed(self) -> None:
-        baseline_source = (BASELINE_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py").read_text(encoding="utf-8")
+        baseline_source = (BASELINE_ROOT / "tests/fixtures/baseline-production-0.1.12.py").read_text(encoding="utf-8")
         self.assertEqual(hashlib.sha256(baseline_source.encode()).hexdigest(), PINNED_BASELINE_SOURCE_SHA256)
         expected = ast.parse(baseline_source)
         expected.body = [

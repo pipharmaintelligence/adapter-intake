@@ -14,8 +14,8 @@ its cause.
 
 `critic_diagnostics_v0_1_13.py` belongs to this intake version. It mirrors the
 retained critic contract's validation order, limits, defaults and normalized
-output, using its primitive validators. The shared `agent_contract.py` and frozen
-evaluation executor stay unchanged. The historical manifest is pinned under
+output, using its primitive validators. The shared `agent_contract.py`, frozen evaluation executor, and pinned production
+source snapshot stay unchanged. The historical manifest is pinned under
 `tests/fixtures/baseline-production-0.1.12.asset.json`, outside the promotion
 surface, with a digest guard. The production promotion manifest declares only
 0.1.13; the official materializer retains previous packaged versions.
@@ -100,7 +100,7 @@ or promotion CI. Record those remaining gaps explicitly.
 
 ## Local qualification on 9 October 2026
 
-The complete production suite passed 272 tests, including the candidate process
+The complete production suite passed 272 tests, including the retained-baseline process
 that reruns 50 existing orchestration, apply-safety and budget regressions.
 The frozen evaluation suite passed 90 tests; the promotion-shape guard passed.
 Payload regressions cover more than 65 malformed shapes and unchanged valid
@@ -113,3 +113,9 @@ no test SDK stubs. Malformed critic, quality rejection and successful first-run
 preview cases passed with zero provider and mutation calls. This proves installed
 runtime diagnostic transport, not live evidence quality or first-object apply.
 The worker, installed catalog and runtime wheel were not modified.
+
+## Architecture references
+
+- [PR #458](https://github.com/piusaibah/assets/pull/458)
+- [methodology-driven specialized review design](https://github.com/piusaibah/assets/blob/1eb32db0353a3f20ef2fe5121d8a9258bfaea4be/docs/observability/methodology-specialized-review/README.md)
+- [PI-1972](https://linear.app/pipharma/issue/PI-1972)

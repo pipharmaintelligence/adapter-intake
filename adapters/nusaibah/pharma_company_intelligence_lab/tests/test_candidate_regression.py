@@ -9,19 +9,23 @@ import unittest
 ASSET_ROOT = Path(__file__).resolve().parents[1]
 
 
-class DiagnosticCandidateRegressionTests(unittest.TestCase):
-    def test_candidate_passes_existing_orchestration_apply_and_budget_suites(self):
-        # Import the candidate under the historical test seam in a separate
-        # process; the ordinary suite still runs against retained 0.1.12.
+class RetainedBaselineRegressionTests(unittest.TestCase):
+    def test_retained_baseline_passes_existing_orchestration_apply_and_budget_suites(self):
+        # Run the pinned historical source in a separate process; the ordinary
+        # suite runs against the current 0.1.13 production candidate.
         code = textwrap.dedent(f"""
-            import sys, unittest
+            import importlib.util, sys, unittest
             from pathlib import Path
             root = Path({str(ASSET_ROOT)!r})
             sys.path.insert(0, str(root / "tests/stubs"))
             sys.path.insert(0, str(root / "tests"))
             sys.path.insert(0, str(root))
-            import nusaibah_pharma_company_intelligence_lab_v0_1_13_adapter as candidate
-            sys.modules["nusaibah_pharma_company_intelligence_lab_adapter"] = candidate
+            name = "nusaibah_pharma_company_intelligence_lab_adapter"
+            spec = importlib.util.spec_from_file_location(name, root / "tests/fixtures/baseline-production-0.1.12.py")
+            baseline = importlib.util.module_from_spec(spec)
+            sys.modules[name] = baseline
+            spec.loader.exec_module(baseline)
+            assert baseline.NusaibahPharmaCompanyIntelligenceLabAdapter.version == "0.1.12"
             suite = unittest.defaultTestLoader.loadTestsFromNames([
                 "test_orchestration_preview", "test_apply_phase_safety",
                 "test_iteration_limits", "test_memory_apply_contract",

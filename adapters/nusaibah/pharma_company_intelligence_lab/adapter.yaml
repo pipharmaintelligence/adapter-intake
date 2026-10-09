@@ -2,7 +2,7 @@ asset_key: nusaibah.pharma_company_intelligence_lab
 asset_version: 0.1.13
 package_target: python_runtime/adapters/intake/nusaibah/pharma_company_intelligence_lab
 manifest: nusaibah_pharma_company_intelligence_lab.asset.json
-adapter_module: nusaibah_pharma_company_intelligence_lab_v0_1_13_adapter.py
+adapter_module: nusaibah_pharma_company_intelligence_lab_adapter.py
 
 reviewed_helpers:
   - input_contract.py

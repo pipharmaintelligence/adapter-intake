@@ -21,11 +21,11 @@ try:
         benchmark_improvement_count,
         _text,
         _token,
-        validate_critic_payload,
         validate_research_payload,
         validate_strategic_payload,
         validate_synthesis_payload,
     )
+    from .critic_diagnostics_v0_1_13 import validate_critic_payload
     from .dossier_contract import CANONICAL_SECTIONS, DOSSIER_SCHEMA_VERSION, SECTION_BY_ID
     from .input_contract import (
         BatchRequest,
@@ -61,11 +61,11 @@ except ImportError:  # pragma: no cover - local adapter-root execution path
         benchmark_improvement_count,
         _text,
         _token,
-        validate_critic_payload,
         validate_research_payload,
         validate_strategic_payload,
         validate_synthesis_payload,
     )
+    from critic_diagnostics_v0_1_13 import validate_critic_payload
     from dossier_contract import CANONICAL_SECTIONS, DOSSIER_SCHEMA_VERSION, SECTION_BY_ID
     from input_contract import (
         BatchRequest,
@@ -1493,7 +1493,7 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.pharma_company_intelligence_lab"
-    version: ClassVar[str] = "0.1.12"
+    version: ClassVar[str] = "0.1.13"
 
     def invoke(self, inputs: Any, context: dict[str, Any]) -> dict[str, Any]:
         """Execute one bounded company batch with two-phase memory mutation."""
@@ -2129,25 +2129,56 @@ def _run_critic(
     )
 
 
+def _quality_contract_error(message: str, *, role: str, rule: str, field: str) -> None:
+    # Existing reviewed code is compatible with the installed generic runtime.
+    # The proof stage distinguishes a quality stop from a malformed payload.
+    raise AgentContractValidationError(
+        "pharma_agent_business_schema_invalid",
+        message,
+        proof_failure_detail=_agent_contract_proof_detail(
+            role=role, stage="pre_synthesis_quality", rule=rule, field=field,
+        ),
+    )
+
+
 def _require_pre_synthesis_quality(
     research: dict[str, dict[str, Any]],
     critic: dict[str, Any],
 ) -> None:
-    if any(len(research[role]["_citations"]) == 0 for role in RESEARCH_ROLES):
-        raise RuntimeError("Every search-enabled research role must return admitted citations.")
+    for role in RESEARCH_ROLES:
+        if len(research[role]["_citations"]) == 0:
+            _quality_contract_error(
+                "Every search-enabled research role must return admitted citations.",
+                role=role, rule="research_citations_missing", field="citations",
+            )
     if critic["recommendation"] != "pass":
-        raise RuntimeError("Evidence critic rejected the company evidence package.")
+        _quality_contract_error(
+            "Evidence critic rejected the company evidence package.",
+            role=CRITIC_ROLE, rule="critic_rejected", field="recommendation",
+        )
     if critic["citation_coverage"]["status"] != "sufficient":
-        raise RuntimeError("Evidence critic reported insufficient citation coverage.")
+        _quality_contract_error(
+            "Evidence critic reported insufficient citation coverage.",
+            role=CRITIC_ROLE, rule="citation_coverage_insufficient", field="citation_coverage_status",
+        )
     if critic["unsupported_claim_ids"]:
-        raise RuntimeError("Unsupported research claims remain after critique.")
+        _quality_contract_error(
+            "Unsupported research claims remain after critique.",
+            role=CRITIC_ROLE, rule="unsupported_claims_remaining", field="unsupported_claim_ids",
+        )
     if critic["missing_section_ids"]:
-        raise RuntimeError("Mandatory research sections are missing after critique.")
+        _quality_contract_error(
+            "Mandatory research sections are missing after critique.",
+            role=CRITIC_ROLE, rule="required_sections_missing", field="missing_section_ids",
+        )
     if any(
         item["disposition"] == "unsatisfied"
         for item in critic["unmet_plan_requirements"]
     ):
-        raise RuntimeError("Mandatory methodology plan requirements remain unsatisfied.")
+        _quality_contract_error(
+            "Mandatory methodology plan requirements remain unsatisfied.",
+            role=CRITIC_ROLE, rule="planner_requirements_unsatisfied", field="unmet_plan_requirements",
+        )
 
 
 def _run_synthesis(
