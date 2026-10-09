@@ -21,7 +21,8 @@ validation decisions, write ordering and iteration limits are unchanged from
 0.1.12. Shared helpers and the frozen evaluation baseline remain unchanged.
 Deliver the new version through the pinned adapter-intake promotion workflow;
 do not hand-edit packaged adapters or upgrade the installed runtime wheel.
-No new environment values are required.
+Its minimum runtime is 0.1.98 for generic diagnostic transport; the installed
+E runtime 0.1.104 already qualifies. No new environment values are required.
 
 See [the diagnostic developer guide](../../../docs/pharma-critic-diagnostics-developer-guide.md) for release gates,
 interpretation and recovery.

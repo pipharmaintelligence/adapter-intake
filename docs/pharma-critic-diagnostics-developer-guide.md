@@ -93,6 +93,11 @@ upload token in the adapter.
    business result and eligible memory/methodology candidates can justify apply.
    Do not rerun the paid path solely to compensate for missing result retention.
 
+The new version declares runtime floor 0.1.98, where the generic diagnostic
+projection became available. The installed E runtime 0.1.104 already satisfies
+this requirement. Prior version dependency contracts stay intact in promotion.
+This is a compatibility declaration, not a runtime wheel upgrade.
+
 Existing running/published versions stay usable. No wheel upgrade, worker
 restart, environment migration or new output policy is part of this repair.
 A live success and first-object methodology apply are not established by tests

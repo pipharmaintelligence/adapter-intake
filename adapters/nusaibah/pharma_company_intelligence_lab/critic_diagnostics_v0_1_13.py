@@ -157,4 +157,3 @@ def validate_critic_payload(
         ),
         "recommendation": recommendation,
     }
-
