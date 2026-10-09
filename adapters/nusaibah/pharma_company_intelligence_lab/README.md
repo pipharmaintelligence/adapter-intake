@@ -1,6 +1,66 @@
 # Nusaibah Pharma Company Intelligence Lab
 
-## 0.1.13 critic diagnostics candidate
+## 0.1.14 CompanyContext handoff
+
+The new version consumes a retained complete Company Scope result. Company Scope
+is the only Companies reader in this path. Full intelligence receives database
+observations from `CompanyContext`; it does not request a Companies binding,
+re-query the lake/node, or infer a country name from a country ID.
+
+```text
+Caller: selector + intelligence options
+  -> Company Scope 0.1.0: governed Companies acquisition, corporate = 1
+  -> Core-retained company_scope_result
+  -> Assets: authorized run-reference hydration + integrity/retention checks
+  -> Intelligence 0.1.14: validate CompanyContext, research, critic, synthesis
+  -> Preview dossier and candidates
+  -> Eligible apply: existing governed Dynamic Skill memory/methodology flow
+```
+
+Caller input `company_context` is only `{"run_uuid": "<completed Scope run UUID>"}`.
+The manifest pins producer `nusaibah.company_scope:0.1.0` and output role
+`company_scope_result`. Assets/Core verifies client access, completed status,
+retention and artifact checksum, and supplies the `{value, provenance}` envelope
+to Python. Caller-supplied records, producer overrides and extra `companies`
+inputs are rejected. Python's DTO/digest checks are defense in depth, not an
+authentication mechanism.
+
+The existing batch `variables` contract is retained, including required
+`company_ids`, `memory_mode=preview|apply`, `research_depth=deep`, and
+`objective=company_intelligence_memory`. These IDs confirm the exact target set;
+they do not trigger data acquisition. Scope order may differ; intelligence
+processes the requested order. No subsetting or partial-results fallback occurs.
+The entire Scope result must contain 1–5 companies and match that requested set.
+Scope's maximum of 25 does not increase intelligence's five-company run limit.
+Paginated `company_scope:0.1.1/company_scope_page` is not this complete-result
+contract and is intentionally rejected. Larger jobs require admitted bounded
+epoch orchestration; this change does not introduce a large in-process loop.
+
+Research Agents, prompts/chains, budgets, quality gates, output schema, published
+methodology, Dynamic Skills and apply ordering are unchanged from 0.1.13.
+Source/provenance refs stay outside Agent business prompts. A stored company
+record is baseline information, not independently verified public research.
+Agent research still needs the existing citation and critic acceptance gates.
+
+**Compatibility and release:** use the official pinned intake promotion workflow.
+It adds 0.1.14 and preserves every previously admitted identity and shared helper.
+0.1.13 continues to use its Companies binding. Evaluation 0.2.3 is unchanged.
+The installed E runtime 0.1.104 already meets the unchanged minimum of 0.1.98;
+no wheel upgrade or new `.env` values are needed. Registration/admission for the
+new exact identity and the promoted source catalog must pass before a live run.
+
+**Persistence boundary:** preview performs no writes. Apply still requires
+critic/benchmark eligibility, existing initialized methodology where a candidate
+is needed, and governed Dynamic Skill mutation/readback/history. This handoff
+does not create a missing methodology partition or publish to a new output node.
+The first-object create-if-absent gap remains separate; the existing guard stops
+before either mutable call. A successful context review is not evidence of a
+full intelligence result or an eligible apply candidate.
+
+See [the handoff developer guide](../../../docs/pharma-company-context-handoff-developer-guide.md)
+for exact input, ownership, validation and rollout requirements.
+
+## Historical 0.1.13 critic diagnostics candidate
 
 This additive production version identifies the critic payload field or
 pre-synthesis quality rule that failed. It reuses the existing generic
