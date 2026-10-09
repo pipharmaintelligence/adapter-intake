@@ -14,6 +14,7 @@ EXPECTED_REVIEWED_HELPERS = {
     "agent_contract.py",
     "critic_diagnostics_v0_1_13.py",
     "company_context_contract_v0_1_14.py",
+    "company_context_contract_v0_1_15.py",
     "methodology_contract.py",
 }
 
@@ -27,6 +28,7 @@ EXPECTED_RUNTIME_FILES = {
     "agent_contract.py",
     "critic_diagnostics_v0_1_13.py",
     "company_context_contract_v0_1_14.py",
+    "company_context_contract_v0_1_15.py",
     "methodology_contract.py",
     "README.md",
 }

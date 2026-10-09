@@ -137,7 +137,7 @@ class FakeInputs(dict):
                 },
             }
         )
-        self.legacy = (adapter_module.NusaibahPharmaCompanyIntelligenceLabAdapter.version != "0.1.14") if legacy is None else legacy
+        self.legacy = (adapter_module.NusaibahPharmaCompanyIntelligenceLabAdapter.version in {"0.1.12", "0.1.13"}) if legacy is None else legacy
         if not self.legacy:
             from company_context_fixture import handoff
             self["company_context"] = handoff(self.pop("companies")["records"])

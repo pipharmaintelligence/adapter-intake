@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from company_context_contract_v0_1_14 import CompanyContextContractError, resolve_company_context
+from company_context_contract_v0_1_15 import CompanyContextContractError, resolve_company_context
 from company_context_fixture import handoff, sign
 from test_orchestration_preview import FakeInputs, _fake_citations, adapter_module
 

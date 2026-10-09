@@ -9,7 +9,7 @@ MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
 
-ASSET_VERSION = "0.1.14"
+ASSET_VERSION = "0.1.15"
 CANONICAL_PROVIDER_REGISTRY_ENTRY = {
     "handle": "provider:text_generation",
     "type": "provider_execution",
@@ -57,7 +57,9 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         self.assertIn(f"asset_version: {ASSET_VERSION}", adapter_yaml)
         self.assertIn(f'version: ClassVar[str] = "{ASSET_VERSION}"', adapter_module)
         self.assertEqual(self.manifest["default"], ASSET_VERSION)
-        self.assertEqual(set(self.manifest["versions"]), {ASSET_VERSION})
+        self.assertEqual(set(self.manifest["versions"]), {"0.1.14", ASSET_VERSION})
+        retained = json.loads((ASSET_ROOT / "tests/fixtures/baseline-production-0.1.14.manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(self.manifest["versions"]["0.1.14"], retained)
         baseline = json.loads((ASSET_ROOT / "tests/fixtures/baseline-production-0.1.13.asset.json").read_text(encoding="utf-8"))
         self.assertEqual(
             {k: v for k, v in self.manifest["versions"][ASSET_VERSION].items() if k != "inputs"},

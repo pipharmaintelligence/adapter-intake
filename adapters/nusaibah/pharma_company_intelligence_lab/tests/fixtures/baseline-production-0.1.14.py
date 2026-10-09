@@ -25,7 +25,7 @@ try:
         validate_strategic_payload,
         validate_synthesis_payload,
     )
-    from .company_context_contract_v0_1_15 import resolve_company_context
+    from .company_context_contract_v0_1_14 import resolve_company_context
     from .critic_diagnostics_v0_1_13 import validate_critic_payload
     from .dossier_contract import CANONICAL_SECTIONS, DOSSIER_SCHEMA_VERSION, SECTION_BY_ID
     from .input_contract import (
@@ -66,7 +66,7 @@ except ImportError:  # pragma: no cover - local adapter-root execution path
         validate_strategic_payload,
         validate_synthesis_payload,
     )
-    from company_context_contract_v0_1_15 import resolve_company_context
+    from company_context_contract_v0_1_14 import resolve_company_context
     from critic_diagnostics_v0_1_13 import validate_critic_payload
     from dossier_contract import CANONICAL_SECTIONS, DOSSIER_SCHEMA_VERSION, SECTION_BY_ID
     from input_contract import (
@@ -1495,7 +1495,7 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.pharma_company_intelligence_lab"
-    version: ClassVar[str] = "0.1.15"
+    version: ClassVar[str] = "0.1.14"
 
     def invoke(self, inputs: Any, context: dict[str, Any]) -> dict[str, Any]:
         """Execute one bounded company batch with two-phase memory mutation."""
