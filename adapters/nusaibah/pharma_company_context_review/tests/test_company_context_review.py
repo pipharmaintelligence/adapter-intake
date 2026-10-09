@@ -51,7 +51,12 @@ class CompanyContextReviewTests(unittest.TestCase):
         self.assertNotIn("evaluation_case", inputs)
 
     def test_report_record_retains_literal_business_urls_under_existing_sdk(self):
-        from devtools.response_validator import validate_response
+        try:
+            from devtools.response_validator import validate_response
+        except ModuleNotFoundError as exc:
+            if exc.name not in {"devtools", "devtools.response_validator"}:
+                raise
+            self.skipTest("Installed SDK qualification: intake CI uses dependency-free stubs")
         inputs = fixtures.FakeInputs(handoff(), findings=True, transform=identity_only)
         result = review.run_review(inputs)
         result["accepted_findings"][0]["claim"] = "Website recorded as https://company.example.test"

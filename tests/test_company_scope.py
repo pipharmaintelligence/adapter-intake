@@ -183,12 +183,17 @@ class CompanyScopeContractTests(unittest.TestCase):
                              {"company_id": 1001}, envelope([record]))
 
     def test_standard_output_records_preserve_business_website_urls(self):
-        from devtools.response_validator import validate_response
         record = dict(row(), website="https://company.example.test")
         response = adapter_module.CompanyScopeAdapter().invoke(
             {"variables": {"company_id": 1001}, "companies": envelope([record])}, {})
-        validate_response(response)
         self.assertEqual(record["website"], response["outputs"]["company_scope_result"]["records"][0]["website"])
+        try:
+            from devtools.response_validator import validate_response
+        except ModuleNotFoundError as exc:
+            if exc.name not in {"devtools", "devtools.response_validator"}:
+                raise
+            self.skipTest("Installed SDK qualification: intake CI uses dependency-free stubs")
+        validate_response(response)
 
     def test_returned_ids_and_country_references_are_strict(self):
         for value in (True, "1001", 1001.0, 0, -1, None):
