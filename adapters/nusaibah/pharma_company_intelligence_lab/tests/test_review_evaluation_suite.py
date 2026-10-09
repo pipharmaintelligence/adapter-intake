@@ -481,7 +481,7 @@ class ReviewEvaluationSuiteTests(unittest.TestCase):
             apply_adjudication_receipt(self.suite, taxonomy, receipt)
 
     def test_pinned_baseline_cannot_directly_execute_adjudicated_fixture_suite(self) -> None:
-        manifest_path = HERE.parent / "nusaibah_pharma_company_intelligence_lab.asset.json"
+        manifest_path = HERE / "fixtures/baseline-production-0.1.12.asset.json"
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         version = manifest["versions"]["0.1.12"]
 

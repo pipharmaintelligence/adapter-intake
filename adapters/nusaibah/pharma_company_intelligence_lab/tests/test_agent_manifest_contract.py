@@ -9,7 +9,7 @@ MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
 
-ASSET_VERSION = "0.1.12"
+ASSET_VERSION = "0.1.13"
 CANONICAL_PROVIDER_REGISTRY_ENTRY = {
     "handle": "provider:text_generation",
     "type": "provider_execution",
@@ -58,6 +58,8 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         self.assertIn(f'version: ClassVar[str] = "{ASSET_VERSION}"', adapter_module)
         self.assertEqual(self.manifest["default"], ASSET_VERSION)
         self.assertEqual(set(self.manifest["versions"]), {ASSET_VERSION})
+        baseline = json.loads((ASSET_ROOT / "tests/fixtures/baseline-production-0.1.12.asset.json").read_text(encoding="utf-8"))
+        self.assertEqual(self.manifest["versions"][ASSET_VERSION], baseline["versions"]["0.1.12"])
 
     def test_runtime_floor_requires_current_trusted_runtime_support(self) -> None:
         dependency_manifest = json.loads(
@@ -67,7 +69,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             dependency_manifest["runtime_package"],
             {
                 "name": "pi-obs-python-runtime",
-                "minimum_version": "0.1.94",
+                "minimum_version": "0.1.98",
             },
         )
 

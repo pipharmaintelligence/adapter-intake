@@ -1,12 +1,39 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.13 critic diagnostics candidate
+
+This additive production version identifies the critic payload field or
+pre-synthesis quality rule that failed. It reuses the existing generic
+`proof_failure_detail.v1` contract and reviewed
+`pharma_agent_business_schema_invalid` code. `stage=critic_payload` denotes
+business-shape validation; `stage=pre_synthesis_quality` denotes a valid critic
+payload that cannot pass the existing quality gate. Fields and rules are static
+identifiers, without company values, claim IDs, notes or provider responses.
+
+This follows run `8ff89da6-2870-431a-8e2a-94d4e60a745d`, which completed the critic
+call but failed before synthesis without a retained rule. That historical rule
+remains unknown. Absence of a methodology partition is not its established cause:
+the supported first-run read path had already passed. First-object creation and
+quality remediation remain separate work.
+
+Agent definitions, prompts, chains, provider budgets, Fixed/Dynamic Skills,
+validation decisions, write ordering and iteration limits are unchanged from
+0.1.12. Shared helpers and the frozen evaluation baseline remain unchanged.
+Deliver the new version through the pinned adapter-intake promotion workflow;
+do not hand-edit packaged adapters or upgrade the installed runtime wheel.
+Its minimum runtime is 0.1.98 for generic diagnostic transport; the installed
+E runtime 0.1.104 already qualifies. No new environment values are required.
+
+See [the diagnostic developer guide](../../../docs/pharma-critic-diagnostics-developer-guide.md) for release gates,
+interpretation and recovery.
+
 ## Current validated baseline and future review direction
 
-The validated baseline is asset `0.1.12` with runtime wheel `0.1.97`, intake commit `21cc6b39492cbd3c090de537a2ee27c599f0f0ec`. Company-13 preview `6e95802c-2336-47f5-b7c2-1e30476a0fef` completed in 303 execution seconds and produced the `intelligence_dossier` output role. This establishes that preview's execution; it does not establish expert-verified factual quality, large-document review, memory apply or file publication. Assets promotion reached main through [PR #458](https://github.com/piusaibah/assets/pull/458).
+The validated baseline is asset `0.1.12` with runtime wheel `0.1.97`, intake commit `21cc6b39492cbd3c090de537a2ee27c599f0f0ec`. Company-13 preview `6e95802c-2336-47f5-b7c2-1e30476a0fef` completed in 303 execution seconds and produced the `intelligence_dossier` output role. This establishes that preview's execution; it does not establish expert-verified factual quality, large-document review, memory apply or file publication. Assets promotion reached main through PR #458 (reference in the developer guide).
 
 The current planner uses four section calls. Three research roles receive their own plan fragments and required sections, but also full bounded company memory. Each research invocation has two provider steps: grounded evidence collection, then structured formatting with the original role input and evidence notes. Analysis, critique and synthesis receive joined evidence. Specialist names therefore do not yet imply fully isolated, minimal context. The existing hard limits below still apply.
 
-The [methodology-driven specialized review design](https://github.com/piusaibah/assets/blob/1eb32db0353a3f20ef2fe5121d8a9258bfaea4be/docs/observability/methodology-specialized-review/README.md) and [PI-1972](https://linear.app/pipharma/issue/PI-1972) define the future architecture. **WP1 evaluation infrastructure is now under implementation on PR #74; the executable 0.1.12 review graph is unchanged.** Priority order is factual faithfulness, precise findings with complete review accounting, bounded execution, specialist relevance, then efficiency. Chunking is a mechanism to preserve evidence and focus review; smaller prompts alone are not a quality metric.
+The methodology-driven specialized review design (reference in the developer guide) and PI-1972 (reference in the developer guide) define the future architecture. **WP1 evaluation infrastructure is now under implementation on PR #74; the executable 0.1.12 review graph is unchanged.** Priority order is factual faithfulness, precise findings with complete review accounting, bounded execution, specialist relevance, then efficiency. Chunking is a mechanism to preserve evidence and focus review; smaller prompts alone are not a quality metric.
 
 WP1 now provides a versioned 24-case synthetic evaluation suite with a fixed 16/8 development/held-out split, 24/24 domain-adjudicated cases, frozen source digests, an adjudicated criticality taxonomy, calibrated quality thresholds, fail-closed baseline measurement contracts, and an evaluation-only replay harness. Adjudication readiness is complete, but the unchanged 0.1.12 factual-quality/cost baseline is still unmeasured; WP2 remains blocked until complete validated baseline evidence exists. After that WP1 completion gate is satisfied, implementation may proceed to evidence/coverage contracts, relevant-memory projection, then source inventories, structure-aware chunks and a finite task plan. Preserve tables, footnotes, dates and cross-section dependencies; distinguish reviewed material from evidence that actually supports a claim. Verify specialist findings, reconcile global contradictions and check the assembled result for newly introduced unsupported claims. A budget stop or unreviewed required material must produce an honest incomplete result. Retain preview/apply separation, company isolation, immutable versions and existing Core/runtime authority boundaries.
 

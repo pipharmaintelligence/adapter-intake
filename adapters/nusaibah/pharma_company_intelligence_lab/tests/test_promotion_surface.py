@@ -12,6 +12,7 @@ EXPECTED_REVIEWED_HELPERS = {
     "dossier_contract.py",
     "memory_contract.py",
     "agent_contract.py",
+    "critic_diagnostics_v0_1_13.py",
     "methodology_contract.py",
 }
 
@@ -23,6 +24,7 @@ EXPECTED_RUNTIME_FILES = {
     "dossier_contract.py",
     "memory_contract.py",
     "agent_contract.py",
+    "critic_diagnostics_v0_1_13.py",
     "methodology_contract.py",
     "README.md",
 }
