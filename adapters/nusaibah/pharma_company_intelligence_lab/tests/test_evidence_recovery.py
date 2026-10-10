@@ -176,11 +176,18 @@ class EvidenceRecoveryTests(unittest.TestCase):
 
     def test_negative_critic_claim_withholds_its_role_prose_from_partial_packet(self):
         def mutate(role, input, envelope):
+            value = envelope["result"]["content"][0]["value"]
+            if role == "market_researcher":
+                value["claims"][0]["statement"] = SECRET
+                value["sections"][0]["subsections"][0]["content"] = SECRET
+            if role == adapter.STRATEGIC_ROLE:
+                value["implications"] = [SECRET]
             if role == adapter.CRITIC_ROLE:
                 claim = next(c for c in input["research_evidence"]["claims"] if c["claim_id"].startswith("market_researcher:"))
                 envelope["result"]["content"][0]["value"]["unsupported_claim_ids"] = [claim["claim_id"]]
         first, packet = self.assert_incomplete(self.run_preview(EvidenceInputs(mutate=mutate)))
         self.assertNotIn("market_researcher", {row["role"] for row in packet["research_role_evidence"]})
+        self.assertIsNone(packet["strategic"])  # derived prose cannot reintroduce rejected research
         self.assertTrue(packet["claims"])
 
     def test_empty_claims_and_uncertainties_are_an_issue_not_a_join_failure(self):

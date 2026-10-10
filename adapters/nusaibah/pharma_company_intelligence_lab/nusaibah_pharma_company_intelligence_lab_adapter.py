@@ -1880,7 +1880,10 @@ def build_review_packet(prepared: list[dict[str, Any]], *, asset_identity: str,
                                  if state["progress"].get("methodology_plan") else None),
             "planner_requirements": state["progress"].get("planner_requirements", []),
             "planner_chunks": state["progress"].get("planner_chunks", []),
-            "critic": state["progress"].get("critic"), "strategic": state["progress"].get("strategic"),
+            "critic": state["progress"].get("critic"),
+            "strategic": (None if any(item["category"] == "quality_rejected"
+                                      for item in state["result"]["issues_annex"]["items"])
+                          else state["progress"].get("strategic")),
             "benchmark": {"questions": [], "before": None, "projected": None,
                           "basis": "not_evaluated", "committed": None},
             "unresolved_agent_responses": state["result"]["unresolved_agent_responses"],

@@ -61,6 +61,8 @@ the company, validated progress is carried into an incomplete review packet.
 Known critic-rejected/stale claims withhold their entire role prose because the
 current citation model is role-level, not exact claim/span linkage. Unscoped
 contradictions withhold the research prose that cannot safely be separated.
+Derived strategic prose is withheld after a quality rejection so it cannot
+reintroduce a rejected fact through a different field.
 Retained research is marked pending final review; it is not an approved candidate.
 
 Each company is prepared independently before the existing apply phase. The
