@@ -1,5 +1,10 @@
 # Pharma Agent response recovery and portfolio reflection — 0.1.17
 
+This document describes the historical 0.1.17 release. For current intake 0.1.20,
+[evidence recovery and the issues annex](pharma-evidence-recovery-developer-guide.md)
+supersede its fatal treatment of preparation quality rejection and original JSON
+parsing errors. Historical promoted modules and helpers retain their behavior.
+
 ## Objective
 
 Reduce avoidable whole-run interruptions from malformed research responses,

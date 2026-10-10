@@ -36,6 +36,10 @@ try:
         require_repair_preserves_evidence, unresolved_research_payload,
     )
     from .portfolio_review_v0_1_17 import portfolio_review_passes
+    from .evidence_recovery_v0_1_20 import (
+        annex as issues_annex, issue as research_issue, diagnostic as evidence_diagnostic,
+        recoverable_quality, no_evidence_payload, retained_research, partial_sections,
+    )
     from .agent_response_recovery_v0_1_17 import (
         normalize_json_envelope, formatting_normal_form, project_business_payload,
         require_preserved_business, safe_diagnostic, payload_diagnostic, UnresolvedAgentResponse,
@@ -91,6 +95,10 @@ except ImportError:  # pragma: no cover - local adapter-root execution path
         require_repair_preserves_evidence, unresolved_research_payload,
     )
     from portfolio_review_v0_1_17 import portfolio_review_passes
+    from evidence_recovery_v0_1_20 import (
+        annex as issues_annex, issue as research_issue, diagnostic as evidence_diagnostic,
+        recoverable_quality, no_evidence_payload, retained_research, partial_sections,
+    )
     from agent_response_recovery_v0_1_17 import (
         normalize_json_envelope, formatting_normal_form, project_business_payload,
         require_preserved_business, safe_diagnostic, payload_diagnostic, UnresolvedAgentResponse,
@@ -1446,18 +1454,7 @@ def extract_agent_json(
         )
 
     value = dict(content[0]["value"])
-    if value.get("schema_version") != expected_schema_version:
-        raise AgentContractValidationError(
-            "pharma_agent_business_schema_invalid",
-            f"Agent role {expected_role} returned an unexpected business schema.",
-            proof_failure_detail=_agent_contract_proof_detail(
-                role=expected_role,
-                stage="agent_business_schema",
-                rule="schema_version",
-                field="schema_version",
-            ),
-        )
-    if value.get("company_id") != company_id:
+    if type(value.get("company_id")) is not int or value.get("company_id") != company_id:
         raise AgentContractValidationError(
             "pharma_agent_company_id_invalid",
             f"Agent role {expected_role} returned the wrong company_id.",
@@ -1471,6 +1468,15 @@ def extract_agent_json(
         raise AgentContractValidationError(
             "pharma_agent_status_invalid",
             f"Agent role {expected_role} returned a non-completed business status.",
+        )
+    if value.get("schema_version") != expected_schema_version:
+        raise AgentContractValidationError(
+            "pharma_agent_business_schema_invalid",
+            "Agent returned an unexpected business schema.",
+            proof_failure_detail=_agent_contract_proof_detail(
+                role=expected_role, stage="agent_business_schema",
+                rule="schema_version", field="schema_version",
+            ),
         )
 
     return value, result
@@ -1537,9 +1543,19 @@ def _validated_agent_response(inputs: Any, envelope: Any, *, role: str,
                               company_id: int, contract: dict[str, Any],
                               validator: Any) -> Any:
     """One original call, deterministic diagnostics, at most one backup call."""
-    envelope, wrappers = normalize_json_envelope(envelope, role=role)
-    value, _ = extract_agent_json(envelope, expected_role=role, company_id=company_id,
-                                  expected_schema_version=contract["schema_version"])
+    try:
+        envelope, wrappers = normalize_json_envelope(envelope, role=role)
+        value, _ = extract_agent_json(envelope, expected_role=role, company_id=company_id,
+                                      expected_schema_version=contract["schema_version"])
+    except (AgentResponseDiagnosticError, AgentContractValidationError) as error:
+        if error.code != "pharma_agent_business_schema_invalid":
+            raise  # runtime envelope, status and company/role authority remain strict
+        diagnostic = safe_diagnostic(error, role=role)
+        inputs.record_response_recovery(company_id=company_id, role=role,
+                                         status="unresolved", diagnostic=diagnostic)
+        # With no faithful typed business object, a backup cannot prove that it
+        # preserved content. Retain the issue, never send arbitrary raw prose.
+        raise UnresolvedAgentResponse(diagnostic) from None
     try:
         validated = validator(value)
     except (ValueError, TypeError, AgentContractValidationError) as initial_error:
@@ -1577,7 +1593,8 @@ def _validated_agent_response(inputs: Any, envelope: Any, *, role: str,
         require_preserved_business(value, repaired, contract=contract, role=role)
     except AgentContractValidationError as final_error:
         if final_error.code in {"pharma_agent_company_id_invalid", "pharma_agent_role_invalid",
-                                "pharma_agent_status_invalid"}:
+                                "pharma_agent_status_invalid", "pharma_agent_runtime_envelope_invalid",
+                                "pharma_agent_runtime_result_invalid"}:
             raise
         final_diagnostic = safe_diagnostic(final_error, role=role)
     except (ValueError, TypeError) as final_error:
@@ -1637,7 +1654,7 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.pharma_company_intelligence_lab"
-    version: ClassVar[str] = "0.1.19"
+    version: ClassVar[str] = "0.1.20"
 
     def invoke(self, inputs: Any, context: dict[str, Any]) -> dict[str, Any]:
         """Execute one bounded company batch with two-phase memory mutation."""
@@ -1671,6 +1688,7 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
         for company_iteration, record in enumerate(records, start=1):
             if company_iteration > MAX_COMPANY_ITERATIONS:
                 _iteration_limit_exceeded()
+            progress: dict[str, Any] = {}
             try:
                 state = _prepare_company(
                     inputs,
@@ -1679,9 +1697,16 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
                     methodology=methodology,
                     review_passes=review_passes,
                     preflight=preflight.get(int(record["company_id"])),
+                    progress=progress,
                 )
             except UnresolvedAgentResponse as error:
-                state = _incomplete_company_state(inputs, record=record, diagnostic=error.diagnostic)
+                state = _incomplete_company_state(inputs, record=record, diagnostic=error.diagnostic,
+                                                  progress=progress)
+            except AgentContractValidationError as error:
+                if not recoverable_quality(error):
+                    raise
+                state = _incomplete_company_state(inputs, record=record,
+                                                  diagnostic=error.proof_failure_detail, progress=progress)
             prepared.append(state)
 
         review_packet = None
@@ -1824,8 +1849,6 @@ def build_review_packet(prepared: list[dict[str, Any]], *, asset_identity: str,
                                            memory_mode=memory_mode)
     absent = {state["company_id"] for state in complete
               if state["result"].get("memory_initialized") is False}
-    if len(complete) == len(prepared) and not absent:
-        return packet
     companies = {row["company_id"]: row for row in packet["companies"]}
     for company_id in absent:
         row = companies[company_id]
@@ -1844,15 +1867,30 @@ def build_review_packet(prepared: list[dict[str, Any]], *, asset_identity: str,
                                 "fact_ids": [], "mutation_eligible": False},
             "methodology_proposal": {**withheld, "role": "company_methodology",
                                      "target_section": "Methodology Learning", "initialized": None},
-            "claims": [], "research_role_evidence": [], "memory_apply_citations": [],
-            "evidence_granularity": "withheld; mandatory Agent preparation did not complete",
-            "methodology_plan": None, "planner_requirements": [], "planner_chunks": [],
-            "critic": None, "strategic": None,
+            "claims": state["retained_claims"],
+            "research_role_evidence": [
+                {"role": role, "sections": payload["sections"],
+                 "uncertainties": payload["uncertainties"],
+                 "citations": _citation_output(payload["_citations"])}
+                for role, payload in state["retained_research"].items()
+            ],
+            "memory_apply_citations": [],
+            "evidence_granularity": "research_role; retained work is not an approved candidate",
+            "methodology_plan": (state["progress"]["methodology_plan"].to_agent_input()
+                                 if state["progress"].get("methodology_plan") else None),
+            "planner_requirements": state["progress"].get("planner_requirements", []),
+            "planner_chunks": state["progress"].get("planner_chunks", []),
+            "critic": state["progress"].get("critic"),
+            "strategic": (None if any(item["category"] == "quality_rejected"
+                                      for item in state["result"]["issues_annex"]["items"])
+                          else state["progress"].get("strategic")),
             "benchmark": {"questions": [], "before": None, "projected": None,
                           "basis": "not_evaluated", "committed": None},
             "unresolved_agent_responses": state["result"]["unresolved_agent_responses"],
-            "residual_uncertainties": ["No approved candidate was prepared after a persistent Agent schema rejection."],
+            "residual_uncertainties": ["Preparation is incomplete; inspect issues_annex. No canonical candidate is approved."],
         }
+    for state in prepared:
+        companies[state["company_id"]]["issues_annex"] = state["result"]["issues_annex"]
     packet["companies"] = [companies[state["company_id"]] for state in prepared]
     packet.pop("packet_sha256")
     packet["packet_sha256"] = "sha256:" + sha256(canonical_bytes(packet)).hexdigest()
@@ -1861,10 +1899,19 @@ def build_review_packet(prepared: list[dict[str, Any]], *, asset_identity: str,
 
 
 def _incomplete_company_state(inputs: Any, *, record: dict[str, Any],
-                              diagnostic: dict[str, Any]) -> dict[str, Any]:
+                              diagnostic: dict[str, Any], progress: dict[str, Any] | None = None) -> dict[str, Any]:
     """Retain a truthful preview without synthesizing a plan, verdict or candidate."""
     company_id = int(record["company_id"])
     counts = inputs.company_agent_counts(company_id)
+    progress = progress or {}
+    research = progress.get("research", {})
+    retained = retained_research(research, progress.get("critic"))
+    retained_claims = [claim for claim in progress.get("joined_research", {}).get("claims", [])
+                       if claim["claim_id"].split(":", 1)[0] in retained]
+    citations = _dedupe_citations([item for payload in retained.values() for item in payload["_citations"]])
+    critic = progress.get("critic") or {}
+    issue_report = issues_annex(research, diagnostic)
+    schema_incomplete = any(item["category"] == "response_invalid" for item in issue_report["items"])
     result = {key: 0 for key in (
         "citation_count", "verified_reference_count", "unsupported_claim_count", "contradiction_count",
         "stale_claim_count", "novel_fact_count", "duplicate_memory_fact_count",
@@ -1875,19 +1922,34 @@ def _incomplete_company_state(inputs: Any, *, record: dict[str, Any],
         "benchmark_question_count", "benchmark_before_covered_count", "benchmark_before_partially_covered_count",
         "benchmark_after_covered_count", "benchmark_after_partially_covered_count", "benchmark_improvement_count",
     )}
-    message = "No approved dossier was produced: an Agent response remained invalid after one bounded repair."
     result.update({
         "company_id": company_id, "company_name": company_name(record), "status": "completed",
-        "business_result_state": "incomplete", "agent_schema_incomplete": True,
-        "research_incomplete": True, "unresolved_agent_responses": [diagnostic],
-        "unresolved_research_responses": [], "quality_gate_passed": False,
+        "business_result_state": "incomplete", "agent_schema_incomplete": schema_incomplete,
+        "research_incomplete": True,
+        "unresolved_agent_responses": [diagnostic] if schema_incomplete else [],
+        "unresolved_research_responses": [payload["_unresolved_response"] for payload in research.values()
+                                           if payload.get("_unresolved_response")],
+        "quality_gate_passed": False, "issues_annex": issue_report,
+        "unsupported_claim_count": len(critic.get("unsupported_claim_ids", [])),
+        "contradiction_count": len(critic.get("contradiction_items", [])),
+        "stale_claim_count": len(critic.get("stale_claim_ids", [])),
+        "planner_unmet_requirement_count": len(critic.get("unmet_plan_requirements", [])),
+        "planner_required_question_count": len(progress.get("planner_requirements", [])),
+        "planner_focus_item_count": (len(progress["methodology_plan"].research_focus)
+                                     if progress.get("methodology_plan") else 0),
         "benchmark_non_regression": None, "benchmark_result_basis": "not_evaluated",
-        "sections": [{"section_id": section.section_id,
-                      "content": "" if section.subsections else message,
-                      "subsections": [{"subsection_id": sub.subsection_id, "content": message}
-                                      for sub in section.subsections]} for section in CANONICAL_SECTIONS],
-        "citation_sources": [], "portfolio_review_trace": [], "research_response_repairs": [],
-        "no_evidence_research_roles": list(RESEARCH_ROLES),
+        "sections": partial_sections(retained), "research_evidence_state": "retained_pending_final_review",
+        "citation_sources": _citation_output(citations), "citation_count": len(citations),
+        "research_claim_count": len(retained_claims), "research_role_count": len(research),
+        "portfolio_review_trace": research.get("portfolio_researcher", {}).get("_review_trace", []),
+        "portfolio_review_pass_count": counts.get("portfolio_researcher", 0),
+        "portfolio_reflection_pass_count": max(0, counts.get("portfolio_researcher", 0) - 1),
+        "research_response_repairs": [{"role": role, **repair} for role, payload in research.items()
+                                       for repair in payload["_response_repairs"]],
+        "research_response_repair_count": sum(repair["count"] for payload in research.values()
+                                              for repair in payload["_response_repairs"]),
+        "research_resolver_agent_call_count": sum(payload["_resolver_call_count"] for payload in research.values()),
+        "no_evidence_research_roles": [role for role in RESEARCH_ROLES if not retained.get(role, {}).get("claims")],
         "methodology_planner_call_count": counts.get(PLANNER_ROLE, 0),
         "specialist_agent_call_count": sum(counts.get(role, 0) for role in RESEARCH_ROLES),
         "search_enabled_agent_call_count": sum(counts.get(role, 0) for role in RESEARCH_ROLES),
@@ -1907,6 +1969,7 @@ def _incomplete_company_state(inputs: Any, *, record: dict[str, Any],
         result[field] = None  # unknown/unscored is not a fabricated zero benchmark
     return {"company_id": company_id, "company_name": company_name(record), "result": result,
             "incomplete_schema_preview": True, "memory_mutation_eligible": False,
+            "progress": progress, "retained_research": retained, "retained_claims": retained_claims,
             "methodology_learning_candidate": None, "methodology_learning_handle": None}
 
 
@@ -1958,7 +2021,9 @@ def _prepare_company(
     methodology: MethodologyResources,
     preflight: tuple[Any, Any] | None = None,
     review_passes: int = 1,
+    progress: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    progress = progress if progress is not None else {}
     company_id = int(record["company_id"])
     name = company_name(record)
     baseline = project_company_baseline(record)
@@ -2003,6 +2068,8 @@ def _prepare_company(
         before_benchmark=before_benchmark,
         learned_methodology_text=methodology_learning_text,
     )
+    progress.update(methodology_plan=methodology_plan, planner_chunks=planner_chunks,
+                    planner_requirements=list(methodology_plan.requirement_catalog()))
 
     research = _run_research_fanout(
         inputs,
@@ -2017,7 +2084,15 @@ def _prepare_company(
         review_passes=review_passes,
     )
     joined = _join_research(research)
+    progress.update(research=research, joined_research=joined)
     research_incomplete = any(payload.get("_unresolved_response") for payload in research.values())
+    if not joined["claims"]:
+        # Do not pay for a reflection/critic/synthesis without usable evidence,
+        # or invent a memory candidate merely to satisfy its nonempty contract.
+        raise UnresolvedAgentResponse(evidence_diagnostic(
+            role="orchestration", stage="pre_synthesis_quality",
+            rule="no_usable_research_evidence", field="claims",
+        ))
 
     strategic = _run_strategic(
         inputs,
@@ -2028,6 +2103,7 @@ def _prepare_company(
         joined_research=joined,
         methodology_plan=methodology_plan,
     )
+    progress["strategic"] = strategic
     critic = _run_critic(
         inputs,
         company_id=company_id,
@@ -2037,6 +2113,7 @@ def _prepare_company(
         methodology=methodology,
         methodology_plan=methodology_plan,
     )
+    progress["critic"] = critic
     _require_pre_synthesis_quality(research, critic, methodology_plan=methodology_plan)
 
     synthesis, candidate = _run_synthesis(
@@ -2125,6 +2202,8 @@ def _prepare_company(
         "portfolio_review_trace": research["portfolio_researcher"]["_review_trace"],
         "research_resolver_agent_call_count": sum(payload["_resolver_call_count"] for payload in research.values()),
         "research_incomplete": research_incomplete,
+        "business_result_state": "incomplete" if research_incomplete else "reviewed",
+        "issues_annex": issues_annex(research),
         "agent_schema_incomplete": False,
         "unresolved_agent_responses": [],
         "agent_response_resolver_call_count": inputs.company_agent_counts(company_id).get(RESEARCH_RESOLVER_ROLE, 0),
@@ -2156,8 +2235,8 @@ def _prepare_company(
             "existing_memory_agent_review" if memory_initialized else "deterministic_absent_memory"
         ),
         "methodology_learning_update_status": (
-            "preview_ready"
-            if methodology_learning_candidate is not None
+            "withheld_incomplete" if research_incomplete
+            else "preview_ready" if methodology_learning_candidate is not None
             else "no_change_recommended"
         ),
         "methodology_learning_change_id": None,
@@ -2169,7 +2248,7 @@ def _prepare_company(
         "methodology_learning_after_digest": None,
         "methodology_learning_readback_verified": False,
         "memory_update_status": (
-            "preview_ready" if candidate_eligible else "no_change_recommended"
+            "withheld_incomplete" if research_incomplete else "preview_ready" if candidate_eligible else "no_change_recommended"
         ),
         "memory_change_id": None,
         "memory_before_digest": before_digest,
@@ -2328,6 +2407,7 @@ def _run_research_fanout(
         trace: list[dict[str, Any]] = []
         resolver_calls = 0
         unresolved = None
+        issue_entry = None
         for pass_number in range(1, passes + 1):
             previous = None if payload is None else {
                 key: item for key, item in payload.items() if not key.startswith("_")
@@ -2342,26 +2422,37 @@ def _run_research_fanout(
                     "previous_result": previous,
                 },
             }, on_error="raise")
-            envelope, wrappers = normalize_json_envelope(envelope, role=role)
-            if wrappers:
-                inputs.record_response_recovery(company_id=company_id, role=role,
-                                                 status="json_unwrapped", wrappers=wrappers)
-            value, agent_result = extract_research_json(envelope, role=role, company_id=company_id)
             try:
-                next_payload, pass_repairs = resolve_research_payload(value, role=role, company_id=company_id)
-            except ResearchContractValidationError as initial_error:
-                # One formatting-only resolver call in the existing registered
-                # Agent lane. Identity/envelope failures never enter this path.
-                resolver_calls += 1
-                next_payload, pass_repairs, unresolved = _repair_research_response(
-                    inputs, value=value, role=role, company_id=company_id,
-                    initial_error=initial_error,
+                envelope, wrappers = normalize_json_envelope(envelope, role=role)
+                value, agent_result = extract_agent_json(
+                    envelope, expected_role=role, company_id=company_id,
+                    expected_schema_version=RESEARCH_SCHEMA_VERSION,
                 )
-                if unresolved is not None:
-                    # Preserve a validated earlier review if a reflection fails;
-                    # otherwise emit explicit gaps and withhold all failed claims.
-                    next_payload = payload if payload is not None else unresolved_research_payload(role=role, company_id=company_id)
-            payload = next_payload
+            except (AgentResponseDiagnosticError, AgentContractValidationError) as error:
+                if error.code != "pharma_agent_business_schema_invalid":
+                    raise
+                unresolved = safe_diagnostic(error, role=role)
+                next_payload, pass_repairs, agent_result = None, [], None
+                inputs.record_response_recovery(company_id=company_id, role=role,
+                                                 status="unresolved", diagnostic=unresolved)
+            else:
+                if wrappers:
+                    inputs.record_response_recovery(company_id=company_id, role=role,
+                                                     status="json_unwrapped", wrappers=wrappers)
+                try:
+                    next_payload, pass_repairs = resolve_research_payload(value, role=role, company_id=company_id)
+                except ResearchContractValidationError as initial_error:
+                    if initial_error.proof_failure_detail["rule"] == "explicit_evidence_gap_required":
+                        unresolved = initial_error.proof_failure_detail
+                        next_payload, pass_repairs = None, []
+                        inputs.record_response_recovery(company_id=company_id, role=role,
+                                                         status="evidence_withheld", diagnostic=unresolved)
+                    else:
+                        resolver_calls += 1
+                        next_payload, pass_repairs, unresolved = _repair_research_response(
+                            inputs, value=value, role=role, company_id=company_id,
+                            initial_error=initial_error,
+                        )
             repairs.extend({"pass_number": pass_number, **item} for item in pass_repairs)
             try:
                 admitted = () if unresolved is not None else _agent_citations(agent_result)
@@ -2373,22 +2464,39 @@ def _run_research_fanout(
                         role=role, stage="research_citations", rule="invalid_schema", field="citations",
                     ),
                 ) from None
-            # Do not let an unsupported first pass acquire citation authority from
-            # a later reflection. Runtime admission still owns every citation.
-            if payload["claims"] and not (citations or admitted):
-                _quality_contract_error("Research claims must return admitted citations.",
-                                        role=role, rule="research_citations_missing", field="citations")
-            citations = list(_dedupe_citations(citations + list(admitted)))
+            withheld_count = 0
+            if unresolved is None and not admitted and (next_payload["claims"] or payload is not None):
+                # Every new pass needs its own admitted evidence. Earlier citations
+                # cannot confer blanket authority on uncited reflection claims.
+                withheld_count = len(next_payload["claims"])
+                unresolved = evidence_diagnostic(role=role, stage="pre_synthesis_quality",
+                                                 rule="research_citations_missing", field="citations")
+                inputs.record_response_recovery(company_id=company_id, role=role,
+                                                 status="evidence_withheld", diagnostic=unresolved)
+            if unresolved is not None:
+                issue_entry = research_issue(
+                    unresolved,
+                    category="evidence_unavailable" if unresolved["rule"] in {"research_citations_missing", "explicit_evidence_gap_required"} else "response_invalid",
+                    action="previous_validated_pass_retained" if payload is not None else "withheld",
+                    withheld_claim_count=withheld_count, pass_number=pass_number,
+                )
+                next_payload = payload if payload is not None else no_evidence_payload(role=role, company_id=company_id)
+            else:
+                if not admitted:
+                    # A claimless role must not leak uncited facts through prose.
+                    next_payload = no_evidence_payload(role=role, company_id=company_id)
+                citations = list(_dedupe_citations(citations + list(admitted)))
+            payload = next_payload
             trace.append({
                 "pass_number": pass_number,
                 "stage": "initial_review" if pass_number == 1 else "reflection",
-                "status": "unresolved" if unresolved is not None else "validated",
+                "status": "unresolved" if unresolved is not None else "validated" if admitted else "no_evidence",
                 "previous_result_sha256": None if previous is None else _research_digest(previous),
                 "result_sha256": _research_digest({**payload, "citation_sources": _citation_output(citations)}),
                 "learned_methodology_used": bool(base_input["learned_methodology"]),
                 "claim_count": len(payload["claims"]), "citation_count": len(citations),
             })
-            if unresolved is not None:
+            if unresolved is not None or not payload["claims"]:
                 break  # no reflection on withheld evidence and no repair loop
         assert payload is not None  # bounded configuration was checked before dispatch
         payload["_citations"] = tuple(citations)
@@ -2396,6 +2504,7 @@ def _run_research_fanout(
         payload["_review_trace"] = trace
         payload["_resolver_call_count"] = resolver_calls
         payload["_unresolved_response"] = unresolved
+        payload["_issue"] = issue_entry
         return payload
 
     with ThreadPoolExecutor(max_workers=3, thread_name_prefix="pharma-research") as pool:
@@ -2425,7 +2534,8 @@ def _repair_research_response(
     })
     try:
         # Invalid backup syntax is withheld; identity/runtime authority still rejects.
-        repaired, _ = extract_research_json(repair_envelope, role=role, company_id=company_id)
+        repaired, _ = extract_agent_json(repair_envelope, expected_role=role, company_id=company_id,
+                                         expected_schema_version=RESEARCH_SCHEMA_VERSION)
         payload, repairs = resolve_research_payload(repaired, role=role, company_id=company_id)
         require_repair_preserves_evidence(value, payload, role=role)
     except ResearchContractValidationError as final_error:
@@ -2438,6 +2548,13 @@ def _repair_research_response(
         inputs.record_response_recovery(company_id=company_id, role=role, status="unresolved",
                                          diagnostic=final_error.proof_failure_detail)
         return None, [], final_error.proof_failure_detail
+    except AgentContractValidationError as final_error:
+        if final_error.code != "pharma_agent_business_schema_invalid":
+            raise
+        diagnostic = safe_diagnostic(final_error, role=role)
+        inputs.record_response_recovery(company_id=company_id, role=role, status="unresolved",
+                                         diagnostic=diagnostic)
+        return None, [], diagnostic
     inputs.record_response_recovery(company_id=company_id, role=role, status="agent_repaired",
                                      diagnostic=initial_error.proof_failure_detail)
     return payload, [*repairs, {"field": initial_error.proof_failure_detail["field"],

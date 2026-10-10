@@ -1304,8 +1304,15 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
             patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations),
             patch(__name__ + "._agent_value", side_effect=agent_value_with_unsatisfied),
         ):
-            with self.assertRaisesRegex(RuntimeError, "plan requirements remain unsatisfied"):
-                adapter.invoke(inputs, {})
+            if hasattr(adapter_module, "issues_annex"):
+                result = adapter.invoke(inputs, {})
+                first, second = result["outputs"]["intelligence_dossier"]["company_results"]
+                self.assertFalse(first["quality_gate_passed"])
+                self.assertTrue(second["quality_gate_passed"])
+                self.assertEqual(first["issues_annex"]["items"][-1]["rule"], "planner_requirements_unsatisfied")
+            else:
+                with self.assertRaisesRegex(RuntimeError, "plan requirements remain unsatisfied"):
+                    adapter.invoke(inputs, {})
 
         self.assertFalse(
             any(role == "intelligence_synthesizer" and company_id == 13 for role, company_id in inputs.agent_calls)
@@ -1358,7 +1365,11 @@ class FullPreviewOrchestrationTests(unittest.TestCase):
         adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
 
         with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
-            if hasattr(adapter_module, "RESEARCH_RESOLVER_ROLE"):
+            if hasattr(adapter_module, "issues_annex"):
+                with self.assertRaises(adapter_module.AgentContractValidationError) as caught:
+                    adapter.invoke(inputs, {})
+                self.assertEqual(caught.exception.code, "pharma_agent_company_id_invalid")
+            elif hasattr(adapter_module, "RESEARCH_RESOLVER_ROLE"):
                 from research_diagnostics_v0_1_17 import ResearchContractValidationError
                 with self.assertRaises(ResearchContractValidationError) as caught:
                     adapter.invoke(inputs, {})

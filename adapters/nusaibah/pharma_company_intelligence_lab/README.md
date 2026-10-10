@@ -1,5 +1,36 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.20 evidence recovery and issues annex
+
+Missing admitted citations, unresolved business responses and negative preparation
+quality decisions retain an explicit incomplete company result instead of aborting
+the batch. Source-backed work remains inspectable pending final review. Unsupported
+claims **and their role prose** are withheld; an unsuccessful reflection keeps its
+last validated pass. Each company and its optional review packet include a bounded
+`issues_annex` with role, stage, field, rule, affected section IDs and disposition.
+No raw invalid reply or fabricated citation is placed in the annex.
+
+If every research role lacks usable claims, the adapter skips dependent paid
+analysis/critic/synthesis rather than inventing a candidate. An incomplete company
+cannot update memory or methodology; other eligible companies continue. Explicit
+dossier publication keeps its existing runtime-owned output-policy path and
+preserves incompleteness. Completion of processing is not business approval.
+
+The search step now consistently requests plain-text evidence notes; the formatter
+and one-time backup request strict JSON. Empty evidence is allowed explicitly.
+Formatting repair runs only when a faithful typed business object is available,
+once per original invocation, with deterministic parsing before and after it.
+Missing citations never trigger a resolver that could invent evidence.
+
+All nine roles retain 600-second provider requests and the 1,800-second asset
+deadline. Company/role identity, runtime authority, malformed citation metadata,
+transport errors, bounded execution and commit integrity remain strict failures.
+This recovery release does not promise that infrastructure failures cannot occur.
+
+See [the evidence recovery guide](../../../docs/pharma-evidence-recovery-developer-guide.md)
+for the handling matrix, annex contract, tests and official promotion procedure.
+The version sections below describe their historical release behavior.
+
 ## 0.1.19 ten-minute requests for every Agent
 
 All nine Agent roles request **600 seconds per provider step**, including the

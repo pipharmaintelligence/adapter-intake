@@ -72,7 +72,11 @@ class AgentResponseRecoveryTests(unittest.TestCase):
                 self.assertFalse(any(name.endswith("_update") for name, _ in inputs.dynamic_skill_calls))
                 packet = dossier["review_packet"]
                 withheld = packet["companies"][0]
-                self.assertIsNone(withheld["critic"])
+                if role == adapter.SYNTHESIS_ROLE:
+                    self.assertEqual(withheld["critic"]["recommendation"], "pass")
+                    self.assertTrue(withheld["claims"])  # preserve earlier work, not a candidate approval
+                else:
+                    self.assertIsNone(withheld["critic"])
                 self.assertIsNone(withheld["memory_proposal"]["replacement_text"])
                 self.assertFalse(withheld["memory_proposal"]["mutation_eligible"])
                 body = {key: value for key, value in packet.items() if key != "packet_sha256"}
