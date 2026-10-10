@@ -79,19 +79,16 @@ class ResearchIdentityTests(unittest.TestCase):
                 self.assertTrue(all(":" in claim_id for claim_id in ids))
 
     def test_invalid_research_payload_has_safe_stage_and_role(self):
-        def malformed(role, company_id, input_value):
-            value = _agent_value(role, company_id, input_value)
-            if role == "market_researcher":
-                value["claims"][0]["confidence"] = "sensitive-unreviewed-value"
-            return value
-        with patch("test_orchestration_preview._agent_value", side_effect=malformed), patch.object(
-            adapter_module, "_agent_citations", side_effect=_fake_citations,
-        ):
-            with self.assertRaises(adapter_module.AgentContractValidationError) as caught:
-                NusaibahPharmaCompanyIntelligenceLabAdapter().invoke(FakeInputs(), {})
+        from research_diagnostics_v0_1_17 import ResearchContractValidationError, validate_research_payload
+        role = "market_researcher"
+        value = _agent_value(role, 13, {"required_sections": adapter_module._section_requests(adapter_module.RESEARCH_ROLE_SECTIONS[role])})
+        value["claims"][0]["confidence"] = "sensitive-unreviewed-value"
+        with self.assertRaises(ResearchContractValidationError) as caught:
+            validate_research_payload(value, role=role, company_id=13)
         proof = caught.exception.proof_failure_detail
         self.assertEqual(proof["role"], "market_researcher")
         self.assertEqual(proof["stage"], "research_payload")
+        self.assertEqual(proof["field"], "claims_confidence")
         self.assertEqual(safe_proof_failure_detail(proof), proof)
         self.assertNotIn("sensitive-unreviewed-value", json.dumps(proof) + str(caught.exception))
 

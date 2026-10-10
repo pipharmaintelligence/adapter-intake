@@ -45,8 +45,14 @@ class ApplyPhaseSafetyTests(unittest.TestCase):
         adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
 
         with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
-            with self.assertRaisesRegex(RuntimeError, "wrong company_id"):
-                adapter.invoke(inputs, {})
+            if hasattr(adapter_module, "RESEARCH_RESOLVER_ROLE"):
+                from research_diagnostics_v0_1_17 import ResearchContractValidationError
+                with self.assertRaises(ResearchContractValidationError) as caught:
+                    adapter.invoke(inputs, {})
+                self.assertEqual(caught.exception.proof_failure_detail["field"], "company_id")
+            else:
+                with self.assertRaisesRegex(RuntimeError, "wrong company_id"):
+                    adapter.invoke(inputs, {})
 
         mutable_calls = [
             item for item in inputs.dynamic_skill_calls if item[0] == "company_memory_update"

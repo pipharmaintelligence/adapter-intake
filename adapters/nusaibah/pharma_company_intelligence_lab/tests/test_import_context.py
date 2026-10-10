@@ -10,7 +10,7 @@ from pathlib import Path
 
 ASSET_ROOT = Path(__file__).resolve().parents[1]
 ADAPTER_MODULE = "nusaibah_pharma_company_intelligence_lab_adapter.py"
-ASSET_VERSION = "0.1.16"
+ASSET_VERSION = "0.1.17"
 HELPERS = (
     "input_contract.py",
     "dossier_contract.py",
@@ -20,6 +20,9 @@ HELPERS = (
     "company_context_contract_v0_1_15.py",
     "methodology_contract.py",
     "review_packet_v0_1_16.py",
+    "research_diagnostics_v0_1_17.py",
+    "portfolio_review_v0_1_17.py",
+    "agent_response_recovery_v0_1_17.py",
 )
 
 
@@ -42,7 +45,7 @@ class ImportContextTests(unittest.TestCase):
                 sys.path.insert(0, {str(package)!r})
                 for name in ["candidate_package.{candidate[:-3]}", "{candidate[:-3]}"]:
                     module = importlib.import_module(name)
-                    assert module.NusaibahPharmaCompanyIntelligenceLabAdapter.version == "0.1.16"
+                    assert module.NusaibahPharmaCompanyIntelligenceLabAdapter.version == "0.1.17"
                     helper = importlib.import_module("candidate_package.critic_diagnostics_v0_1_13")
                     error = helper.CriticContractValidationError("field_invalid", "recommendation")
                     assert error.proof_failure_detail["stage"] == "critic_payload"
