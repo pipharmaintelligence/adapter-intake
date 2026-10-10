@@ -20,7 +20,10 @@ helpers, change research prompts or bypass Dynamic Skill authority.
 
 Company Scope reads the lake/node. Intelligence receives CompanyContext and
 never reads Companies again. Reading existing company memory/methodology through
-Dynamic Skill is a separate governed operation and remains necessary.
+Dynamic Skill remains necessary under its existing contract. Fixed/Dynamic
+Skills share runtime capabilities; their role/selection/mutability differences
+do not require another storage lane or artifact publish policy. See
+[Skill lifecycle and first-package handoff](https://github.com/piusaibah/assets/blob/main/docs/observability/skill-lifecycle-and-first-package.md).
 
 ## Caller-side input
 
