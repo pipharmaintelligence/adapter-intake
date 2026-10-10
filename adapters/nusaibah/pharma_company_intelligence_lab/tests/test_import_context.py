@@ -22,6 +22,7 @@ HELPERS = (
     "review_packet_v0_1_16.py",
     "research_diagnostics_v0_1_17.py",
     "portfolio_review_v0_1_17.py",
+    "agent_response_recovery_v0_1_17.py",
 )
 
 

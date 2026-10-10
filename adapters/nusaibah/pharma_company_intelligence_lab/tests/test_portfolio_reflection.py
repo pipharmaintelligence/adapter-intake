@@ -158,9 +158,12 @@ class PortfolioReflectionTests(unittest.TestCase):
         inputs = RepairInputs(resolver_invalid=True)
         inputs["variables"].update(publish_dossier=True, memory_mode="apply")
         with patch.object(orchestration, "_agent_value", side_effect=honest_critic):
-            with self.assertRaises(adapter.AgentContractValidationError) as caught:
-                self.run_preview(inputs)
-        self.assertEqual(caught.exception.proof_failure_detail["rule"], "incomplete_publication_withheld")
+            result = self.run_preview(inputs)
+        dossier = result["outputs"]["intelligence_dossier"]
+        self.assertEqual(dossier["business_result_state"], "incomplete")
+        self.assertEqual(dossier["publication_state"], "runtime_output_ready_for_output_policy")
+        self.assertTrue(dossier["publication_requested"])
+        self.assertTrue(all(row["research_incomplete"] for row in dossier["company_results"]))
         self.assertFalse(any(role.endswith("_update") for role, _ in inputs.dynamic_skill_calls))
 
     def test_company_with_no_market_evidence_needs_explicit_critic_dispositions(self):
@@ -184,7 +187,19 @@ class PortfolioReflectionTests(unittest.TestCase):
         with patch.object(orchestration, "_agent_value", side_effect=sparse_company), patch.object(adapter, "_agent_citations", side_effect=citations):
             result = adapter.NusaibahPharmaCompanyIntelligenceLabAdapter().invoke(FakeInputs(), {})
         self.assertTrue(all(row["no_evidence_research_roles"] == ["market_researcher"] for row in self.companies(result)))
+        self.assertTrue(all(not row["research_incomplete"] for row in self.companies(result)))
+        self.assertTrue(all(row["memory_mutation_eligible"] for row in self.companies(result)))
         self.assertEqual(result["metrics"]["research_resolver_agent_call_count"], 0)
+        apply_inputs = FakeInputs()
+        apply_inputs["variables"].update(memory_mode="apply", publish_dossier=True)
+        with patch.object(orchestration, "_agent_value", side_effect=sparse_company), \
+             patch.object(adapter, "_agent_citations", side_effect=citations), \
+             patch.object(adapter, "_apply_company_memory", return_value={"memory_update_status": "applied"}) as memory_apply, \
+             patch.object(adapter, "_apply_company_methodology", return_value={"methodology_learning_update_status": "applied"}) as methodology_apply:
+            applied = adapter.NusaibahPharmaCompanyIntelligenceLabAdapter().invoke(apply_inputs, {})
+        self.assertEqual(memory_apply.call_count, 2)
+        self.assertEqual(methodology_apply.call_count, 2)
+        self.assertEqual(applied["outputs"]["intelligence_dossier"]["business_result_state"], "reviewed")
         def undisposed(role, company_id, payload):
             value = sparse_company(role, company_id, payload)
             if role == "evidence_critic":
@@ -201,7 +216,7 @@ class PortfolioReflectionTests(unittest.TestCase):
             company_id = result["content"][0]["value"]["company_id"]
             role = result["content"][0]["value"]["role"]
             return tuple(CitationRef(locator=f"https://example.test/{company_id}/{role}/{i}", title="Evidence",
-                                     source_kind="web", provider_family="vertex_ai") for i in range(30))
+                                     source_kind="agent_citation", provider_family="vertex_ai") for i in range(30))
         inputs = FakeInputs(); inputs["variables"].update(portfolio_review_passes=3, retain_review_packet=True)
         with patch.object(adapter, "_agent_citations", side_effect=citations):
             result = adapter.NusaibahPharmaCompanyIntelligenceLabAdapter().invoke(inputs, {})
@@ -249,14 +264,17 @@ class PortfolioReflectionTests(unittest.TestCase):
                 request = adapter.validate_batch_request({"variables": {"company_ids": [1,2,3,4,5], "memory_mode": mode}})
                 bounded = adapter._BoundedAgentInputs(runtime, request, review_passes=passes)
                 for company_id in request.company_ids:
-                    limits.AgentIterationLimitTests().exercise_company(bounded, company_id, mode=mode)
-                    for _ in range(passes - 1):
-                        bounded.invoke_agent("portfolio_researcher", input={"company_id": company_id})
-                    for _ in range(passes + 2):
-                        bounded.invoke_agent(adapter.RESEARCH_RESOLVER_ROLE, input={"company_id": company_id})
+                    roles = [adapter.BENCHMARK_ROLE, *([adapter.PLANNER_ROLE] * 4),
+                             *(["portfolio_researcher"] * passes), "market_researcher", "regulatory_risk_researcher",
+                             adapter.STRATEGIC_ROLE, adapter.CRITIC_ROLE, adapter.SYNTHESIS_ROLE, adapter.BENCHMARK_ROLE]
+                    if mode == "apply":
+                        roles.append(adapter.BENCHMARK_ROLE)
+                    for role in roles:
+                        bounded.invoke_agent(role, input={"company_id": company_id})
+                        bounded.invoke_response_resolver(original_role=role, input={"company_id": company_id})
                     with self.assertRaises(adapter.AgentContractValidationError):
-                        bounded.invoke_agent(adapter.RESEARCH_RESOLVER_ROLE, input={"company_id": company_id})
-                expected = 5 * ((12 if mode == "preview" else 13) + passes - 1 + passes + 2)
+                        bounded.invoke_response_resolver(original_role=adapter.BENCHMARK_ROLE, input={"company_id": company_id})
+                expected = 5 * 2 * ((12 if mode == "preview" else 13) + passes - 1)
                 self.assertEqual(bounded.agent_call_count, expected)
                 self.assertEqual(bounded.agent_call_limit, expected)
 

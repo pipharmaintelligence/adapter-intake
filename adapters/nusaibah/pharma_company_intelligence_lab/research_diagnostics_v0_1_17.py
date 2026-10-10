@@ -14,12 +14,14 @@ try:
         MAX_TEXT_CHARS, MAX_UNCERTAINTIES, _text, _token, _text_list,
     )
     from .dossier_contract import normalize_sections, SECTION_BY_ID
+    from .agent_response_recovery_v0_1_17 import normalize_json_envelope
 except ImportError:  # pragma: no cover - flat adapter-root imports
     from agent_contract import (
         RESEARCH_SCHEMA_VERSION, RESEARCH_ROLE_SECTIONS, MAX_CLAIMS,
         MAX_TEXT_CHARS, MAX_UNCERTAINTIES, _text, _token, _text_list,
     )
     from dossier_contract import normalize_sections, SECTION_BY_ID
+    from agent_response_recovery_v0_1_17 import normalize_json_envelope
 
 
 class ResearchContractValidationError(ValueError):
@@ -46,6 +48,7 @@ def _checked(role: str, field: str, validator: Callable[..., Any], *args: Any, *
 
 def extract_research_json(envelope: Any, *, role: str, company_id: int) -> tuple[dict[str, Any], dict[str, Any]]:
     """Mirror extract_agent_json's research envelope checks with safe diagnostics."""
+    envelope, _ = normalize_json_envelope(envelope, role=role)
     if not isinstance(envelope, dict) or envelope.get("status") != "completed":
         raise _error(role, "not_completed", "status", "research_envelope")
     result = envelope.get("result")

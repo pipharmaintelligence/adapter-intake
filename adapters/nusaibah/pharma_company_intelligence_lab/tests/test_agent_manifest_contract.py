@@ -68,7 +68,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             {k: v for k, v in baseline["versions"]["0.1.13"].items() if k not in {"inputs", "agents"}},
         )
         previous = baseline["versions"]["0.1.13"]["agents"]
-        changed = {"portfolio_researcher", "market_researcher", "regulatory_risk_researcher", "evidence_critic"}
+        changed = set(previous)
         for role, old in previous.items():
             if role not in changed:
                 self.assertEqual(self.agents[role], old)
@@ -172,9 +172,9 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             with self.subTest(role=role):
                 agent = self.agents[role]
                 expected_contract_version = (
-                    "1.0.0" if role == "research_response_resolver" else
-                    ("1.0.4" if role == "methodology_planner" or search_enabled or role == "evidence_critic" else
-                     ("1.0.3" if role in {"strategic_analyst", "intelligence_synthesizer"} else "1.0.2"))
+                    "1.0.1" if role == "research_response_resolver" else
+                    ("1.0.5" if role == "methodology_planner" or search_enabled or role == "evidence_critic" else
+                     ("1.0.4" if role in {"strategic_analyst", "intelligence_synthesizer"} else "1.0.3"))
                 )
                 self.assertEqual(agent["contract_version"], expected_contract_version)
                 definition = agent["definition"]
@@ -248,17 +248,17 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
     def test_planner_contract_hardening_uses_new_agent_contract_version(self) -> None:
         self.assertEqual(
             self.agents["methodology_planner"]["contract_version"],
-            "1.0.4",
+            "1.0.5",
         )
         self.assertEqual(
             self.agents["methodology_planner"]["definition"]["chain"]["version"],
-            "1.0.4",
+            "1.0.5",
         )
         for role, agent in self.agents.items():
             if role == "methodology_planner" or role.endswith("_researcher") or role == "research_response_resolver":
                 continue
             with self.subTest(role=role):
-                expected = "1.0.4" if role == "evidence_critic" else ("1.0.3" if role in {"strategic_analyst", "intelligence_synthesizer"} else "1.0.2")
+                expected = "1.0.5" if role == "evidence_critic" else ("1.0.4" if role in {"strategic_analyst", "intelligence_synthesizer"} else "1.0.3")
                 self.assertEqual(agent["contract_version"], expected)
                 self.assertEqual(agent["definition"]["chain"]["version"], expected)
 

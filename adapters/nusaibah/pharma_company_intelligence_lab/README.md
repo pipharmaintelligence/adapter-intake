@@ -3,10 +3,18 @@
 ## 0.1.17 response resolution and portfolio reflection
 
 The current intake version adds safe field/rule diagnostics, deterministic cleanup
-and one registered `research_response_resolver` Agent attempt per rejected research
-pass. The resolver cannot search or rewrite evidence. An unrepaired response is
-withheld and marked incomplete; other research continues, with critic gap accounting
-and no memory/methodology update for that incomplete company.
+and one registered `research_response_resolver` backup per rejected original Agent
+invocation, covering planner, all three researchers, strategic analyst, critic,
+synthesizer and every benchmark stage. Complete Markdown/triple-quote JSON wrappers
+are parsed before validation and after backup; normal wrapped JSON needs no paid
+repair. There is no retry or recursive backup of the resolver.
+
+The resolver cannot search, rewrite facts or invent approval. Persistent research
+schema errors become withheld evidence with critic gap accounting. Persistent
+schema errors in other preparation roles retain an incomplete company preview,
+skip its dependent stages and writes, and continue the batch. Incomplete packets
+have no replacement candidate or fabricated critic/benchmark verdict. Identity,
+provider/runtime and actual quality failures remain protected boundaries.
 
 Set `variables.portfolio_review_passes` to **1, 2 or 3 total passes** (default 1).
 The first reviews the portfolio using optional learned company methodology when
@@ -16,9 +24,15 @@ Fixed Skill remains the global contract; missing learned methodology does not bl
 preview. Existing apply authority and package-initialization requirements remain.
 
 Missing public information can be an explicit evidence gap, rather than an invented
-claim. Positive claims still need admitted citations and critic acceptance. Normal
-preview calls are 12/13/14 per company for 1/2/3 passes, with at most 3/4/5 extra
-resolver calls; apply adds one committed benchmark call. The five-company and
+claim. Positive claims still need admitted citations and critic acceptance.
+Not-applicable/no-evidence work with explicit critic disposition does not mark the
+company incomplete or itself block its writes. Unresolved schema withholds all
+memory/methodology writes for that company; approved companies continue. The batch
+report retains explicit gaps without a blanket publication stop. `publish_dossier`
+keeps its existing output-policy readiness meaning and does not prove an upload.
+Normal preview calls are 12/13/14 per company for 1/2/3 passes. One backup is reserved per
+original call, making hard maxima 24/26/28; apply maxima are 26/28/30. Unused reserves
+produce no calls. The five-company and
 1,800-second limits remain. Earlier versions keep their existing contracts.
 
 See [the resolution/reflection developer guide](../../../docs/pharma-research-resolution-and-reflection-developer-guide.md)

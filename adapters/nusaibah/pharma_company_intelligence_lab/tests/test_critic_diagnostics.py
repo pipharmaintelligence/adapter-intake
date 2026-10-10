@@ -197,6 +197,8 @@ class CriticDiagnosticContractTests(unittest.TestCase):
             "unresolved_research_responses", "research_response_repair_count",
             "research_response_repairs", "no_evidence_research_roles",
             "incomplete_research_company_count",
+            "agent_schema_incomplete_company_count", "agent_schema_incomplete",
+            "unresolved_agent_responses", "agent_response_resolver_call_count", "agent_response_recovery_trace",
         }
         def retained_projection(old, new):
             if isinstance(old, dict):
@@ -220,6 +222,8 @@ class CriticDiagnosticContractTests(unittest.TestCase):
                 inputs.set_company_records([{"id": 13, "company": "Tabuk Pharmaceuticals"}])
 
                 def failing_value(role, company_id, input_value):
+                    if role == adapter.RESEARCH_RESOLVER_ROLE:
+                        return dict(input_value["invalid_response"])
                     value = original(role, company_id, input_value)
                     if role != "evidence_critic":
                         return value
@@ -241,6 +245,16 @@ class CriticDiagnosticContractTests(unittest.TestCase):
                     return value
 
                 with patch.object(adapter, "_agent_citations", side_effect=orchestration._fake_citations), patch.object(orchestration, "_agent_value", side_effect=failing_value):
+                    if failure == "missing_required_list":
+                        result = adapter.NusaibahPharmaCompanyIntelligenceLabAdapter().invoke(inputs, {})
+                        row = result["outputs"]["intelligence_dossier"]["company_results"][0]
+                        self.assertTrue(row["agent_schema_incomplete"])
+                        self.assertFalse(row["quality_gate_passed"])
+                        self.assertEqual(row["unresolved_agent_responses"][0]["rule"], "bounded_list_required")
+                        self.assertEqual(row["agent_response_resolver_call_count"], 1)
+                        self.assertFalse(any(role == "intelligence_synthesizer" for role, _ in inputs.agent_calls))
+                        self.assertFalse(any(role.endswith("_update") for role, _ in inputs.dynamic_skill_calls))
+                        continue
                     with self.assertRaises((diagnostic.CriticContractValidationError, adapter.AgentContractValidationError)) as caught:
                         adapter.NusaibahPharmaCompanyIntelligenceLabAdapter().invoke(inputs, {})
                 self.assertEqual(caught.exception.code, "pharma_agent_business_schema_invalid")
