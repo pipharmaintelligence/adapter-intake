@@ -76,9 +76,20 @@ packet-apply operation must bind the exact original run/artifact/digests, reject
 stale baselines, recheck authority, retain per-skill receipts and report partial
 commits honestly. Do not regenerate a supposedly approved candidate with Agents.
 
-Company 13 currently has memory but no initialized methodology. Generic atomic
-create-if-absent remains a Core/runtime prerequisite for its first methodology
-write. An ordinary file upload or invented empty package is not a substitute.
+Company 13 has memory but no initialized methodology in the 2026-10-10 proof.
+An approved complete Skill ZIP can be initialized through ordinary authorized
+DLM upload with `partition_values={"company_id":13}`, followed by existing
+operation/readiness and actual Skill readback. The package must contain the
+exact `Methodology Learning` section. Invented learning or an arbitrary empty
+package is not a valid baseline. Current mutable hydration and `/initialize`
+require an existing selected revision; automatic first-package handoff and
+absence/retry protection are separate qualification needs within existing
+upload/Skill contracts, not a mandatory new Core creation service.
+
+Fixed and Dynamic Skills share existing capabilities; neither requires a new
+`AssetPublishPolicy`. Immutable selection and admitted mutable updates remain
+specified differences. See the canonical
+[Skill lifecycle and first-package handoff](https://github.com/piusaibah/assets/blob/main/docs/observability/skill-lifecycle-and-first-package.md).
 Do not describe preview retention as canonical memory persistence, publication
 to a lake/node, or verified S3/GCS upload.
 
