@@ -1637,7 +1637,7 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.pharma_company_intelligence_lab"
-    version: ClassVar[str] = "0.1.17"
+    version: ClassVar[str] = "0.1.18"
 
     def invoke(self, inputs: Any, context: dict[str, Any]) -> dict[str, Any]:
         """Execute one bounded company batch with two-phase memory mutation."""
@@ -1822,9 +1822,15 @@ def build_review_packet(prepared: list[dict[str, Any]], *, asset_identity: str,
     packet = _build_complete_review_packet(complete, asset_identity=asset_identity,
                                            methodology_digest=methodology_digest,
                                            memory_mode=memory_mode)
-    if len(complete) == len(prepared):
+    absent = {state["company_id"] for state in complete
+              if state["result"].get("memory_initialized") is False}
+    if len(complete) == len(prepared) and not absent:
         return packet
     companies = {row["company_id"]: row for row in packet["companies"]}
+    for company_id in absent:
+        row = companies[company_id]
+        row["memory_proposal"].update(initialized=False, initialization_required=True)
+        row["benchmark"]["before_basis"] = "deterministic_absent_memory"
     for state in prepared:
         if not state.get("incomplete_schema_preview"):
             continue
@@ -1910,11 +1916,19 @@ def _require_runtime_helpers(inputs: Any) -> None:
             raise RuntimeError(f"Trusted runtime helper is unavailable: {name}.")
 
 
-def _read_company_memory(inputs: Any, *, company_id: int) -> dict[str, Any]:
-    memory_handle = inputs.dynamic_skill(
-        "company_memory",
-        variables={"company_id": str(company_id)},
-    )
+def _read_company_memory(inputs: Any, *, company_id: int,
+                         allow_absent: bool = False) -> dict[str, Any]:
+    from devtools.dynamic_skill_runtime import DynamicSkillRuntimeError
+
+    try:
+        memory_handle = inputs.dynamic_skill(
+            "company_memory", variables={"company_id": str(company_id)},
+        )
+    except DynamicSkillRuntimeError as exc:
+        if allow_absent and exc.code == "dynamic_skill_not_initialized":
+            # An absent package is not an empty initialized package or a write handle.
+            return {"handle": None, "text": "", "digest": None, "target_text": None}
+        raise
     provenance = memory_handle.provenance()
     if provenance.mutable is not False:
         raise RuntimeError("company_memory must resolve read-only.")
@@ -1950,24 +1964,34 @@ def _prepare_company(
     baseline = project_company_baseline(record)
 
     memory_state = (preflight[0] if preflight is not None
-                    else _read_company_memory(inputs, company_id=company_id))
+                    else _read_company_memory(inputs, company_id=company_id,
+                                              allow_absent=request.memory_mode == "preview"))
     memory_text = memory_state["text"]
     before_digest = memory_state["digest"]
     before_target_text = memory_state["target_text"]
+    memory_initialized = memory_state["handle"] is not None
 
     methodology_handle, methodology_learning_text = (
         preflight[1] if preflight is not None
         else _load_methodology_learning(inputs, company_id=company_id)
     )
 
-    before_benchmark = _run_benchmark(
-        inputs,
-        company_id=company_id,
-        company_name_value=name,
-        memory_text=memory_text,
-        questions=methodology.benchmark_questions,
-        stage="before",
-    )
+    if memory_initialized:
+        before_benchmark = _run_benchmark(
+            inputs, company_id=company_id, company_name_value=name,
+            memory_text=memory_text, questions=methodology.benchmark_questions,
+            stage="before",
+        )
+    else:
+        # No memory can cover a question. This is deterministic source-absence
+        # accounting, not an Agent judgement or fabricated existing content.
+        before_benchmark = {
+            "schema_version": BENCHMARK_SCHEMA_VERSION, "company_id": company_id,
+            "role": BENCHMARK_ROLE, "status": "completed",
+            "results": [{"question_id": question["question_id"], "coverage": "not_covered",
+                         "evidence_basis": "No company memory package is initialized."}
+                        for question in methodology.benchmark_questions],
+        }
 
     methodology_plan, planner_call_count, planner_chunks = _run_methodology_planner(
         inputs,
@@ -2050,12 +2074,14 @@ def _prepare_company(
 
     citations = joined["citations"]
     candidate_changed = candidate.markdown.strip() != before_target_text
-    mutation_eligible = (
+    candidate_eligible = (
         bool(candidate.fact_ids)
         and candidate_changed
         and benchmark_non_regression
         and not research_incomplete
     )
+
+    mutation_eligible = memory_initialized and candidate_eligible
 
     methodology_learning_candidate = (
         _build_methodology_learning_candidate(
@@ -2124,6 +2150,11 @@ def _prepare_company(
         "benchmark_non_regression": benchmark_non_regression,
         "benchmark_result_basis": "projected_memory_candidate",
         "memory_mutation_eligible": mutation_eligible,
+        "memory_initialized": memory_initialized,
+        "memory_initialization_required": not memory_initialized,
+        "benchmark_before_basis": (
+            "existing_memory_agent_review" if memory_initialized else "deterministic_absent_memory"
+        ),
         "methodology_learning_update_status": (
             "preview_ready"
             if methodology_learning_candidate is not None
@@ -2138,7 +2169,7 @@ def _prepare_company(
         "methodology_learning_after_digest": None,
         "methodology_learning_readback_verified": False,
         "memory_update_status": (
-            "preview_ready" if mutation_eligible else "no_change_recommended"
+            "preview_ready" if candidate_eligible else "no_change_recommended"
         ),
         "memory_change_id": None,
         "memory_before_digest": before_digest,
