@@ -9,7 +9,7 @@ MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
 
-ASSET_VERSION = "0.1.18"
+ASSET_VERSION = "0.1.19"
 CANONICAL_PROVIDER_REGISTRY_ENTRY = {
     "handle": "provider:text_generation",
     "type": "provider_execution",
@@ -34,15 +34,15 @@ CANONICAL_PROVIDER_REGISTRY_ENTRY = {
 }
 
 EXPECTED = {
-    "methodology_planner": ("gemini-3.8-flash", "medium", 8192, False, 60),
-    "portfolio_researcher": ("gemini-3.8-flash", "medium", 8192, True, 180),
-    "market_researcher": ("gemini-3.8-flash", "medium", 8192, True, 180),
-    "regulatory_risk_researcher": ("gemini-3.8-flash", "medium", 8192, True, 180),
-    "strategic_analyst": ("gemini-3.1-pro-preview", "high", 16384, False, 180),
-    "evidence_critic": ("gemini-3.1-pro-preview", "high", 16384, False, 180),
-    "intelligence_synthesizer": ("gemini-3.8-flash", "medium", 16384, False, 180),
-    "memory_benchmark_reviewer": ("gemini-3.8-flash", "medium", 4096, False, 60),
-    "research_response_resolver": ("gemini-3.8-flash", "medium", 8192, False, 120),
+    "methodology_planner": ("gemini-3.8-flash", "medium", 8192, False, 600),
+    "portfolio_researcher": ("gemini-3.8-flash", "medium", 8192, True, 600),
+    "market_researcher": ("gemini-3.8-flash", "medium", 8192, True, 600),
+    "regulatory_risk_researcher": ("gemini-3.8-flash", "medium", 8192, True, 600),
+    "strategic_analyst": ("gemini-3.1-pro-preview", "high", 16384, False, 600),
+    "evidence_critic": ("gemini-3.1-pro-preview", "high", 16384, False, 600),
+    "intelligence_synthesizer": ("gemini-3.8-flash", "medium", 16384, False, 600),
+    "memory_benchmark_reviewer": ("gemini-3.8-flash", "medium", 4096, False, 600),
+    "research_response_resolver": ("gemini-3.8-flash", "medium", 8192, False, 600),
 }
 
 
@@ -80,6 +80,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             for step, old_step in zip(candidate["definition"]["chain"]["steps"], old["definition"]["chain"]["steps"]):
                 self.assertTrue(step["input"]["text"].startswith(old_step["input"]["text"]))
                 step["input"]["text"] = old_step["input"]["text"]
+                step["provider_policy"]["timeout_seconds"] = old_step["provider_policy"]["timeout_seconds"]
             self.assertEqual(candidate, old)
 
     def test_runtime_floor_requires_current_trusted_runtime_support(self) -> None:
@@ -172,9 +173,9 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             with self.subTest(role=role):
                 agent = self.agents[role]
                 expected_contract_version = (
-                    "1.0.1" if role == "research_response_resolver" else
-                    ("1.0.5" if role == "methodology_planner" or search_enabled or role == "evidence_critic" else
-                     ("1.0.4" if role in {"strategic_analyst", "intelligence_synthesizer"} else "1.0.3"))
+                    "1.0.2" if role == "research_response_resolver" else
+                    ("1.0.6" if role == "methodology_planner" or search_enabled or role == "evidence_critic" else
+                     ("1.0.5" if role in {"strategic_analyst", "intelligence_synthesizer"} else "1.0.4"))
                 )
                 self.assertEqual(agent["contract_version"], expected_contract_version)
                 definition = agent["definition"]
@@ -211,7 +212,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
                     self.assertEqual(formatter["provider_policy"]["generation_policy"], {
                         "max_tokens": 8192, "thinking_level": "medium", "response_format": "json_object",
                     })
-                    self.assertEqual(formatter["provider_policy"]["timeout_seconds"], 120)
+                    self.assertEqual(formatter["provider_policy"]["timeout_seconds"], 600)
                     self.assertNotIn("search_enabled", formatter["provider_policy"])
                     self.assertIn("Previous admitted agent step result", formatter["input"]["text"])
                     self.assertIn("response_contract", formatter["input"]["text"])
@@ -248,17 +249,17 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
     def test_planner_contract_hardening_uses_new_agent_contract_version(self) -> None:
         self.assertEqual(
             self.agents["methodology_planner"]["contract_version"],
-            "1.0.5",
+            "1.0.6",
         )
         self.assertEqual(
             self.agents["methodology_planner"]["definition"]["chain"]["version"],
-            "1.0.5",
+            "1.0.6",
         )
         for role, agent in self.agents.items():
             if role == "methodology_planner" or role.endswith("_researcher") or role == "research_response_resolver":
                 continue
             with self.subTest(role=role):
-                expected = "1.0.5" if role == "evidence_critic" else ("1.0.4" if role in {"strategic_analyst", "intelligence_synthesizer"} else "1.0.3")
+                expected = "1.0.6" if role == "evidence_critic" else ("1.0.5" if role in {"strategic_analyst", "intelligence_synthesizer"} else "1.0.4")
                 self.assertEqual(agent["contract_version"], expected)
                 self.assertEqual(agent["definition"]["chain"]["version"], expected)
 
