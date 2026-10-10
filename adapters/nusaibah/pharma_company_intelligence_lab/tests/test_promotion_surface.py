@@ -20,6 +20,7 @@ EXPECTED_REVIEWED_HELPERS = {
     "research_diagnostics_v0_1_17.py",
     "portfolio_review_v0_1_17.py",
     "agent_response_recovery_v0_1_17.py",
+    "evidence_recovery_v0_1_20.py",
 }
 
 EXPECTED_RUNTIME_FILES = {
@@ -38,6 +39,7 @@ EXPECTED_RUNTIME_FILES = {
     "research_diagnostics_v0_1_17.py",
     "portfolio_review_v0_1_17.py",
     "agent_response_recovery_v0_1_17.py",
+    "evidence_recovery_v0_1_20.py",
     "README.md",
 }
 

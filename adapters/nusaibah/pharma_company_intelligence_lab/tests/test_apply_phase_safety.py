@@ -45,7 +45,11 @@ class ApplyPhaseSafetyTests(unittest.TestCase):
         adapter = NusaibahPharmaCompanyIntelligenceLabAdapter()
 
         with patch.object(adapter_module, "_agent_citations", side_effect=_fake_citations):
-            if hasattr(adapter_module, "RESEARCH_RESOLVER_ROLE"):
+            if hasattr(adapter_module, "issues_annex"):
+                with self.assertRaises(adapter_module.AgentContractValidationError) as caught:
+                    adapter.invoke(inputs, {})
+                self.assertEqual(caught.exception.code, "pharma_agent_company_id_invalid")
+            elif hasattr(adapter_module, "RESEARCH_RESOLVER_ROLE"):
                 from research_diagnostics_v0_1_17 import ResearchContractValidationError
                 with self.assertRaises(ResearchContractValidationError) as caught:
                     adapter.invoke(inputs, {})

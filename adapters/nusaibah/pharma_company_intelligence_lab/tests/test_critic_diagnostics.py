@@ -200,6 +200,7 @@ class CriticDiagnosticContractTests(unittest.TestCase):
             "incomplete_research_company_count",
             "agent_schema_incomplete_company_count", "agent_schema_incomplete",
             "unresolved_agent_responses", "agent_response_resolver_call_count", "agent_response_recovery_trace",
+            "issues_annex",
         }
         def retained_projection(old, new):
             if isinstance(old, dict):
@@ -256,10 +257,12 @@ class CriticDiagnosticContractTests(unittest.TestCase):
                         self.assertFalse(any(role == "intelligence_synthesizer" for role, _ in inputs.agent_calls))
                         self.assertFalse(any(role.endswith("_update") for role, _ in inputs.dynamic_skill_calls))
                         continue
-                    with self.assertRaises((diagnostic.CriticContractValidationError, adapter.AgentContractValidationError)) as caught:
-                        adapter.NusaibahPharmaCompanyIntelligenceLabAdapter().invoke(inputs, {})
-                self.assertEqual(caught.exception.code, "pharma_agent_business_schema_invalid")
-                detail = caught.exception.proof_failure_detail
+                    result = adapter.NusaibahPharmaCompanyIntelligenceLabAdapter().invoke(inputs, {})
+                row = result["outputs"]["intelligence_dossier"]["company_results"][0]
+                self.assertTrue(row["research_incomplete"])
+                self.assertFalse(row["quality_gate_passed"])
+                self.assertFalse(row["memory_mutation_eligible"])
+                detail = row["issues_annex"]["items"][-1]
                 self.assertEqual(detail["rule"], "bounded_list_required" if failure == "missing_required_list" else failure)
                 self.assertIn(("evidence_critic", 13), inputs.agent_calls)
                 self.assertFalse(any(role == "intelligence_synthesizer" for role, _ in inputs.agent_calls))

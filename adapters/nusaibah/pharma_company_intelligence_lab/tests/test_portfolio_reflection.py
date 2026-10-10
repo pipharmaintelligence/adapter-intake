@@ -206,9 +206,10 @@ class PortfolioReflectionTests(unittest.TestCase):
                 value["unmet_plan_requirements"] = []
             return value
         with patch.object(orchestration, "_agent_value", side_effect=undisposed), patch.object(adapter, "_agent_citations", side_effect=citations):
-            with self.assertRaises(adapter.AgentContractValidationError) as caught:
-                adapter.NusaibahPharmaCompanyIntelligenceLabAdapter().invoke(FakeInputs(), {})
-        self.assertEqual(caught.exception.proof_failure_detail["rule"], "no_evidence_not_disposed")
+            result = adapter.NusaibahPharmaCompanyIntelligenceLabAdapter().invoke(FakeInputs(), {})
+        self.assertTrue(all(not row["quality_gate_passed"] for row in self.companies(result)))
+        self.assertTrue(all(row["issues_annex"]["items"][-1]["rule"] == "no_evidence_not_disposed"
+                            for row in self.companies(result)))
 
     def test_all_role_citations_survive_reflection_without_truncation(self):
         from devtools.skill_citation import CitationRef
@@ -252,9 +253,9 @@ class PortfolioReflectionTests(unittest.TestCase):
 
     def test_wrong_company_is_never_sent_to_repair_agent(self):
         inputs = FakeInputs(wrong_company_role="portfolio_researcher")
-        with self.assertRaises(diagnostic.ResearchContractValidationError) as caught:
+        with self.assertRaises(adapter.AgentContractValidationError) as caught:
             self.run_preview(inputs)
-        self.assertEqual(caught.exception.proof_failure_detail["field"], "company_id")
+        self.assertEqual(caught.exception.code, "pharma_agent_company_id_invalid")
         self.assertFalse(any(role == adapter.RESEARCH_RESOLVER_ROLE for role, _ in inputs.agent_calls))
 
     def test_budgets_bound_every_requested_pass_and_repair_for_five_companies(self):

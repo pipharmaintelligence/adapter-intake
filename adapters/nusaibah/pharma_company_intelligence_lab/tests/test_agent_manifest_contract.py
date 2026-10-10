@@ -9,7 +9,7 @@ MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
 
-ASSET_VERSION = "0.1.19"
+ASSET_VERSION = "0.1.20"
 CANONICAL_PROVIDER_REGISTRY_ENTRY = {
     "handle": "provider:text_generation",
     "type": "provider_execution",
@@ -47,6 +47,19 @@ EXPECTED = {
 
 
 class PackagedAgentDefinitionTests(unittest.TestCase):
+    def test_evidence_stage_and_json_formatter_have_consistent_distinct_instructions(self) -> None:
+        for role in ("portfolio_researcher", "market_researcher", "regulatory_risk_researcher"):
+            evidence, formatter = self.agents[role]["definition"]["chain"]["steps"]
+            self.assertEqual(evidence["provider_policy"]["generation_policy"]["response_format"], "text")
+            self.assertNotIn("Strict response discipline", evidence["input"]["text"])
+            self.assertIn("Evidence-stage format: plain-text evidence notes only", evidence["input"]["text"])
+            self.assertIn("return claims=[]", formatter["input"]["text"])
+            self.assertIn("Do not move unsupported facts into prose", formatter["input"]["text"])
+            self.assertEqual(formatter["provider_policy"]["generation_policy"]["response_format"], "json_object")
+        backup = self.agents["research_response_resolver"]["definition"]["chain"]
+        self.assertEqual(backup["budget_policy"], {"max_tool_calls": 0, "max_provider_calls": 1})
+        self.assertIn("Missing evidence or admitted citations is not a JSON formatting defect", backup["steps"][0]["input"]["text"])
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
@@ -173,8 +186,9 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             with self.subTest(role=role):
                 agent = self.agents[role]
                 expected_contract_version = (
-                    "1.0.2" if role == "research_response_resolver" else
-                    ("1.0.6" if role == "methodology_planner" or search_enabled or role == "evidence_critic" else
+                    "1.0.3" if role == "research_response_resolver" else
+                    "1.0.7" if search_enabled or role == "evidence_critic" else
+                    ("1.0.6" if role == "methodology_planner" else
                      ("1.0.5" if role in {"strategic_analyst", "intelligence_synthesizer"} else "1.0.4"))
                 )
                 self.assertEqual(agent["contract_version"], expected_contract_version)
@@ -259,7 +273,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             if role == "methodology_planner" or role.endswith("_researcher") or role == "research_response_resolver":
                 continue
             with self.subTest(role=role):
-                expected = "1.0.6" if role == "evidence_critic" else ("1.0.5" if role in {"strategic_analyst", "intelligence_synthesizer"} else "1.0.4")
+                expected = "1.0.7" if role == "evidence_critic" else ("1.0.5" if role in {"strategic_analyst", "intelligence_synthesizer"} else "1.0.4")
                 self.assertEqual(agent["contract_version"], expected)
                 self.assertEqual(agent["definition"]["chain"]["version"], expected)
 
