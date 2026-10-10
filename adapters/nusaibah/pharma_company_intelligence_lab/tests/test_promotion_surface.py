@@ -16,6 +16,7 @@ EXPECTED_REVIEWED_HELPERS = {
     "company_context_contract_v0_1_14.py",
     "company_context_contract_v0_1_15.py",
     "methodology_contract.py",
+    "review_packet_v0_1_16.py",
 }
 
 EXPECTED_RUNTIME_FILES = {
@@ -30,6 +31,7 @@ EXPECTED_RUNTIME_FILES = {
     "company_context_contract_v0_1_14.py",
     "company_context_contract_v0_1_15.py",
     "methodology_contract.py",
+    "review_packet_v0_1_16.py",
     "README.md",
 }
 

@@ -26,7 +26,6 @@ try:
         validate_synthesis_payload,
     )
     from .company_context_contract_v0_1_15 import resolve_company_context
-    from .review_packet_v0_1_16 import build_review_packet, review_packet_requested, require_output_bound
     from .critic_diagnostics_v0_1_13 import validate_critic_payload
     from .dossier_contract import CANONICAL_SECTIONS, DOSSIER_SCHEMA_VERSION, SECTION_BY_ID
     from .input_contract import (
@@ -68,7 +67,6 @@ except ImportError:  # pragma: no cover - local adapter-root execution path
         validate_synthesis_payload,
     )
     from company_context_contract_v0_1_15 import resolve_company_context
-    from review_packet_v0_1_16 import build_review_packet, review_packet_requested, require_output_bound
     from critic_diagnostics_v0_1_13 import validate_critic_payload
     from dossier_contract import CANONICAL_SECTIONS, DOSSIER_SCHEMA_VERSION, SECTION_BY_ID
     from input_contract import (
@@ -1497,34 +1495,17 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.pharma_company_intelligence_lab"
-    version: ClassVar[str] = "0.1.16"
+    version: ClassVar[str] = "0.1.15"
 
     def invoke(self, inputs: Any, context: dict[str, Any]) -> dict[str, Any]:
         """Execute one bounded company batch with two-phase memory mutation."""
         del context
 
         request = validate_batch_request(inputs)
-        retain_review_packet = review_packet_requested(inputs)
         records = order_records_for_request(resolve_company_context(inputs, company_ids=request.company_ids), request)
         methodology = load_methodology(inputs)
         _require_runtime_helpers(inputs)
         inputs = _BoundedAgentInputs(inputs, request)
-
-        # Check every company's read prerequisites before the first paid call.
-        # Runtime mutation authority and CAS are still rechecked at commit time.
-        preflight = {}
-        if request.memory_mode == "apply":
-            inputs.require_commit_benchmark_capacity(list(request.company_ids))
-            for record in records:
-                company_id = int(record["company_id"])
-                memory_state = _read_company_memory(inputs, company_id=company_id)
-                learning = _load_methodology_learning(inputs, company_id=company_id)
-                if learning[0] is None:
-                    raise RuntimeError(
-                        "Company methodology is not initialized; governed "
-                        "create-if-absent is required before apply."
-                    )
-                preflight[company_id] = (memory_state, learning)
 
         prepared: list[dict[str, Any]] = []
         for company_iteration, record in enumerate(records, start=1):
@@ -1536,19 +1517,8 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
                     request=request,
                     record=record,
                     methodology=methodology,
-                    preflight=preflight.get(int(record["company_id"])),
                 )
             )
-
-        review_packet = None
-        if retain_review_packet:
-            review_packet = build_review_packet(
-                prepared, asset_identity=f"{self.key}:{self.version}",
-                methodology_digest=methodology.package_digest,
-                memory_mode=request.memory_mode,
-            )
-            require_output_bound({"company_results": [state["result"] for state in prepared],
-                                  "review_packet": review_packet})
 
         mutation_count = 0
         if request.memory_mode == "apply":
@@ -1601,9 +1571,6 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
             ),
             "company_results": company_results,
         }
-
-        if review_packet is not None:
-            dossier["review_packet"] = review_packet
 
         return {
             "response_version": "1",
@@ -1664,7 +1631,17 @@ def _require_runtime_helpers(inputs: Any) -> None:
             raise RuntimeError(f"Trusted runtime helper is unavailable: {name}.")
 
 
-def _read_company_memory(inputs: Any, *, company_id: int) -> dict[str, Any]:
+def _prepare_company(
+    inputs: Any,
+    *,
+    request: BatchRequest,
+    record: dict[str, Any],
+    methodology: MethodologyResources,
+) -> dict[str, Any]:
+    company_id = int(record["company_id"])
+    name = company_name(record)
+    baseline = project_company_baseline(record)
+
     memory_handle = inputs.dynamic_skill(
         "company_memory",
         variables={"company_id": str(company_id)},
@@ -1684,30 +1661,6 @@ def _read_company_memory(inputs: Any, *, company_id: int) -> dict[str, Any]:
     before_digest = memory_handle.content_digest()
     before_target_text = memory_handle.section_text(MEMORY_TARGET_SECTION).strip()
 
-    return {
-        "handle": memory_handle, "text": memory_text, "digest": before_digest,
-        "target_text": before_target_text,
-    }
-
-
-def _prepare_company(
-    inputs: Any,
-    *,
-    request: BatchRequest,
-    record: dict[str, Any],
-    methodology: MethodologyResources,
-    preflight: tuple[Any, Any] | None = None,
-) -> dict[str, Any]:
-    company_id = int(record["company_id"])
-    name = company_name(record)
-    baseline = project_company_baseline(record)
-
-    memory_state = (preflight[0] if preflight is not None
-                    else _read_company_memory(inputs, company_id=company_id))
-    memory_text = memory_state["text"]
-    before_digest = memory_state["digest"]
-    before_target_text = memory_state["target_text"]
-
     before_benchmark = _run_benchmark(
         inputs,
         company_id=company_id,
@@ -1717,9 +1670,9 @@ def _prepare_company(
         stage="before",
     )
 
-    methodology_handle, methodology_learning_text = (
-        preflight[1] if preflight is not None
-        else _load_methodology_learning(inputs, company_id=company_id)
+    methodology_handle, methodology_learning_text = _load_methodology_learning(
+        inputs,
+        company_id=company_id,
     )
 
     methodology_plan, planner_call_count, planner_chunks = _run_methodology_planner(
@@ -1880,13 +1833,6 @@ def _prepare_company(
         "company_name": name,
         "result": result,
         "before_digest": before_digest,
-        "before_target_text": before_target_text,
-        "methodology_learning_before_text": methodology_learning_text,
-        "research": research,
-        "joined_research": joined,
-        "critic": critic,
-        "strategic": strategic,
-        "residual_uncertainties": synthesis["residual_uncertainties"],
         "before_benchmark": before_benchmark,
         "methodology_plan": methodology_plan,
         "planner_chunks": planner_chunks,
