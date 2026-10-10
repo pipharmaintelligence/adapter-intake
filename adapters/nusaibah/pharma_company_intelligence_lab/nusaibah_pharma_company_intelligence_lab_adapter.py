@@ -21,13 +21,18 @@ try:
         benchmark_improvement_count,
         _text,
         _token,
-        validate_research_payload,
         validate_strategic_payload,
         validate_synthesis_payload,
     )
     from .company_context_contract_v0_1_15 import resolve_company_context
     from .review_packet_v0_1_16 import build_review_packet, review_packet_requested, require_output_bound
     from .critic_diagnostics_v0_1_13 import validate_critic_payload
+    from .research_diagnostics_v0_1_17 import (
+        extract_research_json, resolve_research_payload, research_validation_contract,
+        ResearchContractValidationError, repair_input_payload,
+        require_repair_preserves_evidence, unresolved_research_payload,
+    )
+    from .portfolio_review_v0_1_17 import portfolio_review_passes
     from .dossier_contract import CANONICAL_SECTIONS, DOSSIER_SCHEMA_VERSION, SECTION_BY_ID
     from .input_contract import (
         BatchRequest,
@@ -63,13 +68,18 @@ except ImportError:  # pragma: no cover - local adapter-root execution path
         benchmark_improvement_count,
         _text,
         _token,
-        validate_research_payload,
         validate_strategic_payload,
         validate_synthesis_payload,
     )
     from company_context_contract_v0_1_15 import resolve_company_context
     from review_packet_v0_1_16 import build_review_packet, review_packet_requested, require_output_bound
     from critic_diagnostics_v0_1_13 import validate_critic_payload
+    from research_diagnostics_v0_1_17 import (
+        extract_research_json, resolve_research_payload, research_validation_contract,
+        ResearchContractValidationError, repair_input_payload,
+        require_repair_preserves_evidence, unresolved_research_payload,
+    )
+    from portfolio_review_v0_1_17 import portfolio_review_passes
     from dossier_contract import CANONICAL_SECTIONS, DOSSIER_SCHEMA_VERSION, SECTION_BY_ID
     from input_contract import (
         BatchRequest,
@@ -108,6 +118,7 @@ STRATEGIC_ROLE = "strategic_analyst"
 CRITIC_ROLE = "evidence_critic"
 SYNTHESIS_ROLE = "intelligence_synthesizer"
 BENCHMARK_ROLE = "memory_benchmark_reviewer"
+RESEARCH_RESOLVER_ROLE = "research_response_resolver"
 
 MAX_MEMORY_CONTEXT_CHARS = 24000
 MAX_CITATIONS_PER_COMPANY = 24
@@ -236,27 +247,31 @@ class _BoundedAgentInputs:
     Provider attempts, retries and wall-clock deadlines remain runtime-owned.
     """
 
-    def __init__(self, inputs: Any, request: BatchRequest) -> None:
+    def __init__(self, inputs: Any, request: BatchRequest, *, review_passes: int = 1) -> None:
         if not 1 <= len(request.company_ids) <= MAX_COMPANY_ITERATIONS:
             _iteration_limit_exceeded()
         self._inputs = inputs
         self._lock = Lock()
         self._company_calls = {company_id: 0 for company_id in request.company_ids}
         self._role_calls: dict[tuple[int, str], int] = {}
+        if type(review_passes) is not int or not 1 <= review_passes <= 3:
+            _iteration_limit_exceeded()
         self._per_company_limit = (
             MAX_AGENT_CALLS_PER_COMPANY_APPLY
             if request.memory_mode == "apply"
             else MAX_AGENT_CALLS_PER_COMPANY_PREVIEW
-        )
+        ) + review_passes - 1 + (review_passes + 2)
+        self._ordinary_company_limit = self._per_company_limit - (review_passes + 2)
         self._role_limits = {
             PLANNER_ROLE: PLANNER_MAX_SECTION_CALLS,
             BENCHMARK_ROLE: 3 if request.memory_mode == "apply" else 2,
-            "portfolio_researcher": 1,
+            "portfolio_researcher": review_passes,
             "market_researcher": 1,
             "regulatory_risk_researcher": 1,
             STRATEGIC_ROLE: 1,
             CRITIC_ROLE: 1,
             SYNTHESIS_ROLE: 1,
+            RESEARCH_RESOLVER_ROLE: review_passes + 2,
         }
         self.agent_call_limit = len(request.company_ids) * self._per_company_limit
         self.agent_call_count = 0
@@ -268,6 +283,9 @@ class _BoundedAgentInputs:
             or role not in self._role_limits
             or self.agent_call_count >= self.agent_call_limit
             or self._company_calls[company_id] >= self._per_company_limit
+            or (role != RESEARCH_RESOLVER_ROLE
+                and self._company_calls[company_id] - self._role_calls.get((company_id, RESEARCH_RESOLVER_ROLE), 0)
+                >= self._ordinary_company_limit)
             or self._role_calls.get((company_id, role), 0) >= self._role_limits[role]
         ):
             _iteration_limit_exceeded()
@@ -343,6 +361,7 @@ def response_contract_for_role(
             ],
             "evidence_kind_values": ["grounded_external", "inference"],
             "confidence_values": ["low", "medium", "high"],
+            "validation_contract": research_validation_contract(role=role, company_id=company_id),
         }
 
     if role == "strategic_analyst":
@@ -1497,18 +1516,19 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
     """
 
     key: ClassVar[str] = "nusaibah.pharma_company_intelligence_lab"
-    version: ClassVar[str] = "0.1.16"
+    version: ClassVar[str] = "0.1.17"
 
     def invoke(self, inputs: Any, context: dict[str, Any]) -> dict[str, Any]:
         """Execute one bounded company batch with two-phase memory mutation."""
         del context
 
         request = validate_batch_request(inputs)
+        review_passes = portfolio_review_passes(inputs)
         retain_review_packet = review_packet_requested(inputs)
         records = order_records_for_request(resolve_company_context(inputs, company_ids=request.company_ids), request)
         methodology = load_methodology(inputs)
         _require_runtime_helpers(inputs)
-        inputs = _BoundedAgentInputs(inputs, request)
+        inputs = _BoundedAgentInputs(inputs, request, review_passes=review_passes)
 
         # Check every company's read prerequisites before the first paid call.
         # Runtime mutation authority and CAS are still rechecked at commit time.
@@ -1536,11 +1556,17 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
                     request=request,
                     record=record,
                     methodology=methodology,
+                    review_passes=review_passes,
                     preflight=preflight.get(int(record["company_id"])),
                 )
             )
 
         review_packet = None
+        if request.publish_dossier and any(state["result"]["research_incomplete"] for state in prepared):
+            _quality_contract_error(
+                "Incomplete research cannot be submitted for canonical publication.",
+                role="orchestration", rule="incomplete_publication_withheld", field="publish_dossier",
+            )
         if retain_review_packet:
             review_packet = build_review_packet(
                 prepared, asset_identity=f"{self.key}:{self.version}",
@@ -1593,6 +1619,8 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
             "requested_company_count": len(request.company_ids),
             "completed_company_count": len(company_results),
             "failed_company_count": 0,
+            "research_incomplete_company_count": sum(item["research_incomplete"] for item in company_results),
+            "business_result_state": "incomplete" if any(item["research_incomplete"] for item in company_results) else "reviewed",
             "publication_requested": request.publish_dossier,
             "publication_state": (
                 "runtime_output_ready_for_output_policy"
@@ -1622,7 +1650,11 @@ class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
                 "requested_company_count": len(request.company_ids),
                 "completed_company_count": len(company_results),
                 "logical_agent_invocations": inputs.agent_call_count,
-                "search_enabled_agent_invocations": len(company_results) * 3,
+                "search_enabled_agent_invocations": sum(item["search_enabled_agent_call_count"] for item in company_results),
+                "portfolio_review_pass_count": sum(item["portfolio_review_pass_count"] for item in company_results),
+                "research_response_repair_count": sum(item["research_response_repair_count"] for item in company_results),
+                "research_resolver_agent_call_count": sum(item["research_resolver_agent_call_count"] for item in company_results),
+                "incomplete_research_company_count": sum(item["research_incomplete"] for item in company_results),
                 "methodology_planner_call_count": sum(
                     item["methodology_planner_call_count"] for item in company_results
                 ),
@@ -1697,6 +1729,7 @@ def _prepare_company(
     record: dict[str, Any],
     methodology: MethodologyResources,
     preflight: tuple[Any, Any] | None = None,
+    review_passes: int = 1,
 ) -> dict[str, Any]:
     company_id = int(record["company_id"])
     name = company_name(record)
@@ -1708,6 +1741,11 @@ def _prepare_company(
     before_digest = memory_state["digest"]
     before_target_text = memory_state["target_text"]
 
+    methodology_handle, methodology_learning_text = (
+        preflight[1] if preflight is not None
+        else _load_methodology_learning(inputs, company_id=company_id)
+    )
+
     before_benchmark = _run_benchmark(
         inputs,
         company_id=company_id,
@@ -1715,11 +1753,6 @@ def _prepare_company(
         memory_text=memory_text,
         questions=methodology.benchmark_questions,
         stage="before",
-    )
-
-    methodology_handle, methodology_learning_text = (
-        preflight[1] if preflight is not None
-        else _load_methodology_learning(inputs, company_id=company_id)
     )
 
     methodology_plan, planner_call_count, planner_chunks = _run_methodology_planner(
@@ -1741,8 +1774,12 @@ def _prepare_company(
         memory_text=memory_text,
         request=request,
         methodology_plan=methodology_plan,
+        methodology=methodology,
+        learned_methodology_text=methodology_learning_text,
+        review_passes=review_passes,
     )
     joined = _join_research(research)
+    research_incomplete = any(payload.get("_unresolved_response") for payload in research.values())
 
     strategic = _run_strategic(
         inputs,
@@ -1762,7 +1799,7 @@ def _prepare_company(
         methodology=methodology,
         methodology_plan=methodology_plan,
     )
-    _require_pre_synthesis_quality(research, critic)
+    _require_pre_synthesis_quality(research, critic, methodology_plan=methodology_plan)
 
     synthesis, candidate = _run_synthesis(
         inputs,
@@ -1803,6 +1840,7 @@ def _prepare_company(
         bool(candidate.fact_ids)
         and candidate_changed
         and benchmark_non_regression
+        and not research_incomplete
     )
 
     methodology_learning_candidate = (
@@ -1813,7 +1851,7 @@ def _prepare_company(
             methodology_plan=methodology_plan,
             benchmark_non_regression=True,
         )
-        if benchmark_non_regression
+        if benchmark_non_regression and not research_incomplete
         else None
     )
 
@@ -1839,8 +1877,24 @@ def _prepare_company(
         "planner_unmet_requirement_count": len(critic["unmet_plan_requirements"]),
         "research_role_count": len(RESEARCH_ROLES),
         "research_claim_count": len(joined["claims"]),
-        "specialist_agent_call_count": 3,
-        "search_enabled_agent_call_count": 3,
+        "specialist_agent_call_count": 2 + len(research["portfolio_researcher"]["_review_trace"]),
+        "search_enabled_agent_call_count": 2 + len(research["portfolio_researcher"]["_review_trace"]),
+        "portfolio_review_passes_requested": review_passes,
+        "portfolio_review_pass_count": len(research["portfolio_researcher"]["_review_trace"]),
+        "portfolio_reflection_pass_count": max(0, len(research["portfolio_researcher"]["_review_trace"]) - 1),
+        "portfolio_review_trace": research["portfolio_researcher"]["_review_trace"],
+        "research_resolver_agent_call_count": sum(payload["_resolver_call_count"] for payload in research.values()),
+        "research_incomplete": research_incomplete,
+        "unresolved_research_responses": [
+            payload["_unresolved_response"] for payload in research.values() if payload.get("_unresolved_response")
+        ],
+        "research_response_repair_count": sum(
+            repair["count"] for payload in research.values() for repair in payload["_response_repairs"]
+        ),
+        "research_response_repairs": [
+            {"role": role, **repair} for role, payload in research.items() for repair in payload["_response_repairs"]
+        ],
+        "no_evidence_research_roles": [role for role in RESEARCH_ROLES if not research[role]["claims"]],
         "required_section_coverage_count": len(synthesis["sections"]),
         "quality_gate_passed": True,
         "benchmark_question_count": len(methodology.benchmark_questions),
@@ -1987,15 +2041,20 @@ def _run_research_fanout(
     memory_text: str,
     request: BatchRequest,
     methodology_plan: MethodologyPlan,
+    methodology: MethodologyResources,
+    learned_methodology_text: str,
+    review_passes: int,
 ) -> dict[str, dict[str, Any]]:
     results: dict[str, dict[str, Any]] = {}
 
     def run(role: str) -> dict[str, Any]:
         required_sections = _section_requests(RESEARCH_ROLE_SECTIONS[role])
         methodology_focus = methodology_plan.role_focus(role)
-        envelope = inputs.invoke_agent(
-            role,
-            input={
+        learned_sections = [
+            _planner_learned_section(learned_methodology_text, section_id=section_id)
+            for section_id in RESEARCH_ROLE_SECTIONS[role]
+        ]
+        base_input = {
                 "company_id": company_id,
                 "company_name": company_name_value,
                 "objective": request.objective,
@@ -2004,40 +2063,92 @@ def _run_research_fanout(
                 "existing_company_memory": memory_text,
                 "required_sections": required_sections,
                 "methodology_plan": methodology_focus,
+                "methodology_packet": {
+                    "skill_ref": methodology.planner_packet.skill_ref,
+                    "version": methodology.planner_packet.skill_version,
+                    "package_digest": methodology.package_digest,
+                    "evidence_rules": list(methodology.planner_packet.evidence_rules),
+                    "role_boundaries": list(methodology.planner_packet.role_boundaries),
+                    "company_isolation_rules": list(methodology.planner_packet.company_isolation_rules),
+                },
+                "learned_methodology": "\n\n".join(text for text in learned_sections if text),
                 "response_contract": response_contract_for_role(
                     role,
                     company_id=company_id,
                     required_section_ids=RESEARCH_ROLE_SECTIONS[role],
                 ),
-            },
-            on_error="raise",
-        )
-        value, agent_result = extract_agent_json(
-            envelope,
-            expected_role=role,
-            company_id=company_id,
-            expected_schema_version=RESEARCH_SCHEMA_VERSION,
-        )
-        try:
-            payload = validate_research_payload(value, role=role, company_id=company_id)
-        except (ValueError, RuntimeError) as exc:
-            raise AgentContractValidationError(
-                "pharma_agent_business_schema_invalid",
-                "Research payload failed its declared business contract.",
-                proof_failure_detail=_agent_contract_proof_detail(
-                    role=role, stage="research_payload", rule="invalid_schema",
-                ),
-            ) from exc
-        try:
-            payload["_citations"] = _agent_citations(agent_result)
-        except ValueError as exc:
-            raise AgentContractValidationError(
-                "pharma_agent_business_schema_invalid",
-                "Research citation evidence failed its runtime contract.",
-                proof_failure_detail=_agent_contract_proof_detail(
-                    role=role, stage="research_citations", rule="invalid_schema",
-                ),
-            ) from exc
+        }
+        passes = review_passes if role == "portfolio_researcher" else 1
+        payload: dict[str, Any] | None = None
+        citations: list[Any] = []
+        repairs: list[dict[str, Any]] = []
+        trace: list[dict[str, Any]] = []
+        resolver_calls = 0
+        unresolved = None
+        for pass_number in range(1, passes + 1):
+            previous = None if payload is None else {
+                key: item for key, item in payload.items() if not key.startswith("_")
+            }
+            if previous is not None:
+                previous["citation_sources"] = _citation_output(citations)
+            envelope = inputs.invoke_agent(role, input={
+                **base_input,
+                "portfolio_review": {
+                    "pass_number": pass_number, "total_passes": passes,
+                    "stage": "initial_review" if pass_number == 1 else "reflection",
+                    "previous_result": previous,
+                },
+            }, on_error="raise")
+            value, agent_result = extract_research_json(envelope, role=role, company_id=company_id)
+            try:
+                next_payload, pass_repairs = resolve_research_payload(value, role=role, company_id=company_id)
+            except ResearchContractValidationError as initial_error:
+                # One formatting-only resolver call in the existing registered
+                # Agent lane. Identity/envelope failures never enter this path.
+                resolver_calls += 1
+                next_payload, pass_repairs, unresolved = _repair_research_response(
+                    inputs, value=value, role=role, company_id=company_id,
+                    initial_error=initial_error,
+                )
+                if unresolved is not None:
+                    # Preserve a validated earlier review if a reflection fails;
+                    # otherwise emit explicit gaps and withhold all failed claims.
+                    next_payload = payload if payload is not None else unresolved_research_payload(role=role, company_id=company_id)
+            payload = next_payload
+            repairs.extend({"pass_number": pass_number, **item} for item in pass_repairs)
+            try:
+                admitted = () if unresolved is not None else _agent_citations(agent_result)
+            except ValueError:
+                raise AgentContractValidationError(
+                    "pharma_agent_business_schema_invalid",
+                    "Research citation evidence failed its runtime contract.",
+                    proof_failure_detail=_agent_contract_proof_detail(
+                        role=role, stage="research_citations", rule="invalid_schema", field="citations",
+                    ),
+                ) from None
+            # Do not let an unsupported first pass acquire citation authority from
+            # a later reflection. Runtime admission still owns every citation.
+            if payload["claims"] and not (citations or admitted):
+                _quality_contract_error("Research claims must return admitted citations.",
+                                        role=role, rule="research_citations_missing", field="citations")
+            citations = list(_dedupe_citations(citations + list(admitted)))
+            trace.append({
+                "pass_number": pass_number,
+                "stage": "initial_review" if pass_number == 1 else "reflection",
+                "status": "unresolved" if unresolved is not None else "validated",
+                "previous_result_sha256": None if previous is None else _research_digest(previous),
+                "result_sha256": _research_digest({**payload, "citation_sources": _citation_output(citations)}),
+                "learned_methodology_used": bool(base_input["learned_methodology"]),
+                "claim_count": len(payload["claims"]), "citation_count": len(citations),
+            })
+            if unresolved is not None:
+                break  # no reflection on withheld evidence and no repair loop
+        assert payload is not None  # bounded configuration was checked before dispatch
+        payload["_citations"] = tuple(citations)
+        payload["_response_repairs"] = repairs
+        payload["_review_trace"] = trace
+        payload["_resolver_call_count"] = resolver_calls
+        payload["_unresolved_response"] = unresolved
         return payload
 
     with ThreadPoolExecutor(max_workers=3, thread_name_prefix="pharma-research") as pool:
@@ -2049,6 +2160,32 @@ def _run_research_fanout(
     return {role: results[role] for role in RESEARCH_ROLES}
 
 
+def _research_digest(value: dict[str, Any]) -> str:
+    return "sha256:" + sha256(json.dumps(value, sort_keys=True, ensure_ascii=False,
+                                        separators=(",", ":")).encode("utf-8")).hexdigest()
+
+
+def _repair_research_response(
+    inputs: Any, *, value: dict[str, Any], role: str, company_id: int,
+    initial_error: ResearchContractValidationError,
+) -> tuple[dict[str, Any] | None, list[dict[str, Any]], dict[str, Any] | None]:
+    repair_envelope = inputs.invoke_agent(RESEARCH_RESOLVER_ROLE, input={
+        "company_id": company_id, "research_role": role,
+        "failed_contract": initial_error.proof_failure_detail,
+        "invalid_response": repair_input_payload(value),
+        "response_contract": response_contract_for_role(role, company_id=company_id),
+    }, on_error="raise")
+    # Wrong company/role or failed provider execution remains a hard boundary.
+    repaired, _ = extract_research_json(repair_envelope, role=role, company_id=company_id)
+    try:
+        payload, repairs = resolve_research_payload(repaired, role=role, company_id=company_id)
+        require_repair_preserves_evidence(value, payload, role=role)
+    except ResearchContractValidationError as final_error:
+        return None, [], final_error.proof_failure_detail
+    return payload, [*repairs, {"field": initial_error.proof_failure_detail["field"],
+                               "rule": "agent_contract_repaired", "count": 1}], None
+
+
 def _join_research(research: dict[str, dict[str, Any]]) -> dict[str, Any]:
     claims: list[dict[str, Any]] = []
     uncertainties: list[str] = []
@@ -2058,10 +2195,10 @@ def _join_research(research: dict[str, dict[str, Any]]) -> dict[str, Any]:
 
     for role in RESEARCH_ROLES:
         payload = research[role]
-        if not payload["claims"]:
+        if not payload["claims"] and not payload["uncertainties"]:
             raise AgentContractValidationError(
                 "pharma_agent_business_schema_invalid",
-                "Research role returned no claims.",
+                "Research role returned neither claims nor explicit evidence gaps.",
                 proof_failure_detail=_agent_contract_proof_detail(
                     role=role, stage="research_join", rule="missing_claims", field="claims",
                 ),
@@ -2094,6 +2231,9 @@ def _join_research(research: dict[str, dict[str, Any]]) -> dict[str, Any]:
             role: len(research[role]["_citations"])
             for role in RESEARCH_ROLES
         },
+        "unresolved_research_responses": [
+            payload["_unresolved_response"] for payload in research.values() if payload.get("_unresolved_response")
+        ],
     }
 
 
@@ -2200,9 +2340,23 @@ def _quality_contract_error(message: str, *, role: str, rule: str, field: str) -
 def _require_pre_synthesis_quality(
     research: dict[str, dict[str, Any]],
     critic: dict[str, Any],
+    *, methodology_plan: MethodologyPlan | None = None,
 ) -> None:
     for role in RESEARCH_ROLES:
-        if len(research[role]["_citations"]) == 0:
+        payload = research[role]
+        if payload.get("claims") == []:
+            required = [] if methodology_plan is None else [
+                item["requirement_id"] for item in methodology_plan.requirement_catalog()
+                if item.get("role") == role
+            ]
+            unresolved = {item["requirement_id"] for item in critic["unmet_plan_requirements"]
+                          if item["disposition"] == "unresolved_evidence"}
+            if not payload.get("uncertainties") or not required or not set(required).issubset(unresolved):
+                _quality_contract_error(
+                    "Claimless research requires explicit critic evidence-gap dispositions.",
+                    role=role, rule="no_evidence_not_disposed", field="unmet_plan_requirements",
+                )
+        elif len(payload["_citations"]) == 0:
             _quality_contract_error(
                 "Every search-enabled research role must return admitted citations.",
                 role=role, rule="research_citations_missing", field="citations",
@@ -2423,6 +2577,11 @@ def _research_for_downstream(joined: dict[str, Any]) -> dict[str, Any]:
         "uncertainties": joined["uncertainties"],
         "citation_count_by_role": joined["citation_count_by_role"],
         "citation_sources": _citation_output(joined["citations"]),
+        "unresolved_research_responses": joined.get("unresolved_research_responses", []),
+        "no_evidence_research_roles": [
+            role for role in RESEARCH_ROLES
+            if not any(claim["claim_id"].startswith(role + ":") for claim in joined["claims"])
+        ],
     }
 
 

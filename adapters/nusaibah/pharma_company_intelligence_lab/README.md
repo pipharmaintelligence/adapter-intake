@@ -1,5 +1,29 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.17 response resolution and portfolio reflection
+
+The current intake version adds safe field/rule diagnostics, deterministic cleanup
+and one registered `research_response_resolver` Agent attempt per rejected research
+pass. The resolver cannot search or rewrite evidence. An unrepaired response is
+withheld and marked incomplete; other research continues, with critic gap accounting
+and no memory/methodology update for that incomplete company.
+
+Set `variables.portfolio_review_passes` to **1, 2 or 3 total passes** (default 1).
+The first reviews the portfolio using optional learned company methodology when
+available; later passes reflect sequentially on the previous validated result.
+Market/regulatory research and final critic/synthesis are not repeated. The pinned
+Fixed Skill remains the global contract; missing learned methodology does not block
+preview. Existing apply authority and package-initialization requirements remain.
+
+Missing public information can be an explicit evidence gap, rather than an invented
+claim. Positive claims still need admitted citations and critic acceptance. Normal
+preview calls are 12/13/14 per company for 1/2/3 passes, with at most 3/4/5 extra
+resolver calls; apply adds one committed benchmark call. The five-company and
+1,800-second limits remain. Earlier versions keep their existing contracts.
+
+See [the resolution/reflection developer guide](../../../docs/pharma-research-resolution-and-reflection-developer-guide.md)
+for the model, exact budgets, receipts, boundaries and official promotion sequence.
+
 ## 0.1.16 exact proposed-change review
 
 Set `variables.retain_review_packet=true` to include `review_packet` inside the

@@ -69,7 +69,8 @@ class AgentIterationLimitTests(unittest.TestCase):
                 for company_id in (1, 2, 3, 4, 5):
                     self.exercise_company(inputs, company_id, mode=mode)
                 self.assertEqual(inputs.agent_call_count, expected)
-                self.assertEqual(inputs.agent_call_limit, expected)
+                repair_reserve = 15 if hasattr(adapter, "RESEARCH_RESOLVER_ROLE") else 0
+                self.assertEqual(inputs.agent_call_limit, expected + repair_reserve)
                 with self.assertRaisesRegex(adapter.AgentContractValidationError, "iteration limit"):
                     inputs.invoke_agent("memory_benchmark_reviewer", input={"company_id": 1})
                 self.assertEqual(len(runtime.calls), expected)

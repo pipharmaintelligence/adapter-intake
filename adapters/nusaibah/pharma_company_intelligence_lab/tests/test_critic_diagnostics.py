@@ -187,7 +187,27 @@ class CriticDiagnosticContractTests(unittest.TestCase):
             with patch.object(module, "_agent_citations", side_effect=orchestration._fake_citations):
                 outputs.append(module.NusaibahPharmaCompanyIntelligenceLabAdapter().invoke(inputs, {}))
             self.assertFalse(any(role.endswith("_update") for role, _ in inputs.dynamic_skill_calls))
-        self.assertEqual(outputs[0], outputs[1])
+        # New 0.1.17 diagnostics/reflection fields are additive; all retained
+        # default-pass business fields and call counts must remain identical.
+        additive = {
+            "research_incomplete_company_count", "business_result_state",
+            "portfolio_review_passes_requested", "portfolio_review_pass_count",
+            "portfolio_reflection_pass_count", "portfolio_review_trace",
+            "research_resolver_agent_call_count", "research_incomplete",
+            "unresolved_research_responses", "research_response_repair_count",
+            "research_response_repairs", "no_evidence_research_roles",
+            "incomplete_research_company_count",
+        }
+        def retained_projection(old, new):
+            if isinstance(old, dict):
+                self.assertTrue(set(old).issubset(new))
+                self.assertTrue((set(new) - set(old)).issubset(additive))
+                return {key: retained_projection(value, new[key]) for key, value in old.items()}
+            if isinstance(old, list):
+                self.assertEqual(len(old), len(new))
+                return [retained_projection(a, b) for a, b in zip(old, new)]
+            return new
+        self.assertEqual(outputs[0], retained_projection(outputs[0], outputs[1]))
 
     def test_critic_failures_stop_real_orchestration_before_synthesis_and_mutation(self):
         original = orchestration._agent_value
