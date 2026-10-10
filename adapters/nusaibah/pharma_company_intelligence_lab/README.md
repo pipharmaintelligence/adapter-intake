@@ -1,5 +1,21 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.19 ten-minute requests for every Agent
+
+All nine Agent roles request **600 seconds per provider step**, including the
+three research formatting steps and the backup resolver. Models, thinking levels,
+token budgets, prompts, role scope and quality gates are unchanged. Each Agent
+contract receives a new patch version; previous promoted identities remain intact.
+
+This requires the generic Core/Assets 600-second support and compatible workers
+before activation. Core's provider policy and material lifetime must also permit
+600 seconds. Existing retries/backoff and the 1,800-second total execution deadline
+still apply; each attempt is shortened if authority or execution time runs out.
+No new paid execution or memory/methodology write is part of this release.
+
+See [the timeout delivery guide](../../../docs/pharma-agent-timeout-developer-guide.md)
+for prerequisites, delivery order and verification.
+
 ## 0.1.18 first-run preview without company memory
 
 Preview accepts the runtime's exact `dynamic_skill_not_initialized` result for
