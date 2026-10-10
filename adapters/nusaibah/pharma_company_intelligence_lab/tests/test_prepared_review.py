@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT))
 import nusaibah_pharma_company_intelligence_lab_adapter as adapter
 import review_packet_v0_1_16 as packet
 from devtools.dynamic_skill_runtime import DynamicSkillRuntimeError
+import test_orchestration_preview as orchestration
 from test_orchestration_preview import FakeInputs, FirstRunMethodologyInputs, _fake_citations
 
 
@@ -60,6 +61,28 @@ class PreparedReviewTests(unittest.TestCase):
             self.assertEqual(len(company["research_role_evidence"]), 3)
         self.assertEqual(len(inputs.agent_calls), 24)
         self.assertFalse(any(role.endswith("_update") for role, _ in inputs.dynamic_skill_calls))
+
+    def test_regressing_memory_retains_rejected_proposal_and_skips_methodology(self):
+        inputs=FakeInputs()
+        inputs["variables"]["retain_review_packet"]=True
+        original=orchestration._agent_value
+        def regress(role,company_id,input_value):
+            value=original(role,company_id,input_value)
+            if role=="memory_benchmark_reviewer" and input_value["memory_stage"]=="proposed":
+                for answer in value["results"]:
+                    answer["coverage"]="not_covered"
+            return value
+        with patch.object(orchestration,"_agent_value",side_effect=regress):
+            dossier=self.run_preview(inputs)["outputs"]["intelligence_dossier"]
+        for result,company in zip(dossier["company_results"],dossier["review_packet"]["companies"]):
+            self.assertFalse(result["benchmark_non_regression"])
+            self.assertFalse(company["memory_proposal"]["mutation_eligible"])
+            self.assertTrue(company["memory_proposal"]["replacement_text"])
+            self.assertIsNone(company["methodology_proposal"]["replacement_text"])
+            self.assertIsNone(company["methodology_proposal"]["replacement_sha256"])
+            self.assertEqual(result["methodology_learning_update_status"],"no_change_recommended")
+        self.assertEqual(len(inputs.agent_calls),24)
+        self.assertFalse(any(role.endswith("_update") for role,_ in inputs.dynamic_skill_calls))
 
     def test_digest_binds_the_entire_packet(self):
         inputs=FakeInputs()
