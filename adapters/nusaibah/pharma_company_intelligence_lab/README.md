@@ -1,5 +1,36 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.16 exact proposed-change review
+
+Set `variables.retain_review_packet=true` to include `review_packet` inside the
+existing `intelligence_dossier` output. The default is false. Request generic Core
+preview retention separately (`retain_preview_result=true` at execute time).
+This retains exact prepared memory/methodology section replacements and their
+SHA-256 digests, baseline digests, selected claim IDs, validated claims, complete
+research-role citations, planner chunks/requirements, critic decisions, before
+and projected benchmarks, and residual uncertainties. No extra Agent calls occur.
+
+The packet is a proposal with `review_state=not_reviewed` and no apply authority.
+Role citations do not establish an individual claim-to-source mapping. Model
+critic acceptance and projected benchmarks are not independent semantic review
+or committed readback. Core supplies retention, access control, expiry and the
+immutable run/artifact reference; the adapter does not choose a storage backend.
+
+Apply now checks every company's existing memory and initialized methodology
+before any provider call. Missing first-object methodology still requires the
+generic governed Core create-if-absent capability. This release does not create
+packages, apply a retained packet, or weaken write policy. Existing CAS,
+readback/history and post-commit benchmark checks remain in force.
+
+The optional packet plus company results has a 512 KiB bound and fails before
+mutation without truncating proposals. Existing five-company, 12 preview / 13
+apply calls-per-company bounds remain. Ship through pinned intake promotion;
+retain every previously promoted identity. SDK 0.1.105 already supports generic
+retention: no wheel upgrade or new environment setting is required.
+
+See [the prepared-review developer guide](../../../docs/pharma-prepared-review-developer-guide.md).
+
+
 ## 0.1.14 CompanyContext handoff
 
 The new version consumes a retained complete Company Scope result. Company Scope
@@ -30,7 +61,7 @@ The existing batch `variables` contract is retained, including required
 `objective=company_intelligence_memory`. These IDs confirm the exact target set;
 they do not trigger data acquisition. Scope order may differ; intelligence
 processes the requested order. No subsetting or partial-results fallback occurs.
-The entire Scope result must contain 1–5 companies and match that requested set.
+The entire Scope result must contain 1â€“5 companies and match that requested set.
 Scope's maximum of 25 does not increase intelligence's five-company run limit.
 Paginated `company_scope:0.1.1/company_scope_page` is not this complete-result
 contract and is intentionally rejected. Larger jobs require admitted bounded
@@ -390,7 +421,7 @@ Inspect safe session/attempt metadata: admitted requests must show 60/120/180 se
 
 Rollback: stop new `0.1.9` launches and let admitted work finish. Route back to the retained `0.1.7` package, exact binding and Agent versions, and restore the saved environment/policy values. Do not overwrite older published bytes or shorten an active session's authority.
 
-## Runtime Skill dependency compatibility — 0.1.15
+## Runtime Skill dependency compatibility â€” 0.1.15
 
 The caller still supplies only `company_context` and `variables`. Assets adds
 four manifest-declared Runtime Skill slots before SDK invocation:

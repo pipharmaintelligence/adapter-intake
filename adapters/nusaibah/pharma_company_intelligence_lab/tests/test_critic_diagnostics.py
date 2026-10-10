@@ -194,7 +194,7 @@ class CriticDiagnosticContractTests(unittest.TestCase):
         for failure in ("missing_required_list", "critic_rejected", "citation_coverage_insufficient",
                         "unsupported_claims_remaining", "required_sections_missing", "planner_requirements_unsatisfied"):
             with self.subTest(failure=failure):
-                inputs = orchestration.FirstRunMethodologyInputs()
+                inputs = orchestration.FakeInputs()
                 inputs["variables"]["company_ids"] = [13]
                 inputs["variables"]["memory_mode"] = "apply"
                 inputs.set_company_records([{"id": 13, "company": "Tabuk Pharmaceuticals"}])
