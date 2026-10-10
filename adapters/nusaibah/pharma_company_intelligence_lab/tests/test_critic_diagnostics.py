@@ -191,6 +191,7 @@ class CriticDiagnosticContractTests(unittest.TestCase):
         # default-pass business fields and call counts must remain identical.
         additive = {
             "research_incomplete_company_count", "business_result_state",
+            "memory_initialized", "memory_initialization_required", "benchmark_before_basis",
             "portfolio_review_passes_requested", "portfolio_review_pass_count",
             "portfolio_reflection_pass_count", "portfolio_review_trace",
             "research_resolver_agent_call_count", "research_incomplete",

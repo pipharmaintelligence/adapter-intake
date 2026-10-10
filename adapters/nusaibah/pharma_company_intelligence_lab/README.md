@@ -1,5 +1,31 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.18 first-run preview without company memory
+
+Preview accepts the runtime's exact `dynamic_skill_not_initialized` result for
+`company_memory`. It uses an empty research context and a deterministic
+`not_covered` baseline for every Fixed Skill benchmark question. The absence is
+reported as `memory_initialized=false` and
+`benchmark_before_basis=deterministic_absent_memory`; no baseline Agent call,
+placeholder package, content digest, storage write, or mutation handle is invented.
+
+Research, optional learned methodology, portfolio reflection, critic, synthesis
+and the proposed-candidate benchmark still run. A retained proposal has null
+baseline digest/section, `initialization_required=true`, and
+`mutation_eligible=false`. `preview_ready` describes a reviewable candidate, not
+permission to initialize memory. Apply still requires every company's existing
+memory and methodology before provider calls. Delivery, permission, integrity,
+empty-package and malformed-package errors are not treated as absence.
+
+First-memory previews normally make 11/12/13 logical Agent calls for 1/2/3 total
+portfolio passes, one fewer than initialized-memory previews. Existing hard
+ceilings, recovery limits and quality gates remain. Existing-memory outputs and
+calls remain compatible, with additive baseline metadata. Earlier promoted
+adapter versions and shared helpers are unchanged.
+
+See [the first-run developer guide](../../../docs/pharma-first-run-preview-developer-guide.md)
+for release and live-verification requirements.
+
 ## 0.1.17 response resolution and portfolio reflection
 
 The current intake version adds safe field/rule diagnostics, deterministic cleanup

@@ -42,7 +42,7 @@ class PreparedReviewTests(unittest.TestCase):
         value = json.loads(json.dumps(result))["outputs"]["intelligence_dossier"]["review_packet"]
         self.assertEqual(value["review_state"], "not_reviewed")
         self.assertIs(value["apply_authority"], False)
-        self.assertEqual(value["asset_identity"], "nusaibah.pharma_company_intelligence_lab:0.1.17")
+        self.assertEqual(value["asset_identity"], "nusaibah.pharma_company_intelligence_lab:0.1.18")
         for company, state in zip(value["companies"], states):
             memory = company["memory_proposal"]
             expected = state["memory_candidate"].markdown.rstrip() + "\n"
