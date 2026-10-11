@@ -21,25 +21,22 @@ EXPECTED_REVIEWED_HELPERS = {
     "portfolio_review_v0_1_17.py",
     "agent_response_recovery_v0_1_17.py",
     "evidence_recovery_v0_1_20.py",
+    "claim_evidence_contract_v0_1_21.py",
+    "research_claim_evidence_v0_1_21.py",
+    "memory_citation_selection_v0_1_21.py",
+}
+
+EXPECTED_REVIEWED_SUPPORT_FILES = {
+    "pharma_roles_v0_1_21.json",
+    "materialization_promotion_acceptance_v0_1_21.json",
 }
 
 EXPECTED_RUNTIME_FILES = {
     "nusaibah_pharma_company_intelligence_lab_adapter.py",
     "nusaibah_pharma_company_intelligence_lab.asset.json",
     "adapter.dependencies.json",
-    "input_contract.py",
-    "dossier_contract.py",
-    "memory_contract.py",
-    "agent_contract.py",
-    "critic_diagnostics_v0_1_13.py",
-    "company_context_contract_v0_1_14.py",
-    "company_context_contract_v0_1_15.py",
-    "methodology_contract.py",
-    "review_packet_v0_1_16.py",
-    "research_diagnostics_v0_1_17.py",
-    "portfolio_review_v0_1_17.py",
-    "agent_response_recovery_v0_1_17.py",
-    "evidence_recovery_v0_1_20.py",
+    *EXPECTED_REVIEWED_HELPERS,
+    *EXPECTED_REVIEWED_SUPPORT_FILES,
     "README.md",
 }
 
@@ -62,9 +59,11 @@ class PromotionSurfaceTests(unittest.TestCase):
         lines = text.splitlines()
 
         reviewed_helpers = set(_list_under(lines, "reviewed_helpers"))
+        reviewed_support = set(_list_under(lines, "reviewed_support_files"))
         optional_files = set(_list_under(lines, "optional_files"))
 
         self.assertEqual(reviewed_helpers, EXPECTED_REVIEWED_HELPERS)
+        self.assertEqual(reviewed_support, EXPECTED_REVIEWED_SUPPORT_FILES)
         self.assertEqual(optional_files, {"README.md"})
         self.assertNotIn("tests", text)
         self.assertNotIn("evaluation", text)
@@ -75,6 +74,7 @@ class PromotionSurfaceTests(unittest.TestCase):
             "nusaibah_pharma_company_intelligence_lab.asset.json",
             "adapter.dependencies.json",
             *reviewed_helpers,
+            *reviewed_support,
             *optional_files,
         }
         self.assertEqual(declared_runtime_files, EXPECTED_RUNTIME_FILES)
