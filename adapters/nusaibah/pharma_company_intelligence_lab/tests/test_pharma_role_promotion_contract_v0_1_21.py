@@ -78,7 +78,9 @@ class PharmaRolePromotionContractTest(unittest.TestCase):
         self.assertTrue(
             {
                 "claim_evidence_contract_v0_1_21.py",
+                "research_response_contract_v0_1_21.py",
                 "research_claim_evidence_v0_1_21.py",
+                "research_claim_pipeline_v0_1_21.py",
                 "memory_citation_selection_v0_1_21.py",
             }.issubset(set(declared["reviewed_helpers"]))
         )
@@ -111,10 +113,21 @@ class PharmaRolePromotionContractTest(unittest.TestCase):
         })
         self.assertFalse(any(item["mutation_authority"] for item in catalog["roles"]))
 
-        module = importlib.import_module("research_claim_evidence_v0_1_21")
-        docstring = module.__doc__ or ""
-        for role in catalog_roles:
-            self.assertIn(role, docstring)
+        for module_name in (
+            "research_claim_evidence_v0_1_21",
+            "research_claim_pipeline_v0_1_21",
+        ):
+            module = importlib.import_module(module_name)
+            docstring = module.__doc__ or ""
+            for role in catalog_roles:
+                self.assertIn(role, docstring)
+
+        response_contract = importlib.import_module(
+            "research_response_contract_v0_1_21"
+        )
+        response_docstring = response_contract.__doc__ or ""
+        for role in RESEARCH_ROLES:
+            self.assertIn(role, response_docstring)
 
     def test_materialization_and_promotion_acceptance_are_explicit(self) -> None:
         contract = json.loads(ACCEPTANCE.read_text(encoding="utf-8"))
