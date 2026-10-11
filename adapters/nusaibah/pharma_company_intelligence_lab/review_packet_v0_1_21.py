@@ -1,8 +1,9 @@
 """Claim-level, review-only packet for pharma adapter version 0.1.21.
 
-The packet preserves accepted and withheld claims, the admitted citation
-catalog, and the exact bounded evidence selection intended for eventual apply.
-It grants no apply authority. Core remains the retention and persistence owner.
+The packet preserves original role sections, accepted and withheld claims, the
+admitted citation catalog, semantic-quality issues, methodology lessons, and
+the exact bounded evidence selection intended for eventual reviewed apply. It
+grants no apply authority. Core remains the retention and persistence owner.
 """
 from __future__ import annotations
 
@@ -86,6 +87,17 @@ def _company_packet(state: dict[str, Any]) -> dict[str, Any]:
             "review_required": (
                 state["methodology_learning_candidate"] is not None
             ),
+            "rule_ids": list(state["methodology_learning_rule_ids"]),
+            "proposal_digest": state[
+                "methodology_learning_proposal_digest"
+            ],
+            "previous_learning_preserved": state[
+                "methodology_learning_previous_preserved"
+            ],
+            "planner_snapshot_included": state[
+                "methodology_learning_planner_snapshot_included"
+            ],
+            "apply_authority": False,
             "mutation_eligible": False,
         }
     )
@@ -106,6 +118,9 @@ def _company_packet(state: dict[str, Any]) -> dict[str, Any]:
         "withheld_claims": [
             dict(item) for item in joined.get("withheld_claims", [])
         ],
+        "withheld_section_ids": list(
+            joined.get("withheld_section_ids", [])
+        ),
         "claim_evidence": _claim_evidence(joined),
         "evidence_granularity": "claim",
         "research_role_evidence": _role_evidence(state["research"]),
@@ -129,6 +144,9 @@ def _company_packet(state: dict[str, Any]) -> dict[str, Any]:
         "claim_evidence_issues": list(
             joined.get("claim_evidence_issues", [])
         ),
+        "claim_quality_issues": list(
+            joined.get("claim_quality_issues", [])
+        ),
         "unresolved_agent_responses": state["result"][
             "unresolved_agent_responses"
         ],
@@ -138,6 +156,8 @@ def _company_packet(state: dict[str, Any]) -> dict[str, Any]:
 
 def _incomplete_company_packet(state: dict[str, Any]) -> dict[str, Any]:
     result = state["result"]
+    progress = state.get("progress", {})
+    joined = progress.get("joined_research", {})
     return {
         "company_id": state["company_id"],
         "company_name": state["company_name"],
@@ -167,11 +187,23 @@ def _incomplete_company_packet(state: dict[str, Any]) -> dict[str, Any]:
             ),
             "initialized": None,
             "review_required": False,
+            "rule_ids": [],
+            "proposal_digest": None,
+            "previous_learning_preserved": False,
+            "planner_snapshot_included": False,
+            "apply_authority": False,
             "mutation_eligible": False,
         },
         "accepted_claims": list(state.get("retained_claims", [])),
-        "withheld_claims": [],
-        "claim_evidence": None,
+        "withheld_claims": list(joined.get("withheld_claims", [])),
+        "withheld_section_ids": list(
+            joined.get("withheld_section_ids", [])
+        ),
+        "claim_evidence": (
+            _claim_evidence(joined)
+            if joined.get("claim_evidence_index") is not None
+            else None
+        ),
         "evidence_granularity": "claim; preparation incomplete",
         "research_role_evidence": _role_evidence(
             state.get("retained_research", {})
@@ -188,20 +220,20 @@ def _incomplete_company_packet(state: dict[str, Any]) -> dict[str, Any]:
         },
         "memory_apply_citations": [],
         "methodology_plan": (
-            state["progress"]["methodology_plan"].to_agent_input()
-            if state.get("progress", {}).get("methodology_plan")
+            progress["methodology_plan"].to_agent_input()
+            if progress.get("methodology_plan")
             else None
         ),
-        "planner_requirements": state.get("progress", {}).get(
+        "planner_requirements": progress.get(
             "planner_requirements",
             [],
         ),
-        "planner_chunks": state.get("progress", {}).get(
+        "planner_chunks": progress.get(
             "planner_chunks",
             [],
         ),
-        "critic": state.get("progress", {}).get("critic"),
-        "strategic": state.get("progress", {}).get("strategic"),
+        "critic": progress.get("critic"),
+        "strategic": progress.get("strategic"),
         "benchmark": {
             "questions": [],
             "before": None,
@@ -211,6 +243,7 @@ def _incomplete_company_packet(state: dict[str, Any]) -> dict[str, Any]:
         },
         "issues_annex": result["issues_annex"],
         "claim_evidence_issues": result.get("claim_evidence_issues", []),
+        "claim_quality_issues": result.get("claim_quality_issues", []),
         "unresolved_agent_responses": result[
             "unresolved_agent_responses"
         ],
@@ -285,7 +318,13 @@ def _role_evidence(research: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     return [
         {
             "role": role,
-            "sections": payload["sections"],
+            "sections": list(
+                payload.get("_review_sections", payload["sections"])
+            ),
+            "downstream_sections": payload["sections"],
+            "withheld_section_ids": list(
+                payload.get("_withheld_section_ids", ())
+            ),
             "uncertainties": payload["uncertainties"],
             "citations": [
                 {
