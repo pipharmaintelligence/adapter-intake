@@ -8,6 +8,7 @@ ASSET_ROOT = Path(__file__).resolve().parents[1]
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 
 EXPECTED_REVIEWED_HELPERS = {
+    "nusaibah_pharma_company_intelligence_lab_adapter.py",
     "input_contract.py",
     "dossier_contract.py",
     "memory_contract.py",
@@ -39,8 +40,8 @@ EXPECTED_REVIEWED_SUPPORT_FILES = {
 }
 
 EXPECTED_RUNTIME_FILES = {
-    "nusaibah_pharma_company_intelligence_lab_adapter.py",
-    "nusaibah_pharma_company_intelligence_lab.asset.json",
+    "nusaibah_pharma_company_intelligence_lab_v0_1_21_adapter.py",
+    "nusaibah_pharma_company_intelligence_lab_v0_1_21.asset.json",
     "adapter.dependencies.json",
     *EXPECTED_REVIEWED_HELPERS,
     *EXPECTED_REVIEWED_SUPPORT_FILES,
@@ -60,6 +61,14 @@ def _list_under(lines: list[str], key: str) -> list[str]:
     return values
 
 
+def _scalar(lines: list[str], key: str) -> str:
+    prefix = f"{key}:"
+    for line in lines:
+        if line.startswith(prefix):
+            return line.split(":", 1)[1].strip()
+    raise AssertionError(f"Missing {key} in adapter.yaml")
+
+
 class PromotionSurfaceTests(unittest.TestCase):
     def test_runtime_materialization_surface_excludes_evaluation_and_test_scaffolding(self) -> None:
         text = ADAPTER_YAML.read_text(encoding="utf-8")
@@ -68,6 +77,8 @@ class PromotionSurfaceTests(unittest.TestCase):
         reviewed_helpers = set(_list_under(lines, "reviewed_helpers"))
         reviewed_support = set(_list_under(lines, "reviewed_support_files"))
         optional_files = set(_list_under(lines, "optional_files"))
+        adapter_module = _scalar(lines, "adapter_module")
+        manifest = _scalar(lines, "manifest")
 
         self.assertEqual(reviewed_helpers, EXPECTED_REVIEWED_HELPERS)
         self.assertEqual(reviewed_support, EXPECTED_REVIEWED_SUPPORT_FILES)
@@ -77,14 +88,18 @@ class PromotionSurfaceTests(unittest.TestCase):
         self.assertNotIn("stubs", text)
 
         declared_runtime_files = {
-            "nusaibah_pharma_company_intelligence_lab_adapter.py",
-            "nusaibah_pharma_company_intelligence_lab.asset.json",
+            adapter_module,
+            manifest,
             "adapter.dependencies.json",
             *reviewed_helpers,
             *reviewed_support,
             *optional_files,
         }
         self.assertEqual(declared_runtime_files, EXPECTED_RUNTIME_FILES)
+        self.assertNotIn(
+            "nusaibah_pharma_company_intelligence_lab.asset.json",
+            declared_runtime_files,
+        )
 
     def test_wp_reference_modules_remain_under_tests_only(self) -> None:
         evaluation_root = ASSET_ROOT / "tests" / "evaluation"
