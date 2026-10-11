@@ -1,10 +1,13 @@
 asset_key: nusaibah.pharma_company_intelligence_lab
-asset_version: 0.1.20
+asset_version: 0.1.21
 package_target: python_runtime/adapters/intake/nusaibah/pharma_company_intelligence_lab
-manifest: nusaibah_pharma_company_intelligence_lab.asset.json
-adapter_module: nusaibah_pharma_company_intelligence_lab_adapter.py
+manifest: nusaibah_pharma_company_intelligence_lab_v0_1_21.asset.json
+adapter_module: nusaibah_pharma_company_intelligence_lab_v0_1_21_adapter.py
 
 reviewed_helpers:
+  # The retained 0.1.20 module supplies unchanged deterministic helpers. Assets
+  # materialization preserves the published 0.1.20 identity independently.
+  - nusaibah_pharma_company_intelligence_lab_adapter.py
   - input_contract.py
   - dossier_contract.py
   - memory_contract.py
@@ -18,8 +21,6 @@ reviewed_helpers:
   - portfolio_review_v0_1_17.py
   - agent_response_recovery_v0_1_17.py
   - evidence_recovery_v0_1_20.py
-  # Proposed 0.1.21 role/evidence functions remain modular and inactive
-  # until adapter.yaml and the manifest advance to the same version.
   - claim_evidence_contract_v0_1_21.py
   - research_response_contract_v0_1_21.py
   - research_claim_evidence_v0_1_21.py
