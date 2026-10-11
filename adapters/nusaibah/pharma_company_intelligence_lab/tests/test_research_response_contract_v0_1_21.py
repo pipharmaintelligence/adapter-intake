@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass
-import importlib
 from pathlib import Path
 import shutil
 import subprocess
@@ -17,6 +16,9 @@ if str(ASSET_ROOT) not in sys.path:
     sys.path.insert(0, str(ASSET_ROOT))
 
 from agent_contract import RESEARCH_ROLE_SECTIONS  # noqa: E402
+from claim_semantics_v0_1_21 import (  # noqa: E402
+    SCHEMA_VERSION as SEMANTIC_SCHEMA_VERSION,
+)
 from dossier_contract import SECTION_BY_ID  # noqa: E402
 from research_claim_evidence_v0_1_21 import qualified_claim_id  # noqa: E402
 from research_claim_pipeline_v0_1_21 import (  # noqa: E402
@@ -62,11 +64,33 @@ def _sections(role: str) -> list[dict[str, object]]:
     return result
 
 
+def _semantic_context(**overrides: object) -> dict[str, object]:
+    value: dict[str, object] = {
+        "schema_version": SEMANTIC_SCHEMA_VERSION,
+        "event_date": None,
+        "publication_date": None,
+        "status_as_of_date": None,
+        "event_state": "not_applicable",
+        "observation_kind": "company_reported",
+        "actor": None,
+        "counterparty": None,
+        "territory": None,
+        "manufacturing_responsibility": None,
+        "reported_total": None,
+        "component_total": None,
+        "remainder_label": None,
+        "governed_snapshot_relation": "not_applicable",
+        "entity_label_kind": "not_applicable",
+    }
+    value.update(overrides)
+    return value
+
+
 def _claim(
     *,
     claim_id: str = "claim-1",
     section_id: str = "markets_commercial_signals",
-    locator: str = "https://evidence.example/item",
+    locator: str | None = "https://evidence.example/item",
 ) -> dict[str, object]:
     return {
         "claim_id": claim_id,
@@ -76,8 +100,9 @@ def _claim(
         "as_of_date": "2026-10-11",
         "confidence": "high",
         "inference": False,
-        "citation_locators": [locator],
+        "citation_locators": [] if locator is None else [locator],
         "evidence_qualifiers": ["Company-reported; territory remains explicit."],
+        "semantic_context": _semantic_context(),
     }
 
 
@@ -124,30 +149,45 @@ class ResearchResponseContractV021Tests(unittest.TestCase):
             ["Event date remains separate from publication date."],
             validated["claims"][0]["evidence_qualifiers"],
         )
-
-    def test_positive_claim_requires_bounded_unique_citation_locators(self) -> None:
-        value = _payload()
-        value["claims"][0]["citation_locators"] = []
-
-        with self.assertRaises(ResearchResponseContractError) as raised:
-            validate_research_payload_v0_1_21(
-                value,
-                role="market_researcher",
-                company_id=14,
-            )
-
         self.assertEqual(
-            {
-                "schema_version": "proof_failure_detail.v1",
-                "proof_kind": "agent_contract",
-                "role": "market_researcher",
-                "stage": "research_payload_v0_1_21",
-                "rule": "bounded_list_required",
-                "field": "claims.citation_locators",
-            },
-            raised.exception.proof_failure_detail,
+            _semantic_context(),
+            validated["claims"][0]["semantic_context"],
         )
 
+    def test_missing_locator_withholds_only_affected_claim(self) -> None:
+        admitted = Citation("https://evidence.example/item", "Commercial evidence")
+        value = _payload(
+            claims=[
+                _claim(claim_id="accepted", locator=admitted.locator),
+                _claim(claim_id="missing", locator=None),
+            ]
+        )
+
+        validated = validate_research_payload_v0_1_21(
+            value,
+            role="market_researcher",
+            company_id=14,
+        )
+        self.assertEqual([], validated["claims"][1]["citation_locators"])
+
+        projection = validate_and_project_role_claim_evidence_v0_1_21(
+            role="market_researcher",
+            company_id=14,
+            pass_number=1,
+            payload=value,
+            admitted_citations=[admitted],
+        )
+        self.assertEqual(
+            (qualified_claim_id("market_researcher", "accepted"),),
+            tuple(item["claim_id"] for item in projection.accepted_claims),
+        )
+        self.assertEqual(
+            (qualified_claim_id("market_researcher", "missing"),),
+            tuple(item["claim_id"] for item in projection.withheld_claims),
+        )
+        self.assertEqual("claim_citation_required", projection.issues[0]["rule"])
+
+    def test_locator_list_remains_bounded_and_unique(self) -> None:
         duplicate = _payload()
         duplicate["claims"][0]["citation_locators"] = [
             "https://evidence.example/item",
@@ -160,6 +200,22 @@ class ResearchResponseContractV021Tests(unittest.TestCase):
                 company_id=14,
             )
         self.assertEqual("duplicate", raised_duplicate.exception.proof_failure_detail["rule"])
+
+        oversized = _payload()
+        oversized["claims"][0]["citation_locators"] = [
+            f"https://evidence.example/{index}"
+            for index in range(MAX_CITATION_LOCATORS_PER_CLAIM + 1)
+        ]
+        with self.assertRaises(ResearchResponseContractError) as raised_oversized:
+            validate_research_payload_v0_1_21(
+                oversized,
+                role="market_researcher",
+                company_id=14,
+            )
+        self.assertEqual(
+            "bounded_list_required",
+            raised_oversized.exception.proof_failure_detail["rule"],
+        )
 
     def test_payload_and_claim_shapes_are_exact(self) -> None:
         extra_payload = _payload()
@@ -182,13 +238,14 @@ class ResearchResponseContractV021Tests(unittest.TestCase):
             )
         self.assertEqual("claims", claim_error.exception.proof_failure_detail["field"])
 
-    def test_provider_visible_contract_declares_evidence_authority_and_bounds(self) -> None:
+    def test_provider_visible_contract_declares_evidence_and_semantic_authority(self) -> None:
         contract = research_response_contract_for_role_v0_1_21(
             role="regulatory_risk_researcher",
             company_id=14,
         )
         fields = contract["claims"]["fields"]
 
+        self.assertEqual(0, fields["citation_locators"]["min_items"])
         self.assertEqual(
             MAX_CITATION_LOCATORS_PER_CLAIM,
             fields["citation_locators"]["max_items"],
@@ -201,15 +258,23 @@ class ResearchResponseContractV021Tests(unittest.TestCase):
             "must_exactly_match_runtime_admitted_citation_locator",
             fields["citation_locators"]["authority"],
         )
+        self.assertEqual(
+            SEMANTIC_SCHEMA_VERSION,
+            fields["semantic_context"]["schema_version"],
+        )
         self.assertFalse(
             contract["claim_evidence"]["model_authored_citation_ids_allowed"]
         )
         self.assertEqual(
             "claim_withheld",
-            contract["claim_evidence"]["unknown_locator_action"],
+            contract["claim_evidence"]["missing_locator_action"],
+        )
+        self.assertEqual(
+            "preserve",
+            contract["claim_evidence"]["valid_sibling_action"],
         )
 
-    def test_repair_projection_keeps_declared_evidence_and_omits_runtime_material(self) -> None:
+    def test_repair_projection_keeps_declared_fields_and_omits_runtime_material(self) -> None:
         value = _payload()
         value["provider_payload"] = {"forbidden": "runtime material"}
 
@@ -224,8 +289,12 @@ class ResearchResponseContractV021Tests(unittest.TestCase):
             ["Company-reported; territory remains explicit."],
             projected["claims"][0]["evidence_qualifiers"],
         )
+        self.assertEqual(
+            _semantic_context(),
+            projected["claims"][0]["semantic_context"],
+        )
 
-    def test_repair_cannot_change_locator_or_qualifier(self) -> None:
+    def test_repair_cannot_change_locator_qualifier_or_semantic_context(self) -> None:
         original = _payload()
         repaired = validate_research_payload_v0_1_21(
             original,
@@ -266,6 +335,19 @@ class ResearchResponseContractV021Tests(unittest.TestCase):
             qualifier_error.exception.proof_failure_detail["field"],
         )
 
+        changed_semantics = deepcopy(repaired)
+        changed_semantics["claims"][0]["semantic_context"]["event_state"] = "completed"
+        with self.assertRaises(ResearchResponseContractError) as semantic_error:
+            require_repair_preserves_claim_evidence_v0_1_21(
+                original,
+                changed_semantics,
+                role="market_researcher",
+            )
+        self.assertEqual(
+            "claims.semantic_context",
+            semantic_error.exception.proof_failure_detail["field"],
+        )
+
     def test_thin_pipeline_returns_only_validated_role_projection(self) -> None:
         admitted = Citation("https://evidence.example/item", "Commercial evidence")
         value = _payload(
@@ -301,6 +383,7 @@ class ResearchResponseContractV021Tests(unittest.TestCase):
             "agent_contract.py",
             "agent_response_recovery_v0_1_17.py",
             "claim_evidence_contract_v0_1_21.py",
+            "claim_semantics_v0_1_21.py",
             "dossier_contract.py",
             "memory_contract.py",
             "research_claim_evidence_v0_1_21.py",
