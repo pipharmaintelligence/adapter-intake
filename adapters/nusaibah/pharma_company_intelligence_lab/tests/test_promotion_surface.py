@@ -22,7 +22,9 @@ EXPECTED_REVIEWED_HELPERS = {
     "agent_response_recovery_v0_1_17.py",
     "evidence_recovery_v0_1_20.py",
     "claim_evidence_contract_v0_1_21.py",
+    "research_response_contract_v0_1_21.py",
     "research_claim_evidence_v0_1_21.py",
+    "research_claim_pipeline_v0_1_21.py",
     "memory_citation_selection_v0_1_21.py",
 }
 
