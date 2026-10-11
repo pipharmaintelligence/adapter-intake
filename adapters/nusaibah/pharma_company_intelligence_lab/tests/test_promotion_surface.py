@@ -25,7 +25,12 @@ EXPECTED_REVIEWED_HELPERS = {
     "research_response_contract_v0_1_21.py",
     "research_claim_evidence_v0_1_21.py",
     "research_claim_pipeline_v0_1_21.py",
+    "research_execution_v0_1_21.py",
     "memory_citation_selection_v0_1_21.py",
+    "company_result_v0_1_21.py",
+    "company_preparation_v0_1_21.py",
+    "review_packet_v0_1_21.py",
+    "orchestration_v0_1_21.py",
 }
 
 EXPECTED_REVIEWED_SUPPORT_FILES = {
