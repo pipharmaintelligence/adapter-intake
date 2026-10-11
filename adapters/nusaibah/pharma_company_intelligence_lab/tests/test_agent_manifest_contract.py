@@ -6,16 +6,23 @@ from pathlib import Path
 
 
 ASSET_ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_v0_1_21.asset.json"
-HISTORICAL_MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
+MANIFEST = (
+    ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_v0_1_21.asset.json"
+)
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
-ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_v0_1_21_adapter.py"
+ADAPTER_MODULE = (
+    ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_v0_1_21_adapter.py"
+)
 HISTORICAL_ADAPTER_MODULE = (
     ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
+)
+HISTORICAL_MANIFEST = (
+    ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 )
 
 ASSET_VERSION = "0.1.21"
 HISTORICAL_VERSION = "0.1.20"
+HISTORICAL_RESEARCH_CONTRACT_VERSION = "1.0.7"
 CHANGED_RESEARCH_ROLES = (
     "portfolio_researcher",
     "market_researcher",
@@ -62,6 +69,41 @@ CANONICAL_PROVIDER_REGISTRY_ENTRY = {
         "provisioning_source": "pi_1895_capability_lab",
     },
 }
+EXPECTED_INPUTS = {
+    "company_context": {
+        "required": True,
+        "source": "direct",
+        "shape": "object",
+        "retained_output": {
+            "asset_identity": "nusaibah.company_scope:0.1.0",
+            "output_role": "company_scope_result",
+        },
+    },
+    "variables": {
+        "required": True,
+        "source": "direct",
+        "shape": "object",
+    },
+}
+EXPECTED_OUTPUTS = {
+    "intelligence_dossier": {
+        "required": True,
+        "shape": "object",
+    }
+}
+EXPECTED_PUBLISHED_SKILL = {
+    "skill_ref": "nusaibah.pharma-intelligence-methodology",
+    "version": "1.0.0",
+    "digest": (
+        "sha256:2fa082aca1c100abb60a4bf77aa4cf796da2707bb951a3b51f11948efd2dd564"
+    ),
+}
+EXPECTED_RUNTIME_SKILLS = {
+    "company_memory": ("company_memory", "read_only"),
+    "company_memory_update": ("company_memory", "mutable"),
+    "company_methodology": ("company_methodology", "read_only"),
+    "company_methodology_update": ("company_methodology", "mutable"),
+}
 
 
 class PackagedAgentDefinitionTests(unittest.TestCase):
@@ -70,13 +112,6 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         cls.manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         cls.version = cls.manifest["versions"][ASSET_VERSION]
         cls.agents = cls.version["agents"]
-        cls.historical_manifest = json.loads(
-            HISTORICAL_MANIFEST.read_text(encoding="utf-8")
-        )
-        cls.historical_version = cls.historical_manifest["versions"][
-            HISTORICAL_VERSION
-        ]
-        cls.historical_agents = cls.historical_version["agents"]
 
     def test_asset_version_is_synchronized_across_intake_contract_and_manifest(self) -> None:
         adapter_yaml = ADAPTER_YAML.read_text(encoding="utf-8")
@@ -92,38 +127,71 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         self.assertEqual(ASSET_VERSION, self.manifest["default"])
         self.assertEqual({ASSET_VERSION}, set(self.manifest["versions"]))
 
-    def test_historical_0_1_20_identity_remains_unchanged_and_separate(self) -> None:
+    def test_historical_identity_remains_source_only_in_intake(self) -> None:
         historical_module = HISTORICAL_ADAPTER_MODULE.read_text(encoding="utf-8")
+        adapter_yaml = ADAPTER_YAML.read_text(encoding="utf-8")
 
-        self.assertEqual(HISTORICAL_VERSION, self.historical_manifest["default"])
-        self.assertEqual(
-            {HISTORICAL_VERSION},
-            set(self.historical_manifest["versions"]),
-        )
         self.assertIn(
             f'version: ClassVar[str] = "{HISTORICAL_VERSION}"',
             historical_module,
         )
-        self.assertNotEqual(MANIFEST.name, HISTORICAL_MANIFEST.name)
-        self.assertNotEqual(ADAPTER_MODULE.name, HISTORICAL_ADAPTER_MODULE.name)
+        self.assertIn(HISTORICAL_ADAPTER_MODULE.name, adapter_yaml)
+        self.assertFalse(HISTORICAL_MANIFEST.exists())
+        self.assertNotIn(HISTORICAL_MANIFEST.name, adapter_yaml)
 
-    def test_new_version_preserves_non_agent_business_contracts(self) -> None:
-        excluded = {"agents"}
-        current = {
-            key: value
-            for key, value in self.version.items()
-            if key not in excluded
-        }
-        historical = {
-            key: value
-            for key, value in self.historical_version.items()
-            if key not in excluded
-        }
-        self.assertEqual(historical, current)
+    def test_non_agent_business_contract_is_explicitly_frozen(self) -> None:
+        self.assertEqual("active", self.version["state"])
+        self.assertEqual(EXPECTED_INPUTS, self.version["inputs"])
+        self.assertEqual(EXPECTED_OUTPUTS, self.version["outputs"])
+        self.assertEqual(
+            [EXPECTED_PUBLISHED_SKILL],
+            self.version["published_skills"],
+        )
 
-    def test_exact_role_set_and_order_match_historical_contract(self) -> None:
+        runtime_skills = self.version["runtime_skills"]
+        self.assertEqual(set(EXPECTED_RUNTIME_SKILLS), set(runtime_skills))
+        for role, (node_key, mutation) in EXPECTED_RUNTIME_SKILLS.items():
+            with self.subTest(role=role):
+                self.assertEqual(
+                    {"lake_ref": "googl123", "node_key": node_key},
+                    runtime_skills[role]["source"],
+                )
+                self.assertEqual("current", runtime_skills[role]["resolution"])
+                self.assertEqual(mutation, runtime_skills[role]["mutation"])
+                self.assertEqual(
+                    {"company_id": {"from_variable": "company_id"}},
+                    runtime_skills[role]["partition"],
+                )
+
+        output_contract = self.version["output_contracts"][
+            "intelligence_dossier"
+        ]
+        self.assertEqual("dlm_file_artifact_output", output_contract["target_kind"])
+        self.assertEqual("dry_run", output_contract["write_mode"])
+        self.assertEqual(
+            "json",
+            output_contract["format_policy"]["developer_selected_format"],
+        )
+        self.assertTrue(
+            output_contract["validation"]["self_inspection"]["enforce"]
+        )
+        self.assertEqual(
+            [
+                "schema_version",
+                "status",
+                "requested_company_count",
+                "completed_company_count",
+                "failed_company_count",
+                "company_results",
+            ],
+            [
+                field["name"]
+                for field in output_contract["schema"]["fields"]
+            ],
+        )
+
+    def test_exact_role_set_and_order_are_frozen(self) -> None:
         self.assertEqual(EXPECTED_ROLE_ORDER, tuple(self.agents))
-        self.assertEqual(tuple(self.historical_agents), tuple(self.agents))
 
     def test_only_changed_research_roles_embed_new_agent_definitions(self) -> None:
         for role, agent in self.agents.items():
@@ -135,9 +203,9 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
                         "1.0.8",
                         agent["definition"]["chain"]["version"],
                     )
-                    self.assertEqual(
-                        "1.0.7",
-                        self.historical_agents[role]["contract_version"],
+                    self.assertNotEqual(
+                        HISTORICAL_RESEARCH_CONTRACT_VERSION,
+                        agent["contract_version"],
                     )
                 else:
                     self.assertNotIn("definition", agent)
@@ -147,12 +215,9 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
                     )
                     self.assertEqual(
                         {
-                            key: self.historical_agents[role][key]
-                            for key in (
-                                "contract_key",
-                                "contract_version",
-                                "reference",
-                            )
+                            "contract_key": agent["contract_key"],
+                            "contract_version": UNCHANGED_ROLE_VERSIONS[role],
+                            "reference": agent["reference"],
                         },
                         agent,
                     )
@@ -176,7 +241,10 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         for role in CHANGED_RESEARCH_ROLES:
             chain = self.agents[role]["definition"]["chain"]
             with self.subTest(role=role):
-                self.assertEqual(self.agents[role]["contract_key"], chain["chain_id"])
+                self.assertEqual(
+                    self.agents[role]["contract_key"],
+                    chain["chain_id"],
+                )
                 self.assertEqual("1.0.8", chain["version"])
                 self.assertEqual(
                     {"max_tool_calls": 0, "max_provider_calls": 2},
@@ -274,44 +342,27 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         self.assertNotIn("skills", self.version)
         self.assertFalse((ASSET_ROOT / "skills").exists())
         self.assertEqual(
-            [
-                {
-                    "skill_ref": "nusaibah.pharma-intelligence-methodology",
-                    "version": "1.0.0",
-                    "digest": (
-                        "sha256:2fa082aca1c100abb60a4bf77aa4cf796da2707bb"
-                        "951a3b51f11948efd2dd564"
-                    ),
-                }
-            ],
+            [EXPECTED_PUBLISHED_SKILL],
             self.version["published_skills"],
         )
         self.assertEqual(
-            self.historical_version["runtime_skills"],
-            self.version["runtime_skills"],
+            set(EXPECTED_RUNTIME_SKILLS),
+            set(self.version["runtime_skills"]),
         )
 
     def test_input_and_output_contracts_remain_company_context_scoped(self) -> None:
-        self.assertEqual(
-            self.historical_version["inputs"],
-            self.version["inputs"],
-        )
-        self.assertEqual(
-            self.historical_version["outputs"],
-            self.version["outputs"],
-        )
-        self.assertEqual(
-            self.historical_version["output_contracts"],
-            self.version["output_contracts"],
-        )
-        output_contract = self.version["output_contracts"][
-            "intelligence_dossier"
-        ]
-        self.assertEqual("dry_run", output_contract["write_mode"])
+        self.assertEqual(EXPECTED_INPUTS, self.version["inputs"])
+        self.assertEqual(EXPECTED_OUTPUTS, self.version["outputs"])
         self.assertEqual(
             "nusaibah.company_scope:0.1.0",
             self.version["inputs"]["company_context"]["retained_output"][
                 "asset_identity"
+            ],
+        )
+        self.assertEqual(
+            "dry_run",
+            self.version["output_contracts"]["intelligence_dossier"][
+                "write_mode"
             ],
         )
 
