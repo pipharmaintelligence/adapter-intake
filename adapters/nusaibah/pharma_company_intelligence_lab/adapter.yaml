@@ -24,7 +24,12 @@ reviewed_helpers:
   - research_response_contract_v0_1_21.py
   - research_claim_evidence_v0_1_21.py
   - research_claim_pipeline_v0_1_21.py
+  - research_execution_v0_1_21.py
   - memory_citation_selection_v0_1_21.py
+  - company_result_v0_1_21.py
+  - company_preparation_v0_1_21.py
+  - review_packet_v0_1_21.py
+  - orchestration_v0_1_21.py
 
 # The reviewed role catalogue covers all manifest Agent roles. The separate
 # acceptance contract records Assets materialization and promotion gates.
