@@ -1,5 +1,29 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.25 invocation response containment
+
+The existing safe runtime proof diagnostic now identifies terminal JSON failures
+before the business response reaches this adapter. Only classified object/value
+errors are contained. Failed research roles retain their completed siblings and
+previous validated portfolio pass; other affected roles skip their dependent
+stages and retain a truthful incomplete company result. Rejected output is never
+represented as a completed Agent response or as accepted evidence.
+
+Unknown, authority, policy, identity and forbidden-material failures still stop.
+There is no blanket error suppression or automatic provider retry. An unavailable
+original JSON response cannot be repaired; it is withheld with an issues annex.
+The existing one-time backup remains available for inspectable business payloads
+and never recurses if its own invocation fails.
+
+All historical helper bytes, Agent definitions, call limits, 600-second requests,
+32,000-token limits and Skill references remain unchanged. Install only the
+official workflow artifact containing the generic terminal/IPC diagnostic repair
+before exercising this version. Runtime version alone cannot distinguish
+same-version artifacts. See the [developer guide](../../../docs/pharma-invocation-response-recovery.md).
+
+This version is preview-only. An incomplete or unreviewed packet grants no memory
+or methodology mutation authority. Two review passes are not two Skill writes.
+
 ## 0.1.24 research envelope parity
 
 The three research roles and their existing one-time JSON backup now receive the
