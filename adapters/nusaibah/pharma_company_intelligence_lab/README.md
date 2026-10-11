@@ -1,5 +1,24 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.24 research envelope parity
+
+The three research roles and their existing one-time JSON backup now receive the
+complete required response envelope: exact schema, company, role, completion
+status and seven-field list. Existing evidence and semantic checks remain intact.
+A contract-following formatter regression exposes the old omission and verifies
+the repaired two-pass preview. Returned negative statuses remain incomplete;
+they are never rewritten as successful or retried to obtain a positive verdict.
+
+Static retained response observations distinguish missing, malformed and other
+status values without recording model prose. Historical helpers, Agent prompts,
+32,000-token ceilings, 600-second requests, call limits and Skill references are
+unchanged. Delivery uses official promotion; runtime version remains unchanged.
+
+0.1.24 remains preview-only. It does not implement independent review admission
+or authorize publishing missing candidates. See the
+[developer guide](../../../docs/pharma-research-envelope-parity-developer-guide.md)
+for the grounded diagnosis, limitations and remaining live/publication proofs.
+
 ## 0.1.23 business-status recovery
 
 A non-completed status inside a completed Agent's business JSON now yields an
