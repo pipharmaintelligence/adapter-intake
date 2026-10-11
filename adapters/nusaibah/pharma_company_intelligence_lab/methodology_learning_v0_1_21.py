@@ -1,9 +1,10 @@
 """Review-only procedural methodology proposal for pharma adapter 0.1.21.
 
 The proposal preserves the existing company methodology text byte-for-byte as
-its prefix and appends only generic verification lessons identified during the
-Company 14 review. It contains no company research facts, changes no Fixed Skill,
-and grants no mutation authority.
+its prefix, retains a bounded planner/critic snapshot when it fits, and appends
+generic verification lessons identified during the Company 14 review. It
+contains no company research facts, changes no Fixed Skill, and grants no
+mutation authority.
 """
 from __future__ import annotations
 
@@ -51,33 +52,48 @@ class MethodologyLearningProposal:
     rule_ids: tuple[str, ...]
     proposal_digest: str
     previous_learning_preserved: bool
+    planner_snapshot_included: bool
     changed: bool
     apply_authority: bool
 
 
 def build_methodology_learning_proposal(
     existing_text: str,
+    *,
+    planner_snapshot: str | None = None,
 ) -> MethodologyLearningProposal:
-    """Append reviewed generic lessons while preserving existing text exactly."""
+    """Preserve existing learning and append reviewed generic lessons.
+
+    The planner snapshot is optional bounded procedural context. It is included
+    only as a complete value when the total proposal remains within the existing
+    section bound; no snapshot is truncated.
+    """
 
     if not isinstance(existing_text, str):
         raise MethodologyLearningError("methodology_learning_text_invalid")
     if len(existing_text) > MAX_TOTAL_CHARS:
         raise MethodologyLearningError("methodology_learning_text_oversized")
+    if planner_snapshot is not None and not isinstance(planner_snapshot, str):
+        raise MethodologyLearningError("methodology_planner_snapshot_invalid")
 
     rule_ids = tuple(rule_id for rule_id, _instruction in LESSONS)
     if len(set(rule_ids)) != len(rule_ids):
         raise MethodologyLearningError("methodology_learning_rule_duplicate")
 
-    if MARKER in existing_text:
-        candidate = existing_text
-        changed = False
-    else:
-        separator = "" if not existing_text else (
-            "\n\n" if not existing_text.endswith("\n") else "\n"
-        )
-        candidate = existing_text + separator + _render_addendum()
-        changed = True
+    addendum = "" if MARKER in existing_text else _render_addendum()
+    snapshot = (planner_snapshot or "").strip()
+    snapshot_included = False
+
+    candidate = existing_text
+    if snapshot and snapshot not in existing_text:
+        proposed = _append(candidate, snapshot + "\n")
+        projected = _append(proposed, addendum) if addendum else proposed
+        if len(projected) <= MAX_TOTAL_CHARS:
+            candidate = proposed
+            snapshot_included = True
+
+    if addendum:
+        candidate = _append(candidate, addendum)
 
     if len(candidate) > MAX_TOTAL_CHARS:
         raise MethodologyLearningError("methodology_learning_candidate_oversized")
@@ -90,9 +106,19 @@ def build_methodology_learning_proposal(
         rule_ids=rule_ids,
         proposal_digest="sha256:" + sha256(candidate.encode("utf-8")).hexdigest(),
         previous_learning_preserved=True,
-        changed=changed,
+        planner_snapshot_included=snapshot_included,
+        changed=candidate != existing_text,
         apply_authority=False,
     )
+
+
+def _append(existing: str, addition: str) -> str:
+    if not addition:
+        return existing
+    if not existing:
+        return addition
+    separator = "\n" if existing.endswith("\n") else "\n\n"
+    return existing + separator + addition
 
 
 def _render_addendum() -> str:
