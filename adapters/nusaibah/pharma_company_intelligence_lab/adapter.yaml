@@ -21,7 +21,9 @@ reviewed_helpers:
   # Proposed 0.1.21 role/evidence functions remain modular and inactive
   # until adapter.yaml and the manifest advance to the same version.
   - claim_evidence_contract_v0_1_21.py
+  - research_response_contract_v0_1_21.py
   - research_claim_evidence_v0_1_21.py
+  - research_claim_pipeline_v0_1_21.py
   - memory_citation_selection_v0_1_21.py
 
 # The reviewed role catalogue covers all manifest Agent roles. The separate
