@@ -216,8 +216,10 @@ def _schema_records(records: list[Any], request: dict[str, Any]) -> list[dict[st
     else:
         fields = records
 
-    if not isinstance(fields, list) or len(fields) > MAX_SCHEMA_FIELDS:
+    if not isinstance(fields, list):
         raise DlmMcpReadError("dlm_mcp_schema_invalid")
+    if len(fields) > MAX_SCHEMA_FIELDS:
+        raise DlmMcpReadError("dlm_mcp_response_limit_exceeded")
     result_fields = []
     for raw in fields:
         if not isinstance(raw, dict):
