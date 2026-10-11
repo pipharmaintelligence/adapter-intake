@@ -13,7 +13,6 @@ from typing import Any, Iterable, Mapping, Protocol
 
 
 SCHEMA_VERSION = "pharma_claim_evidence_index.v1"
-EVIDENCE_STATES = frozenset({"supported", "partially_supported", "inference", "withheld"})
 MAX_CITATION_REFS_PER_CLAIM = 24
 MAX_QUALIFIERS_PER_CLAIM = 8
 MAX_QUALIFIER_CHARS = 500
@@ -48,12 +47,6 @@ class CitationCatalogEntry:
     title: str | None
     source_kind: str
     provider_family: str | None
-
-    @property
-    def semantic_key(self) -> tuple[str, str | None]:
-        """Mirror the runtime citation deduplication identity exactly."""
-
-        return self.locator, self.title
 
     def public_value(self) -> dict[str, Any]:
         """Return the inert public citation shape used by review/apply consumers."""
@@ -96,14 +89,17 @@ class ClaimEvidenceIndex:
     index_digest: str
 
     def record(self, claim_id: str) -> ClaimEvidenceRecord | None:
-        """Return one exact claim record without guessing or fuzzy matching."""
+        """Return one exact claim record without fuzzy matching."""
 
         return next((item for item in self.records if item.claim_id == claim_id), None)
 
     def citation(self, citation_ref: str) -> CitationCatalogEntry | None:
         """Return one exact catalog citation by adapter-derived reference."""
 
-        return next((item for item in self.citations if item.citation_ref == citation_ref), None)
+        return next(
+            (item for item in self.citations if item.citation_ref == citation_ref),
+            None,
+        )
 
     @property
     def accepted_claim_ids(self) -> tuple[str, ...]:
@@ -125,12 +121,7 @@ def build_claim_evidence_index(
     claims: Iterable[Mapping[str, Any]],
     citations: Iterable[CitationLike],
 ) -> ClaimEvidenceIndex:
-    """Resolve claim locators against one role/pass runtime citation catalog.
-
-    Claims may carry ``citation_locators`` copied from the admitted evidence stage.
-    Exact locators are matched only against citations returned for this role/pass.
-    Unknown locators never become new citations and withhold the affected claim.
-    """
+    """Resolve claim locators against one role/pass admitted citation catalog."""
 
     role = _token(role, "claim_evidence_role_invalid")
     if type(pass_number) is not int or pass_number < 1:
@@ -154,48 +145,45 @@ def build_claim_evidence_index(
 
         evidence_kind = _token(raw.get("evidence_kind"), "claim_evidence_kind_invalid")
         inference = raw.get("inference")
-        if evidence_kind not in {"grounded_external", "inference"} or type(inference) is not bool:
+        if evidence_kind not in {"grounded_external", "inference"}:
             raise ClaimEvidenceError("claim_evidence_kind_invalid")
-        if evidence_kind == "inference" and inference is not True:
+        if type(inference) is not bool:
             raise ClaimEvidenceError("claim_evidence_inference_flag_invalid")
-        if evidence_kind == "grounded_external" and inference is not False:
+        if (evidence_kind == "inference") != inference:
             raise ClaimEvidenceError("claim_evidence_inference_flag_invalid")
 
         locators = _locator_list(raw.get("citation_locators", []))
         qualifiers = _qualifier_list(raw.get("evidence_qualifiers", []))
         matched: list[str] = []
-        unknown_locator = False
+        issue_code: str | None = None
         for locator in locators:
             options = by_locator.get(locator, [])
             if not options:
-                unknown_locator = True
-                continue
-            # Provider order is authoritative when one locator appears with
-            # multiple titles. One exact locator contributes one stable ref.
-            ref = options[0].citation_ref
-            if ref not in matched:
-                matched.append(ref)
+                issue_code = "claim_citation_locator_not_admitted"
+                break
+            if len(options) != 1:
+                issue_code = "claim_citation_locator_ambiguous"
+                break
+            reference = options[0].citation_ref
+            if reference not in matched:
+                matched.append(reference)
 
-        issue_code: str | None = None
-        if unknown_locator:
-            issue_code = "claim_citation_locator_not_admitted"
-        elif not matched:
+        if issue_code is None and not matched:
             issue_code = "claim_citation_required"
-
-        if issue_code is not None:
-            state = "withheld"
-            refs: tuple[str, ...] = ()
-        else:
-            state = "inference" if evidence_kind == "inference" else "supported"
-            refs = tuple(matched)
 
         records.append(
             ClaimEvidenceRecord(
                 claim_id=claim_id,
                 role=role,
                 section_id=section_id,
-                evidence_state=state,
-                citation_refs=refs,
+                evidence_state=(
+                    "withheld"
+                    if issue_code is not None
+                    else "inference"
+                    if evidence_kind == "inference"
+                    else "supported"
+                ),
+                citation_refs=() if issue_code is not None else tuple(matched),
                 qualifiers=qualifiers,
                 issue_code=issue_code,
             )
@@ -204,7 +192,9 @@ def build_claim_evidence_index(
     return _index(tuple(records), catalog)
 
 
-def merge_claim_evidence_indexes(indexes: Iterable[ClaimEvidenceIndex]) -> ClaimEvidenceIndex:
+def merge_claim_evidence_indexes(
+    indexes: Iterable[ClaimEvidenceIndex],
+) -> ClaimEvidenceIndex:
     """Merge independent role/pass indexes without changing their evidence."""
 
     records: list[ClaimEvidenceRecord] = []
@@ -213,7 +203,9 @@ def merge_claim_evidence_indexes(indexes: Iterable[ClaimEvidenceIndex]) -> Claim
     seen_citations: set[str] = set()
 
     for index in indexes:
-        if not isinstance(index, ClaimEvidenceIndex) or index.schema_version != SCHEMA_VERSION:
+        if not isinstance(index, ClaimEvidenceIndex):
+            raise ClaimEvidenceError("claim_evidence_index_invalid")
+        if index.schema_version != SCHEMA_VERSION:
             raise ClaimEvidenceError("claim_evidence_index_invalid")
         for record in index.records:
             if record.claim_id in seen_claims:
@@ -230,28 +222,15 @@ def merge_claim_evidence_indexes(indexes: Iterable[ClaimEvidenceIndex]) -> Claim
 
 
 def citation_reference(citation: CitationLike) -> str:
-    """Derive a stable reference from the exact safe runtime citation fields."""
+    """Derive the exact runtime semantic citation key without URL normalization."""
 
     locator = _text(getattr(citation, "locator", None), "claim_citation_locator_invalid")
     title_raw = getattr(citation, "title", None)
-    title = None if title_raw is None else _text(title_raw, "claim_citation_title_invalid")
-    source_kind = _text(
-        getattr(citation, "source_kind", None),
-        "claim_citation_source_kind_invalid",
+    title = None if title_raw is None else _text(
+        title_raw,
+        "claim_citation_title_invalid",
     )
-    provider_raw = getattr(citation, "provider_family", None)
-    provider_family = (
-        None
-        if provider_raw is None
-        else _text(provider_raw, "claim_citation_provider_family_invalid")
-    )
-    value = {
-        "locator": locator,
-        "title": title,
-        "source_kind": source_kind,
-        "provider_family": provider_family,
-    }
-    return "citation:sha256:" + _sha(value)
+    return "citation:sha256:" + _sha({"locator": locator, "title": title})
 
 
 def _citation_catalog(
@@ -263,9 +242,15 @@ def _citation_catalog(
     result: list[CitationCatalogEntry] = []
     seen_semantic: set[tuple[str, str | None]] = set()
     for ordinal, citation in enumerate(citations):
-        locator = _text(getattr(citation, "locator", None), "claim_citation_locator_invalid")
+        locator = _text(
+            getattr(citation, "locator", None),
+            "claim_citation_locator_invalid",
+        )
         title_raw = getattr(citation, "title", None)
-        title = None if title_raw is None else _text(title_raw, "claim_citation_title_invalid")
+        title = None if title_raw is None else _text(
+            title_raw,
+            "claim_citation_title_invalid",
+        )
         semantic_key = (locator, title)
         if semantic_key in seen_semantic:
             continue
@@ -275,10 +260,9 @@ def _citation_catalog(
             "claim_citation_source_kind_invalid",
         )
         provider_raw = getattr(citation, "provider_family", None)
-        provider_family = (
-            None
-            if provider_raw is None
-            else _text(provider_raw, "claim_citation_provider_family_invalid")
+        provider_family = None if provider_raw is None else _text(
+            provider_raw,
+            "claim_citation_provider_family_invalid",
         )
         result.append(
             CitationCatalogEntry(
@@ -336,14 +320,15 @@ def _index(
 
 
 def _locator_list(value: Any) -> tuple[str, ...]:
-    if not isinstance(value, list) or len(value) > MAX_CITATION_REFS_PER_CLAIM:
+    if not isinstance(value, list):
+        raise ClaimEvidenceError("claim_citation_locators_invalid")
+    if len(value) > MAX_CITATION_REFS_PER_CLAIM:
         raise ClaimEvidenceError("claim_citation_locators_invalid")
     result: list[str] = []
     for item in value:
         locator = _text(item, "claim_citation_locator_invalid")
-        if locator in result:
-            continue
-        result.append(locator)
+        if locator not in result:
+            result.append(locator)
     return tuple(result)
 
 
@@ -355,9 +340,8 @@ def _qualifier_list(value: Any) -> tuple[str, ...]:
         qualifier = _text(item, "claim_evidence_qualifier_invalid")
         if len(qualifier) > MAX_QUALIFIER_CHARS:
             raise ClaimEvidenceError("claim_evidence_qualifier_invalid")
-        if qualifier in result:
-            continue
-        result.append(qualifier)
+        if qualifier not in result:
+            result.append(qualifier)
     return tuple(result)
 
 
