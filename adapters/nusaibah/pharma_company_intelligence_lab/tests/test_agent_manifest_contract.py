@@ -4,12 +4,42 @@ import json
 import unittest
 from pathlib import Path
 
-ASSET_ROOT = Path(__file__).resolve().parents[1]
-MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
-ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
-ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
 
-ASSET_VERSION = "0.1.20"
+ASSET_ROOT = Path(__file__).resolve().parents[1]
+MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_v0_1_21.asset.json"
+HISTORICAL_MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
+ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
+ADAPTER_MODULE = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_v0_1_21_adapter.py"
+HISTORICAL_ADAPTER_MODULE = (
+    ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
+)
+
+ASSET_VERSION = "0.1.21"
+HISTORICAL_VERSION = "0.1.20"
+CHANGED_RESEARCH_ROLES = (
+    "portfolio_researcher",
+    "market_researcher",
+    "regulatory_risk_researcher",
+)
+EXPECTED_ROLE_ORDER = (
+    "methodology_planner",
+    "portfolio_researcher",
+    "market_researcher",
+    "regulatory_risk_researcher",
+    "strategic_analyst",
+    "evidence_critic",
+    "intelligence_synthesizer",
+    "memory_benchmark_reviewer",
+    "research_response_resolver",
+)
+UNCHANGED_ROLE_VERSIONS = {
+    "methodology_planner": "1.0.6",
+    "strategic_analyst": "1.0.5",
+    "evidence_critic": "1.0.7",
+    "intelligence_synthesizer": "1.0.5",
+    "memory_benchmark_reviewer": "1.0.4",
+    "research_response_resolver": "1.0.3",
+}
 CANONICAL_PROVIDER_REGISTRY_ENTRY = {
     "handle": "provider:text_generation",
     "type": "provider_execution",
@@ -33,336 +63,276 @@ CANONICAL_PROVIDER_REGISTRY_ENTRY = {
     },
 }
 
-EXPECTED = {
-    "methodology_planner": ("gemini-3.8-flash", "medium", 8192, False, 600),
-    "portfolio_researcher": ("gemini-3.8-flash", "medium", 8192, True, 600),
-    "market_researcher": ("gemini-3.8-flash", "medium", 8192, True, 600),
-    "regulatory_risk_researcher": ("gemini-3.8-flash", "medium", 8192, True, 600),
-    "strategic_analyst": ("gemini-3.1-pro-preview", "high", 16384, False, 600),
-    "evidence_critic": ("gemini-3.1-pro-preview", "high", 16384, False, 600),
-    "intelligence_synthesizer": ("gemini-3.8-flash", "medium", 16384, False, 600),
-    "memory_benchmark_reviewer": ("gemini-3.8-flash", "medium", 4096, False, 600),
-    "research_response_resolver": ("gemini-3.8-flash", "medium", 8192, False, 600),
-}
-
 
 class PackagedAgentDefinitionTests(unittest.TestCase):
-    def test_evidence_stage_and_json_formatter_have_consistent_distinct_instructions(self) -> None:
-        for role in ("portfolio_researcher", "market_researcher", "regulatory_risk_researcher"):
-            evidence, formatter = self.agents[role]["definition"]["chain"]["steps"]
-            self.assertEqual(evidence["provider_policy"]["generation_policy"]["response_format"], "text")
-            self.assertNotIn("Strict response discipline", evidence["input"]["text"])
-            self.assertIn("Evidence-stage format: plain-text evidence notes only", evidence["input"]["text"])
-            self.assertIn("return claims=[]", formatter["input"]["text"])
-            self.assertIn("Do not move unsupported facts into prose", formatter["input"]["text"])
-            self.assertEqual(formatter["provider_policy"]["generation_policy"]["response_format"], "json_object")
-        backup = self.agents["research_response_resolver"]["definition"]["chain"]
-        self.assertEqual(backup["budget_policy"], {"max_tool_calls": 0, "max_provider_calls": 1})
-        self.assertIn("Missing evidence or admitted citations is not a JSON formatting defect", backup["steps"][0]["input"]["text"])
-
     @classmethod
     def setUpClass(cls) -> None:
         cls.manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-        cls.agents = cls.manifest["versions"][ASSET_VERSION]["agents"]
+        cls.version = cls.manifest["versions"][ASSET_VERSION]
+        cls.agents = cls.version["agents"]
+        cls.historical_manifest = json.loads(
+            HISTORICAL_MANIFEST.read_text(encoding="utf-8")
+        )
+        cls.historical_version = cls.historical_manifest["versions"][
+            HISTORICAL_VERSION
+        ]
+        cls.historical_agents = cls.historical_version["agents"]
 
     def test_asset_version_is_synchronized_across_intake_contract_and_manifest(self) -> None:
         adapter_yaml = ADAPTER_YAML.read_text(encoding="utf-8")
         adapter_module = ADAPTER_MODULE.read_text(encoding="utf-8")
+
         self.assertIn(f"asset_version: {ASSET_VERSION}", adapter_yaml)
-        self.assertIn(f'version: ClassVar[str] = "{ASSET_VERSION}"', adapter_module)
-        self.assertEqual(self.manifest["default"], ASSET_VERSION)
-        # Intake supplies the current adapter only. The official materializer
-        # preserves all existing packaged versions omitted from this manifest.
-        # Listing 0.1.14 here would suppress preservation of its adapter module.
-        self.assertEqual(set(self.manifest["versions"]), {ASSET_VERSION})
-        baseline = json.loads((ASSET_ROOT / "tests/fixtures/baseline-production-0.1.13.asset.json").read_text(encoding="utf-8"))
-        self.assertEqual(
-            {k: v for k, v in self.manifest["versions"][ASSET_VERSION].items() if k not in {"inputs", "agents"}},
-            {k: v for k, v in baseline["versions"]["0.1.13"].items() if k not in {"inputs", "agents"}},
+        self.assertIn(MANIFEST.name, adapter_yaml)
+        self.assertIn(ADAPTER_MODULE.name, adapter_yaml)
+        self.assertIn(
+            f'version: ClassVar[str] = "{ASSET_VERSION}"',
+            adapter_module,
         )
-        previous = baseline["versions"]["0.1.13"]["agents"]
-        changed = set(previous)
-        for role, old in previous.items():
-            if role not in changed:
-                self.assertEqual(self.agents[role], old)
-                continue
-            from copy import deepcopy
-            candidate = deepcopy(self.agents[role])
-            candidate["contract_version"] = old["contract_version"]
-            candidate["definition"]["chain"]["version"] = old["definition"]["chain"]["version"]
-            for step, old_step in zip(candidate["definition"]["chain"]["steps"], old["definition"]["chain"]["steps"]):
-                self.assertTrue(step["input"]["text"].startswith(old_step["input"]["text"]))
-                step["input"]["text"] = old_step["input"]["text"]
-                step["provider_policy"]["timeout_seconds"] = old_step["provider_policy"]["timeout_seconds"]
-            self.assertEqual(candidate, old)
+        self.assertEqual(ASSET_VERSION, self.manifest["default"])
+        self.assertEqual({ASSET_VERSION}, set(self.manifest["versions"]))
+
+    def test_historical_0_1_20_identity_remains_unchanged_and_separate(self) -> None:
+        historical_module = HISTORICAL_ADAPTER_MODULE.read_text(encoding="utf-8")
+
+        self.assertEqual(HISTORICAL_VERSION, self.historical_manifest["default"])
+        self.assertEqual(
+            {HISTORICAL_VERSION},
+            set(self.historical_manifest["versions"]),
+        )
+        self.assertIn(
+            f'version: ClassVar[str] = "{HISTORICAL_VERSION}"',
+            historical_module,
+        )
+        self.assertNotEqual(MANIFEST.name, HISTORICAL_MANIFEST.name)
+        self.assertNotEqual(ADAPTER_MODULE.name, HISTORICAL_ADAPTER_MODULE.name)
+
+    def test_new_version_preserves_non_agent_business_contracts(self) -> None:
+        excluded = {"agents"}
+        current = {
+            key: value
+            for key, value in self.version.items()
+            if key not in excluded
+        }
+        historical = {
+            key: value
+            for key, value in self.historical_version.items()
+            if key not in excluded
+        }
+        self.assertEqual(historical, current)
+
+    def test_exact_role_set_and_order_match_historical_contract(self) -> None:
+        self.assertEqual(EXPECTED_ROLE_ORDER, tuple(self.agents))
+        self.assertEqual(tuple(self.historical_agents), tuple(self.agents))
+
+    def test_only_changed_research_roles_embed_new_agent_definitions(self) -> None:
+        for role, agent in self.agents.items():
+            with self.subTest(role=role):
+                if role in CHANGED_RESEARCH_ROLES:
+                    self.assertIn("definition", agent)
+                    self.assertEqual("1.0.8", agent["contract_version"])
+                    self.assertEqual(
+                        "1.0.8",
+                        agent["definition"]["chain"]["version"],
+                    )
+                    self.assertEqual(
+                        "1.0.7",
+                        self.historical_agents[role]["contract_version"],
+                    )
+                else:
+                    self.assertNotIn("definition", agent)
+                    self.assertEqual(
+                        UNCHANGED_ROLE_VERSIONS[role],
+                        agent["contract_version"],
+                    )
+                    self.assertEqual(
+                        {
+                            key: self.historical_agents[role][key]
+                            for key in (
+                                "contract_key",
+                                "contract_version",
+                                "reference",
+                            )
+                        },
+                        agent,
+                    )
+
+    def test_changed_roles_reuse_canonical_provider_registry_entry(self) -> None:
+        registry_entries = []
+        for role in CHANGED_RESEARCH_ROLES:
+            entries = self.agents[role]["definition"]["registry_entries"]
+            with self.subTest(role=role):
+                self.assertEqual(1, len(entries))
+                self.assertEqual(CANONICAL_PROVIDER_REGISTRY_ENTRY, entries[0])
+            registry_entries.append(entries[0])
+
+        self.assertTrue(
+            all(entry == registry_entries[0] for entry in registry_entries[1:])
+        )
+
+    def test_changed_research_provider_policies_are_exact_and_bounded(self) -> None:
+        self.assertEqual(1800, self.manifest["execution"]["timeout_seconds"])
+
+        for role in CHANGED_RESEARCH_ROLES:
+            chain = self.agents[role]["definition"]["chain"]
+            with self.subTest(role=role):
+                self.assertEqual(self.agents[role]["contract_key"], chain["chain_id"])
+                self.assertEqual("1.0.8", chain["version"])
+                self.assertEqual(
+                    {"max_tool_calls": 0, "max_provider_calls": 2},
+                    chain["budget_policy"],
+                )
+                self.assertEqual(
+                    {"store_prompt": False, "store_output": False},
+                    chain["safety_policy"],
+                )
+                self.assertEqual(2, len(chain["steps"]))
+
+                evidence, formatter = chain["steps"]
+                evidence_policy = evidence["provider_policy"]
+                self.assertEqual("vertex_ai", evidence["provider"])
+                self.assertEqual("gemini-3.8-flash", evidence_policy["model"])
+                self.assertEqual(600, evidence_policy["timeout_seconds"])
+                self.assertIs(True, evidence_policy["search_enabled"])
+                self.assertEqual(
+                    "provider_grounding",
+                    evidence_policy["search_mode"],
+                )
+                self.assertEqual("refs_only", evidence_policy["citation_policy"])
+                self.assertEqual(
+                    {
+                        "max_tokens": 8192,
+                        "thinking_level": "medium",
+                        "response_format": "text",
+                    },
+                    evidence_policy["generation_policy"],
+                )
+
+                formatter_policy = formatter["provider_policy"]
+                self.assertEqual("vertex_ai", formatter["provider"])
+                self.assertEqual("gemini-3.8-flash", formatter_policy["model"])
+                self.assertEqual(600, formatter_policy["timeout_seconds"])
+                self.assertNotIn("search_enabled", formatter_policy)
+                self.assertEqual(
+                    {
+                        "max_tokens": 8192,
+                        "thinking_level": "medium",
+                        "response_format": "json_object",
+                    },
+                    formatter_policy["generation_policy"],
+                )
+                for step in chain["steps"]:
+                    generation = step["provider_policy"]["generation_policy"]
+                    self.assertNotIn("temperature", generation)
+                    self.assertNotIn("top_p", generation)
+                    self.assertNotIn("top_k", generation)
+
+    def test_research_prompts_require_exact_admitted_locator_semantics(self) -> None:
+        common_evidence_phrases = (
+            "exact source locators",
+            "Separate event date from publication date",
+            "agreement from completion",
+            "current from historical status",
+            "grantor from recipient and territory",
+            "potential effects from observed events",
+            "Do not invent facts, IDs, sources or locators.",
+        )
+        common_formatter_phrases = (
+            "response_contract exactly",
+            "copy one or more exact admitted source strings",
+            "citation_locators",
+            "never invent, normalize or repair a locator",
+            "evidence_qualifiers",
+            "Do not author citation IDs.",
+            "Without a supporting locator, omit the positive claim",
+        )
+
+        for role in CHANGED_RESEARCH_ROLES:
+            evidence, formatter = self.agents[role]["definition"]["chain"][
+                "steps"
+            ]
+            evidence_prompt = evidence["input"]["text"]
+            formatter_prompt = formatter["input"]["text"]
+            for phrase in common_evidence_phrases:
+                with self.subTest(role=role, phrase=phrase):
+                    self.assertIn(phrase, evidence_prompt)
+            for phrase in common_formatter_phrases:
+                with self.subTest(role=role, phrase=phrase):
+                    self.assertIn(phrase, formatter_prompt)
+
+        market_prompt = self.agents["market_researcher"]["definition"][
+            "chain"
+        ]["steps"][0]["input"]["text"]
+        regulatory_prompt = self.agents[
+            "regulatory_risk_researcher"
+        ]["definition"]["chain"]["steps"][0]["input"]["text"]
+        self.assertIn("manufacturing responsibility", market_prompt)
+        self.assertIn("approval/event dates", regulatory_prompt)
+        self.assertIn("potential harm from observed events", regulatory_prompt)
+
+    def test_fixed_skill_and_dynamic_skill_authority_are_unchanged(self) -> None:
+        self.assertNotIn("skills", self.version)
+        self.assertFalse((ASSET_ROOT / "skills").exists())
+        self.assertEqual(
+            [
+                {
+                    "skill_ref": "nusaibah.pharma-intelligence-methodology",
+                    "version": "1.0.0",
+                    "digest": (
+                        "sha256:2fa082aca1c100abb60a4bf77aa4cf796da2707bb"
+                        "951a3b51f11948efd2dd564"
+                    ),
+                }
+            ],
+            self.version["published_skills"],
+        )
+        self.assertEqual(
+            self.historical_version["runtime_skills"],
+            self.version["runtime_skills"],
+        )
+
+    def test_input_and_output_contracts_remain_company_context_scoped(self) -> None:
+        self.assertEqual(
+            self.historical_version["inputs"],
+            self.version["inputs"],
+        )
+        self.assertEqual(
+            self.historical_version["outputs"],
+            self.version["outputs"],
+        )
+        self.assertEqual(
+            self.historical_version["output_contracts"],
+            self.version["output_contracts"],
+        )
+        output_contract = self.version["output_contracts"][
+            "intelligence_dossier"
+        ]
+        self.assertEqual("dry_run", output_contract["write_mode"])
+        self.assertEqual(
+            "nusaibah.company_scope:0.1.0",
+            self.version["inputs"]["company_context"]["retained_output"][
+                "asset_identity"
+            ],
+        )
+
+    def test_packaged_adapter_declares_orchestration_owner_exactly_once(self) -> None:
+        adapter_module = ADAPTER_MODULE.read_text(encoding="utf-8")
+        marker = 'AGENT_ORCHESTRATION_OWNER = "python_adapter"'
+        self.assertEqual(1, adapter_module.count(marker))
+        for role in EXPECTED_ROLE_ORDER:
+            self.assertIn(role, adapter_module)
 
     def test_runtime_floor_requires_current_trusted_runtime_support(self) -> None:
         dependency_manifest = json.loads(
             (ASSET_ROOT / "adapter.dependencies.json").read_text(encoding="utf-8")
         )
         self.assertEqual(
-            dependency_manifest["runtime_package"],
             {
                 "name": "pi-obs-python-runtime",
                 "minimum_version": "0.1.98",
             },
+            dependency_manifest["runtime_package"],
         )
-
-    def test_fixed_skill_uses_published_delivery_not_bundled_bytes(self) -> None:
-        version = self.manifest["versions"][ASSET_VERSION]
-        self.assertNotIn("skills", version)
-        self.assertFalse((ASSET_ROOT / "skills").exists())
-        self.assertEqual(
-            version["published_skills"],
-            [
-                {
-                    "skill_ref": "nusaibah.pharma-intelligence-methodology",
-                    "version": "1.0.0",
-                    "digest": "sha256:2fa082aca1c100abb60a4bf77aa4cf796da2707bb951a3b51f11948efd2dd564",
-                }
-            ],
-        )
-
-    def test_input_roles_require_retained_context_and_direct_variables(self) -> None:
-        inputs = self.manifest["versions"][ASSET_VERSION]["inputs"]
-        self.assertEqual(set(inputs), {"company_context", "variables"})
-        self.assertEqual(
-            inputs["company_context"],
-            {
-                "required": True,
-                "source": "direct",
-                "retained_output": {"asset_identity": "nusaibah.company_scope:0.1.0", "output_role": "company_scope_result"},
-                "shape": "object",
-            },
-        )
-        self.assertEqual(
-            inputs["variables"],
-            {
-                "required": True,
-                "source": "direct",
-                "shape": "object",
-            },
-        )
-
-    def test_packaged_adapter_declares_python_agent_orchestration_owner_exactly_once(self) -> None:
-        adapter_module = ADAPTER_MODULE.read_text(encoding="utf-8")
-        marker = 'AGENT_ORCHESTRATION_OWNER = "python_adapter"'
-        self.assertEqual(adapter_module.count(marker), 1)
-
-    def test_exact_role_set_is_frozen(self) -> None:
-        self.assertEqual(set(self.agents), set(EXPECTED))
-
-    def test_all_roles_reuse_one_canonical_shared_provider_registry_entry(self) -> None:
-        registry_entries = []
-        for role, agent in self.agents.items():
-            with self.subTest(role=role):
-                entries = agent["definition"]["registry_entries"]
-                self.assertEqual(len(entries), 1)
-                self.assertEqual(entries[0], CANONICAL_PROVIDER_REGISTRY_ENTRY)
-                registry_entries.append(entries[0])
-
-        first = registry_entries[0]
-        self.assertTrue(all(entry == first for entry in registry_entries[1:]))
-
-    def test_chain_metadata_remains_agent_specific_not_shared_registry_metadata(self) -> None:
-        planner_chain = self.agents["methodology_planner"]["definition"]["chain"]
-        self.assertEqual(
-            planner_chain["metadata"]["provisioning_source"],
-            "pi_1965_section_chunk_planner",
-        )
-
-        for role, agent in self.agents.items():
-            if role == "methodology_planner" or role.endswith("_researcher") or role == "research_response_resolver":
-                continue
-            with self.subTest(role=role):
-                self.assertEqual(
-                    agent["definition"]["chain"]["metadata"]["provisioning_source"],
-                    "pi_1951_pharma_company_intelligence_lab",
-                )
-
-    def test_model_thinking_search_json_and_timeout_policy_are_exact(self) -> None:
-        self.assertEqual(self.manifest["execution"]["timeout_seconds"], 1800)
-        for role, (model, thinking, max_tokens, search_enabled, timeout) in EXPECTED.items():
-            with self.subTest(role=role):
-                agent = self.agents[role]
-                expected_contract_version = (
-                    "1.0.3" if role == "research_response_resolver" else
-                    "1.0.7" if search_enabled or role == "evidence_critic" else
-                    ("1.0.6" if role == "methodology_planner" else
-                     ("1.0.5" if role in {"strategic_analyst", "intelligence_synthesizer"} else "1.0.4"))
-                )
-                self.assertEqual(agent["contract_version"], expected_contract_version)
-                definition = agent["definition"]
-                self.assertEqual(len(definition["registry_entries"]), 1)
-                chain = definition["chain"]
-                self.assertEqual(chain["chain_id"], agent["contract_key"])
-                self.assertEqual(chain["version"], agent["contract_version"])
-                self.assertEqual(
-                    chain["budget_policy"],
-                    {
-                        "max_tool_calls": 0,
-                        "max_provider_calls": 2 if search_enabled else 1,
-                    },
-                )
-                self.assertEqual(len(chain["steps"]), 2 if search_enabled else 1)
-
-                step = chain["steps"][0]
-                self.assertEqual(step["provider"], "vertex_ai")
-                policy = step["provider_policy"]
-                generation = policy["generation_policy"]
-
-                self.assertEqual(policy["timeout_seconds"], timeout)
-                self.assertIs(type(policy["timeout_seconds"]), int)
-                self.assertEqual(policy["model"], model)
-                self.assertEqual(generation["thinking_level"], thinking)
-                self.assertEqual(generation["max_tokens"], max_tokens)
-                self.assertEqual(generation["response_format"], "text" if search_enabled else "json_object")
-
-                if search_enabled:
-                    self.assertIs(policy["search_enabled"], True)
-                    self.assertEqual(policy["search_mode"], "provider_grounding")
-                    self.assertEqual(policy["citation_policy"], "refs_only")
-                    formatter = chain["steps"][1]
-                    self.assertEqual(formatter["provider_policy"]["generation_policy"], {
-                        "max_tokens": 8192, "thinking_level": "medium", "response_format": "json_object",
-                    })
-                    self.assertEqual(formatter["provider_policy"]["timeout_seconds"], 600)
-                    self.assertNotIn("search_enabled", formatter["provider_policy"])
-                    self.assertIn("Previous admitted agent step result", formatter["input"]["text"])
-                    self.assertIn("response_contract", formatter["input"]["text"])
-                else:
-                    self.assertNotIn("search_enabled", policy)
-                    self.assertNotIn("search_mode", policy)
-                    self.assertNotIn("citation_policy", policy)
-
-    def test_methodology_learning_dynamic_skill_roles_are_company_scoped(self) -> None:
-        runtime_skills = self.manifest["versions"][ASSET_VERSION]["runtime_skills"]
-
-        self.assertEqual(
-            runtime_skills["company_methodology"]["source"],
-            {"lake_ref": "googl123", "node_key": "company_methodology"},
-        )
-        self.assertEqual(runtime_skills["company_methodology"]["resolution"], "current")
-        self.assertEqual(runtime_skills["company_methodology"]["mutation"], "read_only")
-        self.assertEqual(
-            runtime_skills["company_methodology"]["partition"],
-            {"company_id": {"from_variable": "company_id"}},
-        )
-
-        self.assertEqual(
-            runtime_skills["company_methodology_update"]["source"],
-            {"lake_ref": "googl123", "node_key": "company_methodology"},
-        )
-        self.assertEqual(runtime_skills["company_methodology_update"]["resolution"], "current")
-        self.assertEqual(runtime_skills["company_methodology_update"]["mutation"], "mutable")
-        self.assertEqual(
-            runtime_skills["company_methodology_update"]["partition"],
-            {"company_id": {"from_variable": "company_id"}},
-        )
-
-    def test_planner_contract_hardening_uses_new_agent_contract_version(self) -> None:
-        self.assertEqual(
-            self.agents["methodology_planner"]["contract_version"],
-            "1.0.6",
-        )
-        self.assertEqual(
-            self.agents["methodology_planner"]["definition"]["chain"]["version"],
-            "1.0.6",
-        )
-        for role, agent in self.agents.items():
-            if role == "methodology_planner" or role.endswith("_researcher") or role == "research_response_resolver":
-                continue
-            with self.subTest(role=role):
-                expected = "1.0.7" if role == "evidence_critic" else ("1.0.5" if role in {"strategic_analyst", "intelligence_synthesizer"} else "1.0.4")
-                self.assertEqual(agent["contract_version"], expected)
-                self.assertEqual(agent["definition"]["chain"]["version"], expected)
-
-    def test_methodology_planner_instruction_preserves_authority_boundaries(self) -> None:
-        prompt = (
-            self.agents["methodology_planner"]["definition"]["chain"]["steps"][0]
-            ["input"]["text"]
-        )
-        required_phrases = (
-            "Do not search for or introduce public facts.",
-            "preserve the supplied company_id exactly",
-            "may not change company scope",
-            "provider authority",
-            "section ownership",
-            "required Agent roles",
-            "memory mutation authority",
-            "publication authority",
-            "Do not compare this company with another company.",
-            "Plan only the supplied section",
-            "priority_hint",
-            "response_contract.compact_limits",
-            "response_contract.validation_contract",
-            "use the declared field types and required values",
-            "honor min_items/max_items",
-            "unique after whitespace normalization",
-            "Do not fill optional lists merely to reach their maxima.",
-        )
-        for phrase in required_phrases:
-            with self.subTest(phrase=phrase):
-                self.assertIn(phrase, prompt)
-
-    def test_evidence_critic_instruction_requires_plan_requirement_dispositions(self) -> None:
-        prompt = (
-            self.agents["evidence_critic"]["definition"]["chain"]["steps"][0]
-            ["input"]["text"]
-        )
-        required_phrases = (
-            "Evaluate every supplied planner requirement",
-            "exact supplied requirement_id",
-            "unmet_plan_requirements",
-            "unresolved_evidence",
-            "unsatisfied",
-            "Do not invent requirement IDs.",
-            "do not authorize memory mutation.",
-        )
-        for phrase in required_phrases:
-            with self.subTest(phrase=phrase):
-                self.assertIn(phrase, prompt)
-
-    def test_gemini_38_roles_omit_sampling_parameters(self) -> None:
-        for role, (model, _thinking, _max_tokens, _search, _timeout) in EXPECTED.items():
-            if model != "gemini-3.8-flash":
-                continue
-            with self.subTest(role=role):
-                generation = (
-                    self.agents[role]["definition"]["chain"]["steps"][0]
-                    ["provider_policy"]["generation_policy"]
-                )
-                self.assertNotIn("temperature", generation)
-                self.assertNotIn("top_p", generation)
-                self.assertNotIn("top_k", generation)
-
-    def test_every_role_instruction_requires_exact_supplied_response_contract(self) -> None:
-        for role, agent in self.agents.items():
-            with self.subTest(role=role):
-                prompt = agent["definition"]["chain"]["steps"][-1]["input"]["text"]
-                self.assertIn(
-                    "response_contract is authoritative for the complete JSON shape",
-                    prompt,
-                )
-                self.assertIn("Return every required field", prompt)
-                self.assertIn("required ID ordering", prompt)
-
-    def test_every_role_has_fixed_prompt_and_safe_storage_policy(self) -> None:
-        for role, agent in self.agents.items():
-            with self.subTest(role=role):
-                definition = agent["definition"]
-                prompt = definition["chain"]["steps"][0]["input"]["text"]
-                self.assertIsInstance(prompt, str)
-                self.assertTrue(prompt.strip())
-                self.assertGreaterEqual(len(prompt.strip()), 80)
-                self.assertEqual(
-                    definition["chain"]["safety_policy"],
-                    {"store_prompt": False, "store_output": False},
-                )
-                self.assertEqual(
-                    definition["registry_entries"][0]["safety_policy"],
-                    {"store_prompt": False, "store_output": False},
-                )
 
 
 if __name__ == "__main__":
