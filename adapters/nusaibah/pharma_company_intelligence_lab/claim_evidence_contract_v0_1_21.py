@@ -2,7 +2,8 @@
 
 The adapter derives stable references only from runtime-admitted citation values.
 Models may propose exact locators, but they never author citation identifiers or
-runtime authority. Missing or unmatched evidence withholds the affected claim.
+runtime authority. Missing, unmatched or semantically invalid evidence withholds
+only the affected claim.
 """
 from __future__ import annotations
 
@@ -120,14 +121,39 @@ def build_claim_evidence_index(
     pass_number: int,
     claims: Iterable[Mapping[str, Any]],
     citations: Iterable[CitationLike],
+    forced_withheld: Mapping[str, str] | None = None,
 ) -> ClaimEvidenceIndex:
-    """Resolve claim locators against one role/pass admitted citation catalog."""
+    """Resolve claims against admitted citations and claim-local quality rules.
+
+    ``forced_withheld`` is adapter-owned deterministic input, typically created
+    by semantic-context validation. A forced claim remains visible in review
+    evidence but cannot proceed to strategy, synthesis or memory selection.
+    """
 
     role = _token(role, "claim_evidence_role_invalid")
     if type(pass_number) is not int or pass_number < 1:
         raise ClaimEvidenceError("claim_evidence_pass_number_invalid")
 
-    catalog = _citation_catalog(role=role, pass_number=pass_number, citations=citations)
+    forced: dict[str, str] = {}
+    if forced_withheld is not None:
+        if not isinstance(forced_withheld, Mapping):
+            raise ClaimEvidenceError("claim_evidence_forced_withheld_invalid")
+        for raw_claim_id, raw_issue in forced_withheld.items():
+            claim_id = _token(
+                raw_claim_id,
+                "claim_evidence_forced_withheld_invalid",
+            )
+            issue_code = _token(
+                raw_issue,
+                "claim_evidence_forced_withheld_invalid",
+            )
+            forced[claim_id] = issue_code
+
+    catalog = _citation_catalog(
+        role=role,
+        pass_number=pass_number,
+        citations=citations,
+    )
     by_locator: dict[str, list[CitationCatalogEntry]] = {}
     for entry in catalog:
         by_locator.setdefault(entry.locator, []).append(entry)
@@ -141,9 +167,15 @@ def build_claim_evidence_index(
         if claim_id in seen_claim_ids:
             raise ClaimEvidenceError("claim_evidence_claim_id_duplicate")
         seen_claim_ids.add(claim_id)
-        section_id = _token(raw.get("section_id"), "claim_evidence_section_id_invalid")
+        section_id = _token(
+            raw.get("section_id"),
+            "claim_evidence_section_id_invalid",
+        )
 
-        evidence_kind = _token(raw.get("evidence_kind"), "claim_evidence_kind_invalid")
+        evidence_kind = _token(
+            raw.get("evidence_kind"),
+            "claim_evidence_kind_invalid",
+        )
         inference = raw.get("inference")
         if evidence_kind not in {"grounded_external", "inference"}:
             raise ClaimEvidenceError("claim_evidence_kind_invalid")
@@ -155,18 +187,19 @@ def build_claim_evidence_index(
         locators = _locator_list(raw.get("citation_locators", []))
         qualifiers = _qualifier_list(raw.get("evidence_qualifiers", []))
         matched: list[str] = []
-        issue_code: str | None = None
-        for locator in locators:
-            options = by_locator.get(locator, [])
-            if not options:
-                issue_code = "claim_citation_locator_not_admitted"
-                break
-            if len(options) != 1:
-                issue_code = "claim_citation_locator_ambiguous"
-                break
-            reference = options[0].citation_ref
-            if reference not in matched:
-                matched.append(reference)
+        issue_code: str | None = forced.get(claim_id)
+        if issue_code is None:
+            for locator in locators:
+                options = by_locator.get(locator, [])
+                if not options:
+                    issue_code = "claim_citation_locator_not_admitted"
+                    break
+                if len(options) != 1:
+                    issue_code = "claim_citation_locator_ambiguous"
+                    break
+                reference = options[0].citation_ref
+                if reference not in matched:
+                    matched.append(reference)
 
         if issue_code is None and not matched:
             issue_code = "claim_citation_required"
@@ -188,6 +221,9 @@ def build_claim_evidence_index(
                 issue_code=issue_code,
             )
         )
+
+    if set(forced) - seen_claim_ids:
+        raise ClaimEvidenceError("claim_evidence_forced_withheld_unknown")
 
     return _index(tuple(records), catalog)
 
@@ -224,7 +260,10 @@ def merge_claim_evidence_indexes(
 def citation_reference(citation: CitationLike) -> str:
     """Derive the exact runtime semantic citation key without URL normalization."""
 
-    locator = _text(getattr(citation, "locator", None), "claim_citation_locator_invalid")
+    locator = _text(
+        getattr(citation, "locator", None),
+        "claim_citation_locator_invalid",
+    )
     title_raw = getattr(citation, "title", None)
     title = None if title_raw is None else _text(
         title_raw,
