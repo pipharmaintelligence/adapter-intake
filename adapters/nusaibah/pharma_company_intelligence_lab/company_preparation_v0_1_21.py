@@ -11,22 +11,30 @@ from typing import Any
 
 try:
     from . import nusaibah_pharma_company_intelligence_lab_adapter as legacy
+    from .candidate_validation_v0_1_21 import require_candidate_fact_ids
     from .company_result_v0_1_21 import (
         CompanyPreparationEvidence,
         build_prepared_company_state_v0_1_21,
     )
     from .memory_citation_selection_v0_1_21 import select_memory_citations
+    from .methodology_learning_v0_1_21 import (
+        build_methodology_learning_proposal,
+    )
     from .research_execution_v0_1_21 import (
         join_research_v0_1_21,
         run_research_fanout_v0_1_21,
     )
 except ImportError:  # pragma: no cover - flat intake execution
     import nusaibah_pharma_company_intelligence_lab_adapter as legacy
+    from candidate_validation_v0_1_21 import require_candidate_fact_ids
     from company_result_v0_1_21 import (
         CompanyPreparationEvidence,
         build_prepared_company_state_v0_1_21,
     )
     from memory_citation_selection_v0_1_21 import select_memory_citations
+    from methodology_learning_v0_1_21 import (
+        build_methodology_learning_proposal,
+    )
     from research_execution_v0_1_21 import (
         join_research_v0_1_21,
         run_research_fanout_v0_1_21,
@@ -174,14 +182,15 @@ def prepare_company_v0_1_21(
         methodology=methodology,
         methodology_plan=methodology_plan,
     )
+    progress["synthesis"] = synthesis
 
-    accepted_claim_ids = set(
+    accepted_claim_ids = tuple(
         joined["claim_evidence_index"].accepted_claim_ids
     )
-    if any(fact_id not in accepted_claim_ids for fact_id in candidate.fact_ids):
-        raise RuntimeError(
-            "Memory candidate referenced a fact_id outside accepted research."
-        )
+    require_candidate_fact_ids(
+        fact_ids=candidate.fact_ids,
+        accepted_claim_ids=accepted_claim_ids,
+    )
 
     selection = select_memory_citations(
         fact_ids=candidate.fact_ids,
@@ -213,15 +222,27 @@ def prepare_company_v0_1_21(
         and not research_incomplete
     )
 
-    methodology_learning_candidate = (
-        legacy._build_methodology_learning_candidate(
+    planner_snapshot = None
+    if benchmark_non_regression and not research_incomplete:
+        planner_snapshot = legacy._build_methodology_learning_candidate(
             company_id=company_id,
             planner_chunks=planner_chunks,
             critic=critic,
             methodology_plan=methodology_plan,
             benchmark_non_regression=True,
         )
-        if benchmark_non_regression and not research_incomplete
+
+    methodology_proposal = (
+        build_methodology_learning_proposal(
+            methodology_learning_text,
+            planner_snapshot=planner_snapshot,
+        )
+        if benchmark_non_regression
+        else None
+    )
+    methodology_learning_candidate = (
+        methodology_proposal.candidate
+        if methodology_proposal is not None and methodology_proposal.changed
         else None
     )
 
@@ -236,6 +257,24 @@ def prepare_company_v0_1_21(
         methodology_handle=methodology_handle,
         methodology_learning_text=methodology_learning_text,
         methodology_learning_candidate=methodology_learning_candidate,
+        methodology_learning_rule_ids=(
+            () if methodology_proposal is None else methodology_proposal.rule_ids
+        ),
+        methodology_learning_proposal_digest=(
+            None
+            if methodology_proposal is None
+            else methodology_proposal.proposal_digest
+        ),
+        methodology_learning_previous_preserved=(
+            False
+            if methodology_proposal is None
+            else methodology_proposal.previous_learning_preserved
+        ),
+        methodology_learning_planner_snapshot_included=(
+            False
+            if methodology_proposal is None
+            else methodology_proposal.planner_snapshot_included
+        ),
         methodology_plan=methodology_plan,
         planner_chunks=planner_chunks,
         before_benchmark=before_benchmark,
