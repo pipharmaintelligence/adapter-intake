@@ -161,7 +161,7 @@ class ResearchEnvelopeParityV024Tests(unittest.TestCase):
 
     def test_manifest_preserves_exact_agent_definitions_skill_references_and_budgets(self):
         previous = json.loads((ROOT/'tests/fixtures/release-0.1.23/nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
-        current = json.loads((ROOT/'nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
+        current = json.loads((ROOT/'tests/fixtures/release-0.1.24/nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
         self.assertEqual(previous['versions']['0.1.23'], current['versions']['0.1.24'])
         self.assertEqual(previous['execution'], current['execution'])
         self.assertEqual('0.1.24', current['default'])
