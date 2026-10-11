@@ -6,14 +6,15 @@ import unittest
 
 import nusaibah_pharma_company_intelligence_lab_adapter as legacy
 from claim_semantics_v0_1_21 import SCHEMA_VERSION as SEMANTIC_SCHEMA_VERSION
-from methodology_learning_v0_1_21 import LESSONS
+from methodology_learning_v0_1_21 import LESSONS, MAX_TOTAL_CHARS, build_methodology_learning_proposal
+from claim_semantics_v0_1_21 import SEMANTIC_RULES
 from orchestration_v0_1_21 import (
     IndependentReviewRequiredError,
     invoke_v0_1_21,
 )
 from research_section_projection_v0_1_21 import WITHHELD_SECTION_TEXT
 from review_packet_v0_1_21 import SCHEMA_VERSION as REVIEW_SCHEMA_VERSION
-from test_orchestration_preview import FakeInputs, _fake_citations
+from test_orchestration_preview import FakeInputs, FakeMethodology, _fake_citations
 
 
 ASSET_IDENTITY = "nusaibah.pharma_company_intelligence_lab:0.1.21"
@@ -98,7 +99,57 @@ class UnknownCandidateInputs(V021Inputs):
         return envelope
 
 
+class StoredLearningInputs(V021Inputs):
+    def __init__(self, learning: str) -> None:
+        super().__init__()
+        self.learning = learning
+
+    def dynamic_skill(self, role: str, *, variables=None):
+        if role == "company_methodology":
+            company_id = int(variables["company_id"])
+            self.dynamic_skill_calls.append((role, company_id))
+            handle = FakeMethodology(company_id)
+            handle.text = "## Methodology Learning\n\n" + self.learning
+            return handle
+        return super().dynamic_skill(role, variables=variables)
+
+
 class OrchestrationV021Tests(unittest.TestCase):
+    def test_full_methodology_budget_preserves_research_for_all_companies(self) -> None:
+        inputs = StoredLearningInputs("x" * MAX_TOTAL_CHARS)
+        inputs["variables"]["retain_review_packet"] = True
+        with patch.object(legacy, "_agent_citations", side_effect=_fake_citations):
+            response = invoke_v0_1_21(inputs, asset_identity=ASSET_IDENTITY)
+        self.assertEqual("success", response["status"])
+        dossier = response["outputs"]["intelligence_dossier"]
+        self.assertEqual(2, len(dossier["company_results"]))
+        for result in dossier["company_results"]:
+            self.assertEqual("review_pending", result["business_result_state"])
+            self.assertGreater(result["accepted_claim_count"], 0)
+            self.assertEqual("withheld_learning_budget", result["methodology_learning_update_status"])
+            self.assertEqual("review_required", result["memory_update_status"])
+        for company in dossier["review_packet"]["companies"]:
+            self.assertEqual("methodology_learning_budget_exhausted", company["methodology_proposal"]["withheld_reason"])
+            self.assertFalse(company["methodology_proposal"]["review_required"])
+        self.assertEqual(0, response["metrics"]["memory_mutations_made"])
+        self.assertEqual(0, response["metrics"]["methodology_learning_mutations_made"])
+
+    def test_reviewed_addendum_reaches_planning_and_research_without_section_heading(self) -> None:
+        inputs = StoredLearningInputs(build_methodology_learning_proposal("").candidate)
+        with patch.object(legacy, "_agent_citations", side_effect=_fake_citations):
+            response = invoke_v0_1_21(inputs, asset_identity=ASSET_IDENTITY)
+        self.assertEqual("success", response["status"])
+        for role, _company_id, supplied in inputs.agent_inputs:
+            if role == legacy.PLANNER_ROLE or role in legacy.RESEARCH_ROLES:
+                learning = supplied["learned_methodology_addendum"]
+                self.assertTrue(learning)
+                self.assertIn("[event_date_vs_publication_date]", learning)
+                self.assertLess(len(learning), 2400)
+            if role in (legacy.CRITIC_ROLE, legacy.SYNTHESIS_ROLE, legacy.STRATEGIC_ROLE):
+                self.assertEqual({key for key, _ in SEMANTIC_RULES}, {item["rule_id"] for item in supplied["semantic_review_rules"]})
+        for company in response["outputs"]["intelligence_dossier"]["company_results"]:
+            self.assertTrue(company["portfolio_review_trace"][0]["learned_methodology_used"])
+
     def test_preview_uses_claim_evidence_and_blocks_all_mutation(self) -> None:
         inputs = V021Inputs()
         inputs["variables"]["retain_review_packet"] = True

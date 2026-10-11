@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from hashlib import sha256
+import re
 
 try:
     from .claim_semantics_v0_1_21 import SEMANTIC_RULES
@@ -55,6 +56,7 @@ class MethodologyLearningProposal:
     planner_snapshot_included: bool
     changed: bool
     apply_authority: bool
+    withheld_reason: str | None = None
 
 
 def build_methodology_learning_proposal(
@@ -85,14 +87,30 @@ def build_methodology_learning_proposal(
     snapshot_included = False
 
     candidate = existing_text
-    if snapshot and snapshot not in existing_text:
+    # Repeated canonical headings make Skill section reads ambiguous. Retain
+    # the complete planning evidence in the review packet instead of appending
+    # a second copy of an existing section into the stored learning proposal.
+    headings = set(re.findall(r"^###[ \t]+(.+?)\s*$", existing_text, re.MULTILINE))
+    snapshot_headings = set(re.findall(r"^###[ \t]+(.+?)\s*$", snapshot, re.MULTILINE))
+    if snapshot and snapshot not in existing_text and not headings.intersection(snapshot_headings):
         proposed = _append(candidate, snapshot + "\n")
         projected = _append(proposed, addendum) if addendum else proposed
         if len(projected) <= MAX_TOTAL_CHARS:
             candidate = proposed
             snapshot_included = True
 
-    if addendum:
+    withheld_reason = None
+    if addendum and len(_append(candidate, addendum)) > MAX_TOTAL_CHARS:
+        # Optional learning must not discard completed research or erase prior
+        # learning to make room. Withhold this proposal, with an explicit reason.
+        candidate = existing_text
+        withheld_reason = "methodology_learning_budget_exhausted"
+        snapshot_included = False
+        rule_ids = tuple(
+            rule_id for rule_id, instruction in LESSONS
+            if f"- [{rule_id}] {instruction}" in existing_text
+        )
+    elif addendum:
         candidate = _append(candidate, addendum)
 
     if len(candidate) > MAX_TOTAL_CHARS:
@@ -109,7 +127,27 @@ def build_methodology_learning_proposal(
         planner_snapshot_included=snapshot_included,
         changed=candidate != existing_text,
         apply_authority=False,
+        withheld_reason=withheld_reason,
     )
+
+
+def reviewed_methodology_addendum(existing_text: str) -> str:
+    """Project only stored, known procedural rules, never company facts.
+
+    No marker means no reviewed learning is assumed. Exact known rule lines
+    avoid forwarding a whole miscellaneous trailing section as methodology.
+    The bounded projection is supplied separately from section-specific history.
+    """
+
+    if MARKER not in existing_text:
+        return ""
+    stored = set(existing_text.splitlines())
+    lines = [
+        f"- [{rule_id}] {instruction}"
+        for rule_id, instruction in LESSONS
+        if f"- [{rule_id}] {instruction}" in stored
+    ]
+    return "\n".join(lines)
 
 
 def _append(existing: str, addition: str) -> str:

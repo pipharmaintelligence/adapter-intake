@@ -1,5 +1,33 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.21 claim evidence and reviewed learning
+
+This development candidate selects the bounded memory citation handoff by accepted
+candidate fact IDs. A defective claim is withheld with affected section prose;
+valid siblings and the original review evidence remain available. Unknown synthesis
+fact IDs produce an incomplete retained preview rather than aborting the batch.
+
+Research, critic and synthesis preserve explicit dates, event state, rights
+direction, governed context, financial scope and potential versus observed harm.
+These typed distinctions and an automated critic pass do not establish factual
+truth; independent source review is still required.
+
+Stored procedural review lessons reach planning and research separately from
+section-specific history. Existing learning stays intact. A conflicting planner
+snapshot is omitted from the proposal and remains in the review packet. If the
+12,000-character learning section cannot fit the addendum, only that optional
+proposal is withheld with `methodology_learning_budget_exhausted`; research and
+the memory review continue. No learning is assumed when the Skill is absent.
+
+0.1.21 is **preview-only**: it cannot mutate either Dynamic Skill or authorize
+publication. All roles retain 600-second provider requests, the 1,800-second asset
+deadline and the existing single-backup and call limits. Deliver through official
+adapter promotion; do not patch an installed wheel. Earlier version sections below
+describe historical behavior.
+
+See [the 0.1.21 developer guide](../../../docs/pharma-claim-evidence-developer-guide.md)
+for the review requirements, changed Agent identities and promotion gates.
+
 ## 0.1.20 evidence recovery and issues annex
 
 Missing admitted citations, unresolved business responses and negative preparation

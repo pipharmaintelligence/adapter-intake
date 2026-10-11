@@ -20,6 +20,7 @@ try:
     from .methodology_learning_v0_1_21 import (
         build_methodology_learning_proposal,
     )
+    from .preparation_context_v0_1_21 import PreparationContextInputs
     from .research_execution_v0_1_21 import (
         join_research_v0_1_21,
         run_research_fanout_v0_1_21,
@@ -35,6 +36,7 @@ except ImportError:  # pragma: no cover - flat intake execution
     from methodology_learning_v0_1_21 import (
         build_methodology_learning_proposal,
     )
+    from preparation_context_v0_1_21 import PreparationContextInputs
     from research_execution_v0_1_21 import (
         join_research_v0_1_21,
         run_research_fanout_v0_1_21,
@@ -84,6 +86,9 @@ def prepare_company_v0_1_21(
             inputs,
             company_id=company_id,
         )
+    )
+    inputs = PreparationContextInputs(
+        inputs, learned_methodology_text=methodology_learning_text,
     )
 
     before_benchmark = _before_benchmark(
@@ -274,6 +279,9 @@ def prepare_company_v0_1_21(
             False
             if methodology_proposal is None
             else methodology_proposal.planner_snapshot_included
+        ),
+        methodology_learning_withheld_reason=(
+            None if methodology_proposal is None else methodology_proposal.withheld_reason
         ),
         methodology_plan=methodology_plan,
         planner_chunks=planner_chunks,

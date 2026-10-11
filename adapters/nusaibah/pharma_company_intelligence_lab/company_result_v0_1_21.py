@@ -35,6 +35,7 @@ class CompanyPreparationEvidence:
     methodology_learning_proposal_digest: str | None
     methodology_learning_previous_preserved: bool
     methodology_learning_planner_snapshot_included: bool
+    methodology_learning_withheld_reason: str | None
     methodology_plan: Any
     planner_chunks: tuple[dict[str, Any], ...]
     before_benchmark: dict[str, Any]
@@ -84,7 +85,9 @@ def build_prepared_company_state_v0_1_21(
     else:
         memory_status = "no_change_recommended"
 
-    if evidence.methodology_learning_candidate is not None:
+    if evidence.methodology_learning_withheld_reason is not None:
+        methodology_status = "withheld_learning_budget"
+    elif evidence.methodology_learning_candidate is not None:
         methodology_status = (
             "review_required_incomplete"
             if evidence.research_incomplete
@@ -248,6 +251,7 @@ def build_prepared_company_state_v0_1_21(
             evidence.methodology_learning_planner_snapshot_included
         ),
         "methodology_learning_apply_authority": False,
+        "methodology_learning_withheld_reason": evidence.methodology_learning_withheld_reason,
         "methodology_learning_change_id": None,
         "methodology_learning_before_digest": (
             evidence.methodology_handle.content_digest()
@@ -301,6 +305,7 @@ def build_prepared_company_state_v0_1_21(
         "methodology_learning_planner_snapshot_included": (
             evidence.methodology_learning_planner_snapshot_included
         ),
+        "methodology_learning_withheld_reason": evidence.methodology_learning_withheld_reason,
         "projected_after_benchmark": evidence.projected_after_benchmark,
         "benchmark_questions": evidence.benchmark_questions,
         "memory_candidate": candidate,

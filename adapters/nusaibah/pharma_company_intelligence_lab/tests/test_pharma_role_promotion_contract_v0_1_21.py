@@ -14,6 +14,7 @@ if str(ASSET_ROOT) not in sys.path:
 
 from claim_semantics_v0_1_21 import (  # noqa: E402
     SCHEMA_VERSION as SEMANTIC_SCHEMA_VERSION,
+    SEMANTIC_RULES,
 )
 from research_claim_evidence_v0_1_21 import (  # noqa: E402
     RESEARCH_ROLES,
@@ -43,6 +44,7 @@ EXPECTED_MODULAR_HELPERS = {
     "candidate_validation_v0_1_21.py",
     "memory_citation_selection_v0_1_21.py",
     "methodology_learning_v0_1_21.py",
+    "preparation_context_v0_1_21.py",
     "company_result_v0_1_21.py",
     "company_preparation_v0_1_21.py",
     "review_packet_v0_1_21.py",
@@ -190,21 +192,41 @@ class PharmaRolePromotionContractTest(unittest.TestCase):
         for role in RESEARCH_ROLES:
             self.assertIn(role, response_docstring)
 
-    def test_new_manifest_versions_only_changed_research_agents(self) -> None:
+    def test_new_manifest_versions_changed_research_and_review_agents(self) -> None:
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         agents = manifest["versions"]["0.1.21"]["agents"]
 
+        changed_versions = {
+            **{role: "1.0.8" for role in CHANGED_RESEARCH_ROLES},
+            "methodology_planner": "1.0.7",
+            "evidence_critic": "1.0.8",
+            "intelligence_synthesizer": "1.0.6",
+        }
         for role, agent in agents.items():
             with self.subTest(role=role):
-                if role in CHANGED_RESEARCH_ROLES:
-                    self.assertEqual("1.0.8", agent["contract_version"])
+                if role in changed_versions:
+                    self.assertEqual(changed_versions[role], agent["contract_version"])
                     self.assertIn("definition", agent)
                     self.assertEqual(
-                        "1.0.8",
+                        changed_versions[role],
                         agent["definition"]["chain"]["version"],
                     )
                 else:
                     self.assertNotIn("definition", agent)
+
+    def test_review_prompts_preserve_all_semantic_distinctions(self) -> None:
+        agents = json.loads(MANIFEST.read_text(encoding="utf-8"))["versions"]["0.1.21"]["agents"]
+        for role in (*RESEARCH_ROLES, "evidence_critic", "intelligence_synthesizer"):
+            steps = agents[role]["definition"]["chain"]["steps"]
+            instructions = "\n".join(
+                step["input"]["text"] if isinstance(step["input"], dict) else step["input"]
+                for step in steps
+            )
+            for rule_id, _ in SEMANTIC_RULES:
+                self.assertIn(f"[{rule_id}]", instructions)
+            self.assertIn("independent", instructions)
+        planner = agents["methodology_planner"]["definition"]["chain"]["steps"]
+        self.assertIn("learned_methodology_addendum", "\n".join(step["input"]["text"] for step in planner))
 
     def test_materialization_and_promotion_acceptance_are_explicit(self) -> None:
         contract = json.loads(ACCEPTANCE.read_text(encoding="utf-8"))

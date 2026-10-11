@@ -193,7 +193,12 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
     def test_exact_role_set_and_order_are_frozen(self) -> None:
         self.assertEqual(EXPECTED_ROLE_ORDER, tuple(self.agents))
 
-    def test_only_changed_research_roles_embed_new_agent_definitions(self) -> None:
+    def test_only_changed_roles_embed_new_agent_definitions(self) -> None:
+        preparation_versions = {
+            "methodology_planner": "1.0.7",
+            "evidence_critic": "1.0.8",
+            "intelligence_synthesizer": "1.0.6",
+        }
         for role, agent in self.agents.items():
             with self.subTest(role=role):
                 if role in CHANGED_RESEARCH_ROLES:
@@ -207,6 +212,14 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
                         HISTORICAL_RESEARCH_CONTRACT_VERSION,
                         agent["contract_version"],
                     )
+                elif role in preparation_versions:
+                    self.assertIn("definition", agent)
+                    self.assertEqual(preparation_versions[role], agent["contract_version"])
+                    chain = agent["definition"]["chain"]
+                    self.assertEqual(preparation_versions[role], chain["version"])
+                    self.assertEqual({"max_tool_calls": 0, "max_provider_calls": 1}, chain["budget_policy"])
+                    for step in chain["steps"]:
+                        self.assertEqual(600, step["provider_policy"]["timeout_seconds"])
                 else:
                     self.assertNotIn("definition", agent)
                     self.assertEqual(

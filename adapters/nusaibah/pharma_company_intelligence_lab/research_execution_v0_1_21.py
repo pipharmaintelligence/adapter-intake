@@ -33,6 +33,7 @@ try:
     from .research_section_projection_v0_1_21 import (
         project_research_sections,
     )
+    from .methodology_learning_v0_1_21 import reviewed_methodology_addendum
 except ImportError:  # pragma: no cover - flat intake execution
     import nusaibah_pharma_company_intelligence_lab_adapter as legacy
     from research_claim_evidence_v0_1_21 import (
@@ -54,6 +55,7 @@ except ImportError:  # pragma: no cover - flat intake execution
     from research_section_projection_v0_1_21 import (
         project_research_sections,
     )
+    from methodology_learning_v0_1_21 import reviewed_methodology_addendum
 
 
 RESEARCH_ROLES = legacy.RESEARCH_ROLES
@@ -116,6 +118,9 @@ def run_research_fanout_v0_1_21(
             },
             "learned_methodology": "\n\n".join(
                 text for text in learned_sections if text
+            ),
+            "learned_methodology_addendum": reviewed_methodology_addendum(
+                learned_methodology_text,
             ),
             "response_contract": response_contract,
         }
@@ -376,6 +381,7 @@ def run_research_fanout_v0_1_21(
                     ),
                     "learned_methodology_used": bool(
                         base_input["learned_methodology"]
+                        or base_input["learned_methodology_addendum"]
                     ),
                     "claim_count": len(payload["claims"]),
                     "withheld_claim_count": (

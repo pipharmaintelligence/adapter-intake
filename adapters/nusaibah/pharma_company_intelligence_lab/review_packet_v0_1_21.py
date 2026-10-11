@@ -97,6 +97,7 @@ def _company_packet(state: dict[str, Any]) -> dict[str, Any]:
             "planner_snapshot_included": state[
                 "methodology_learning_planner_snapshot_included"
             ],
+            "withheld_reason": state["methodology_learning_withheld_reason"],
             "apply_authority": False,
             "mutation_eligible": False,
         }
@@ -191,6 +192,7 @@ def _incomplete_company_packet(state: dict[str, Any]) -> dict[str, Any]:
             "proposal_digest": None,
             "previous_learning_preserved": False,
             "planner_snapshot_included": False,
+            "withheld_reason": None,
             "apply_authority": False,
             "mutation_eligible": False,
         },

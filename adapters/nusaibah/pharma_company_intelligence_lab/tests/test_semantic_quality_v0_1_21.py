@@ -18,7 +18,9 @@ from claim_semantics_v0_1_21 import (  # noqa: E402
 from methodology_learning_v0_1_21 import (  # noqa: E402
     LESSONS,
     MARKER,
+    MAX_TOTAL_CHARS,
     build_methodology_learning_proposal,
+    reviewed_methodology_addendum,
 )
 from research_claim_evidence_v0_1_21 import (  # noqa: E402
     project_role_claim_evidence,
@@ -70,6 +72,33 @@ def claim(claim_id: str, semantic_context: dict[str, object]) -> dict[str, objec
 
 
 class SemanticQualityV021Tests(unittest.TestCase):
+    def test_repeated_planner_headings_do_not_make_skill_sections_ambiguous(self) -> None:
+        existing = "### company_profile\nPrior verified procedure.\n"
+        snapshot = "### company_profile\nNew planning procedure.\n"
+        proposal = build_methodology_learning_proposal(existing, planner_snapshot=snapshot)
+        self.assertTrue(proposal.candidate.startswith(existing))
+        self.assertEqual(1, proposal.candidate.count("### company_profile"))
+        self.assertFalse(proposal.planner_snapshot_included)
+        self.assertIn(MARKER, proposal.candidate)
+
+    def test_full_learning_budget_withholds_only_optional_proposal(self) -> None:
+        existing = "x" * MAX_TOTAL_CHARS
+        proposal = build_methodology_learning_proposal(existing)
+        self.assertEqual(existing, proposal.candidate)
+        self.assertFalse(proposal.changed)
+        self.assertFalse(proposal.apply_authority)
+        self.assertTrue(proposal.previous_learning_preserved)
+        self.assertEqual((), proposal.rule_ids)
+        self.assertEqual("methodology_learning_budget_exhausted", proposal.withheld_reason)
+
+    def test_reviewed_learning_projection_requires_stored_known_rules(self) -> None:
+        self.assertEqual("", reviewed_methodology_addendum("No learning exists."))
+        proposal = build_methodology_learning_proposal("")
+        projected = reviewed_methodology_addendum(proposal.candidate + "\nCompany fact must not leak.\n")
+        self.assertEqual(len(LESSONS), len(projected.splitlines()))
+        self.assertNotIn("Company fact", projected)
+        self.assertLess(len(projected), 2400)
+
     def test_event_date_and_publication_date_remain_distinct(self) -> None:
         validated = validate_claim_semantic_context(
             context(
