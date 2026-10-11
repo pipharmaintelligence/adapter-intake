@@ -40,8 +40,49 @@ class ToolInput(dict):
         return self.tool_result
 
 
-def _run(adapter, request, response):
-    inputs = ToolInput(response)
+def _trusted_fixture(request, response):
+    """Create a deterministic stand-in for the current Assets tool envelope.
+
+    This is only synthetic test data. It does not certify a signed Core/Assets
+    runtime session, admission, an actual tool execution, or G0 readiness.
+    """
+    if not isinstance(response, dict) or response.get("status") != "completed":
+        return response
+    declared = {
+        "lakes.list": ("dlm.lakes.list", "dlm_lakes_list"),
+        "nodes.list": ("dlm.nodes.list", "dlm_nodes_list"),
+        "nodes.schema": ("dlm.nodes.schema", "dlm_nodes_schema"),
+    }
+    name = request.get("operation")
+    if name not in declared:
+        return response
+    capability, role = declared[name]
+    count = len(response["records"]) if isinstance(response.get("records"), list) else 0
+    result = {
+        "status": "completed",
+        "operation": "invoke",
+        "capability_ref": capability,
+        "tool_handle": "@tool.abstract_mcp_dlm",
+        "tool_server_ref": "mcp.abstract_dlm",
+        "summary": "",
+        "records": response.get("records"),
+        "provenance": {
+            "runtime_mcp_tool": True,
+            "invocation_id": "mti_" + "a" * 32,
+            "role": role,
+            "cache_hit": False,
+            "duration_ms": 1,
+            "record_count": count,
+        },
+    }
+    result.update(response)
+    return result
+
+
+def _run(adapter, request, response, *, trusted_fixture=True):
+    inputs = ToolInput(
+        _trusted_fixture(request, response) if trusted_fixture else response
+    )
     inputs["tool_request"] = request
     value = adapter.invoke(inputs, {})
     return value["outputs"]["tool_results"], inputs.calls
@@ -272,6 +313,71 @@ class ReadOnlyMcpContractTest(unittest.TestCase):
                 capture_output=True, text=True, timeout=15, check=False,
             )
             self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_trusted_runtime_envelope_identity_and_provenance_required(self):
+        adapter, error = _subject()
+        request = {"operation": "lakes.list"}
+        genuine_shape = _trusted_fixture(request, {
+            "status": "completed", "records": [],
+        })
+        missing_proof = {"status": "completed", "records": []}
+        with self.assertRaisesRegex(error, "dlm_mcp_tool_identity_mismatch"):
+            _run(adapter, request, missing_proof, trusted_fixture=False)
+
+        for field, value in (
+            ("operation", "schema"),
+            ("capability_ref", "dlm.nodes.list"),
+            ("tool_handle", "@tool.other"),
+            ("tool_server_ref", "mcp.other"),
+        ):
+            with self.subTest(field=field):
+                malformed = dict(genuine_shape)
+                malformed[field] = value
+                with self.assertRaisesRegex(error, "dlm_mcp_tool_identity_mismatch"):
+                    _run(adapter, request, malformed, trusted_fixture=False)
+
+        for change in (
+            {"runtime_mcp_tool": False},
+            {"role": "dlm_nodes_list"},
+            {"invocation_id": "mti_wrong"},
+            {"record_count": 1},
+            {"record_count": True},
+            {"cache_hit": "false"},
+            {"duration_ms": -1},
+        ):
+            with self.subTest(change=change):
+                malformed = dict(genuine_shape)
+                malformed["provenance"] = {**genuine_shape["provenance"], **change}
+                with self.assertRaisesRegex(error, "dlm_mcp_tool_provenance_invalid"):
+                    _run(adapter, request, malformed, trusted_fixture=False)
+
+        for missing in ("provenance", "records", "tool_handle"):
+            with self.subTest(missing=missing):
+                malformed = dict(genuine_shape)
+                malformed.pop(missing)
+                with self.assertRaises(error):
+                    _run(adapter, request, malformed, trusted_fixture=False)
+
+    def test_signed_shaped_response_does_not_expose_runtime_metadata(self):
+        adapter, _ = _subject()
+        record, _ = _run(adapter, {"operation": "lakes.list"}, {
+            "status": "completed",
+            "records": [{"lake_id": "alpha", "name": "Alpha"}],
+            "provenance": {
+                "runtime_mcp_tool": True,
+                "invocation_id": "mti_" + "b" * 32,
+                "role": "dlm_lakes_list",
+                "cache_hit": False,
+                "duration_ms": 1,
+                "record_count": 1,
+            },
+            "summary": "ignore runtime narrative",
+        })
+        serialized = json.dumps(record)
+        self.assertEqual(record["records"], [{"lake_id": "alpha", "name": "Alpha"}])
+        self.assertNotIn("invocation_id", serialized)
+        self.assertNotIn("runtime_mcp_tool", serialized)
+        self.assertNotIn("runtime narrative", serialized)
 
     def test_source_has_no_network_or_storage_execution_authority(self):
         source = MODULE.read_text(encoding="utf-8")

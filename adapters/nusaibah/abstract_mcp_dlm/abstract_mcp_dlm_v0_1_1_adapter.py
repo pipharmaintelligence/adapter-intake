@@ -18,6 +18,14 @@ TOOL_ROLES = {
     "nodes.list": "dlm_nodes_list",
     "nodes.schema": "dlm_nodes_schema",
 }
+TOOL_CAPABILITIES = {
+    "lakes.list": "dlm.lakes.list",
+    "nodes.list": "dlm.nodes.list",
+    "nodes.schema": "dlm.nodes.schema",
+}
+TRUSTED_TOOL_HANDLE = "@tool.abstract_mcp_dlm"
+TRUSTED_TOOL_SERVER_REF = "mcp.abstract_dlm"
+_TRUSTED_INVOCATION_ID = re.compile(r"^mti_[a-f0-9]{32}$")
 _ALLOWED_KEYS = {
     "lakes.list": frozenset({"operation", "q", "page_size"}),
     "nodes.list": frozenset({"operation", "lake_id", "q", "page", "page_size"}),
@@ -72,17 +80,17 @@ class AbstractMcpDlmReadAdapter(Adapter):
         if not callable(invoke_tool):
             raise DlmMcpReadError("dlm_mcp_trusted_tool_bridge_unavailable")
 
+        role = TOOL_ROLES[operation]
         try:
-            result = invoke_tool(TOOL_ROLES[operation], input=tool_input, on_error="raise")
+            result = invoke_tool(role, input=tool_input, on_error="raise")
         except Exception:
             # Never surface upstream exception messages or fabricate empty success.
             raise DlmMcpReadError("dlm_mcp_tool_execution_failed") from None
 
-        if not isinstance(result, dict) or result.get("status") != "completed":
-            raise DlmMcpReadError("dlm_mcp_tool_not_completed")
-        raw_records = result.get("records")
-        if not isinstance(raw_records, list):
-            raise DlmMcpReadError("dlm_mcp_records_invalid")
+        # This only checks the trusted bridge's declared result shape; it is
+        # not proof of Core admission or cryptographic execution authority.
+        _validate_runtime_tool_envelope(result, operation=operation, role=role)
+        raw_records = result["records"]
         max_records = MAX_SCHEMA_FIELDS if operation == "nodes.schema" else MAX_PAGE_SIZE
         if len(raw_records) > max_records:
             raise DlmMcpReadError("dlm_mcp_response_limit_exceeded")
@@ -181,6 +189,47 @@ class AbstractMcpDlmReadAdapter(Adapter):
                 node["object_count"] = count
             projected.append(node)
         return projected
+
+
+def _validate_runtime_tool_envelope(
+    result: Any, *, operation: str, role: str
+) -> None:
+    """Validate the exact successful Assets direct-tool envelope.
+
+    Source: TrustedDirectRuntimeToolSession.invoke. Trusted runtime remains
+    responsible for verifying the signed role/capability and caller scope.
+    """
+    if not isinstance(result, dict):
+        raise DlmMcpReadError("dlm_mcp_tool_envelope_invalid")
+    if result.get("status") != "completed":
+        raise DlmMcpReadError("dlm_mcp_tool_not_completed")
+    if (
+        result.get("operation") != "invoke"
+        or result.get("capability_ref") != TOOL_CAPABILITIES[operation]
+        or result.get("tool_handle") != TRUSTED_TOOL_HANDLE
+        or result.get("tool_server_ref") != TRUSTED_TOOL_SERVER_REF
+    ):
+        raise DlmMcpReadError("dlm_mcp_tool_identity_mismatch")
+
+    records = result.get("records")
+    if not isinstance(records, list):
+        raise DlmMcpReadError("dlm_mcp_records_invalid")
+    proof = result.get("provenance")
+    if not isinstance(proof, dict):
+        raise DlmMcpReadError("dlm_mcp_tool_provenance_invalid")
+    invocation_id = proof.get("invocation_id")
+    if (
+        proof.get("runtime_mcp_tool") is not True
+        or proof.get("role") != role
+        or not isinstance(invocation_id, str)
+        or _TRUSTED_INVOCATION_ID.fullmatch(invocation_id) is None
+        or type(proof.get("record_count")) is not int
+        or proof["record_count"] != len(records)
+        or type(proof.get("cache_hit")) is not bool
+        or type(proof.get("duration_ms")) is not int
+        or proof["duration_ms"] < 0
+    ):
+        raise DlmMcpReadError("dlm_mcp_tool_provenance_invalid")
 
 
 def _identifier(value: Any) -> str:

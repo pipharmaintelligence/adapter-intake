@@ -32,12 +32,20 @@ map. Each publication must use a schema that fixes `operation` to one enum
 value and rejects unknown properties; do not publish a generic multi-operation
 tool. No actor/client/authorization/executor identifier is a caller argument.
 
-Success requires an injected, admitted runtime `invoke_tool` role and
-`status=completed` with typed records. Missing bridges, errors, invalid
-shapes, unexpected statuses, mismatched lake/node, and limits fail closed;
-successful empty records are distinct from missing execution. Only positively
-allowlisted display/schema fields leave the adapter. No raw Core envelope,
-credential, URL, path, object contents, SQL, or provider data is forwarded.
+Success requires an injected, admitted runtime `invoke_tool` role returning
+the existing Assets trusted envelope: `status=completed`, `operation=invoke`,
+exact `capability_ref` / `tool_handle` / `tool_server_ref`, typed `records`
+and `provenance` containing the matching role, runtime marker, invocation ID,
+cache flag, duration and exact record count. Missing bridges, errors, absent or
+mismatched provenance, invalid shapes, unexpected statuses, mismatched lake/node,
+and limits fail closed. A successful empty result is not an absent invocation.
+The adapter never exposes raw runtime provenance, exception messages, Core
+envelopes, credentials, URLs, paths, object contents, SQL or provider data.
+
+The provenance checks here validate an expected **shape**, not a signed receipt.
+Only Core/Assets can certify actual admission and trusted execution. This
+documented envelope may need a contract revision after the G0 first-party
+executor is selected; no new bridge or transport is invented in intake.
 
 Intake tests: `python -m unittest discover -s tests -p
 "test_abstract_mcp_dlm_0_1_1.py" -v`.
