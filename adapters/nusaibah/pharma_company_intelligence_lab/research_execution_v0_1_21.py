@@ -3,9 +3,9 @@
 The module owns only the three search-enabled research roles and their bounded
 one-time repair path. It validates ``pharma_research_agent.v2``, exact-matches
 claim locators against runtime-admitted citations, preserves accepted work, and
-withholds only unsupported claims. Planner, analysis, critique, synthesis,
-benchmark, storage, publication and Dynamic Skill mutation remain outside this
-module.
+withholds unsupported or semantically invalid claims. Planner, analysis,
+critique, synthesis, benchmark, storage, publication and Dynamic Skill mutation
+remain outside this module.
 """
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ try:
         MergedClaimEvidenceProjection,
         RoleClaimEvidenceProjection,
         merge_role_claim_evidence,
+        project_role_claim_evidence,
     )
     from .research_claim_pipeline_v0_1_21 import (
         research_response_contract_for_role_v0_1_21,
@@ -29,7 +30,9 @@ try:
         require_repair_preserves_claim_evidence_v0_1_21,
         validate_research_payload_v0_1_21,
     )
-    from .research_claim_evidence_v0_1_21 import project_role_claim_evidence
+    from .research_section_projection_v0_1_21 import (
+        project_research_sections,
+    )
 except ImportError:  # pragma: no cover - flat intake execution
     import nusaibah_pharma_company_intelligence_lab_adapter as legacy
     from research_claim_evidence_v0_1_21 import (
@@ -47,6 +50,9 @@ except ImportError:  # pragma: no cover - flat intake execution
         project_repair_input_v0_1_21,
         require_repair_preserves_claim_evidence_v0_1_21,
         validate_research_payload_v0_1_21,
+    )
+    from research_section_projection_v0_1_21 import (
+        project_research_sections,
     )
 
 
@@ -71,7 +77,9 @@ def run_research_fanout_v0_1_21(
     results: dict[str, dict[str, Any]] = {}
 
     def run(role: str) -> dict[str, Any]:
-        required_sections = legacy._section_requests(legacy.RESEARCH_ROLE_SECTIONS[role])
+        required_sections = legacy._section_requests(
+            legacy.RESEARCH_ROLE_SECTIONS[role]
+        )
         learned_sections = [
             legacy._planner_learned_section(
                 learned_methodology_text,
@@ -96,8 +104,12 @@ def run_research_fanout_v0_1_21(
                 "skill_ref": methodology.planner_packet.skill_ref,
                 "version": methodology.planner_packet.skill_version,
                 "package_digest": methodology.package_digest,
-                "evidence_rules": list(methodology.planner_packet.evidence_rules),
-                "role_boundaries": list(methodology.planner_packet.role_boundaries),
+                "evidence_rules": list(
+                    methodology.planner_packet.evidence_rules
+                ),
+                "role_boundaries": list(
+                    methodology.planner_packet.role_boundaries
+                ),
                 "company_isolation_rules": list(
                     methodology.planner_packet.company_isolation_rules
                 ),
@@ -111,6 +123,8 @@ def run_research_fanout_v0_1_21(
         passes = review_passes if role == "portfolio_researcher" else 1
         payload: dict[str, Any] | None = None
         projection: RoleClaimEvidenceProjection | None = None
+        review_sections: list[dict[str, Any]] | None = None
+        withheld_section_ids: list[str] = []
         citations: list[Any] = []
         repairs: list[dict[str, Any]] = []
         trace: list[dict[str, Any]] = []
@@ -149,6 +163,8 @@ def run_research_fanout_v0_1_21(
             pass_repairs: list[dict[str, Any]] = []
             next_payload: dict[str, Any] | None = None
             next_projection: RoleClaimEvidenceProjection | None = None
+            next_review_sections: list[dict[str, Any]] | None = None
+            next_withheld_section_ids: list[str] = []
             current_unresolved: dict[str, Any] | None = None
 
             try:
@@ -226,8 +242,23 @@ def run_research_fanout_v0_1_21(
                         claim["local_claim_id"]
                         for claim in next_projection.accepted_claims
                     }
+                    section_projection = project_research_sections(
+                        sections=validated["sections"],
+                        withheld_claims=next_projection.withheld_claims,
+                    )
+                    next_review_sections = [
+                        dict(section)
+                        for section in section_projection.review_sections
+                    ]
+                    next_withheld_section_ids = list(
+                        section_projection.withheld_section_ids
+                    )
                     next_payload = {
                         **validated,
+                        "sections": [
+                            dict(section)
+                            for section in section_projection.downstream_sections
+                        ],
                         "claims": [
                             claim
                             for claim in validated["claims"]
@@ -253,17 +284,32 @@ def run_research_fanout_v0_1_21(
                 )
                 next_payload = payload
                 next_projection = projection
+                next_review_sections = review_sections
+                next_withheld_section_ids = withheld_section_ids
                 evidence_incomplete = True
             elif next_projection is not None and next_projection.withheld_claims:
                 evidence_incomplete = True
+                semantic_issue = any(
+                    issue.get("category") == "semantic_quality"
+                    for issue in next_projection.issues
+                )
                 issue_entry = {
                     "role": role,
-                    "stage": "claim_evidence_admission",
-                    "field": "claims.citation_locators",
-                    "rule": "claim_evidence_incomplete",
-                    "category": "evidence_unavailable",
-                    "action": "claims_withheld",
-                    "section_ids": list(legacy.RESEARCH_ROLE_SECTIONS[role]),
+                    "stage": "claim_quality_projection",
+                    "field": "claims",
+                    "rule": "claim_quality_incomplete",
+                    "category": (
+                        "quality_rejected"
+                        if semantic_issue
+                        else "evidence_unavailable"
+                    ),
+                    "action": "claims_and_affected_section_prose_withheld",
+                    "section_ids": sorted(
+                        {
+                            claim["section_id"]
+                            for claim in next_projection.withheld_claims
+                        }
+                    ),
                     "withheld_claim_count": len(
                         next_projection.withheld_claims
                     ),
@@ -281,6 +327,12 @@ def run_research_fanout_v0_1_21(
                 )
             if next_projection is None:
                 next_projection = projection
+            if next_review_sections is None:
+                next_review_sections = (
+                    review_sections
+                    if review_sections is not None
+                    else [dict(section) for section in next_payload["sections"]]
+                )
 
             if current_unresolved is None:
                 if next_payload["claims"]:
@@ -295,6 +347,8 @@ def run_research_fanout_v0_1_21(
 
             payload = next_payload
             projection = next_projection
+            review_sections = next_review_sections
+            withheld_section_ids = next_withheld_section_ids
             unresolved = current_unresolved
             trace.append(
                 {
@@ -329,6 +383,7 @@ def run_research_fanout_v0_1_21(
                         if projection is None
                         else len(projection.withheld_claims)
                     ),
+                    "withheld_section_count": len(withheld_section_ids),
                     "citation_count": len(citations),
                 }
             )
@@ -344,6 +399,8 @@ def run_research_fanout_v0_1_21(
                 payload=payload,
                 citations=(),
             )
+        if review_sections is None:
+            review_sections = [dict(section) for section in payload["sections"]]
 
         payload["_citations"] = tuple(citations)
         payload["_response_repairs"] = repairs
@@ -353,6 +410,8 @@ def run_research_fanout_v0_1_21(
         payload["_issue"] = issue_entry
         payload["_claim_projection"] = projection
         payload["_claim_evidence_incomplete"] = evidence_incomplete
+        payload["_review_sections"] = tuple(review_sections)
+        payload["_withheld_section_ids"] = tuple(withheld_section_ids)
         return payload
 
     with ThreadPoolExecutor(
@@ -370,12 +429,13 @@ def run_research_fanout_v0_1_21(
 def join_research_v0_1_21(
     research: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
-    """Merge accepted role claims and preserve all bounded review evidence."""
+    """Merge only downstream-safe sections and accepted claim evidence."""
 
     projections: list[RoleClaimEvidenceProjection] = []
     sections: list[dict[str, Any]] = []
     uncertainties: list[str] = []
     citations: list[Any] = []
+    withheld_section_ids: list[str] = []
 
     for role in RESEARCH_ROLES:
         payload = research[role]
@@ -395,15 +455,20 @@ def join_research_v0_1_21(
         sections.extend(payload["sections"])
         uncertainties.extend(payload["uncertainties"])
         citations.extend(payload["_citations"])
+        for section_id in payload.get("_withheld_section_ids", ()):
+            if section_id not in withheld_section_ids:
+                withheld_section_ids.append(section_id)
 
     merged: MergedClaimEvidenceProjection = merge_role_claim_evidence(
         projections
     )
+    issues = [dict(item) for item in merged.issues]
     deduped = list(legacy._dedupe_citations(citations))
     return {
         "sections": sections,
         "claims": [dict(item) for item in merged.accepted_claims],
         "withheld_claims": [dict(item) for item in merged.withheld_claims],
+        "withheld_section_ids": withheld_section_ids,
         "uncertainties": uncertainties,
         "citations": deduped,
         "citation_count_by_role": {
@@ -411,7 +476,8 @@ def join_research_v0_1_21(
             for role in RESEARCH_ROLES
         },
         "claim_evidence_index": merged.evidence_index,
-        "claim_evidence_issues": [dict(item) for item in merged.issues],
+        "claim_evidence_issues": issues,
+        "claim_quality_issues": issues,
         "claim_evidence_projection_digest": merged.projection_digest,
         "unresolved_research_responses": [
             payload["_unresolved_response"]
