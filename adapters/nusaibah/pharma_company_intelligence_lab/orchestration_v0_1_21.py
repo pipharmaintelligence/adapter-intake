@@ -11,6 +11,7 @@ from typing import Any
 
 try:
     from . import nusaibah_pharma_company_intelligence_lab_adapter as legacy
+    from .candidate_validation_v0_1_21 import CandidateContractError
     from .company_preparation_v0_1_21 import prepare_company_v0_1_21
     from .company_result_v0_1_21 import (
         augment_incomplete_company_state_v0_1_21,
@@ -18,6 +19,7 @@ try:
     from .review_packet_v0_1_21 import build_review_packet_v0_1_21
 except ImportError:  # pragma: no cover - flat intake execution
     import nusaibah_pharma_company_intelligence_lab_adapter as legacy
+    from candidate_validation_v0_1_21 import CandidateContractError
     from company_preparation_v0_1_21 import prepare_company_v0_1_21
     from company_result_v0_1_21 import (
         augment_incomplete_company_state_v0_1_21,
@@ -91,6 +93,14 @@ def invoke_v0_1_21(
                 bounded_inputs,
                 record=record,
                 diagnostic=error.diagnostic,
+                progress=progress,
+            )
+            state = augment_incomplete_company_state_v0_1_21(state)
+        except CandidateContractError as error:
+            state = legacy._incomplete_company_state(
+                bounded_inputs,
+                record=record,
+                diagnostic=error.proof_failure_detail,
                 progress=progress,
             )
             state = augment_incomplete_company_state_v0_1_21(state)
