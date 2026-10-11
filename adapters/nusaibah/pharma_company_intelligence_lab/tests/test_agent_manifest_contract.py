@@ -7,9 +7,9 @@ from pathlib import Path
 
 ASSET_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = (
-    ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
+    ASSET_ROOT / "tests/fixtures/release-0.1.21/nusaibah_pharma_company_intelligence_lab.asset.json"
 )
-ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
+ADAPTER_YAML = ASSET_ROOT / "tests/fixtures/release-0.1.21/adapter.yaml"
 ADAPTER_MODULE = (
     ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_v0_1_21_adapter.py"
 )
@@ -17,7 +17,7 @@ HISTORICAL_ADAPTER_MODULE = (
     ASSET_ROOT / "legacy_preparation_helpers_v0_1_21.py"
 )
 HISTORICAL_MANIFEST = (
-    ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
+    ASSET_ROOT / "tests/fixtures/release-0.1.21/nusaibah_pharma_company_intelligence_lab.asset.json"
 )
 
 ASSET_VERSION = "0.1.21"

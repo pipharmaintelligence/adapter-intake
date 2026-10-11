@@ -11,9 +11,9 @@ from pathlib import Path
 
 ASSET_ROOT = Path(__file__).resolve().parents[1]
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
-NEW_ADAPTER_MODULE = "nusaibah_pharma_company_intelligence_lab_v0_1_21_adapter.py"
+NEW_ADAPTER_MODULE = "nusaibah_pharma_company_intelligence_lab_v0_1_22_adapter.py"
 HISTORICAL_ADAPTER_MODULE = "legacy_preparation_helpers_v0_1_21.py"
-NEW_CLASS = "NusaibahPharmaCompanyIntelligenceLabV021Adapter"
+NEW_CLASS = "NusaibahPharmaCompanyIntelligenceLabV022Adapter"
 HISTORICAL_CLASS = "NusaibahPharmaCompanyIntelligenceLabAdapter"
 
 
@@ -62,7 +62,7 @@ class ImportContextTests(unittest.TestCase):
             from {HISTORICAL_ADAPTER_MODULE[:-3]} import {HISTORICAL_CLASS}
 
             assert {NEW_CLASS}.key == "nusaibah.pharma_company_intelligence_lab"
-            assert {NEW_CLASS}.version == "0.1.21"
+            assert {NEW_CLASS}.version == "0.1.22"
             assert {HISTORICAL_CLASS}.key == "nusaibah.pharma_company_intelligence_lab"
             assert {HISTORICAL_CLASS}.version == "0.1.20"
             assert not issubclass({HISTORICAL_CLASS}, base.Adapter)
@@ -116,7 +116,7 @@ class ImportContextTests(unittest.TestCase):
                 from {package_name}.{HISTORICAL_ADAPTER_MODULE[:-3]} import {HISTORICAL_CLASS}
 
                 assert {NEW_CLASS}.key == "nusaibah.pharma_company_intelligence_lab"
-                assert {NEW_CLASS}.version == "0.1.21"
+                assert {NEW_CLASS}.version == "0.1.22"
                 assert {HISTORICAL_CLASS}.version == "0.1.20"
                 from adapters.base import Adapter
                 assert not issubclass({HISTORICAL_CLASS}, Adapter)

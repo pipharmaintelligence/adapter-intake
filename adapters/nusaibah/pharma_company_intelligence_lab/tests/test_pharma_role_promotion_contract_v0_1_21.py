@@ -27,9 +27,9 @@ from research_claim_evidence_v0_1_21 import (  # noqa: E402
 
 ROLE_CATALOG = ASSET_ROOT / "pharma_roles_v0_1_21.json"
 ACCEPTANCE = ASSET_ROOT / "materialization_promotion_acceptance_v0_1_21.json"
-ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
+ADAPTER_YAML = ASSET_ROOT / "tests/fixtures/release-0.1.21/adapter.yaml"
 MANIFEST = (
-    ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
+    ASSET_ROOT / "tests/fixtures/release-0.1.21/nusaibah_pharma_company_intelligence_lab.asset.json"
 )
 CHANGED_RESEARCH_ROLES = set(RESEARCH_ROLES)
 EXPECTED_MODULAR_HELPERS = {
