@@ -31,6 +31,10 @@ class CompanyPreparationEvidence:
     methodology_handle: Any | None
     methodology_learning_text: str
     methodology_learning_candidate: str | None
+    methodology_learning_rule_ids: tuple[str, ...]
+    methodology_learning_proposal_digest: str | None
+    methodology_learning_previous_preserved: bool
+    methodology_learning_planner_snapshot_included: bool
     methodology_plan: Any
     planner_chunks: tuple[dict[str, Any], ...]
     before_benchmark: dict[str, Any]
@@ -63,7 +67,13 @@ def build_prepared_company_state_v0_1_21(
     selection = evidence.evidence_selection
     candidate = evidence.memory_candidate
     claim_issues = list(joined.get("claim_evidence_issues", []))
+    quality_issues = list(joined.get("claim_quality_issues", claim_issues))
     withheld_claims = list(joined.get("withheld_claims", []))
+    withheld_section_ids = list(joined.get("withheld_section_ids", []))
+
+    automated_gate_passed = (
+        not evidence.research_incomplete and selection.complete
+    )
 
     if evidence.research_incomplete:
         memory_status = "withheld_incomplete"
@@ -74,12 +84,18 @@ def build_prepared_company_state_v0_1_21(
     else:
         memory_status = "no_change_recommended"
 
-    if evidence.research_incomplete:
-        methodology_status = "withheld_incomplete"
-    elif evidence.methodology_learning_candidate is not None:
-        methodology_status = "review_required"
+    if evidence.methodology_learning_candidate is not None:
+        methodology_status = (
+            "review_required_incomplete"
+            if evidence.research_incomplete
+            else "review_required"
+        )
     else:
-        methodology_status = "no_change_recommended"
+        methodology_status = (
+            "withheld_incomplete"
+            if evidence.research_incomplete
+            else "no_change_recommended"
+        )
 
     result = {
         "company_id": evidence.company_id,
@@ -94,8 +110,11 @@ def build_prepared_company_state_v0_1_21(
         "verified_reference_count": 0,
         "accepted_claim_count": len(joined["claims"]),
         "withheld_claim_count": len(withheld_claims),
+        "withheld_section_ids": withheld_section_ids,
         "claim_evidence_issue_count": len(claim_issues),
         "claim_evidence_issues": claim_issues,
+        "claim_quality_issue_count": len(quality_issues),
+        "claim_quality_issues": quality_issues,
         "claim_evidence_projection_digest": joined[
             "claim_evidence_projection_digest"
         ],
@@ -181,8 +200,8 @@ def build_prepared_company_state_v0_1_21(
         "required_section_coverage_count": len(
             evidence.synthesis["sections"]
         ),
-        "quality_gate_passed": True,
-        "automated_quality_gate_passed": True,
+        "quality_gate_passed": automated_gate_passed,
+        "automated_quality_gate_passed": automated_gate_passed,
         "independent_review_status": "not_reviewed",
         "evidence_selection_complete": selection.complete,
         "evidence_selection_digest": selection.selection_digest,
@@ -216,6 +235,19 @@ def build_prepared_company_state_v0_1_21(
             else "deterministic_absent_memory"
         ),
         "methodology_learning_update_status": methodology_status,
+        "methodology_learning_rule_ids": list(
+            evidence.methodology_learning_rule_ids
+        ),
+        "methodology_learning_proposal_digest": (
+            evidence.methodology_learning_proposal_digest
+        ),
+        "methodology_learning_previous_preserved": (
+            evidence.methodology_learning_previous_preserved
+        ),
+        "methodology_learning_planner_snapshot_included": (
+            evidence.methodology_learning_planner_snapshot_included
+        ),
+        "methodology_learning_apply_authority": False,
         "methodology_learning_change_id": None,
         "methodology_learning_before_digest": (
             evidence.methodology_handle.content_digest()
@@ -257,6 +289,18 @@ def build_prepared_company_state_v0_1_21(
         "methodology_learning_candidate": (
             evidence.methodology_learning_candidate
         ),
+        "methodology_learning_rule_ids": (
+            evidence.methodology_learning_rule_ids
+        ),
+        "methodology_learning_proposal_digest": (
+            evidence.methodology_learning_proposal_digest
+        ),
+        "methodology_learning_previous_preserved": (
+            evidence.methodology_learning_previous_preserved
+        ),
+        "methodology_learning_planner_snapshot_included": (
+            evidence.methodology_learning_planner_snapshot_included
+        ),
         "projected_after_benchmark": evidence.projected_after_benchmark,
         "benchmark_questions": evidence.benchmark_questions,
         "memory_candidate": candidate,
@@ -275,6 +319,9 @@ def augment_incomplete_company_state_v0_1_21(
     """Add explicit review/evidence fields to a legacy incomplete preview."""
 
     result = state["result"]
+    progress = state.get("progress", {})
+    joined = progress.get("joined_research", {})
+    quality_issues = list(joined.get("claim_quality_issues", []))
     result.update(
         {
             "automated_quality_gate_passed": False,
@@ -284,11 +331,25 @@ def augment_incomplete_company_state_v0_1_21(
             "evidence_selection_uncovered_fact_ids": [],
             "evidence_selection_selected_citation_count": 0,
             "accepted_claim_count": len(state.get("retained_claims", [])),
-            "withheld_claim_count": 0,
-            "claim_evidence_issue_count": 0,
-            "claim_evidence_issues": [],
-            "claim_evidence_projection_digest": None,
+            "withheld_claim_count": len(
+                joined.get("withheld_claims", [])
+            ),
+            "withheld_section_ids": list(
+                joined.get("withheld_section_ids", [])
+            ),
+            "claim_evidence_issue_count": len(quality_issues),
+            "claim_evidence_issues": quality_issues,
+            "claim_quality_issue_count": len(quality_issues),
+            "claim_quality_issues": quality_issues,
+            "claim_evidence_projection_digest": joined.get(
+                "claim_evidence_projection_digest"
+            ),
             "memory_pre_review_candidate_eligible": False,
+            "methodology_learning_rule_ids": [],
+            "methodology_learning_proposal_digest": None,
+            "methodology_learning_previous_preserved": False,
+            "methodology_learning_planner_snapshot_included": False,
+            "methodology_learning_apply_authority": False,
         }
     )
     state["evidence_selection"] = None
