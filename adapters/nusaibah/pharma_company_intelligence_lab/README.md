@@ -9,7 +9,7 @@ A contract-following formatter regression exposes the old omission and verifies
 the repaired two-pass preview. Returned negative statuses remain incomplete;
 they are never rewritten as successful or retried to obtain a positive verdict.
 
-Static retained header classifications distinguish missing, malformed and other
+Static retained response observations distinguish missing, malformed and other
 status values without recording model prose. Historical helpers, Agent prompts,
 32,000-token ceilings, 600-second requests, call limits and Skill references are
 unchanged. Delivery uses official promotion; runtime version remains unchanged.

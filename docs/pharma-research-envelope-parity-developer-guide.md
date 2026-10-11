@@ -37,7 +37,7 @@ still withheld. It is never rewritten to pass, and it does not trigger a retry
 to obtain a positive verdict. Runtime failures and wrong company/role identities
 remain strict. The single-backup and finite run budgets are unchanged.
 
-The retained dossier adds bounded `research_response_headers` with static status
+The retained dossier adds bounded `research_response_observations` with static status
 classifications and a schema-match Boolean. It records expected input company,
 role and pass only; it never stores raw status text, provider bodies, prompts or
 credentials. These diagnostics are observations, not approval evidence.

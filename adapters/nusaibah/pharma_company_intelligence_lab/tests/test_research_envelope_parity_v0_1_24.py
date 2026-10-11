@@ -63,8 +63,8 @@ class ResearchEnvelopeParityV024Tests(unittest.TestCase):
         for row in dossier['company_results']:
             self.assertGreater(row['accepted_claim_count'], 0)
             self.assertEqual(['validated', 'validated'], [p['status'] for p in row['portfolio_review_trace']])
-        self.assertEqual(8, len(dossier['research_response_headers']))
-        self.assertTrue(all(h['business_status_class'] == 'completed' and h['business_schema_matches'] for h in dossier['research_response_headers']))
+        self.assertEqual(8, len(dossier['research_response_observations']))
+        self.assertTrue(all(h['business_status_class'] == 'completed' and h['business_schema_matches'] for h in dossier['research_response_observations']))
         self.assertFalse(dossier['review_packet']['apply_authority'])
         self.assertEqual(0, response['metrics']['memory_mutations_made'])
         self.assertEqual(0, response['metrics']['methodology_learning_mutations_made'])
@@ -99,7 +99,7 @@ class ResearchEnvelopeParityV024Tests(unittest.TestCase):
         self.assertIs(payload, inputs.calls[0][1])
         self.assertEqual('fixed', proxy.skill('fixed'))
         self.assertEqual(('memory', {'variables': {'company_id': '14'}}), proxy.dynamic_skill('memory', variables={'company_id': '14'}))
-        self.assertEqual([], proxy.headers)
+        self.assertEqual([], proxy.observations)
 
     def test_research_backup_receives_full_contract_without_mutating_original_input(self):
         class Inputs(dict):
@@ -133,9 +133,9 @@ class ResearchEnvelopeParityV024Tests(unittest.TestCase):
                 self.assertTrue(all(row['research_incomplete'] for row in dossier['company_results']))
                 self.assertTrue(all(row['memory_update_status'] == 'withheld_incomplete' for row in dossier['company_results']))
                 self.assertFalse(any(role == legacy.RESEARCH_RESOLVER_ROLE for role, _ in inputs.agent_calls))
-                headers = [h for h in dossier['research_response_headers'] if h['role'] == 'market_researcher']
-                self.assertTrue(all(h['business_status_class'] == classification for h in headers))
-                self.assertNotIn('RAW_PRIVATE_SENTINEL', json.dumps(headers))
+                observations = [h for h in dossier['research_response_observations'] if h['role'] == 'market_researcher']
+                self.assertTrue(all(h['business_status_class'] == classification for h in observations))
+                self.assertNotIn('RAW_PRIVATE_SENTINEL', json.dumps(observations))
 
     def test_runtime_failure_and_wrong_identity_remain_strict(self):
         for fault, code in (('runtime', 'pharma_agent_runtime_envelope_invalid'),

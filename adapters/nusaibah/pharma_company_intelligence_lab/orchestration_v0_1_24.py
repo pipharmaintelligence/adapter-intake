@@ -25,7 +25,7 @@ RESEARCH_ROLES = frozenset({
 BUSINESS_FIELDS = (
     "schema_version", "company_id", "role", "status", "sections", "claims", "uncertainties",
 )
-MAX_RESPONSE_HEADERS = legacy.MAX_COMPANY_ITERATIONS * (legacy.MAX_AGENT_CALLS_PER_COMPANY_PREVIEW + 2) * 2
+MAX_RESPONSE_OBSERVATIONS = legacy.MAX_COMPANY_ITERATIONS * (legacy.MAX_AGENT_CALLS_PER_COMPANY_PREVIEW + 2) * 2
 
 
 def complete_research_contract(contract: dict[str, Any]) -> dict[str, Any]:
@@ -50,7 +50,7 @@ class _ResearchContractInputs(dict):
         super().__init__(inputs)
         self._inputs = inputs
         self._lock = Lock()
-        self.headers: list[dict[str, Any]] = []
+        self.observations: list[dict[str, Any]] = []
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._inputs, name)
@@ -67,10 +67,10 @@ class _ResearchContractInputs(dict):
             forwarded = {**input, "response_contract": complete_research_contract(input["response_contract"])}
         envelope = self._inputs.invoke_agent(role, input=forwarded, on_error=on_error)
         if research or research_backup:
-            self._record_header(role, forwarded, envelope)
+            self._record_observation(role, forwarded, envelope)
         return envelope
 
-    def _record_header(self, role: str, input: dict[str, Any], envelope: Any) -> None:
+    def _record_observation(self, role: str, input: dict[str, Any], envelope: Any) -> None:
         # Static classifications only: never retain raw model status/prose, prompts,
         # URLs, provider bodies or credentials. Existing kernel validates authority.
         value = None
@@ -91,7 +91,7 @@ class _ResearchContractInputs(dict):
                 classification = status
             else:
                 classification = "other_string"
-        header = {
+        observation = {
             "role": role,
             "company_id": input["company_id"],
             "pass_number": (input.get("portfolio_review") or {}).get("pass_number"),
@@ -100,8 +100,8 @@ class _ResearchContractInputs(dict):
         }
         with self._lock:
             # Kernel has finite company/role/backup budgets. Bound this projection too.
-            if len(self.headers) < MAX_RESPONSE_HEADERS:
-                self.headers.append(header)
+            if len(self.observations) < MAX_RESPONSE_OBSERVATIONS:
+                self.observations.append(observation)
 
 
 def invoke_v0_1_24(inputs: Any, *, asset_identity: str) -> dict[str, Any]:
@@ -110,8 +110,8 @@ def invoke_v0_1_24(inputs: Any, *, asset_identity: str) -> dict[str, Any]:
     legacy.validate_batch_request(inputs)
     forwarded = _ResearchContractInputs(inputs)
     response = invoke_v0_1_23(forwarded, asset_identity=asset_identity)
-    response["outputs"]["intelligence_dossier"]["research_response_headers"] = sorted(
-        forwarded.headers,
+    response["outputs"]["intelligence_dossier"]["research_response_observations"] = sorted(
+        forwarded.observations,
         key=lambda row: (row["company_id"], row["role"], row["pass_number"] or 0),
     )
     return response
