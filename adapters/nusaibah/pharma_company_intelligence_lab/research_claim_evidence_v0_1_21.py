@@ -11,9 +11,9 @@ Role boundaries:
 - memory_benchmark_reviewer evaluates supplied memory without adding facts.
 - research_response_resolver performs one faithful format repair only.
 
-This helper keeps role projection, claim-ID qualification and issue construction
-outside the main adapter module. It has no provider, storage, publication,
-approval or Dynamic Skill mutation authority.
+This helper keeps role projection, claim-ID qualification, semantic validation
+and issue construction outside the main adapter module. It has no provider,
+storage, publication, approval or Dynamic Skill mutation authority.
 """
 from __future__ import annotations
 
@@ -28,11 +28,19 @@ try:
         build_claim_evidence_index,
         merge_claim_evidence_indexes,
     )
+    from .claim_semantics_v0_1_21 import (
+        ClaimSemanticContractError,
+        validate_claim_semantic_context,
+    )
 except ImportError:  # pragma: no cover - flat intake execution
     from claim_evidence_contract_v0_1_21 import (
         ClaimEvidenceIndex,
         build_claim_evidence_index,
         merge_claim_evidence_indexes,
+    )
+    from claim_semantics_v0_1_21 import (
+        ClaimSemanticContractError,
+        validate_claim_semantic_context,
     )
 
 
@@ -95,7 +103,7 @@ def project_role_claim_evidence(
     payload: Mapping[str, Any],
     citations: Iterable[Any],
 ) -> RoleClaimEvidenceProjection:
-    """Qualify one role's claims and exact-match their admitted citations."""
+    """Qualify claims and withhold evidence or semantic defects individually."""
 
     role = _research_role(role)
     if type(pass_number) is not int or pass_number < 1:
@@ -109,25 +117,31 @@ def project_role_claim_evidence(
     if not isinstance(raw_claims, list):
         raise RoleClaimEvidenceError("role_claim_list_invalid")
 
-    qualified = tuple(_qualified_claim(role, raw) for raw in raw_claims)
+    qualified: list[dict[str, Any]] = []
+    forced_withheld: dict[str, str] = {}
+    for raw in raw_claims:
+        claim, semantic_issue = _qualified_claim(role, raw)
+        qualified.append(claim)
+        if semantic_issue is not None:
+            forced_withheld[claim["claim_id"]] = semantic_issue
+
     index = build_claim_evidence_index(
         role=role,
         pass_number=pass_number,
         claims=qualified,
         citations=citations,
+        forced_withheld=forced_withheld,
     )
 
     by_id = {claim["claim_id"]: claim for claim in qualified}
     accepted = tuple(
-        dict(by_id[claim_id])
-        for claim_id in index.accepted_claim_ids
+        dict(by_id[claim_id]) for claim_id in index.accepted_claim_ids
     )
     withheld = tuple(
-        dict(by_id[claim_id])
-        for claim_id in index.withheld_claim_ids
+        dict(by_id[claim_id]) for claim_id in index.withheld_claim_ids
     )
     issues = tuple(
-        _evidence_issue(
+        _claim_issue(
             role=role,
             pass_number=pass_number,
             claim_id=record.claim_id,
@@ -225,7 +239,10 @@ def accepted_claims_for_downstream(
     return [dict(claim) for claim in projection.accepted_claims]
 
 
-def _qualified_claim(role: str, raw: Any) -> dict[str, Any]:
+def _qualified_claim(
+    role: str,
+    raw: Any,
+) -> tuple[dict[str, Any], str | None]:
     if not isinstance(raw, Mapping):
         raise RoleClaimEvidenceError("role_claim_invalid")
     local_claim_id = _token(raw.get("claim_id"), "role_claim_local_id_invalid")
@@ -241,31 +258,55 @@ def _qualified_claim(role: str, raw: Any) -> dict[str, Any]:
     if type(inference) is not bool:
         raise RoleClaimEvidenceError("role_claim_inference_invalid")
 
-    return {
-        **dict(raw),
-        "claim_id": qualified_claim_id(role, local_claim_id),
-        "local_claim_id": local_claim_id,
-        "section_id": section_id,
-        "statement": statement,
-        "evidence_kind": evidence_kind,
-        "inference": inference,
-    }
+    semantic_issue: str | None = None
+    semantic_value: Any = raw.get("semantic_context")
+    semantic_rule_ids: list[str] = []
+    try:
+        semantic = validate_claim_semantic_context(semantic_value)
+    except ClaimSemanticContractError as error:
+        semantic_issue = f"claim_semantic_{error.rule}"
+    else:
+        semantic_value = semantic.public_value()
+        semantic_rule_ids = list(semantic.rule_ids)
+
+    return (
+        {
+            **dict(raw),
+            "claim_id": qualified_claim_id(role, local_claim_id),
+            "local_claim_id": local_claim_id,
+            "section_id": section_id,
+            "statement": statement,
+            "evidence_kind": evidence_kind,
+            "inference": inference,
+            "semantic_context": semantic_value,
+            "semantic_rule_ids": semantic_rule_ids,
+        },
+        semantic_issue,
+    )
 
 
-def _evidence_issue(
+def _claim_issue(
     *,
     role: str,
     pass_number: int,
     claim_id: str,
     rule: str | None,
 ) -> dict[str, Any]:
+    rule_value = rule or "claim_evidence_invalid"
+    semantic = rule_value.startswith("claim_semantic_")
     return {
         "schema_version": ISSUE_SCHEMA_VERSION,
         "role": role,
         "pass_number": pass_number,
         "claim_id": claim_id,
-        "stage": "claim_evidence_admission",
-        "rule": rule or "claim_evidence_invalid",
+        "stage": (
+            "claim_semantic_validation"
+            if semantic
+            else "claim_evidence_admission"
+        ),
+        "category": "semantic_quality" if semantic else "evidence_unavailable",
+        "rule": rule_value,
+        "disposition": "withhold",
         "action": "claim_withheld",
     }
 
