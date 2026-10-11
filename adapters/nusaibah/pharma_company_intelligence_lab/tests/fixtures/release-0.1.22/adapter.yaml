@@ -1,0 +1,60 @@
+asset_key: nusaibah.pharma_company_intelligence_lab
+asset_version: 0.1.22
+package_target: python_runtime/adapters/intake/nusaibah/pharma_company_intelligence_lab
+manifest: nusaibah_pharma_company_intelligence_lab.asset.json
+adapter_module: nusaibah_pharma_company_intelligence_lab_v0_1_22_adapter.py
+
+reviewed_helpers:
+  # Preserve the exact 0.1.21 entrypoint for historical coexistence. Preparation
+  # helpers have no discoverable Adapter subclass; Assets keeps old identities.
+  - nusaibah_pharma_company_intelligence_lab_v0_1_21_adapter.py
+  - legacy_preparation_helpers_v0_1_21.py
+  - input_contract.py
+  - dossier_contract.py
+  - memory_contract.py
+  - agent_contract.py
+  - critic_diagnostics_v0_1_13.py
+  - company_context_contract_v0_1_14.py
+  - company_context_contract_v0_1_15.py
+  - methodology_contract.py
+  - review_packet_v0_1_16.py
+  - research_diagnostics_v0_1_17.py
+  - portfolio_review_v0_1_17.py
+  - agent_response_recovery_v0_1_17.py
+  - evidence_recovery_v0_1_20.py
+  - claim_semantics_v0_1_21.py
+  - claim_evidence_contract_v0_1_21.py
+  - research_response_contract_v0_1_21.py
+  - research_claim_evidence_v0_1_21.py
+  - research_claim_pipeline_v0_1_21.py
+  - research_section_projection_v0_1_21.py
+  - research_execution_v0_1_21.py
+  - candidate_validation_v0_1_21.py
+  - memory_citation_selection_v0_1_21.py
+  - methodology_learning_v0_1_21.py
+  - preparation_context_v0_1_21.py
+  - company_result_v0_1_21.py
+  - company_preparation_v0_1_21.py
+  - review_packet_v0_1_21.py
+  - orchestration_v0_1_21.py
+
+# The reviewed role catalogue covers all manifest Agent roles. The separate
+# acceptance contract records Assets materialization and promotion gates.
+reviewed_support_files:
+  - pharma_roles_v0_1_21.json
+  - materialization_promotion_acceptance_v0_1_21.json
+  - pharma_roles_v0_1_22.json
+  - materialization_promotion_acceptance_v0_1_22.json
+  - pharma_response_budgets_v0_1_22.json
+
+optional_files:
+  - README.md
+
+dependency_manifest: adapter.dependencies.json
+release_stage: development
+
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false

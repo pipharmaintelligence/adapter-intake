@@ -1,0 +1,102 @@
+{
+  "schema_version": "pharma_materialization_promotion_acceptance.v1",
+  "asset_key": "nusaibah.pharma_company_intelligence_lab",
+  "target_asset_version": "0.1.23",
+  "materialization": {
+    "required_checks": [
+      {
+        "id": "M01",
+        "criterion": "adapter_yaml_manifest_and_executable_adapter_target_version_match"
+      },
+      {
+        "id": "M02",
+        "criterion": "declared_current_source_closure_is_complete_and_contains_no_undeclared_root_files"
+      },
+      {
+        "id": "M03",
+        "criterion": "role_catalog_matches_manifest_agent_roles_and_authority_limits"
+      },
+      {
+        "id": "M04",
+        "criterion": "assets_materializer_preserves_omitted_historical_published_versions_including_0_1_20"
+      },
+      {
+        "id": "M05",
+        "criterion": "new_versioned_helpers_do_not_replace_historical_adapter_or_helper_bytes"
+      },
+      {
+        "id": "M06",
+        "criterion": "local_root_and_packaged_imports_pass_for_0_1_23_and_historical_0_1_21_and_0_1_20"
+      },
+      {
+        "id": "M07",
+        "criterion": "materializer_reports_no_shared_runtime_file_conflict"
+      },
+      {
+        "id": "M08",
+        "criterion": "fixed_skill_reference_version_and_digest_are_unchanged"
+      },
+      {
+        "id": "M09",
+        "criterion": "generated_manifest_and_runtime_catalog_resolve_0_1_23_and_preserved_0_1_21_and_0_1_20"
+      },
+      {
+        "id": "M10",
+        "criterion": "package_forbidden_content_and_duplicate_identity_scans_pass"
+      }
+    ]
+  },
+  "promotion": {
+    "required_checks": [
+      {
+        "id": "P01",
+        "criterion": "complete_deterministic_suite_including_r01_through_r10_regressions_passes"
+      },
+      {
+        "id": "P02",
+        "criterion": "adapter_intake_contract_and_repository_validation_pass"
+      },
+      {
+        "id": "P03",
+        "criterion": "exact_source_commit_and_remote_commit_identity_match"
+      },
+      {
+        "id": "P04",
+        "criterion": "official_promotion_dry_run_accepts_the_exact_source_without_manifest_removals"
+      },
+      {
+        "id": "P05",
+        "criterion": "assets_materialization_coexistence_and_package_import_ci_pass"
+      },
+      {
+        "id": "P06",
+        "criterion": "every_changed_agent_role_contract_has_exact_version_admission_dry_run_evidence"
+      },
+      {
+        "id": "P07",
+        "criterion": "provider_free_packaged_worker_fixture_passes_before_any_paid_execution"
+      },
+      {
+        "id": "P08",
+        "criterion": "preview_path_performs_zero_dynamic_skill_mutations_and_apply_fails_before_helpers"
+      },
+      {
+        "id": "P09",
+        "criterion": "review_and_future_apply_consumers_use_the_same_evidence_selection_digest"
+      },
+      {
+        "id": "P10",
+        "criterion": "promotion_success_is_not_reported_as_deployment_admission_or_live_proof"
+      }
+    ],
+    "separate_later_proofs": [
+      "official_runtime_delivery",
+      "exact_version_registration",
+      "capability_admission",
+      "retained_preview_live_result",
+      "independent_claim_review",
+      "review_authorized_apply",
+      "fresh_dynamic_skill_readback_and_history"
+    ]
+  }
+}
