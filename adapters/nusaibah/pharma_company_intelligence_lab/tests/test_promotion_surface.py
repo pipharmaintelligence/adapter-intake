@@ -8,6 +8,7 @@ ASSET_ROOT = Path(__file__).resolve().parents[1]
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 
 EXPECTED_REVIEWED_HELPERS = {
+    "legacy_preparation_helpers_v0_1_21.py",
     "input_contract.py",
     "dossier_contract.py",
     "memory_contract.py",
@@ -21,25 +22,34 @@ EXPECTED_REVIEWED_HELPERS = {
     "portfolio_review_v0_1_17.py",
     "agent_response_recovery_v0_1_17.py",
     "evidence_recovery_v0_1_20.py",
+    "claim_semantics_v0_1_21.py",
+    "claim_evidence_contract_v0_1_21.py",
+    "research_response_contract_v0_1_21.py",
+    "research_claim_evidence_v0_1_21.py",
+    "research_claim_pipeline_v0_1_21.py",
+    "research_section_projection_v0_1_21.py",
+    "research_execution_v0_1_21.py",
+    "candidate_validation_v0_1_21.py",
+    "memory_citation_selection_v0_1_21.py",
+    "methodology_learning_v0_1_21.py",
+    "preparation_context_v0_1_21.py",
+    "company_result_v0_1_21.py",
+    "company_preparation_v0_1_21.py",
+    "review_packet_v0_1_21.py",
+    "orchestration_v0_1_21.py",
+}
+
+EXPECTED_REVIEWED_SUPPORT_FILES = {
+    "pharma_roles_v0_1_21.json",
+    "materialization_promotion_acceptance_v0_1_21.json",
 }
 
 EXPECTED_RUNTIME_FILES = {
-    "nusaibah_pharma_company_intelligence_lab_adapter.py",
+    "nusaibah_pharma_company_intelligence_lab_v0_1_21_adapter.py",
     "nusaibah_pharma_company_intelligence_lab.asset.json",
     "adapter.dependencies.json",
-    "input_contract.py",
-    "dossier_contract.py",
-    "memory_contract.py",
-    "agent_contract.py",
-    "critic_diagnostics_v0_1_13.py",
-    "company_context_contract_v0_1_14.py",
-    "company_context_contract_v0_1_15.py",
-    "methodology_contract.py",
-    "review_packet_v0_1_16.py",
-    "research_diagnostics_v0_1_17.py",
-    "portfolio_review_v0_1_17.py",
-    "agent_response_recovery_v0_1_17.py",
-    "evidence_recovery_v0_1_20.py",
+    *EXPECTED_REVIEWED_HELPERS,
+    *EXPECTED_REVIEWED_SUPPORT_FILES,
     "README.md",
 }
 
@@ -56,28 +66,48 @@ def _list_under(lines: list[str], key: str) -> list[str]:
     return values
 
 
+def _scalar(lines: list[str], key: str) -> str:
+    prefix = f"{key}:"
+    for line in lines:
+        if line.startswith(prefix):
+            return line.split(":", 1)[1].strip()
+    raise AssertionError(f"Missing {key} in adapter.yaml")
+
+
 class PromotionSurfaceTests(unittest.TestCase):
     def test_runtime_materialization_surface_excludes_evaluation_and_test_scaffolding(self) -> None:
         text = ADAPTER_YAML.read_text(encoding="utf-8")
         lines = text.splitlines()
 
         reviewed_helpers = set(_list_under(lines, "reviewed_helpers"))
+        reviewed_support = set(_list_under(lines, "reviewed_support_files"))
         optional_files = set(_list_under(lines, "optional_files"))
+        adapter_module = _scalar(lines, "adapter_module")
+        manifest = _scalar(lines, "manifest")
 
         self.assertEqual(reviewed_helpers, EXPECTED_REVIEWED_HELPERS)
+        self.assertEqual(reviewed_support, EXPECTED_REVIEWED_SUPPORT_FILES)
         self.assertEqual(optional_files, {"README.md"})
         self.assertNotIn("tests", text)
         self.assertNotIn("evaluation", text)
         self.assertNotIn("stubs", text)
 
         declared_runtime_files = {
-            "nusaibah_pharma_company_intelligence_lab_adapter.py",
-            "nusaibah_pharma_company_intelligence_lab.asset.json",
+            adapter_module,
+            manifest,
             "adapter.dependencies.json",
             *reviewed_helpers,
+            *reviewed_support,
             *optional_files,
         }
         self.assertEqual(declared_runtime_files, EXPECTED_RUNTIME_FILES)
+        historical_manifest = (
+            ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
+        )
+        self.assertTrue(historical_manifest.exists())
+        self.assertIn(historical_manifest.name, declared_runtime_files)
+        import json
+        self.assertEqual({"0.1.21"}, set(json.loads(historical_manifest.read_text(encoding="utf-8"))["versions"]))
 
     def test_wp_reference_modules_remain_under_tests_only(self) -> None:
         evaluation_root = ASSET_ROOT / "tests" / "evaluation"

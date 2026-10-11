@@ -12,7 +12,7 @@ sys.path.insert(0, str(ASSET_ROOT))
 
 import agent_contract as legacy
 import critic_diagnostics_v0_1_13 as diagnostic
-import nusaibah_pharma_company_intelligence_lab_adapter as adapter
+import legacy_preparation_helpers_v0_1_21 as adapter
 import test_orchestration_preview as orchestration
 from test_critic_plan_contract import _critic_payload
 

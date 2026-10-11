@@ -9,7 +9,7 @@ from unittest.mock import patch
 ASSET_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ASSET_ROOT))
 
-import nusaibah_pharma_company_intelligence_lab_adapter as adapter_module  # noqa: E402
+import legacy_preparation_helpers_v0_1_21 as adapter_module  # noqa: E402
 from memory_contract import MEMORY_TARGET_SECTION, MemoryCandidate  # noqa: E402
 
 

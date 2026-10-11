@@ -1,3 +1,10 @@
+"""Version-owned preparation helpers copied from the 0.1.20 source.
+
+The compatibility facade is deliberately not an Adapter subclass: it supplies
+unchanged preparation helpers and legacy fixture behavior without registering
+another production identity. Published historical adapter files are preserved
+by Assets materialization and are never replaced by this helper.
+"""
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -6,7 +13,6 @@ from hashlib import sha256
 from threading import Lock
 from typing import Any, ClassVar
 
-from adapters.base import Adapter
 
 try:
     from .agent_contract import (
@@ -1644,7 +1650,7 @@ def _normalize_governed_company_record(record: dict[str, Any]) -> dict[str, Any]
     return normalized
 
 
-class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter):
+class NusaibahPharmaCompanyIntelligenceLabAdapter:
     """Run a governed multi-company intelligence and memory-improvement pipeline.
 
     The adapter owns deterministic orchestration, schema validation, section

@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-import nusaibah_pharma_company_intelligence_lab_adapter as adapter
+import legacy_preparation_helpers_v0_1_21 as adapter
 import review_packet_v0_1_16 as packet
 from devtools.dynamic_skill_runtime import DynamicSkillRuntimeError
 import test_orchestration_preview as orchestration

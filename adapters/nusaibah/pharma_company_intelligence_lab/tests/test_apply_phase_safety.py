@@ -10,8 +10,8 @@ TEST_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ASSET_ROOT))
 sys.path.insert(0, str(TEST_ROOT))
 
-import nusaibah_pharma_company_intelligence_lab_adapter as adapter_module  # noqa: E402
-from nusaibah_pharma_company_intelligence_lab_adapter import (  # noqa: E402
+import legacy_preparation_helpers_v0_1_21 as adapter_module  # noqa: E402
+from legacy_preparation_helpers_v0_1_21 import (  # noqa: E402
     NusaibahPharmaCompanyIntelligenceLabAdapter,
 )
 from test_orchestration_preview import (  # noqa: E402

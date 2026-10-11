@@ -8,64 +8,49 @@ import textwrap
 import unittest
 from pathlib import Path
 
+
 ASSET_ROOT = Path(__file__).resolve().parents[1]
-ADAPTER_MODULE = "nusaibah_pharma_company_intelligence_lab_adapter.py"
-ASSET_VERSION = "0.1.20"
-HELPERS = (
-    "input_contract.py",
-    "dossier_contract.py",
-    "memory_contract.py",
-    "agent_contract.py",
-    "critic_diagnostics_v0_1_13.py",
-    "company_context_contract_v0_1_15.py",
-    "methodology_contract.py",
-    "review_packet_v0_1_16.py",
-    "research_diagnostics_v0_1_17.py",
-    "portfolio_review_v0_1_17.py",
-    "agent_response_recovery_v0_1_17.py",
-    "evidence_recovery_v0_1_20.py",
-)
+ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
+NEW_ADAPTER_MODULE = "nusaibah_pharma_company_intelligence_lab_v0_1_21_adapter.py"
+HISTORICAL_ADAPTER_MODULE = "legacy_preparation_helpers_v0_1_21.py"
+NEW_CLASS = "NusaibahPharmaCompanyIntelligenceLabV021Adapter"
+HISTORICAL_CLASS = "NusaibahPharmaCompanyIntelligenceLabAdapter"
+
+
+def _yaml_list(key: str) -> tuple[str, ...]:
+    lines = ADAPTER_YAML.read_text(encoding="utf-8").splitlines()
+    start = lines.index(f"{key}:") + 1
+    values: list[str] = []
+    for line in lines[start:]:
+        if line and not line.startswith(" "):
+            break
+        stripped = line.strip()
+        if stripped.startswith("- "):
+            values.append(stripped[2:].strip())
+    return tuple(values)
+
+
+def _python_materialization_files() -> tuple[str, ...]:
+    return tuple(
+        dict.fromkeys((NEW_ADAPTER_MODULE, *_yaml_list("reviewed_helpers")))
+    )
+
+
+def _adapter_stub() -> str:
+    return "class Adapter:\n    pass\n"
 
 
 class ImportContextTests(unittest.TestCase):
-    def test_candidate_imports_in_flat_and_packaged_contexts(self) -> None:
-        candidate = "nusaibah_pharma_company_intelligence_lab_adapter.py"
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            package = root / "candidate_package"
-            package.mkdir()
-            (package / "__init__.py").write_text("", encoding="utf-8")
-            for name in (*HELPERS, candidate, "critic_diagnostics_v0_1_13.py"):
-                shutil.copy2(ASSET_ROOT / name, package / name)
-            code = textwrap.dedent(f"""
-                import importlib, sys, types
-                base = types.ModuleType("adapters.base")
-                base.Adapter = type("Adapter", (), {{}})
-                sys.modules["adapters.base"] = base
-                sys.path.insert(0, {str(root)!r})
-                sys.path.insert(0, {str(package)!r})
-                for name in ["candidate_package.{candidate[:-3]}", "{candidate[:-3]}"]:
-                    module = importlib.import_module(name)
-                    assert module.NusaibahPharmaCompanyIntelligenceLabAdapter.version == "0.1.20"
-                    helper = importlib.import_module("candidate_package.critic_diagnostics_v0_1_13")
-                    error = helper.CriticContractValidationError("field_invalid", "recommendation")
-                    assert error.proof_failure_detail["stage"] == "critic_payload"
-            """)
-            subprocess.run([sys.executable, "-c", code], check=True)
-
-    def test_local_root_import(self) -> None:
+    def test_local_root_imports_new_entrypoint_and_non_adapter_helpers(self) -> None:
         code = textwrap.dedent(
             f"""
             import sys
             import types
             from pathlib import Path
 
-            class Adapter:
-                pass
-
             adapters = types.ModuleType("adapters")
             base = types.ModuleType("adapters.base")
-            base.Adapter = Adapter
+            base.Adapter = type("Adapter", (), {{}})
             adapters.base = base
             sys.modules["adapters"] = adapters
             sys.modules["adapters.base"] = base
@@ -73,14 +58,19 @@ class ImportContextTests(unittest.TestCase):
             asset_root = Path({str(ASSET_ROOT)!r})
             sys.path.insert(0, str(asset_root))
 
-            import nusaibah_pharma_company_intelligence_lab_adapter as module
-            assert module.NusaibahPharmaCompanyIntelligenceLabAdapter.key == "nusaibah.pharma_company_intelligence_lab"
-            assert module.NusaibahPharmaCompanyIntelligenceLabAdapter.version == {ASSET_VERSION!r}
+            from {NEW_ADAPTER_MODULE[:-3]} import {NEW_CLASS}
+            from {HISTORICAL_ADAPTER_MODULE[:-3]} import {HISTORICAL_CLASS}
+
+            assert {NEW_CLASS}.key == "nusaibah.pharma_company_intelligence_lab"
+            assert {NEW_CLASS}.version == "0.1.21"
+            assert {HISTORICAL_CLASS}.key == "nusaibah.pharma_company_intelligence_lab"
+            assert {HISTORICAL_CLASS}.version == "0.1.20"
+            assert not issubclass({HISTORICAL_CLASS}, base.Adapter)
             """
         )
         subprocess.run([sys.executable, "-c", code], check=True)
 
-    def test_packaged_dotted_import(self) -> None:
+    def test_packaged_dotted_imports_new_entrypoint_and_non_adapter_helpers(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             package = (
@@ -106,24 +96,42 @@ class ImportContextTests(unittest.TestCase):
             adapters.mkdir()
             (adapters / "__init__.py").write_text("", encoding="utf-8")
             (adapters / "base.py").write_text(
-                "class Adapter:\n    pass\n",
+                _adapter_stub(),
                 encoding="utf-8",
             )
 
-            shutil.copy2(ASSET_ROOT / ADAPTER_MODULE, package / ADAPTER_MODULE)
-            for helper in HELPERS:
-                shutil.copy2(ASSET_ROOT / helper, package / helper)
+            for filename in _python_materialization_files():
+                shutil.copy2(ASSET_ROOT / filename, package / filename)
 
+            package_name = (
+                "python_runtime.adapters.intake.nusaibah."
+                "pharma_company_intelligence_lab"
+            )
             code = textwrap.dedent(
                 f"""
                 import sys
                 sys.path.insert(0, {str(root)!r})
-                from python_runtime.adapters.intake.nusaibah.pharma_company_intelligence_lab.nusaibah_pharma_company_intelligence_lab_adapter import NusaibahPharmaCompanyIntelligenceLabAdapter
-                assert NusaibahPharmaCompanyIntelligenceLabAdapter.key == "nusaibah.pharma_company_intelligence_lab"
-                assert NusaibahPharmaCompanyIntelligenceLabAdapter.version == {ASSET_VERSION!r}
+
+                from {package_name}.{NEW_ADAPTER_MODULE[:-3]} import {NEW_CLASS}
+                from {package_name}.{HISTORICAL_ADAPTER_MODULE[:-3]} import {HISTORICAL_CLASS}
+
+                assert {NEW_CLASS}.key == "nusaibah.pharma_company_intelligence_lab"
+                assert {NEW_CLASS}.version == "0.1.21"
+                assert {HISTORICAL_CLASS}.version == "0.1.20"
+                from adapters.base import Adapter
+                assert not issubclass({HISTORICAL_CLASS}, Adapter)
                 """
             )
             subprocess.run([sys.executable, "-c", code], check=True)
+
+    def test_every_declared_python_file_is_present_for_materialization(self) -> None:
+        files = _python_materialization_files()
+        self.assertEqual(len(files), len(set(files)))
+        self.assertIn(NEW_ADAPTER_MODULE, files)
+        self.assertIn(HISTORICAL_ADAPTER_MODULE, files)
+        for filename in files:
+            with self.subTest(filename=filename):
+                self.assertTrue((ASSET_ROOT / filename).is_file())
 
 
 if __name__ == "__main__":
