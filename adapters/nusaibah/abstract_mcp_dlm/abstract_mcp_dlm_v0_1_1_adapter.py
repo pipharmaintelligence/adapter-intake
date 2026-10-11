@@ -86,8 +86,11 @@ class AbstractMcpDlmReadAdapter(Adapter):
         max_records = MAX_SCHEMA_FIELDS if operation == "nodes.schema" else MAX_PAGE_SIZE
         if len(raw_records) > max_records:
             raise DlmMcpReadError("dlm_mcp_response_limit_exceeded")
+        # A backend must not exceed the page-size ceiling selected by the caller.
+        if operation != "nodes.schema" and len(raw_records) > tool_input["limit"]:
+            raise DlmMcpReadError("dlm_mcp_response_limit_exceeded")
 
-        records = self._project(operation, raw_records, request)
+        records = self._project(operation, raw_records, tool_input)
         projected: dict[str, Any] = {
             "schema_version": "dlm_mcp_read.v1",
             "operation": operation,
@@ -145,11 +148,11 @@ class AbstractMcpDlmReadAdapter(Adapter):
     def _project(
         operation: str,
         raw_records: list[Any],
-        request: dict[str, Any],
+        selectors: dict[str, Any],
     ) -> list[dict[str, Any]]:
         """Positive allowlist: never forward the raw tool or Core envelope."""
         if operation == "nodes.schema":
-            return _schema_records(raw_records, request)
+            return _schema_records(raw_records, selectors)
         projected = []
         for row in raw_records:
             if not isinstance(row, dict):
@@ -161,7 +164,7 @@ class AbstractMcpDlmReadAdapter(Adapter):
                 continue
             # Core may return node records that contain storage/source metadata.
             # Only these deliberately selected fields leave the adapter.
-            requested_lake = request["lake_id"]
+            requested_lake = selectors["lake_id"]
             if "lake_id" in row and _identifier(row["lake_id"]) != requested_lake:
                 raise DlmMcpReadError("dlm_mcp_scope_result_mismatch")
             node_key = _identifier(row.get("node_key"))
