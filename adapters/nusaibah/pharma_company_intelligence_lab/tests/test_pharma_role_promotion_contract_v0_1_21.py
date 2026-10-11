@@ -24,7 +24,23 @@ from research_claim_evidence_v0_1_21 import (  # noqa: E402
 ROLE_CATALOG = ASSET_ROOT / "pharma_roles_v0_1_21.json"
 ACCEPTANCE = ASSET_ROOT / "materialization_promotion_acceptance_v0_1_21.json"
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
-MANIFEST = ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
+MANIFEST = (
+    ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_v0_1_21.asset.json"
+)
+CHANGED_RESEARCH_ROLES = set(RESEARCH_ROLES)
+EXPECTED_MODULAR_HELPERS = {
+    "nusaibah_pharma_company_intelligence_lab_adapter.py",
+    "claim_evidence_contract_v0_1_21.py",
+    "research_response_contract_v0_1_21.py",
+    "research_claim_evidence_v0_1_21.py",
+    "research_claim_pipeline_v0_1_21.py",
+    "research_execution_v0_1_21.py",
+    "memory_citation_selection_v0_1_21.py",
+    "company_result_v0_1_21.py",
+    "company_preparation_v0_1_21.py",
+    "review_packet_v0_1_21.py",
+    "orchestration_v0_1_21.py",
+}
 
 
 @dataclass(frozen=True)
@@ -53,6 +69,14 @@ def _yaml_lists(path: Path) -> dict[str, list[str]]:
     return result
 
 
+def _yaml_scalar(path: Path, key: str) -> str:
+    prefix = f"{key}:"
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        if raw.startswith(prefix):
+            return raw.split(":", 1)[1].strip()
+    raise AssertionError(f"Missing {key}")
+
+
 def _claim(local_id: str, section_id: str, locator: str) -> dict[str, object]:
     return {
         "claim_id": local_id,
@@ -66,23 +90,16 @@ def _claim(local_id: str, section_id: str, locator: str) -> dict[str, object]:
 
 
 def _payload(role: str, claims: list[dict[str, object]]) -> dict[str, object]:
-    return {
-        "role": role,
-        "claims": claims,
-    }
+    return {"role": role, "claims": claims}
 
 
 class PharmaRolePromotionContractTest(unittest.TestCase):
     def test_adapter_declares_modular_helpers_and_reviewed_support(self) -> None:
         declared = _yaml_lists(ADAPTER_YAML)
         self.assertTrue(
-            {
-                "claim_evidence_contract_v0_1_21.py",
-                "research_response_contract_v0_1_21.py",
-                "research_claim_evidence_v0_1_21.py",
-                "research_claim_pipeline_v0_1_21.py",
-                "memory_citation_selection_v0_1_21.py",
-            }.issubset(set(declared["reviewed_helpers"]))
+            EXPECTED_MODULAR_HELPERS.issubset(
+                set(declared["reviewed_helpers"])
+            )
         )
         self.assertEqual(
             {
@@ -91,31 +108,47 @@ class PharmaRolePromotionContractTest(unittest.TestCase):
             },
             set(declared["reviewed_support_files"]),
         )
+        self.assertEqual("0.1.21", _yaml_scalar(ADAPTER_YAML, "asset_version"))
+        self.assertEqual(MANIFEST.name, _yaml_scalar(ADAPTER_YAML, "manifest"))
+        self.assertEqual(
+            "nusaibah_pharma_company_intelligence_lab_v0_1_21_adapter.py",
+            _yaml_scalar(ADAPTER_YAML, "adapter_module"),
+        )
 
-    def test_role_catalog_matches_manifest_and_docstring(self) -> None:
+    def test_role_catalog_matches_new_manifest_and_docstrings(self) -> None:
         catalog = json.loads(ROLE_CATALOG.read_text(encoding="utf-8"))
         manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
         active = manifest["versions"][manifest["default"]]
         catalog_roles = [item["role"] for item in catalog["roles"]]
         manifest_roles = list(active["agents"])
 
+        self.assertEqual("0.1.21", manifest["default"])
         self.assertEqual(manifest_roles, catalog_roles)
         self.assertEqual("0.1.21", catalog["target_asset_version"])
-        self.assertEqual(set(RESEARCH_ROLES), {
-            item["role"]
-            for item in catalog["roles"]
-            if item["claim_evidence_owner"]
-        })
-        self.assertEqual(set(RESEARCH_ROLES), {
-            item["role"]
-            for item in catalog["roles"]
-            if item["search_authority"]
-        })
-        self.assertFalse(any(item["mutation_authority"] for item in catalog["roles"]))
+        self.assertEqual(
+            set(RESEARCH_ROLES),
+            {
+                item["role"]
+                for item in catalog["roles"]
+                if item["claim_evidence_owner"]
+            },
+        )
+        self.assertEqual(
+            set(RESEARCH_ROLES),
+            {
+                item["role"]
+                for item in catalog["roles"]
+                if item["search_authority"]
+            },
+        )
+        self.assertFalse(
+            any(item["mutation_authority"] for item in catalog["roles"])
+        )
 
         for module_name in (
             "research_claim_evidence_v0_1_21",
             "research_claim_pipeline_v0_1_21",
+            "nusaibah_pharma_company_intelligence_lab_v0_1_21_adapter",
         ):
             module = importlib.import_module(module_name)
             docstring = module.__doc__ or ""
@@ -129,6 +162,22 @@ class PharmaRolePromotionContractTest(unittest.TestCase):
         for role in RESEARCH_ROLES:
             self.assertIn(role, response_docstring)
 
+    def test_new_manifest_versions_only_changed_research_agents(self) -> None:
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        agents = manifest["versions"]["0.1.21"]["agents"]
+
+        for role, agent in agents.items():
+            with self.subTest(role=role):
+                if role in CHANGED_RESEARCH_ROLES:
+                    self.assertEqual("1.0.8", agent["contract_version"])
+                    self.assertIn("definition", agent)
+                    self.assertEqual(
+                        "1.0.8",
+                        agent["definition"]["chain"]["version"],
+                    )
+                else:
+                    self.assertNotIn("definition", agent)
+
     def test_materialization_and_promotion_acceptance_are_explicit(self) -> None:
         contract = json.loads(ACCEPTANCE.read_text(encoding="utf-8"))
         self.assertEqual(
@@ -138,11 +187,17 @@ class PharmaRolePromotionContractTest(unittest.TestCase):
         self.assertEqual("0.1.21", contract["target_asset_version"])
         self.assertEqual(
             {f"M{index:02d}" for index in range(1, 11)},
-            {item["id"] for item in contract["materialization"]["required_checks"]},
+            {
+                item["id"]
+                for item in contract["materialization"]["required_checks"]
+            },
         )
         self.assertEqual(
             {f"P{index:02d}" for index in range(1, 11)},
-            {item["id"] for item in contract["promotion"]["required_checks"]},
+            {
+                item["id"]
+                for item in contract["promotion"]["required_checks"]
+            },
         )
         later = set(contract["promotion"]["separate_later_proofs"])
         self.assertIn("official_runtime_delivery", later)
@@ -170,12 +225,14 @@ class PharmaRolePromotionContractTest(unittest.TestCase):
 
         accepted_id = qualified_claim_id("portfolio_researcher", "accepted")
         withheld_id = qualified_claim_id("portfolio_researcher", "withheld")
-        self.assertEqual((accepted_id,), tuple(
-            item["claim_id"] for item in projection.accepted_claims
-        ))
-        self.assertEqual((withheld_id,), tuple(
-            item["claim_id"] for item in projection.withheld_claims
-        ))
+        self.assertEqual(
+            (accepted_id,),
+            tuple(item["claim_id"] for item in projection.accepted_claims),
+        )
+        self.assertEqual(
+            (withheld_id,),
+            tuple(item["claim_id"] for item in projection.withheld_claims),
+        )
         self.assertEqual(1, len(projection.issues))
         self.assertEqual("claim_withheld", projection.issues[0]["action"])
 
@@ -183,7 +240,9 @@ class PharmaRolePromotionContractTest(unittest.TestCase):
         sections = {
             "portfolio_researcher": "company_profile",
             "market_researcher": "markets_commercial_signals",
-            "regulatory_risk_researcher": "regulatory_clinical_risk_signals",
+            "regulatory_risk_researcher": (
+                "regulatory_clinical_risk_signals"
+            ),
         }
         projections = []
         for role in reversed(RESEARCH_ROLES):
@@ -194,7 +253,13 @@ class PharmaRolePromotionContractTest(unittest.TestCase):
                     pass_number=1,
                     payload=_payload(
                         role,
-                        [_claim(f"{role}-claim", sections[role], citation.locator)],
+                        [
+                            _claim(
+                                f"{role}-claim",
+                                sections[role],
+                                citation.locator,
+                            )
+                        ],
                     ),
                     citations=[citation],
                 )
