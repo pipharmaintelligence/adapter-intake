@@ -18,6 +18,7 @@ from typing import Any, Mapping
 
 try:
     from .agent_contract import MAX_CLAIMS
+    from .claim_semantics_v0_1_21 import semantic_context_contract
     from .research_diagnostics_v0_1_17 import (
         repair_input_payload as _repair_input_payload_v0_1_17,
         require_repair_preserves_evidence as _require_repair_preserves_v0_1_17,
@@ -26,6 +27,7 @@ try:
     )
 except ImportError:  # pragma: no cover - flat intake execution
     from agent_contract import MAX_CLAIMS
+    from claim_semantics_v0_1_21 import semantic_context_contract
     from research_diagnostics_v0_1_17 import (
         repair_input_payload as _repair_input_payload_v0_1_17,
         require_repair_preserves_evidence as _require_repair_preserves_v0_1_17,
@@ -59,6 +61,7 @@ _CLAIM_FIELDS = {
     "inference",
     "citation_locators",
     "evidence_qualifiers",
+    "semantic_context",
 }
 _BASE_CLAIM_FIELDS = (
     "claim_id",
@@ -93,12 +96,12 @@ def validate_research_payload_v0_1_21(
     role: str,
     company_id: int,
 ) -> dict[str, Any]:
-    """Validate one exact 0.1.21 research payload and preserve evidence fields.
+    """Validate one exact v2 payload while preserving claim-local defects.
 
-    The retained 0.1.17 validator remains the authority for historical section,
-    claim, identity and uncertainty semantics. This wrapper validates the new
-    claim-level locator and qualifier fields, then returns one canonical v2
-    payload without changing the input object.
+    The retained validator remains the authority for historical section, claim,
+    identity and uncertainty semantics. Citation absence and semantic-rule
+    failures are intentionally not role-level schema failures: later claim-level
+    projection withholds only the affected claim and preserves valid siblings.
     """
 
     if not isinstance(value, Mapping) or set(value) != _RESEARCH_FIELDS:
@@ -117,10 +120,14 @@ def validate_research_payload_v0_1_21(
         raise _error(role, "bounded_list_required", "claims")
 
     base_claims: list[dict[str, Any]] = []
-    evidence_fields: list[tuple[list[str], list[str]]] = []
+    evidence_fields: list[tuple[list[str], list[str], dict[str, Any]]] = []
     for raw in raw_claims:
         if not isinstance(raw, Mapping) or set(raw) != _CLAIM_FIELDS:
             raise _error(role, "shape", "claims")
+        semantic_context = raw.get("semantic_context")
+        if not isinstance(semantic_context, Mapping):
+            raise _error(role, "shape", "claims.semantic_context")
+
         base_claims.append({field: raw[field] for field in _BASE_CLAIM_FIELDS})
         locators = _text_list(
             raw.get("citation_locators"),
@@ -128,7 +135,7 @@ def validate_research_payload_v0_1_21(
             field="claims.citation_locators",
             maximum=MAX_CITATION_LOCATORS_PER_CLAIM,
             max_chars=MAX_CITATION_LOCATOR_CHARS,
-            minimum=1,
+            minimum=0,
             preserve_internal_whitespace=True,
         )
         qualifiers = _text_list(
@@ -140,7 +147,9 @@ def validate_research_payload_v0_1_21(
             minimum=0,
             preserve_internal_whitespace=False,
         )
-        evidence_fields.append((locators, qualifiers))
+        evidence_fields.append(
+            (locators, qualifiers, deepcopy(dict(semantic_context)))
+        )
 
     base_payload = {
         "company_id": company_id,
@@ -166,7 +175,7 @@ def validate_research_payload_v0_1_21(
         raise _error(role, "field_invalid", "research_payload") from None
 
     claims: list[dict[str, Any]] = []
-    for claim, (locators, qualifiers) in zip(
+    for claim, (locators, qualifiers, semantic_context) in zip(
         validated["claims"],
         evidence_fields,
     ):
@@ -175,6 +184,7 @@ def validate_research_payload_v0_1_21(
                 **claim,
                 "citation_locators": locators,
                 "evidence_qualifiers": qualifiers,
+                "semantic_context": semantic_context,
             }
         )
 
@@ -194,7 +204,7 @@ def research_validation_contract_v0_1_21(
     role: str,
     company_id: int,
 ) -> dict[str, Any]:
-    """Expose exact v2 primitive fields and bounds to the research formatter."""
+    """Expose exact v2 primitive fields and claim-local withholding rules."""
 
     contract = deepcopy(
         _research_validation_contract_v0_1_17(
@@ -205,13 +215,14 @@ def research_validation_contract_v0_1_21(
     fields = contract["claims"]["fields"]
     fields["citation_locators"] = {
         "type": "array",
-        "min_items": 1,
+        "min_items": 0,
         "max_items": MAX_CITATION_LOCATORS_PER_CLAIM,
         "item_type": "string",
         "nonempty_items": True,
         "unique": True,
         "max_item_chars": MAX_CITATION_LOCATOR_CHARS,
         "authority": "must_exactly_match_runtime_admitted_citation_locator",
+        "empty_action": "claim_withheld",
     }
     fields["evidence_qualifiers"] = {
         "type": "array",
@@ -222,10 +233,13 @@ def research_validation_contract_v0_1_21(
         "unique": True,
         "max_item_chars": MAX_EVIDENCE_QUALIFIER_CHARS,
     }
+    fields["semantic_context"] = semantic_context_contract()
     contract["claim_evidence"] = {
         "schema_version": RESEARCH_SCHEMA_VERSION,
         "unknown_locator_action": "claim_withheld",
         "missing_locator_action": "claim_withheld",
+        "invalid_semantic_context_action": "claim_withheld",
+        "valid_sibling_action": "preserve",
         "model_authored_citation_ids_allowed": False,
     }
     return contract
@@ -246,8 +260,18 @@ def project_repair_input_v0_1_21(value: Mapping[str, Any]) -> dict[str, Any]:
     for raw, target in zip(raw_claims, projected_claims):
         if not isinstance(raw, Mapping) or not isinstance(target, dict):
             continue
-        target["citation_locators"] = _project_text_list(raw.get("citation_locators"))
-        target["evidence_qualifiers"] = _project_text_list(raw.get("evidence_qualifiers"))
+        target["citation_locators"] = _project_text_list(
+            raw.get("citation_locators")
+        )
+        target["evidence_qualifiers"] = _project_text_list(
+            raw.get("evidence_qualifiers")
+        )
+        semantic_context = raw.get("semantic_context")
+        target["semantic_context"] = (
+            deepcopy(dict(semantic_context))
+            if isinstance(semantic_context, Mapping)
+            else None
+        )
     return projected
 
 
@@ -257,7 +281,7 @@ def require_repair_preserves_claim_evidence_v0_1_21(
     *,
     role: str,
 ) -> None:
-    """Require a resolver to preserve every locator and qualifier exactly."""
+    """Require a resolver to preserve locators, qualifiers and semantics."""
 
     _require_repair_preserves_v0_1_17(
         dict(original),
@@ -275,8 +299,16 @@ def require_repair_preserves_claim_evidence_v0_1_21(
         if not isinstance(before, Mapping) or not isinstance(after, Mapping):
             raise _error(role, "repair_changed_evidence", "claims")
         for field in ("citation_locators", "evidence_qualifiers"):
-            if _exact_string_list(before.get(field)) != _exact_string_list(after.get(field)):
+            if _exact_string_list(before.get(field)) != _exact_string_list(
+                after.get(field)
+            ):
                 raise _error(role, "repair_changed_evidence", f"claims.{field}")
+        if before.get("semantic_context") != after.get("semantic_context"):
+            raise _error(
+                role,
+                "repair_changed_evidence",
+                "claims.semantic_context",
+            )
 
 
 def _text_list(
@@ -313,7 +345,9 @@ def _project_text_list(value: Any) -> Any:
 
 
 def _exact_string_list(value: Any) -> tuple[str, ...] | None:
-    if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+    if not isinstance(value, list) or any(
+        not isinstance(item, str) for item in value
+    ):
         return None
     return tuple(item.strip() for item in value)
 
