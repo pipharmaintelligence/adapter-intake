@@ -8,6 +8,11 @@ ASSET_ROOT = Path(__file__).resolve().parents[1]
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 
 EXPECTED_REVIEWED_HELPERS = {
+    "nusaibah_pharma_company_intelligence_lab_v0_1_22_adapter.py",
+    "legacy_preparation_helpers_v0_1_23.py",
+    "research_execution_v0_1_23.py",
+    "company_preparation_v0_1_23.py",
+    "orchestration_v0_1_23.py",
     "nusaibah_pharma_company_intelligence_lab_v0_1_21_adapter.py",
     "legacy_preparation_helpers_v0_1_21.py",
     "input_contract.py",
@@ -41,6 +46,8 @@ EXPECTED_REVIEWED_HELPERS = {
 }
 
 EXPECTED_REVIEWED_SUPPORT_FILES = {
+    "pharma_roles_v0_1_23.json",
+    "materialization_promotion_acceptance_v0_1_23.json",
     "pharma_roles_v0_1_21.json",
     "materialization_promotion_acceptance_v0_1_21.json",
     "pharma_roles_v0_1_22.json",
@@ -49,7 +56,7 @@ EXPECTED_REVIEWED_SUPPORT_FILES = {
 }
 
 EXPECTED_RUNTIME_FILES = {
-    "nusaibah_pharma_company_intelligence_lab_v0_1_22_adapter.py",
+    "nusaibah_pharma_company_intelligence_lab_v0_1_23_adapter.py",
     "nusaibah_pharma_company_intelligence_lab.asset.json",
     "adapter.dependencies.json",
     *EXPECTED_REVIEWED_HELPERS,
@@ -111,7 +118,7 @@ class PromotionSurfaceTests(unittest.TestCase):
         self.assertTrue(current_manifest.exists())
         self.assertIn(current_manifest.name, declared_runtime_files)
         import json
-        self.assertEqual({"0.1.22"}, set(json.loads(current_manifest.read_text(encoding="utf-8"))["versions"]))
+        self.assertEqual({"0.1.23"}, set(json.loads(current_manifest.read_text(encoding="utf-8"))["versions"]))
 
     def test_wp_reference_modules_remain_under_tests_only(self) -> None:
         evaluation_root = ASSET_ROOT / "tests" / "evaluation"

@@ -1,5 +1,24 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.23 business-status recovery
+
+A non-completed status inside a completed Agent's business JSON now yields an
+unresolved issue and an incomplete retained preview. It is never rewritten as
+successful, and no backup is called to change that verdict. Valid research
+siblings and a previous validated portfolio pass remain inspectable; other
+companies continue. A non-completed backup response also stops after that one
+backup. Diagnostics identify the expected role, `status` field and static rule.
+
+Runtime completion, company/role identity, provider and authority failures remain
+strict. The exact 0.1.22 Agent definitions, response budgets, 600-second requests,
+1,800-second deadline and finite call limits remain unchanged. Historical helpers
+and entrypoints are preserved through version-owned preparation modules.
+
+0.1.23 remains preview-only. Retaining incomplete work does not authorize memory
+or methodology writes. See the intake
+[`docs/pharma-business-status-recovery-developer-guide.md`](../../../docs/pharma-business-status-recovery-developer-guide.md)
+for the failure evidence, handling matrix and official promotion procedure.
+
 ## 0.1.22 prompt budgets and thinking headroom
 
 Every Agent step now receives explicit response-size guidance in its prompt:

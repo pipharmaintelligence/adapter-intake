@@ -27,7 +27,7 @@ def _json(name: str) -> dict:
 
 class ResponseBudgetV022Tests(unittest.TestCase):
     def setUp(self) -> None:
-        self.manifest = _json("nusaibah_pharma_company_intelligence_lab.asset.json")
+        self.manifest = _json("tests/fixtures/release-0.1.22/nusaibah_pharma_company_intelligence_lab.asset.json")
         self.active = self.manifest["versions"]["0.1.22"]
         self.previous = _json(
             "tests/fixtures/release-0.1.21/nusaibah_pharma_company_intelligence_lab.asset.json"
@@ -91,7 +91,7 @@ class ResponseBudgetV022Tests(unittest.TestCase):
         )
         self.assertEqual("0.1.22", _json("pharma_roles_v0_1_22.json")["target_asset_version"])
         self.assertEqual("0.1.22", _json("materialization_promotion_acceptance_v0_1_22.json")["target_asset_version"])
-        yaml = (ASSET_ROOT / "adapter.yaml").read_text(encoding="utf-8")
+        yaml = (ASSET_ROOT / "tests/fixtures/release-0.1.22/adapter.yaml").read_text(encoding="utf-8")
         self.assertIn("asset_version: 0.1.22\n", yaml)
         self.assertIn("adapter_module: nusaibah_pharma_company_intelligence_lab_v0_1_22_adapter.py", yaml)
         self.assertIn("  - nusaibah_pharma_company_intelligence_lab_v0_1_21_adapter.py", yaml)
