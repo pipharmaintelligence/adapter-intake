@@ -95,6 +95,15 @@ package imports/catalog discovery. Exercise the packaged adapter with determinis
 runtime fixtures before any provider call. Do not patch the E installed wheel or
 bump the generic runtime to deliver this content repair.
 
+Keep the intake manifest at the canonical filename
+`nusaibah_pharma_company_intelligence_lab.asset.json`, containing only 0.1.21.
+The current Assets materializer composes historical versions by matching that
+filename; a renamed manifest would bypass preservation. The version-owned
+`legacy_preparation_helpers_v0_1_21.py` has no Adapter subclass or runtime identity.
+It supplies preparation functions without overwriting a historical entrypoint or
+colliding with the packaged 0.1.20 Adapter. Catalog verification must resolve every
+pre-existing version, not merely find class identities syntactically.
+
 Official promotion, exact-version registration/capability admission, live retained
 preview, independent review and approved Skill apply/readback are separate proofs.
 Record each only when it actually passes; a local promotion dry-run is not deployment.

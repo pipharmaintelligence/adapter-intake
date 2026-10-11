@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import nusaibah_pharma_company_intelligence_lab_adapter as adapter
+import legacy_preparation_helpers_v0_1_21 as adapter
 from devtools.dynamic_skill_runtime import DynamicSkillRuntimeError
 from test_orchestration_preview import FakeInputs, FirstRunMethodologyInputs, _fake_citations
 

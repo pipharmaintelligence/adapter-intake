@@ -14,7 +14,7 @@ from input_contract import (  # noqa: E402
     resolve_company_records as resolve_shared_company_records,
     validate_batch_request,
 )
-from nusaibah_pharma_company_intelligence_lab_adapter import resolve_company_records  # noqa: E402
+from legacy_preparation_helpers_v0_1_21 import resolve_company_records  # noqa: E402
 
 
 def _inputs(company_ids: list[int]) -> dict:

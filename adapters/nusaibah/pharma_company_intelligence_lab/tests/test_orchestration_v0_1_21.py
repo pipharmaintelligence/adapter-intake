@@ -4,7 +4,7 @@ import json
 from unittest.mock import patch
 import unittest
 
-import nusaibah_pharma_company_intelligence_lab_adapter as legacy
+import legacy_preparation_helpers_v0_1_21 as legacy
 from claim_semantics_v0_1_21 import SCHEMA_VERSION as SEMANTIC_SCHEMA_VERSION
 from methodology_learning_v0_1_21 import LESSONS, MAX_TOTAL_CHARS, build_methodology_learning_proposal
 from claim_semantics_v0_1_21 import SEMANTIC_RULES

@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 try:
-    from . import nusaibah_pharma_company_intelligence_lab_adapter as legacy
+    from . import legacy_preparation_helpers_v0_1_21 as legacy
     from .candidate_validation_v0_1_21 import CandidateContractError
     from .company_preparation_v0_1_21 import prepare_company_v0_1_21
     from .company_result_v0_1_21 import (
@@ -18,7 +18,7 @@ try:
     )
     from .review_packet_v0_1_21 import build_review_packet_v0_1_21
 except ImportError:  # pragma: no cover - flat intake execution
-    import nusaibah_pharma_company_intelligence_lab_adapter as legacy
+    import legacy_preparation_helpers_v0_1_21 as legacy
     from candidate_validation_v0_1_21 import CandidateContractError
     from company_preparation_v0_1_21 import prepare_company_v0_1_21
     from company_result_v0_1_21 import (

@@ -26,7 +26,7 @@ class RetainedBaselineRegressionTests(unittest.TestCase):
             sys.path.insert(0, str(root / "tests/stubs"))
             sys.path.insert(0, str(root / "tests"))
             sys.path.insert(0, str(root))
-            name = "nusaibah_pharma_company_intelligence_lab_adapter"
+            name = "legacy_preparation_helpers_v0_1_21"
             spec = importlib.util.spec_from_file_location(name, root / "tests/fixtures/baseline-production-{version}.py")
             baseline = importlib.util.module_from_spec(spec)
             sys.modules[name] = baseline

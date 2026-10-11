@@ -7,14 +7,14 @@ from pathlib import Path
 
 ASSET_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = (
-    ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_v0_1_21.asset.json"
+    ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 )
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 ADAPTER_MODULE = (
     ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_v0_1_21_adapter.py"
 )
 HISTORICAL_ADAPTER_MODULE = (
-    ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_adapter.py"
+    ASSET_ROOT / "legacy_preparation_helpers_v0_1_21.py"
 )
 HISTORICAL_MANIFEST = (
     ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
@@ -136,8 +136,12 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
             historical_module,
         )
         self.assertIn(HISTORICAL_ADAPTER_MODULE.name, adapter_yaml)
-        self.assertFalse(HISTORICAL_MANIFEST.exists())
-        self.assertNotIn(HISTORICAL_MANIFEST.name, adapter_yaml)
+        # Canonical filename is required by the existing Assets history merge;
+        # its intake contents still contain only the current version.
+        self.assertEqual(MANIFEST, HISTORICAL_MANIFEST)
+        self.assertIn(MANIFEST.name, adapter_yaml)
+        self.assertEqual({ASSET_VERSION}, set(self.manifest["versions"]))
+        self.assertNotIn("class NusaibahPharmaCompanyIntelligenceLabAdapter(Adapter)", historical_module)
 
     def test_non_agent_business_contract_is_explicitly_frozen(self) -> None:
         self.assertEqual("active", self.version["state"])

@@ -11,10 +11,10 @@ from dataclasses import dataclass
 from typing import Any
 
 try:
-    from . import nusaibah_pharma_company_intelligence_lab_adapter as legacy
+    from . import legacy_preparation_helpers_v0_1_21 as legacy
     from .memory_citation_selection_v0_1_21 import EvidenceSelection
 except ImportError:  # pragma: no cover - flat intake execution
-    import nusaibah_pharma_company_intelligence_lab_adapter as legacy
+    import legacy_preparation_helpers_v0_1_21 as legacy
     from memory_citation_selection_v0_1_21 import EvidenceSelection
 
 

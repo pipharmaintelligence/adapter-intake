@@ -11,7 +11,7 @@ if str(ASSET_ROOT) not in sys.path:
     sys.path.insert(0, str(ASSET_ROOT))
 
 from devtools.dynamic_skill_runtime import DynamicSkillRuntimeError
-from nusaibah_pharma_company_intelligence_lab_adapter import (
+from legacy_preparation_helpers_v0_1_21 import (
     NusaibahPharmaCompanyIntelligenceLabAdapter,
 )
 

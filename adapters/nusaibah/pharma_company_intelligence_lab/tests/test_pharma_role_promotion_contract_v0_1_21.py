@@ -29,11 +29,11 @@ ROLE_CATALOG = ASSET_ROOT / "pharma_roles_v0_1_21.json"
 ACCEPTANCE = ASSET_ROOT / "materialization_promotion_acceptance_v0_1_21.json"
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 MANIFEST = (
-    ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab_v0_1_21.asset.json"
+    ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
 )
 CHANGED_RESEARCH_ROLES = set(RESEARCH_ROLES)
 EXPECTED_MODULAR_HELPERS = {
-    "nusaibah_pharma_company_intelligence_lab_adapter.py",
+    "legacy_preparation_helpers_v0_1_21.py",
     "claim_semantics_v0_1_21.py",
     "claim_evidence_contract_v0_1_21.py",
     "research_response_contract_v0_1_21.py",

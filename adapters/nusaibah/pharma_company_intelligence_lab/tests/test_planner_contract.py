@@ -19,9 +19,9 @@ except ModuleNotFoundError as error:
     base.Adapter = object
     package.base = base
     with patch.dict(sys.modules, {"adapters": package, "adapters.base": base}):
-        import nusaibah_pharma_company_intelligence_lab_adapter as adapter
+        import legacy_preparation_helpers_v0_1_21 as adapter
 else:
-    import nusaibah_pharma_company_intelligence_lab_adapter as adapter
+    import legacy_preparation_helpers_v0_1_21 as adapter
 
 
 def planner_chunk() -> dict:

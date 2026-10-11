@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
 try:
-    from . import nusaibah_pharma_company_intelligence_lab_adapter as legacy
+    from . import legacy_preparation_helpers_v0_1_21 as legacy
     from .research_claim_evidence_v0_1_21 import (
         MergedClaimEvidenceProjection,
         RoleClaimEvidenceProjection,
@@ -35,7 +35,7 @@ try:
     )
     from .methodology_learning_v0_1_21 import reviewed_methodology_addendum
 except ImportError:  # pragma: no cover - flat intake execution
-    import nusaibah_pharma_company_intelligence_lab_adapter as legacy
+    import legacy_preparation_helpers_v0_1_21 as legacy
     from research_claim_evidence_v0_1_21 import (
         MergedClaimEvidenceProjection,
         RoleClaimEvidenceProjection,
