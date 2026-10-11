@@ -192,7 +192,7 @@ class BusinessStatusRecoveryV023Tests(unittest.TestCase):
 
     def test_manifest_reuses_exact_agent_budgets_and_apply_rejected_before_calls(self):
         previous = json.loads((ROOT/'tests/fixtures/release-0.1.22/nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
-        current = json.loads((ROOT/'nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
+        current = json.loads((ROOT/'tests/fixtures/release-0.1.23/nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
         self.assertEqual(previous['versions']['0.1.22'], current['versions']['0.1.23'])
         inputs = V021Inputs()
         inputs['variables']['memory_mode'] = 'apply'
