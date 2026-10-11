@@ -129,6 +129,10 @@ class InvocationRecoveryTests(unittest.TestCase):
         self.assertEqual('incomplete',response['outputs']['intelligence_dossier']['business_result_state'])
         for company_id in inputs['variables']['company_ids']:
             self.assertEqual(1,sum(role=='research_response_resolver' and company==company_id for role,company in inputs.dispatched))
+        issues=response['outputs']['intelligence_dossier']['agent_invocation_response_issues']
+        self.assertTrue(all(issue['backup_attempted'] and issue['original_role']=='portfolio_researcher' for issue in issues))
+        for company in response['outputs']['intelligence_dossier']['company_results']:
+            self.assertTrue(any(item['role']=='portfolio_researcher' for item in company['issues_annex']['items']))
 
     def test_authority_policy_and_unknown_errors_still_propagate(self):
         for rule in ('agent_result_privileged_material_rejected','unknown_rule','agent_result_response_mode_unsupported'):

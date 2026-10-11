@@ -15,6 +15,10 @@ except ImportError:
 _CONTENT_RULES = frozenset({
     "agent_result_json_object_invalid", "agent_result_json_value_invalid",
 })
+_ORIGINAL_ROLES = RESEARCH_ROLES | frozenset({
+    legacy.PLANNER_ROLE, legacy.BENCHMARK_ROLE, legacy.STRATEGIC_ROLE,
+    legacy.CRITIC_ROLE, legacy.SYNTHESIS_ROLE,
+})
 
 def invocation_diagnostic(error: Exception, *, role: str) -> dict[str, str] | None:
     if not isinstance(error, RuntimeAgentInvocationError):
@@ -54,10 +58,17 @@ class InvocationRecoveryInputs(_ResearchContractInputs):
                 if len(self.invocation_issues) < MAX_RESPONSE_OBSERVATIONS:
                     self.invocation_issues.append({
                         "company_id": input["company_id"], "role": role,
+                        "original_role": input.get("original_role") if role == legacy.RESEARCH_RESOLVER_ROLE and isinstance(input.get("original_role"), str) and input["original_role"] in _ORIGINAL_ROLES else None,
                         "pass_number": (input.get("portfolio_review") or {}).get("pass_number"),
                         "diagnostic": diagnostic, "rejected_text_available": False,
-                        "action": "affected_result_withheld", "backup_attempted": False,
+                        "action": "affected_result_withheld", "backup_attempted": role == legacy.RESEARCH_RESOLVER_ROLE,
                     })
             if role in RESEARCH_ROLES:
                 raise  # The version-owned research loop preserves prior passes.
+            if role == legacy.RESEARCH_RESOLVER_ROLE:
+                original = input.get("original_role")
+                # Source-owned resolver helpers provide this association; never
+                # infer it from rejected provider text.
+                if isinstance(original, str) and original in _ORIGINAL_ROLES:
+                    diagnostic = {**diagnostic, "role": original, "stage": "agent_response_resolver"}
             raise legacy.UnresolvedAgentResponse(diagnostic) from None
