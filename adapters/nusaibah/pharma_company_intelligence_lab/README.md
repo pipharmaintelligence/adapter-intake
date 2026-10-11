@@ -1,5 +1,36 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.22 prompt budgets and thinking headroom
+
+Every Agent step now receives explicit response-size guidance in its prompt:
+prioritize relevant same-company evidence, avoid repetition, respect the tighter
+business field/item limits, and finish a complete JSON object where required.
+The search steps continue to return compact plain-text evidence notes. The
+resolver must preserve facts, IDs and cardinality even if its advisory size target
+cannot be met. A negative verdict or missing evidence cannot be rewritten to fit.
+
+All nine roles use fresh contract versions with a **32,000-token provider ceiling**
+per step. This gives thinking headroom; it is not a request to generate a
+32,000-token visible answer. Prompt targets are measured in visible characters
+because the business contracts bound strings that way. They guide the model;
+Vertex enforces the actual generation cutoff. Neither a prompt nor a larger
+ceiling guarantees completion. Reaching `MAX_TOKENS` remains a provider failure,
+not valid JSON or approved evidence.
+
+The 0.1.21 company-14 live run failed at the first research/search step with
+`provider_execution_output_limit_reached`: all three researchers returned
+`MAX_TOKENS` under their 8,192-token ceilings. This was not a 600-second timeout.
+The new entrypoint delegates to the unchanged claim-review kernel. Models,
+thinking levels, search/citation authority, provider-call limits, 600-second
+requests and the 1,800-second asset deadline remain intact. Previous promoted
+adapter and Agent identities remain intact.
+
+0.1.22 is **preview-only**, like 0.1.21. Increasing generation room does not
+authorize publishing memory or methodology. Use official adapter promotion and
+its workflow artifact; keep the runtime version unchanged. See the
+[budget developer guide](../../../docs/pharma-agent-response-budget-developer-guide.md)
+and the packaged `pharma_response_budgets_v0_1_22.json` role table.
+
 ## 0.1.21 claim evidence and reviewed learning
 
 This development candidate selects the bounded memory citation handoff by accepted

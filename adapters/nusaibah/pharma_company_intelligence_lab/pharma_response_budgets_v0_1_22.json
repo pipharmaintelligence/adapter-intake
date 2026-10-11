@@ -1,0 +1,65 @@
+{
+  "schema_version": "pharma_agent_response_budgets.v1",
+  "asset_version": "0.1.22",
+  "provider_token_ceiling": 32000,
+  "visible_targets_are_prompt_guidance": true,
+  "role_budgets": {
+    "methodology_planner": {
+      "contract_version": "1.0.8",
+      "visible_character_targets": [
+        4500
+      ]
+    },
+    "portfolio_researcher": {
+      "contract_version": "1.0.9",
+      "visible_character_targets": [
+        12000,
+        26000
+      ]
+    },
+    "market_researcher": {
+      "contract_version": "1.0.9",
+      "visible_character_targets": [
+        12000,
+        26000
+      ]
+    },
+    "regulatory_risk_researcher": {
+      "contract_version": "1.0.9",
+      "visible_character_targets": [
+        12000,
+        26000
+      ]
+    },
+    "strategic_analyst": {
+      "contract_version": "1.0.6",
+      "visible_character_targets": [
+        18000
+      ]
+    },
+    "evidence_critic": {
+      "contract_version": "1.0.9",
+      "visible_character_targets": [
+        20000
+      ]
+    },
+    "intelligence_synthesizer": {
+      "contract_version": "1.0.7",
+      "visible_character_targets": [
+        32000
+      ]
+    },
+    "memory_benchmark_reviewer": {
+      "contract_version": "1.0.5",
+      "visible_character_targets": [
+        6000
+      ]
+    },
+    "research_response_resolver": {
+      "contract_version": "1.0.4",
+      "visible_character_targets": [
+        33000
+      ]
+    }
+  }
+}
