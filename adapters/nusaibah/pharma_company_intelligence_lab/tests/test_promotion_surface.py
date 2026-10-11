@@ -22,12 +22,16 @@ EXPECTED_REVIEWED_HELPERS = {
     "portfolio_review_v0_1_17.py",
     "agent_response_recovery_v0_1_17.py",
     "evidence_recovery_v0_1_20.py",
+    "claim_semantics_v0_1_21.py",
     "claim_evidence_contract_v0_1_21.py",
     "research_response_contract_v0_1_21.py",
     "research_claim_evidence_v0_1_21.py",
     "research_claim_pipeline_v0_1_21.py",
+    "research_section_projection_v0_1_21.py",
     "research_execution_v0_1_21.py",
+    "candidate_validation_v0_1_21.py",
     "memory_citation_selection_v0_1_21.py",
+    "methodology_learning_v0_1_21.py",
     "company_result_v0_1_21.py",
     "company_preparation_v0_1_21.py",
     "review_packet_v0_1_21.py",
@@ -96,10 +100,11 @@ class PromotionSurfaceTests(unittest.TestCase):
             *optional_files,
         }
         self.assertEqual(declared_runtime_files, EXPECTED_RUNTIME_FILES)
-        self.assertNotIn(
-            "nusaibah_pharma_company_intelligence_lab.asset.json",
-            declared_runtime_files,
+        historical_manifest = (
+            ASSET_ROOT / "nusaibah_pharma_company_intelligence_lab.asset.json"
         )
+        self.assertFalse(historical_manifest.exists())
+        self.assertNotIn(historical_manifest.name, declared_runtime_files)
 
     def test_wp_reference_modules_remain_under_tests_only(self) -> None:
         evaluation_root = ASSET_ROOT / "tests" / "evaluation"
