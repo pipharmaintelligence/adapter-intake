@@ -1,7 +1,11 @@
 """Deterministic intake-stage tests; no Core, provider or network access."""
 from __future__ import annotations
 
+import hashlib
 import json
+import subprocess
+import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -202,6 +206,72 @@ class ReadOnlyMcpContractTest(unittest.TestCase):
             }, {"status": "completed", "records": [{
                 "columns": [{"name": "column", "type": "varchar(20)"}] * 101,
             }]})
+
+    def test_backend_must_honor_requested_page_size(self):
+        adapter, error = _subject()
+        with self.assertRaisesRegex(error, "dlm_mcp_response_limit_exceeded"):
+            _run(adapter, {"operation": "lakes.list", "page_size": 1}, {
+                "status": "completed",
+                "records": [
+                    {"lake_id": "first", "name": "First"},
+                    {"lake_id": "second", "name": "Second"},
+                ],
+            })
+
+    def test_canonical_selectors_used_for_scoping_and_projection(self):
+        adapter, _ = _subject()
+        nodes, _ = _run(adapter, {
+            "operation": "nodes.list", "lake_id": " alpha ",
+        }, {"status": "completed", "records": [
+            {"lake_id": "alpha", "node_key": "node_a"},
+        ]})
+        self.assertEqual(nodes["records"][0]["lake_id"], "alpha")
+        schema, _ = _run(adapter, {
+            "operation": "nodes.schema", "lake_id": " alpha ",
+            "node_key": " records ",
+        }, {"status": "completed", "records": [{
+            "lake_id": "alpha", "node_key": "records",
+            "fields": [{"name": "study_id", "type": "varchar(30)"}],
+        }]})
+        self.assertEqual(schema["records"][0]["lake_id"], "alpha")
+        self.assertEqual(schema["records"][0]["node_key"], "records")
+
+    def test_shared_helper_byte_identity_pin(self):
+        raw = (ASSET / "abstract_mcp_capabilities.py").read_bytes()
+        header = ("blob " + str(len(raw)) + "\0").encode("utf-8")
+        digest = hashlib.sha1(header + raw).hexdigest()
+        self.assertEqual("92ca96fdc5e1f6927c6ba4472305bd472bbc3e7a", digest)
+
+    def test_isolated_dotted_package_import_shape(self):
+        # Package import preflight only; does not run Assets materialization.
+        with tempfile.TemporaryDirectory() as root_name:
+            root = Path(root_name)
+            package = root / "adapters" / "intake" / "nusaibah" / "abstract_mcp_dlm"
+            package.mkdir(parents=True)
+            for folder in (
+                root / "adapters",
+                root / "adapters" / "intake",
+                root / "adapters" / "intake" / "nusaibah",
+                package,
+            ):
+                (folder / "__init__.py").write_text("", encoding="utf-8")
+            (root / "adapters" / "base.py").write_text(
+                "class Adapter:\n    pass\n", encoding="utf-8",
+            )
+            (package / MODULE.name).write_bytes(MODULE.read_bytes())
+            code = (
+                "import sys\n"
+                f"sys.path.insert(0, {str(root)!r})\n"
+                "from adapters.intake.nusaibah.abstract_mcp_dlm."
+                "abstract_mcp_dlm_v0_1_1_adapter import AbstractMcpDlmReadAdapter\n"
+                "assert AbstractMcpDlmReadAdapter.key == 'nusaibah.abstract_mcp_dlm'\n"
+                "assert AbstractMcpDlmReadAdapter.version == '0.1.1'\n"
+            )
+            result = subprocess.run(
+                [sys.executable, "-I", "-c", code],
+                capture_output=True, text=True, timeout=15, check=False,
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
 
     def test_source_has_no_network_or_storage_execution_authority(self):
         source = MODULE.read_text(encoding="utf-8")
