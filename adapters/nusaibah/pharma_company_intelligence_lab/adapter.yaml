@@ -18,6 +18,17 @@ reviewed_helpers:
   - portfolio_review_v0_1_17.py
   - agent_response_recovery_v0_1_17.py
   - evidence_recovery_v0_1_20.py
+  # Proposed 0.1.21 role/evidence functions remain modular and inactive
+  # until adapter.yaml and the manifest advance to the same version.
+  - claim_evidence_contract_v0_1_21.py
+  - research_claim_evidence_v0_1_21.py
+  - memory_citation_selection_v0_1_21.py
+
+# The reviewed role catalogue covers all manifest Agent roles. The separate
+# acceptance contract records Assets materialization and promotion gates.
+reviewed_support_files:
+  - pharma_roles_v0_1_21.json
+  - materialization_promotion_acceptance_v0_1_21.json
 
 optional_files:
   - README.md
