@@ -252,7 +252,7 @@ def run_research_fanout_v0_1_25(
                             company_id=company_id,
                             initial_error=initial_error,
                         )
-    
+
                     if validated is not None and current_unresolved is None:
                         next_projection = project_role_claim_evidence(
                             role=role,
