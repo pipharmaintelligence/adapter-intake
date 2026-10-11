@@ -12,6 +12,9 @@ ASSET_ROOT = Path(__file__).resolve().parents[1]
 if str(ASSET_ROOT) not in sys.path:
     sys.path.insert(0, str(ASSET_ROOT))
 
+from claim_semantics_v0_1_21 import (  # noqa: E402
+    SCHEMA_VERSION as SEMANTIC_SCHEMA_VERSION,
+)
 from research_claim_evidence_v0_1_21 import (  # noqa: E402
     RESEARCH_ROLES,
     accepted_claims_for_downstream,
@@ -30,12 +33,16 @@ MANIFEST = (
 CHANGED_RESEARCH_ROLES = set(RESEARCH_ROLES)
 EXPECTED_MODULAR_HELPERS = {
     "nusaibah_pharma_company_intelligence_lab_adapter.py",
+    "claim_semantics_v0_1_21.py",
     "claim_evidence_contract_v0_1_21.py",
     "research_response_contract_v0_1_21.py",
     "research_claim_evidence_v0_1_21.py",
     "research_claim_pipeline_v0_1_21.py",
+    "research_section_projection_v0_1_21.py",
     "research_execution_v0_1_21.py",
+    "candidate_validation_v0_1_21.py",
     "memory_citation_selection_v0_1_21.py",
+    "methodology_learning_v0_1_21.py",
     "company_result_v0_1_21.py",
     "company_preparation_v0_1_21.py",
     "review_packet_v0_1_21.py",
@@ -77,6 +84,26 @@ def _yaml_scalar(path: Path, key: str) -> str:
     raise AssertionError(f"Missing {key}")
 
 
+def _semantic_context() -> dict[str, object]:
+    return {
+        "schema_version": SEMANTIC_SCHEMA_VERSION,
+        "event_date": None,
+        "publication_date": None,
+        "status_as_of_date": None,
+        "event_state": "not_applicable",
+        "observation_kind": "company_reported",
+        "actor": None,
+        "counterparty": None,
+        "territory": None,
+        "manufacturing_responsibility": None,
+        "reported_total": None,
+        "component_total": None,
+        "remainder_label": None,
+        "governed_snapshot_relation": "not_applicable",
+        "entity_label_kind": "not_applicable",
+    }
+
+
 def _claim(local_id: str, section_id: str, locator: str) -> dict[str, object]:
     return {
         "claim_id": local_id,
@@ -86,6 +113,7 @@ def _claim(local_id: str, section_id: str, locator: str) -> dict[str, object]:
         "inference": False,
         "citation_locators": [locator],
         "evidence_qualifiers": [],
+        "semantic_context": _semantic_context(),
     }
 
 
