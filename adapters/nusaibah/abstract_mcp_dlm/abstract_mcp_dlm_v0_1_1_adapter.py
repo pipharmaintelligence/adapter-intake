@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import json
 import re
+import unicodedata
+from difflib import SequenceMatcher
 from typing import Any
 
 from adapters.base import Adapter
@@ -104,6 +106,15 @@ class AbstractMcpDlmReadAdapter(Adapter):
             raise DlmMcpReadError("dlm_mcp_schema_unavailable")
 
         records = self._project(operation, raw_records, tool_input)
+        # A typo may make Core's literal search return zero hits. Search a
+        # bounded, already authorized catalogue only when needed, and expose
+        # candidates for conversation without silently selecting one.
+        lookup = None
+        if operation in ("lakes.list", "nodes.list") and "q" in request:
+            lookup = self._search_lookup(
+                operation, request["q"], records, result, tool_input,
+                role, invoke_tool,
+            )
         projected: dict[str, Any] = {
             "schema_version": "dlm_mcp_read.v1",
             "operation": operation,
@@ -111,6 +122,8 @@ class AbstractMcpDlmReadAdapter(Adapter):
             "records": records,
             "record_count": len(records),
         }
+        if lookup is not None:
+            projected["lookup"] = lookup
         if operation == "nodes.schema":
             projected["field_count"] = len(records[0]["fields"])
         else:
@@ -146,6 +159,95 @@ class AbstractMcpDlmReadAdapter(Adapter):
         if len(encoded.encode("utf-8")) > MAX_OUTPUT_BYTES:
             raise DlmMcpReadError("dlm_mcp_response_limit_exceeded")
         return response
+
+    @staticmethod
+    def _search_lookup(
+        operation: str,
+        query: str,
+        records: list[dict[str, Any]],
+        result: dict[str, Any],
+        selectors: dict[str, Any],
+        role: str,
+        invoke_tool: Any,
+    ) -> dict[str, Any]:
+        """Find safe spelling candidates without changing the authorized role.
+
+        Suggestions are not selected resources. ChatGPT must confirm before
+        using a suggested lake_id/node_key in a subsequent operation.
+        """
+        sample = records
+        source = "filtered_search"
+        coverage = _lookup_coverage(result)
+        term = _search_text(query)
+        if (
+            not records and len(term) >= 4
+            and (operation == "lakes.list" or selectors["page"] == 1)
+        ):
+            # The current Core lakes API has no page selector. Discovery may
+            # cover only the first 50 authorized rows. Never claim full search
+            # coverage if Core does not provide an explicit has_more=false.
+            fallback = {"limit": MAX_PAGE_SIZE}
+            if operation == "nodes.list":
+                fallback.update({"lake_id": selectors["lake_id"], "page": 1})
+            try:
+                discovered = invoke_tool(role, input=fallback, on_error="raise")
+                _validate_runtime_tool_envelope(
+                    discovered, operation=operation, role=role,
+                )
+                candidates = discovered["records"]
+                if len(candidates) > MAX_PAGE_SIZE:
+                    raise DlmMcpReadError("dlm_mcp_response_limit_exceeded")
+                _lookup_coverage(discovered, strict=True)
+                sample = AbstractMcpDlmReadAdapter._project(
+                    operation, candidates, fallback,
+                )
+                coverage = _lookup_coverage(discovered)
+                source = "bounded_catalogue"
+            except Exception:
+                # The primary filtered search was valid. A failed optional
+                # discovery must not become a false "not found" claim, leak
+                # upstream diagnostics or invent a suggestion.
+                return {
+                    "query": query.strip(),
+                    "status": "unresolved",
+                    "requires_confirmation": True,
+                    "coverage": "unknown",
+                    "source": "discovery_unavailable",
+                    "candidates": [],
+                }
+
+        ranked = _rank_name_candidates(operation, term, sample)
+        exact = [row for row in ranked if row["match_type"] == "exact"]
+        if len(exact) > 1:
+            status = "ambiguous"
+        elif len(exact) == 1:
+            status = "exact"
+        elif ranked:
+            status = "suggestions"
+        else:
+            status = "no_match" if coverage == "complete" else "unresolved"
+
+        # An exact *identifier* can be selected independently of a truncated
+        # catalogue; a name-only match is selectable only if coverage is known
+        # complete. All approximate matches always require user confirmation.
+        resolved_id = None
+        if status == "exact":
+            candidate = exact[0]
+            identifier = candidate["lake_id"] if operation == "lakes.list" else candidate["node_key"]
+            if _search_text(identifier) == term or coverage == "complete":
+                resolved_id = identifier
+        visible = exact if exact else ranked
+        output: dict[str, Any] = {
+            "query": query.strip(),
+            "status": status,
+            "requires_confirmation": resolved_id is None,
+            "coverage": coverage,
+            "source": source,
+            "candidates": visible[:3],
+        }
+        if resolved_id is not None:
+            output["resolved_id"] = resolved_id
+        return output
 
     @staticmethod
     def _arguments(operation: str, request: dict[str, Any]) -> dict[str, Any]:
@@ -253,6 +355,63 @@ def _validate_runtime_tool_envelope(
     ):
         raise DlmMcpReadError("dlm_mcp_tool_provenance_invalid")
 
+
+
+def _lookup_coverage(result: dict[str, Any], *, strict: bool = False) -> str:
+    """Return only coverage explicitly supported by trusted pagination data."""
+    more = result.get("has_more")
+    if "has_more" in result and type(more) is not bool:
+        raise DlmMcpReadError("dlm_mcp_pagination_invalid")
+    if strict and more is True and not result["records"]:
+        raise DlmMcpReadError("dlm_mcp_pagination_invalid")
+    if more is False:
+        return "complete"
+    if more is True:
+        return "partial"
+    return "unknown"
+
+
+def _search_text(value: str) -> str:
+    """Lightweight Unicode/case normalization for name and identifier search."""
+    text = unicodedata.normalize("NFKC", value).casefold()
+    text = re.sub(r"[\\W_]+", " ", text, flags=re.UNICODE).strip()
+    text = re.sub(r"^(?:lake|node)\\s+", "", text)
+    return re.sub(r"\\s+(?:lake|node)$", "", text)
+
+
+def _rank_name_candidates(
+    operation: str, term: str, records: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Deterministic *spelling* suggestions; never semantic or authority proof."""
+    id_key = "lake_id" if operation == "lakes.list" else "node_key"
+    scored: list[tuple[int, float, str, str, dict[str, Any]]] = []
+    for record in records:
+        identifier = record[id_key]
+        name = record.get("name", identifier)
+        normalized = [_search_text(identifier), _search_text(name)]
+        normalized.extend(
+            token for token in normalized[-1].split() if len(token) >= 4
+        )
+        if term in normalized:
+            priority, similarity, kind = 0, 1.0, "exact"
+        elif len(term) >= 3 and any(term in item for item in normalized):
+            priority, similarity, kind = 1, 1.0, "partial_name"
+        else:
+            similarity = max(
+                (SequenceMatcher(None, term, item).ratio()
+                 for item in normalized if len(term) >= 4 and len(item) >= 4),
+                default=0.0,
+            )
+            if similarity < 0.74:
+                continue
+            priority, kind = 2, "close_spelling"
+        safe = {"lake_id": record["lake_id"], "name": name} if operation == "lakes.list" else {
+            "lake_id": record["lake_id"], "node_key": identifier, "name": name,
+        }
+        safe["match_type"] = kind
+        scored.append((priority, -similarity, name.casefold(), identifier, safe))
+    scored.sort(key=lambda item: item[:4])
+    return [item[-1] for item in scored[:3]]
 
 def _identifier(value: Any) -> str:
     if not isinstance(value, str) or not _IDENTIFIER.fullmatch(value.strip()):
