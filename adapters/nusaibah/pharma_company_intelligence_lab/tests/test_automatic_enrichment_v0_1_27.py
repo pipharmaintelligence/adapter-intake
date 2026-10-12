@@ -32,6 +32,12 @@ def invoke(inputs):
         return invoke_v0_1_27(inputs,asset_identity='nusaibah.pharma_company_intelligence_lab:0.1.27')
 
 class AutomaticEnrichmentTests(unittest.TestCase):
+    def test_every_agent_chain_matches_its_admitted_identity_and_version(self):
+        version=json.loads((ROOT/'nusaibah_pharma_company_intelligence_lab.asset.json').read_text())['versions']['0.1.27']
+        for role,contract in version['agents'].items():
+            with self.subTest(role=role):
+                self.assertEqual(contract['contract_version'],contract['definition']['chain']['version'])
+                self.assertEqual(contract['contract_key'],contract['definition']['chain']['chain_id'])
     def test_business_input_limit_is_checked_before_agent_dispatch(self):
         inputs=EnrichmentInputs()
         source=TargetedSourceInputs(inputs,record={'company_id':14,'company_name':'Fixture','corporate_id':1})
