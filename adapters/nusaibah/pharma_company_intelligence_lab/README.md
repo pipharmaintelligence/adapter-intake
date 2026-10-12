@@ -1,6 +1,14 @@
 # Nusaibah Pharma Company Intelligence Lab
 
-## 0.1.26 final-cycle candidate
+## 0.1.27 production enrichment
+
+Run one targeted intelligence pass from supplied CompanyContext using section plans, literal source chunks, exact evidence, independent section critics and per-question benchmark checks. `memory_mode=apply` publishes supported memory and methodology changes through the existing Core Dynamic Skill ZIP/partition/history lane. These automated checks improve enrichment and do not require human candidate approval.
+
+The standalone company-range runner lives in E: developer code, outside this adapter. It runs Company Scope then this production asset and saves only a progress checkpoint. Packages must already be initialized; partial/unconfirmed publication does not advance last success. No runtime version bump is required: deliver this version through official workflow promotion.
+
+See [the current enrichment developer guide](ENRICHMENT_GUIDE.md) for authority boundaries, source limits, per-section withholding, publication and live verification.
+
+## 0.1.26 historical qualification contract
 
 This version reads bounded supplied/retrieved source snapshots, resolves exact
 claim quotes through the existing pinned toolkit, and distinguishes ordinary
