@@ -1,0 +1,32 @@
+{
+  "variables": {
+    "selection": "all_authorized"
+  },
+  "companies": {
+    "records": [
+      {
+        "id": 1001,
+        "company": "Synthetic Alpha",
+        "corporate": 1
+      },
+      {
+        "id": 1002,
+        "company": "Synthetic Beta",
+        "corporate": 1
+      }
+    ],
+    "row_count": 2,
+    "exactness": "partial",
+    "partial_reason": "more_pages_available",
+    "provenance": {
+      "source": "dlm_node",
+      "authority": "dlm_node",
+      "lake_id": "synthetic_companies_lake",
+      "node_key": "companies",
+      "pages_read": 1,
+      "input_mode": "full_dump_async",
+      "page_index": 0,
+      "record_offset": 0
+    }
+  }
+}

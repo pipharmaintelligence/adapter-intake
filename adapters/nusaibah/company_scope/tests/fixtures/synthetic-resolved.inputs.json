@@ -1,0 +1,19 @@
+{
+  "variables": {"company_ids": [1002, 1001]},
+  "companies": {
+    "records": [
+      {"id": 1001, "company": "Synthetic Alpha", "corporate": 1},
+      {"id": 1002, "company": "Synthetic Beta", "corporate": 1}
+    ],
+    "row_count": 2,
+    "exactness": "exact",
+    "partial_reason": null,
+    "provenance": {
+      "source": "dlm_node",
+      "authority": "dlm_node",
+      "lake_id": "synthetic_companies_lake",
+      "node_key": "companies",
+      "pages_read": 1
+    }
+  }
+}

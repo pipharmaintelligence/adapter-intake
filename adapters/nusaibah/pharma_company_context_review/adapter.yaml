@@ -1,0 +1,20 @@
+asset_key: nusaibah.pharma_company_context_review
+asset_version: 0.1.0
+package_target: python_runtime/adapters/intake/nusaibah/pharma_company_context_review
+manifest: pharma_company_context_review.asset.json
+adapter_module: pharma_company_context_review_adapter.py
+reviewed_helpers:
+  - company_context_review.py
+  - supplied_source_review.py
+  - supplied_source_quote_review.py
+  - supplied_source_scoped_review.py
+  - quote_review_orchestration.py
+optional_files:
+  - README.md
+  - DEVELOPER_GUIDE.md
+release_stage: development
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false
