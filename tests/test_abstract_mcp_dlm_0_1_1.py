@@ -606,6 +606,19 @@ class ReusableReadResolutionTest(unittest.TestCase):
         self.assertEqual("unresolved", lookup["status"])
         self.assertEqual([], lookup["candidates"])
 
+    def test_name_normalization_cannot_resolve_a_different_id_with_unknown_coverage(self):
+        adapter, _ = _subject()
+        for query, confirmation in (("Hyper", True), ("lake_Hyper", False)):
+            out, _ = _run(adapter, {"operation": "lakes.list", "q": query}, {
+                "status": "completed", "records": [{"lake_id": "lake_Hyper", "name": "Hyper"}],
+            })
+            self.assertEqual("exact", out["lookup"]["status"])
+            self.assertEqual(confirmation, out["lookup"]["requires_confirmation"])
+            if confirmation:
+                self.assertNotIn("resolved_id", out["lookup"])
+            else:
+                self.assertEqual("lake_Hyper", out["lookup"]["resolved_id"])
+
     def test_reuse_contract_keeps_prepared_request_required_and_public_schema_stable(self):
         manifest = json.loads((ASSET / "abstract_mcp_dlm.asset.json").read_text())
         contract = manifest["versions"]["0.1.1"]["callable"]

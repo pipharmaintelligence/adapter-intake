@@ -94,9 +94,9 @@ def coverage(result: dict[str, Any], error: ErrorFactory) -> str:
 def search_text(value: str, profile: NameProfile) -> str:
     text = unicodedata.normalize("NFKC", value).casefold()
     words = re.sub(r"[\W_]+", " ", text, flags=re.UNICODE).strip().split()
-    if words and words[0] in profile.ignored_nouns:
+    if len(words) > 1 and words[0] in profile.ignored_nouns:
         words = words[1:]
-    if words and words[-1] in profile.ignored_nouns:
+    if len(words) > 1 and words[-1] in profile.ignored_nouns:
         words = words[:-1]
     return " ".join(words)
 
@@ -173,7 +173,13 @@ def resolve_names(
     resolved_id = None
     if status == "exact":
         identifier = exact[0][profile.id_key]
-        if search_text(identifier, profile) == term or completeness == "complete":
+        # Display-name normalization cannot establish exact ID identity: e.g.
+        # "Hyper" and "lake_Hyper" must still require confirmation when the
+        # catalogue is incomplete. Only Unicode/case and outer whitespace
+        # normalization are permitted for this identifier comparison.
+        identity = unicodedata.normalize("NFKC", identifier).casefold().strip()
+        requested = unicodedata.normalize("NFKC", query).casefold().strip()
+        if identity == requested or completeness == "complete":
             resolved_id = identifier
     output = {
         "query": query.strip(), "status": status,
