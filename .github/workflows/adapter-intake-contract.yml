@@ -7,6 +7,7 @@ on:
       - "adapters/**"
       - "tests/test_adapter_intake_contract.py"
       - "tests/test_mcp_discovery_agent_smoke.py"
+      - "tests/test_mcp_discovery_smoke_bedrock_text.py"
       - "tests/test_structured_review_toolkit.py"
       - "tests/test_review_exact_spans.py"
       - "tests/prove_exact_span_worker.py"
@@ -19,6 +20,7 @@ on:
       - "adapters/**"
       - "tests/test_adapter_intake_contract.py"
       - "tests/test_mcp_discovery_agent_smoke.py"
+      - "tests/test_mcp_discovery_smoke_bedrock_text.py"
       - "tests/test_structured_review_toolkit.py"
       - "tests/test_review_exact_spans.py"
       - "tests/prove_exact_span_worker.py"
@@ -60,6 +62,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m unittest discover -s tests -p "test_mcp_discovery_agent_smoke.py" -v
+          python -m unittest discover -s tests -p "test_mcp_discovery_smoke_bedrock_text.py" -v
 
       - name: Validate complete pharma deterministic test suite
         shell: bash
