@@ -4,3 +4,4 @@ adapters/**/skills/**/*.txt text eol=lf
 adapters/**/skills/**/*.json text eol=lf
 adapters/**/skills/**/*.yaml text eol=lf
 adapters/**/skills/**/*.yml text eol=lf
+adapters/nusaibah/abstract_mcp_dlm/*.py text eol=lf

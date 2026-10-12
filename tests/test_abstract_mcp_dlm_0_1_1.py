@@ -94,6 +94,25 @@ def _run(adapter, request, response, *, trusted_fixture=True):
 
 
 class ReadOnlyMcpContractTest(unittest.TestCase):
+    def test_current_handoff_declares_every_top_level_file(self):
+        # Assets rejects undeclared files before materialization. Read the
+        # narrow intake YAML shape without adding a development dependency.
+        declared = {"adapter.yaml"}
+        file_keys = {"manifest", "adapter_module", "dependency_manifest",
+                     "launcher_manifest", "launcher_entrypoint"}
+        list_keys = {"reviewed_helpers", "optional_files", "reviewed_support_files"}
+        active_list = None
+        for line in (ASSET / "adapter.yaml").read_text(encoding="utf-8").splitlines():
+            if line.startswith("  - ") and active_list in list_keys:
+                declared.add(line[4:].strip().strip("\"'"))
+            elif line and not line[0].isspace() and ":" in line:
+                key, value = line.split(":", 1)
+                active_list = key if key in list_keys else None
+                if key in file_keys and value.strip():
+                    declared.add(value.strip().strip("\"'"))
+        actual = {path.name for path in ASSET.iterdir() if path.is_file()}
+        self.assertEqual(declared, actual)
+
     def test_current_version_intake_and_preserved_shared_manifest_contract(self):
         manifest = json.loads((ASSET / "abstract_mcp_dlm.asset.json").read_text())
         yaml = (ASSET / "adapter.yaml").read_text(encoding="utf-8")
