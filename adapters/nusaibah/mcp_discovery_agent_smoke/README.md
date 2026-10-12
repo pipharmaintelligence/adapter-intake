@@ -13,7 +13,7 @@ The count describes returned records, never the total authorized inventory.
 
 Input: optional `variables.q`. The development server prepares the child's
 required `tool_request` as `{"operation":"lakes.list","page_size":5}`. The parent
-passes only its bounded query variable. Operation, identifiers, authority and
+passes the fixed five-record page size and its bounded query variable. Operation, identifiers, authority and
 runtime settings cannot come from those variables. A spelling suggestion remains
 unconfirmed; this asset performs no dependent node read or selection.
 

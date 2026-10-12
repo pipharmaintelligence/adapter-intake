@@ -8,7 +8,7 @@
     "0.1.0": {
       "state": "active",
       "allow_resume": false,
-      "inputs": {"variables": {"required": false, "source": "direct", "shape": "object", "default": {}}},
+      "inputs": {"variables": {"required": false, "source": "direct", "shape": "object"}},
       "outputs": {"smoke_result": {"required": true, "shape": "object"}},
       "callable_assets": {
         "discovery": {"asset_key": "nusaibah.abstract_mcp_dlm", "asset_version": "0.1.1", "result_key": "tool_results", "result_shape": "object", "cache": false, "on_error": "raise"}

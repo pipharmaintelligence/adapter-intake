@@ -52,7 +52,7 @@ class DiscoveryAgentSmokeTest(unittest.TestCase):
         self.assertEqual(result["returned_record_count"], 5)
         self.assertEqual((result["child_call_count"], result["agent_call_count"]), (1, 1))
         self.assertEqual([c[0] for c in inputs.calls], ["child", "agent"])
-        self.assertEqual(inputs.calls[0], ("child", "discovery", {}, "raise"))
+        self.assertEqual(inputs.calls[0], ("child", "discovery", {"page_size": 5}, "raise"))
         self.assertNotIn("Lake 0", json.dumps(inputs.calls[1][2]))
         self.assertNotIn("fixture-0", json.dumps(inputs.calls[1][2]))
 
@@ -69,7 +69,7 @@ class DiscoveryAgentSmokeTest(unittest.TestCase):
                 result = subject().invoke(inputs, {})["outputs"]["smoke_result"]
                 self.assertEqual(result["lookup_status"], state)
                 self.assertEqual(result["requires_confirmation"], state != "exact")
-                self.assertEqual(inputs.calls[0][2], {"q": "Hyser"})
+                self.assertEqual(inputs.calls[0][2], {"page_size": 5, "q": "Hyser"})
                 self.assertNotIn("Hyser", json.dumps(inputs.calls[1][2]))
                 self.assertEqual(len(inputs.calls), 2)
 

@@ -11,6 +11,7 @@ CHILD_IDENTITY = ("nusaibah.abstract_mcp_dlm", "0.1.1")
 AGENT_ROLE = "read_summarizer"
 SUMMARY_SCHEMA = "mcp_discovery_agent_summary.v1"
 MAX_RECORDS = 50
+READ_PAGE_SIZE = 5
 MAX_RESULT_BYTES = 65536
 LOOKUP_STATES = {"not_requested", "exact", "suggestions", "ambiguous", "no_match", "unresolved"}
 
@@ -112,7 +113,7 @@ class McpDiscoveryAgentSmokeAdapter(Adapter):
     def invoke(self, inputs: Any, context: dict[str, Any]) -> dict[str, Any]:
         del context
         variables = _variables(inputs)
-        child = inputs.invoke_asset("discovery", variables=variables, on_error="raise")
+        child = inputs.invoke_asset("discovery", variables={"page_size": READ_PAGE_SIZE, **variables}, on_error="raise")
         observations = _observations(child, queried="q" in variables)
         agent = inputs.invoke_agent(AGENT_ROLE, input={
             "task": "Summarize only this bounded read count. Do not infer totals, select candidates, call tools, or mutate data.",
