@@ -94,6 +94,26 @@ def _run(adapter, request, response, *, trusted_fixture=True):
 
 
 class ReadOnlyMcpContractTest(unittest.TestCase):
+    def test_lake_query_uses_the_registered_core_text_contract(self):
+        adapter, error = _subject()
+        request = {"operation": "lakes.list", "q": " Hyper ", "page_size": 5}
+        inputs = ToolInput(_trusted_fixture(request, {
+            "status": "completed", "has_more": False,
+            "records": [{"lake_id": "lake-7", "name": "Hyper"}],
+        }))
+        inputs["tool_request"] = request
+        result = adapter.invoke(inputs, {})["outputs"]["tool_results"]
+        # Core's registered generic HTTP path takes search text through its
+        # standard text field; q is not an admitted extra input parameter.
+        self.assertEqual([("dlm_lakes_list", {"limit": 5, "text": "Hyper"}, "raise")], inputs.calls)
+        self.assertEqual("exact", result["lookup"]["status"])
+        self.assertEqual(" Hyper ", request["q"])
+        forbidden = ToolInput()
+        forbidden["tool_request"] = {"operation": "lakes.list", "text": "Hyper"}
+        with self.assertRaisesRegex(error, "request_fields_forbidden"):
+            adapter.invoke(forbidden, {})
+        self.assertEqual([], forbidden.calls)
+
     def test_current_handoff_declares_every_top_level_file(self):
         # Assets rejects undeclared files before materialization. Read the
         # narrow intake YAML shape without adding a development dependency.
@@ -209,7 +229,7 @@ class ReadOnlyMcpContractTest(unittest.TestCase):
         class SearchInput(ToolInput):
             def invoke_tool(self, role, *, input, on_error):
                 self.calls.append((role, input, on_error))
-                if "q" in input:
+                if "text" in input:
                     return _trusted_fixture({"operation": "lakes.list"}, {
                         "status": "completed", "records": [], "has_more": False,
                     })
@@ -244,7 +264,7 @@ class ReadOnlyMcpContractTest(unittest.TestCase):
                 self.calls.append((role, input, on_error))
                 return _trusted_fixture({"operation": "lakes.list"}, {
                     "status": "completed", "records": [], "has_more": False,
-                }) if "q" in input else _trusted_fixture({"operation": "lakes.list"}, {
+                }) if "text" in input else _trusted_fixture({"operation": "lakes.list"}, {
                     "status": "completed", "has_more": True,
                     "records": [{"lake_id": "alpha", "name": "Alpha"}],
                 })
@@ -259,7 +279,7 @@ class ReadOnlyMcpContractTest(unittest.TestCase):
         class FailingInput(ToolInput):
             def invoke_tool(self, role, *, input, on_error):
                 self.calls.append((role, input, on_error))
-                if "q" not in input:
+                if "text" not in input:
                     raise RuntimeError("confidential downstream failure")
                 return _trusted_fixture({"operation": "lakes.list"}, {
                     "status": "completed", "records": [], "has_more": False,
@@ -806,7 +826,7 @@ class DiscoveryOrchestrationPackageTest(unittest.TestCase):
         class LakeSearchInput(ToolInput):
             def invoke_tool(self, role, *, input, on_error):
                 self.calls.append((role, input, on_error))
-                rows = [] if "q" in input else [
+                rows = [] if "text" in input else [
                     {"lake_id": "lake-7", "name": "Hyper"},
                 ]
                 return _trusted_fixture({"operation": "lakes.list"}, {

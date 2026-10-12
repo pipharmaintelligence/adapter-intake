@@ -234,7 +234,9 @@ class AbstractMcpDlmReadAdapter(Adapter):
             query = request["q"]
             if not isinstance(query, str) or not _LABEL.fullmatch(query.strip()):
                 raise DlmMcpReadError("dlm_mcp_query_invalid")
-            tool_input["q" if operation == "lakes.list" else "search"] = query.strip()
+            # The registered Core generic HTTP capability takes its primary
+            # query through text and maps it to the connector's query field.
+            tool_input["text" if operation == "lakes.list" else "search"] = query.strip()
         return tool_input
 
     @staticmethod

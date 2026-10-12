@@ -45,9 +45,16 @@ The adapter never exposes raw runtime provenance, exception messages, Core
 envelopes, credentials, URLs, paths, object contents, SQL or provider data.
 
 The provenance checks here validate an expected **shape**, not a signed receipt.
-Only Core/Assets can certify actual admission and trusted execution. This
-documented envelope may need a contract revision after the G0 first-party
-executor is selected; no new bridge or transport is invented in intake.
+Only Core/Assets can certify actual admission and trusted execution. Validate
+the selected registered profile and execution lane independently; intake does
+not admit an executor or introduce a bridge or transport.
+
+Public lake search remains `q`. The adapter sends its validated search string
+through the existing Core runtime input `text`; the registered generic HTTP
+connector maps that text to its query parameter. Internal `q` is not an admitted
+extra parameter in the current profile. Node search continues to use `search`.
+The bounded fallback clears the query and retains only the required resource
+scope and limit. No caller can supply `text` through the public request schema.
 
 Intake tests: `python -m unittest discover -s tests -p
 "test_abstract_mcp_dlm_0_1_1.py" -v`.
