@@ -72,7 +72,7 @@ class SectionEnrichmentParityTests(unittest.TestCase):
         self.assertIn('## Historical Recall\n\nA prior benchmark fact remains here.',projected)
         self.assertIn('example.test/evidence',projected);self.assertEqual(text,handle.read())
     def test_current_manifest_and_all_agent_chain_versions_match(self):
-        m=json.loads((ROOT/'nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
+        m=json.loads((ROOT/'tests/fixtures/release-0.1.28/nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
         self.assertEqual({'0.1.28'},set(m['versions']))
         for a in m['versions']['0.1.28']['agents'].values():self.assertEqual(a['contract_version'],a['definition']['chain']['version'])
 if __name__=='__main__':unittest.main()
