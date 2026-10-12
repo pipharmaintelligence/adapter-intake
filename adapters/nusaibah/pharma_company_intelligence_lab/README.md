@@ -1,5 +1,9 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.32 exhausted research backup continuation
+
+The same one-time backup now remains scoped to its failed research role even when its own JSON is unusable. Successful sibling research continues through exact evidence checks, section critics and baseline-preserving Core Skill publication. Failed-role content remains withheld with its actual diagnostic; no second backup or benchmark call is introduced. See [the current guide](ENRICHMENT_V032_GUIDE.md). Tests are not a claim of live publication.
+
 ## 0.1.31 complete backup envelope
 
 Original research and the same one-time source-bound fallback now receive the identical complete response envelope: required fields, schema/status literals and existing evidence/type bounds. This closes the final prompt parity gap found before delivery. Benchmark remains disabled and all 0.1.30 recovery/evidence/publication safeguards remain active. See [the current guide](ENRICHMENT_V031_GUIDE.md).
