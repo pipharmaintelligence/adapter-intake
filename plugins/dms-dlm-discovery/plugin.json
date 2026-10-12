@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "dms-dlm-discovery",
-  "version": "1.0.0",
-  "description": "Guide lake and node discovery with the user's existing authorized DLM tools, confirm possible spelling matches, and inspect the selected node schema.",
+  "version": "1.1.0",
+  "description": "Resolve resource names with existing authorized MCP read tools, confirm spelling suggestions, and preserve selected identities. Includes the concrete DLM lake and node binding.",
   "author": {
     "name": "DMS AI"
   },
@@ -10,14 +10,14 @@
     "com.openai": {
       "interface": {
         "displayName": "DMS AI Discovery",
-        "shortDescription": "Find lakes and nodes",
-        "longDescription": "Use an existing authorized DLM connection to find lakes and nodes, confirm possible spelling matches, and inspect a selected node schema. This skills-only package does not supply or authorize MCP tools.",
+        "shortDescription": "Find authorized resources",
+        "longDescription": "Use existing authorized MCP reads to resolve resource names, confirm spelling suggestions, and preserve scope. Includes specific lake and node guidance. This skills-only package does not supply or authorize MCP tools.",
         "developerName": "DMS AI",
         "category": "Productivity",
         "capabilities": [
           "Interactive"
         ],
-        "defaultPrompt": "Help me find a DLM lake or node and confirm any spelling suggestions."
+        "defaultPrompt": "Help me find an authorized resource and confirm any spelling suggestions."
       }
     }
   }

@@ -52,6 +52,56 @@ executor is selected; no new bridge or transport is invented in intake.
 Intake tests: `python -m unittest discover -s tests -p
 "test_abstract_mcp_dlm_0_1_1.py" -v`.
 
+## Generic orchestration and callable reuse preparation
+
+`mcp_read_resolution_v0_1_1.py` is a resource-neutral reviewed helper. It checks
+the normalized trusted envelope against a frozen `ReadContract` and applies a
+`NameProfile` to an adapter's safe projected records. DLM supplies its existing
+role/capability tuple, lake/node identity fields, bounded fallback selectors,
+and positive projection. Another approved adapter can use the same helper with
+its own project, collection, document, or job contract. Tests exercise a project
+profile with a different tool, server, capability, ID and parent scope.
+
+Profiles are developer-reviewed code, never caller input. The helper supplies no
+transport, admission, credentials, executor registration, or capability expansion.
+Each consuming adapter must package the reviewed helper through its normal intake
+contract and validate its own resource scope before exposing records. The shared
+`abstract_mcp_capabilities.py` remains byte-identical for 0.1.0 coexistence.
+
+The helper accepts both existing Assets invocation-ID formats: compact lowercase
+hex and the lowercase hyphenated UUID format produced by the PHP bridge. All
+other envelope identity, provenance, count and output limits remain enforced.
+Unicode/case and punctuation normalization now works as documented.
+
+The internal manifest declares a bounded callable object result at `tool_results`
+and an optional `variables` input. **Required `tool_request` is preserved.**
+Variables accept only `q`, `page`, and `page_size` where that operation supports
+them. They cannot supply operation, lake/node scope, tool role or authority;
+conflicts with prepared filters fail before invocation. The runtime's existing
+generic callable-variables guard still applies. Public schemas remain unchanged
+and accept only the existing wrapped `tool_request`.
+
+For reuse, a reviewed parent asset declares the exact target version through the
+existing `callable_assets` contract, and the trusted execution lane must prepare
+the required `tool_request` and admit the child's exact three runtime-tool roles.
+Do not place `lake_id`/`node_key` in variables, rename them to bypass the guard,
+or serialize a tool request into a scalar. A variables-only `invoke_asset` call
+cannot satisfy this asset's required prepared input. Current direct callable
+planning can reject that missing preparation; this declaration is reuse
+preparation, not proof that nested runtime-tool authority is available.
+
+Run a parent-to-child execution proof in the intended existing lane before
+enabling a consumer. Propagate `tool_results.lookup.requires_confirmation` to an
+interactive host; a noninteractive agent stops dependent reads until its caller
+resolves the selection. Do not widen executor kinds or add a per-adapter handler
+to bypass missing authority. Promotion, runtime admission, MCP publication and
+ChatGPT plugin distribution are separate release steps.
+
+Plugin `dms-dlm-discovery@1.1.0` adds a generic `mcp-resource-discovery` Skill
+alongside the existing DLM-specific Skill. Neither is an adapter execution
+dependency. The generic Skill follows advertised contracts without assuming lake
+IDs, node fields, tool names, or a particular capability count.
+
 ## Pagination and response inspection
 
 The adapter version packages **all three roles** (`lakes.list`, `nodes.list`,

@@ -8,11 +8,12 @@ from __future__ import annotations
 
 import json
 import re
-import unicodedata
-from difflib import SequenceMatcher
 from typing import Any
 
 from adapters.base import Adapter
+from .mcp_read_resolution_v0_1_1 import (
+    NameProfile, ReadContract, resolve_names, validate_read_result,
+)
 
 
 TOOL_ROLES = {
@@ -27,7 +28,6 @@ TOOL_CAPABILITIES = {
 }
 TRUSTED_TOOL_HANDLE = "@tool.abstract_mcp_dlm"
 TRUSTED_TOOL_SERVER_REF = "mcp.abstract_dlm"
-_TRUSTED_INVOCATION_ID = re.compile(r"^mti_[a-f0-9]{32}$")
 _ALLOWED_KEYS = {
     "lakes.list": frozenset({"operation", "q", "page_size"}),
     "nodes.list": frozenset({"operation", "lake_id", "q", "page", "page_size"}),
@@ -66,7 +66,10 @@ class AbstractMcpDlmReadAdapter(Adapter):
         All real permissions and tool execution are enforced outside this adapter.
         This function performs only a second, deterministic contract check.
         """
-        if not isinstance(inputs, dict) or set(inputs) != {"tool_request"}:
+        if (
+            not isinstance(inputs, dict) or "tool_request" not in inputs
+            or set(inputs) - {"tool_request", "variables"}
+        ):
             raise DlmMcpReadError("dlm_mcp_input_roles_invalid")
         request = inputs["tool_request"]
         if not isinstance(request, dict) or isinstance(request, list):
@@ -76,6 +79,18 @@ class AbstractMcpDlmReadAdapter(Adapter):
             raise DlmMcpReadError("dlm_mcp_operation_unavailable")
         if set(request) - _ALLOWED_KEYS[operation]:
             raise DlmMcpReadError("dlm_mcp_request_fields_forbidden")
+
+        # Callable reuse keeps operation and resource scope in the required,
+        # trusted prepared tool_request. Variables carry only bounded filters.
+        # The runtime also applies its generic callable-variables guard.
+        if "variables" in inputs:
+            variables = inputs["variables"]
+            allowed = _ALLOWED_KEYS[operation] & {"q", "page", "page_size"}
+            if not isinstance(variables, dict) or set(variables) - allowed:
+                raise DlmMcpReadError("dlm_mcp_variables_invalid")
+            if any(key in request and request[key] != value for key, value in variables.items()):
+                raise DlmMcpReadError("dlm_mcp_variables_conflict")
+            request = {**request, **variables}
 
         tool_input = self._arguments(operation, request)
         invoke_tool = getattr(inputs, "invoke_tool", None)
@@ -170,84 +185,25 @@ class AbstractMcpDlmReadAdapter(Adapter):
         role: str,
         invoke_tool: Any,
     ) -> dict[str, Any]:
-        """Find safe spelling candidates without changing the authorized role.
-
-        Suggestions are not selected resources. ChatGPT must confirm before
-        using a suggested lake_id/node_key in a subsequent operation.
-        """
-        sample = records
-        source = "filtered_search"
-        coverage = _lookup_coverage(result)
-        term = _search_text(query)
-        if (
-            not records and len(term) >= 4
-            and (operation == "lakes.list" or selectors["page"] == 1)
-        ):
-            # The current Core lakes API has no page selector. Discovery may
-            # cover only the first 50 authorized rows. Never claim full search
-            # coverage if Core does not provide an explicit has_more=false.
+        """Use the resource-neutral resolver with the reviewed DLM profile."""
+        fallback = None
+        if operation == "lakes.list" or selectors["page"] == 1:
             fallback = {"limit": MAX_PAGE_SIZE}
             if operation == "nodes.list":
                 fallback.update({"lake_id": selectors["lake_id"], "page": 1})
-            try:
-                discovered = invoke_tool(role, input=fallback, on_error="raise")
-                _validate_runtime_tool_envelope(
-                    discovered, operation=operation, role=role,
-                )
-                candidates = discovered["records"]
-                if len(candidates) > MAX_PAGE_SIZE:
-                    raise DlmMcpReadError("dlm_mcp_response_limit_exceeded")
-                _lookup_coverage(discovered, strict=True)
-                sample = AbstractMcpDlmReadAdapter._project(
-                    operation, candidates, fallback,
-                )
-                coverage = _lookup_coverage(discovered)
-                source = "bounded_catalogue"
-            except Exception:
-                # The primary filtered search was valid. A failed optional
-                # discovery must not become a false "not found" claim, leak
-                # upstream diagnostics or invent a suggestion.
-                return {
-                    "query": query.strip(),
-                    "status": "unresolved",
-                    "requires_confirmation": True,
-                    "coverage": "unknown",
-                    "source": "discovery_unavailable",
-                    "candidates": [],
-                }
-
-        ranked = _rank_name_candidates(operation, term, sample)
-        exact = [row for row in ranked if row["match_type"] == "exact"]
-        if len(exact) > 1:
-            status = "ambiguous"
-        elif len(exact) == 1:
-            status = "exact"
-        elif ranked:
-            status = "suggestions"
-        else:
-            status = "no_match" if coverage == "complete" else "unresolved"
-
-        # An exact *identifier* can be selected independently of a truncated
-        # catalogue; a name-only match is selectable only if coverage is known
-        # complete. All approximate matches always require user confirmation.
-        resolved_id = None
-        if status == "exact":
-            candidate = exact[0]
-            identifier = candidate["lake_id"] if operation == "lakes.list" else candidate["node_key"]
-            if _search_text(identifier) == term or coverage == "complete":
-                resolved_id = identifier
-        visible = exact if exact else ranked
-        output: dict[str, Any] = {
-            "query": query.strip(),
-            "status": status,
-            "requires_confirmation": resolved_id is None,
-            "coverage": coverage,
-            "source": source,
-            "candidates": visible[:3],
-        }
-        if resolved_id is not None:
-            output["resolved_id"] = resolved_id
-        return output
+        return resolve_names(
+            query=query, records=records, result=result,
+            contract=_read_contract(operation, role),
+            profile=NameProfile(
+                id_key="lake_id" if operation == "lakes.list" else "node_key",
+                candidate_keys=("lake_id", "name") if operation == "lakes.list"
+                else ("lake_id", "node_key", "name"),
+                ignored_nouns=("lake", "node"),
+            ),
+            invoke_tool=invoke_tool,
+            project=lambda rows, scope: AbstractMcpDlmReadAdapter._project(operation, rows, scope),
+            fallback_input=fallback, error=_read_error,
+        )
 
     @staticmethod
     def _arguments(operation: str, request: dict[str, Any]) -> dict[str, Any]:
@@ -315,103 +271,21 @@ class AbstractMcpDlmReadAdapter(Adapter):
         return projected
 
 
-def _validate_runtime_tool_envelope(
-    result: Any, *, operation: str, role: str
-) -> None:
-    """Validate the exact successful Assets direct-tool envelope.
-
-    Source: TrustedDirectRuntimeToolSession.invoke. Trusted runtime remains
-    responsible for verifying the signed role/capability and caller scope.
-    """
-    if not isinstance(result, dict):
-        raise DlmMcpReadError("dlm_mcp_tool_envelope_invalid")
-    if result.get("status") != "completed":
-        raise DlmMcpReadError("dlm_mcp_tool_not_completed")
-    if (
-        result.get("operation") != "invoke"
-        or result.get("capability_ref") != TOOL_CAPABILITIES[operation]
-        or result.get("tool_handle") != TRUSTED_TOOL_HANDLE
-        or result.get("tool_server_ref") != TRUSTED_TOOL_SERVER_REF
-    ):
-        raise DlmMcpReadError("dlm_mcp_tool_identity_mismatch")
-
-    records = result.get("records")
-    if not isinstance(records, list):
-        raise DlmMcpReadError("dlm_mcp_records_invalid")
-    proof = result.get("provenance")
-    if not isinstance(proof, dict):
-        raise DlmMcpReadError("dlm_mcp_tool_provenance_invalid")
-    invocation_id = proof.get("invocation_id")
-    if (
-        proof.get("runtime_mcp_tool") is not True
-        or proof.get("role") != role
-        or not isinstance(invocation_id, str)
-        or _TRUSTED_INVOCATION_ID.fullmatch(invocation_id) is None
-        or type(proof.get("record_count")) is not int
-        or proof["record_count"] != len(records)
-        or type(proof.get("cache_hit")) is not bool
-        or type(proof.get("duration_ms")) is not int
-        or proof["duration_ms"] < 0
-    ):
-        raise DlmMcpReadError("dlm_mcp_tool_provenance_invalid")
+def _read_error(code: str) -> DlmMcpReadError:
+    return DlmMcpReadError("dlm_mcp_" + code)
 
 
-
-def _lookup_coverage(result: dict[str, Any], *, strict: bool = False) -> str:
-    """Return only coverage explicitly supported by trusted pagination data."""
-    more = result.get("has_more")
-    if "has_more" in result and type(more) is not bool:
-        raise DlmMcpReadError("dlm_mcp_pagination_invalid")
-    if strict and more is True and not result["records"]:
-        raise DlmMcpReadError("dlm_mcp_pagination_invalid")
-    if more is False:
-        return "complete"
-    if more is True:
-        return "partial"
-    return "unknown"
+def _read_contract(operation: str, role: str) -> ReadContract:
+    return ReadContract(
+        role=role, capability_ref=TOOL_CAPABILITIES[operation],
+        tool_handle=TRUSTED_TOOL_HANDLE, tool_server_ref=TRUSTED_TOOL_SERVER_REF,
+        max_records=MAX_SCHEMA_FIELDS if operation == "nodes.schema" else MAX_PAGE_SIZE,
+    )
 
 
-def _search_text(value: str) -> str:
-    """Lightweight Unicode/case normalization for name and identifier search."""
-    text = unicodedata.normalize("NFKC", value).casefold()
-    text = re.sub(r"[\\W_]+", " ", text, flags=re.UNICODE).strip()
-    text = re.sub(r"^(?:lake|node)\\s+", "", text)
-    return re.sub(r"\\s+(?:lake|node)$", "", text)
+def _validate_runtime_tool_envelope(result: Any, *, operation: str, role: str) -> None:
+    validate_read_result(result, _read_contract(operation, role), _read_error)
 
-
-def _rank_name_candidates(
-    operation: str, term: str, records: list[dict[str, Any]],
-) -> list[dict[str, Any]]:
-    """Deterministic *spelling* suggestions; never semantic or authority proof."""
-    id_key = "lake_id" if operation == "lakes.list" else "node_key"
-    scored: list[tuple[int, float, str, str, dict[str, Any]]] = []
-    for record in records:
-        identifier = record[id_key]
-        name = record.get("name", identifier)
-        normalized = [_search_text(identifier), _search_text(name)]
-        normalized.extend(
-            token for token in normalized[-1].split() if len(token) >= 4
-        )
-        if term in normalized:
-            priority, similarity, kind = 0, 1.0, "exact"
-        elif len(term) >= 3 and any(term in item for item in normalized):
-            priority, similarity, kind = 1, 1.0, "partial_name"
-        else:
-            similarity = max(
-                (SequenceMatcher(None, term, item).ratio()
-                 for item in normalized if len(term) >= 4 and len(item) >= 4),
-                default=0.0,
-            )
-            if similarity < 0.74:
-                continue
-            priority, kind = 2, "close_spelling"
-        safe = {"lake_id": record["lake_id"], "name": name} if operation == "lakes.list" else {
-            "lake_id": record["lake_id"], "node_key": identifier, "name": name,
-        }
-        safe["match_type"] = kind
-        scored.append((priority, -similarity, name.casefold(), identifier, safe))
-    scored.sort(key=lambda item: item[:4])
-    return [item[-1] for item in scored[:3]]
 
 def _identifier(value: Any) -> str:
     if not isinstance(value, str) or not _IDENTIFIER.fullmatch(value.strip()):

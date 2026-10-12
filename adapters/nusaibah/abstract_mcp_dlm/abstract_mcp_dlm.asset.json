@@ -22,7 +22,18 @@
         "tool_request": {
           "required": true,
           "shape": "object"
+        },
+        "variables": {
+          "required": false,
+          "shape": "object"
         }
+      },
+      "callable": {
+        "enabled": true,
+        "result_key": "tool_results",
+        "result_shape": "object",
+        "max_result_bytes": 65536,
+        "timeout_seconds": 120
       },
       "outputs": {
         "tool_results": {

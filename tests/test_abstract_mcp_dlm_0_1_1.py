@@ -19,8 +19,13 @@ def _subject():
     # Exercise the actual class against an isolated Adapter test double.
     source = MODULE.read_text(encoding="utf-8")
     source = source.replace("from adapters.base import Adapter", "class Adapter:\n    pass")
+    source = source.replace("from .mcp_read_resolution_v0_1_1 import", "from mcp_read_resolution_v0_1_1 import")
     namespace = {"__name__": "dlm_mcp_intake_test"}
-    exec(compile(source, str(MODULE), "exec"), namespace)
+    sys.path.insert(0, str(ASSET))
+    try:
+        exec(compile(source, str(MODULE), "exec"), namespace)
+    finally:
+        sys.path.remove(str(ASSET))
     return namespace["AbstractMcpDlmReadAdapter"](), namespace["DlmMcpReadError"]
 
 
@@ -96,7 +101,9 @@ class ReadOnlyMcpContractTest(unittest.TestCase):
         self.assertEqual(["0.1.1"], list(manifest["versions"]))
         self.assertIn("adapter_module: abstract_mcp_dlm_v0_1_1_adapter.py", yaml)
         self.assertIn("  - abstract_mcp_capabilities.py", yaml)
-        self.assertEqual({"tool_request"}, set(manifest["versions"]["0.1.1"]["inputs"]))
+        self.assertEqual({"tool_request", "variables"}, set(manifest["versions"]["0.1.1"]["inputs"]))
+        self.assertTrue(manifest["versions"]["0.1.1"]["inputs"]["tool_request"]["required"])
+        self.assertFalse(manifest["versions"]["0.1.1"]["inputs"]["variables"]["required"])
         self.assertEqual(
             {"dlm_lakes_list", "dlm_nodes_list", "dlm_nodes_schema"},
             set(manifest["versions"]["0.1.1"]["runtime_tools"]),
@@ -421,6 +428,8 @@ class ReadOnlyMcpContractTest(unittest.TestCase):
                 "class Adapter:\n    pass\n", encoding="utf-8",
             )
             (package / MODULE.name).write_bytes(MODULE.read_bytes())
+            helper = ASSET / "mcp_read_resolution_v0_1_1.py"
+            (package / helper.name).write_bytes(helper.read_bytes())
             code = (
                 "import sys\n"
                 f"sys.path.insert(0, {str(root)!r})\n"
@@ -509,6 +518,105 @@ class ReadOnlyMcpContractTest(unittest.TestCase):
 
 
 
+class ReusableReadResolutionTest(unittest.TestCase):
+    def test_both_assets_invocation_id_shapes_and_malformed_ids(self):
+        adapter, error = _subject()
+        request = {"operation": "lakes.list"}
+        for identity in ("mti_" + "a" * 32, "mti_11111111-1111-4111-8111-111111111111"):
+            response = _trusted_fixture(request, {"status": "completed", "records": []})
+            response["provenance"]["invocation_id"] = identity
+            out, _ = _run(adapter, request, response, trusted_fixture=False)
+            self.assertEqual("completed", out["status"])
+        for identity in ("mti_" + "A" * 32, "mti_123", "mti_" + "g" * 32,
+                         "mti_111111111111-4111-8111-111111111111", "mti_" + "a" * 32 + "\n"):
+            response = _trusted_fixture(request, {"status": "completed", "records": []})
+            response["provenance"]["invocation_id"] = identity
+            with self.subTest(identity=identity), self.assertRaisesRegex(error, "tool_provenance_invalid"):
+                _run(adapter, request, response, trusted_fixture=False)
+
+    def test_callable_filters_preserve_the_prepared_scope_and_original_request(self):
+        adapter, _ = _subject()
+        request = {"operation": "nodes.list", "lake_id": "lake-7"}
+        inputs = ToolInput(_trusted_fixture(request, {"status": "completed", "records": []}))
+        inputs.update(tool_request=request, variables={"q": "Trials", "page": 2, "page_size": 5})
+        out = adapter.invoke(inputs, {})["outputs"]["tool_results"]
+        self.assertEqual([("dlm_nodes_list", {
+            "lake_id": "lake-7", "search": "Trials", "page": 2, "limit": 5,
+        }, "raise")], inputs.calls)
+        self.assertEqual({"operation": "nodes.list", "lake_id": "lake-7"}, request)
+        self.assertEqual(2, out["page"])
+
+    def test_callable_variables_cannot_supply_scope_authority_or_conflicting_filters(self):
+        adapter, error = _subject()
+        for variables in ({"lake_id": "other"}, {"node_key": "other"},
+                          {"operation": "lakes.list"}, {"role": "admin"},
+                          {"profile": {}}, {"q": "different"}, None, []):
+            inputs = ToolInput()
+            inputs.update(tool_request={"operation": "nodes.list", "lake_id": "lake-7", "q": "Trials"},
+                          variables=variables)
+            with self.subTest(variables=variables), self.assertRaises(error):
+                adapter.invoke(inputs, {})
+            self.assertEqual([], inputs.calls)
+        with self.assertRaisesRegex(error, "input_roles_invalid"):
+            adapter.invoke({"variables": {"q": "Trials"}}, {})
+
+    def test_name_normalization_handles_unicode_punctuation_and_resource_nouns(self):
+        adapter, _ = _subject()
+        out, _ = _run(adapter, {"operation": "lakes.list", "q": "ＬＡＫＥ  Hyper"}, {
+            "status": "completed", "has_more": False,
+            "records": [{"lake_id": "lake-7", "name": "Hyper_Lake"}],
+        })
+        self.assertEqual("exact", out["lookup"]["status"])
+        self.assertEqual("lake-7", out["lookup"]["resolved_id"])
+
+    def test_generic_profile_resolves_an_unrelated_resource_with_its_own_contract(self):
+        adapter, _ = _subject()
+        namespace = adapter.invoke.__globals__
+        ReadContract, NameProfile = namespace["ReadContract"], namespace["NameProfile"]
+        resolve = namespace["resolve_names"]
+        contract = ReadContract("project_find", "projects.list", "@tool.projects", "mcp.projects", 5)
+        profile = NameProfile("project_id", ("project_id", "name"), ignored_nouns=("project",))
+        calls = []
+        def envelope(records, more=False):
+            return {"status": "completed", "operation": "invoke", "records": records,
+                    "capability_ref": contract.capability_ref, "tool_handle": contract.tool_handle,
+                    "tool_server_ref": contract.tool_server_ref, "has_more": more,
+                    "provenance": {"runtime_mcp_tool": True, "role": contract.role,
+                                   "invocation_id": "mti_" + "b" * 32,
+                                   "record_count": len(records), "cache_hit": False, "duration_ms": 0}}
+        def invoke(role, *, input, on_error):
+            calls.append((role, input, on_error))
+            return envelope([{"project_id": "prj-17", "name": "Hyper", "credentials": "hidden"}])
+        project = lambda rows, scope: [{"project_id": row["project_id"], "name": row["name"]} for row in rows]
+        lookup = resolve(query="Hyser", records=[], result=envelope([]), contract=contract,
+                         profile=profile, invoke_tool=invoke, project=project,
+                         fallback_input={"workspace_id": "ws-2", "limit": 5}, error=RuntimeError)
+        self.assertEqual([("project_find", {"workspace_id": "ws-2", "limit": 5}, "raise")], calls)
+        self.assertEqual("suggestions", lookup["status"])
+        self.assertTrue(lookup["requires_confirmation"])
+        self.assertEqual({"project_id": "prj-17", "name": "Hyper", "match_type": "close_spelling"},
+                         lookup["candidates"][0])
+        self.assertNotIn("lake", json.dumps(lookup))
+        self.assertNotIn("credentials", json.dumps(lookup))
+        bad = envelope([{"project_id": "prj-17", "name": "Hyper"}])
+        bad["capability_ref"] = "projects.delete"
+        lookup = resolve(query="Hyser", records=[], result=envelope([]), contract=contract,
+                         profile=profile, invoke_tool=lambda *args, **kwargs: bad, project=project,
+                         fallback_input={"workspace_id": "ws-2", "limit": 5}, error=RuntimeError)
+        self.assertEqual("unresolved", lookup["status"])
+        self.assertEqual([], lookup["candidates"])
+
+    def test_reuse_contract_keeps_prepared_request_required_and_public_schema_stable(self):
+        manifest = json.loads((ASSET / "abstract_mcp_dlm.asset.json").read_text())
+        contract = manifest["versions"]["0.1.1"]["callable"]
+        self.assertEqual({"enabled": True, "result_key": "tool_results", "result_shape": "object",
+                          "max_result_bytes": 65536, "timeout_seconds": 120}, contract)
+        metadata = json.loads((ASSET / "capabilities.v0.1.1.json").read_text())
+        for capability in metadata["capabilities"].values():
+            self.assertEqual({"tool_request"}, set(capability["remote_mcp"]["input_schema"]["properties"]))
+        self.assertIn("  - mcp_read_resolution_v0_1_1.py", (ASSET / "adapter.yaml").read_text())
+
+
 class DiscoveryOrchestrationPackageTest(unittest.TestCase):
     PLUGIN_ROOT = ROOT / "plugins" / "dms-dlm-discovery"
     SKILL_ROOT = PLUGIN_ROOT / "skills" / "dlm-discovery-orchestration"
@@ -535,7 +643,7 @@ class DiscoveryOrchestrationPackageTest(unittest.TestCase):
     def test_chatgpt_plugin_owns_a_contained_instruction_package(self):
         plugin = json.loads((self.PLUGIN_ROOT / "plugin.json").read_text(encoding="utf-8"))
         self.assertEqual("dms-dlm-discovery", plugin["name"])
-        self.assertEqual("1.0.0", plugin["version"])
+        self.assertEqual("1.1.0", plugin["version"])
         self.assertEqual(
             "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
             plugin["$schema"],
@@ -553,7 +661,8 @@ class DiscoveryOrchestrationPackageTest(unittest.TestCase):
         self.assertIn("not an Assets execution dependency", markdown)
         self.assertNotIn("references/capabilities.v0.1.1.json", markdown)
         self.assertEqual(
-            {"README.md", "plugin.json", "skills/dlm-discovery-orchestration/SKILL.md"},
+            {"README.md", "plugin.json", "skills/dlm-discovery-orchestration/SKILL.md",
+             "skills/mcp-resource-discovery/SKILL.md"},
             {path.relative_to(self.PLUGIN_ROOT).as_posix()
              for path in self.PLUGIN_ROOT.rglob("*") if path.is_file()},
         )

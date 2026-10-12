@@ -1,8 +1,11 @@
 # DMS AI Discovery — ChatGPT plugin
 
-This skills-only plugin owns `dlm-discovery-orchestration`. It guides ChatGPT
-through literal lake/node search, possible spelling matches, confirmation,
-and follow-up using returned identifiers.
+Version `1.1.0` of this skills-only plugin owns the generic
+`mcp-resource-discovery` skill and the existing `dlm-discovery-orchestration`
+binding. The generic skill applies to reviewed MCP resource search contracts,
+including projects, collections, documents and jobs. The DLM binding keeps the
+existing three operation names and their lake/node scope rules. The plugin
+identity stays `dms-dlm-discovery` for continuity.
 
 The Python asset `nusaibah.abstract_mcp_dlm@0.1.1` does not consume this skill.
 Neither its `skills[]` nor its `published_skills[]` declares an execution
@@ -12,12 +15,12 @@ publication do not install it into ChatGPT.
 ## Distribution
 
 The portable source is this directory: root `plugin.json` and
-`skills/dlm-discovery-orchestration/SKILL.md`. Package the directory as a ZIP
+both `skills/*/SKILL.md` files. Package the directory as a ZIP
 with one top-level `dms-dlm-discovery/` folder. Publish/install it through the
 normal ChatGPT Plugin Skill mechanism, separately from adapter promotion.
 This PR supplies reviewed source; it does not publish or install the plugin.
 
-The package uses the conversation's existing authorized DLM tools. It has no
+The package uses the conversation's existing authorized MCP tools. It has no
 `mcp.json` or `.app.json`: no verified endpoint or registered app identity is
 provided here. Enable the intended DLM connection separately. A missing
 connection, missing node tool, or missing schema tool is reported as unavailable;
