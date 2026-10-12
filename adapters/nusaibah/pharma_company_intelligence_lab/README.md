@@ -1,5 +1,9 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.31 complete backup envelope
+
+Original research and the same one-time source-bound fallback now receive the identical complete response envelope: required fields, schema/status literals and existing evidence/type bounds. This closes the final prompt parity gap found before delivery. Benchmark remains disabled and all 0.1.30 recovery/evidence/publication safeguards remain active. See [the current guide](ENRICHMENT_V031_GUIDE.md).
+
 ## 0.1.30 terminal JSON recovery
 
 The same one-time resolver now also covers trusted terminal JSON rejection before an Agent business object reaches the adapter. It receives the original bounded section/subsection inputs and response contract, reconstructs only from supplied evidence, and returns to all original validators, exact-span checks and scoped critics. It cannot recurse or request another schema backup. Persistent content problems become withheld work with diagnostics; validated sibling sections and other companies continue. Semantically identical company-ID string echoes normalize without inventing an identity; different model identity echoes are withheld. Core admission, authentication, privilege and transport errors remain strict. Benchmark remains disabled. See [the current guide](ENRICHMENT_V030_GUIDE.md).
