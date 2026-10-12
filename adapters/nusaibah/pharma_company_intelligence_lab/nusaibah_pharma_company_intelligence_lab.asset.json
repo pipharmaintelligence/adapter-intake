@@ -615,7 +615,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_evidence_critic",
-              "version": "1.0.9",
+              "version": "1.0.10",
               "visibility": "internal",
               "status": "active",
               "steps": [
