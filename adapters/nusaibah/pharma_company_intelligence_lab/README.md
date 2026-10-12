@@ -1,6 +1,10 @@
 # Nusaibah Pharma Company Intelligence Lab
 
-## 0.1.27 production enrichment
+## 0.1.28 section enrichment parity
+
+The live 0.1.27 cycle completed but withheld publication at section critique. This opt-in correction declares the critic's exact allowed IDs, uses each actual section planner chunk, retains negative diagnostics, and benchmarks the complete memory document. It preserves explicit inference/date/relationship qualifications and the existing Core Skill ZIP/partition/CAS/history lane. One targeted pass; automated checks do not require human approval. See [the current developer guide](ENRICHMENT_V028_GUIDE.md). Promotion/tests alone are not live publication proof.
+
+## 0.1.27 historical production enrichment
 
 Run one targeted intelligence pass from supplied CompanyContext using section plans, literal source chunks, exact evidence, independent section critics and per-question benchmark checks. `memory_mode=apply` publishes supported memory and methodology changes through the existing Core Dynamic Skill ZIP/partition/history lane. These automated checks improve enrichment and do not require human candidate approval.
 
