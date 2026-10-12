@@ -508,5 +508,186 @@ class ReadOnlyMcpContractTest(unittest.TestCase):
             self.assertNotIn(forbidden, source)
 
 
+
+class DiscoveryOrchestrationPackageTest(unittest.TestCase):
+    SKILL_ROOT = ASSET / "skills" / "dlm-discovery-orchestration"
+
+    def metadata(self):
+        return json.loads(
+            (self.SKILL_ROOT / "references" / "capabilities.v0.1.1.json").read_text(
+                encoding="utf-8",
+            )
+        )
+
+    def test_fixed_skill_is_pinned_to_this_asset_version(self):
+        manifest = json.loads((ASSET / "abstract_mcp_dlm.asset.json").read_text())
+        reference, = manifest["versions"]["0.1.1"]["skills"]
+        entries = [
+            {"path": path.relative_to(self.SKILL_ROOT).as_posix(),
+             "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+            for path in sorted(self.SKILL_ROOT.rglob("*")) if path.is_file()
+        ]
+        entries.sort(key=lambda item: item["path"])
+        canonical = json.dumps(
+            entries, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+        ).encode("utf-8")
+        self.assertEqual({
+            "skill_ref": "nusaibah.dlm-discovery-orchestration",
+            "version": "1.0.0",
+            "digest": "sha256:" + hashlib.sha256(canonical).hexdigest(),
+        }, reference)
+        markdown = (self.SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        self.assertTrue(markdown.startswith("---\nname: dlm-discovery-orchestration\n"))
+        self.assertIn("description:", markdown.split("---", 2)[1])
+        self.assertTrue(
+            (self.SKILL_ROOT / "references" / "capabilities.v0.1.1.json").is_file(),
+        )
+
+    def test_metadata_has_exact_capability_and_role_parity(self):
+        manifest = json.loads((ASSET / "abstract_mcp_dlm.asset.json").read_text())
+        roles = manifest["versions"]["0.1.1"]["runtime_tools"]
+        metadata = self.metadata()
+        self.assertEqual("nusaibah.abstract_mcp_dlm", metadata["asset_key"])
+        self.assertEqual("0.1.1", metadata["asset_version"])
+        self.assertEqual("templates_only", metadata["publication_status"])
+        self.assertEqual(
+            {"dlm.lakes.list", "dlm.nodes.list", "dlm.nodes.schema"},
+            set(metadata["capabilities"]),
+        )
+        for capability, definition in metadata["capabilities"].items():
+            role = definition["tool_role"]
+            self.assertEqual(capability, roles[role]["capability_ref"])
+        self.assertEqual(
+            {"dlm_list_lakes", "dlm_list_nodes", "dlm_get_node_schema"},
+            {definition["remote_mcp"]["tool_name"]
+             for definition in metadata["capabilities"].values()},
+        )
+
+    def test_descriptors_respect_the_current_assets_projection_budget(self):
+        def depth(value):
+            if isinstance(value, dict):
+                return max((1 + depth(item) for item in value.values()), default=0)
+            if isinstance(value, list):
+                return max((1 + depth(item) for item in value), default=0)
+            return 0
+
+        for definition in self.metadata()["capabilities"].values():
+            with self.subTest(capability=definition["operation"]):
+                remote = definition["remote_mcp"]
+                self.assertGreater(len(remote["description"]), 0)
+                self.assertLessEqual(len(remote["description"]), 240)
+                for field in ("input_schema", "output_schema"):
+                    self.assertLessEqual(
+                        len(json.dumps(remote[field]).encode("utf-8")), 32768,
+                    )
+                    self.assertLessEqual(depth(remote[field]), 12)
+
+    def test_public_schemas_use_only_the_real_adapter_selectors_and_limits(self):
+        adapter, _ = _subject()
+        contract = adapter.invoke.__globals__
+        for definition in self.metadata()["capabilities"].values():
+            operation = definition["operation"]
+            schema = definition["remote_mcp"]["input_schema"]
+            self.assertFalse(schema["additionalProperties"])
+            self.assertEqual(["tool_request"], schema["required"])
+            self.assertEqual({"tool_request"}, set(schema["properties"]))
+            request = schema["properties"]["tool_request"]
+            self.assertFalse(request["additionalProperties"])
+            self.assertEqual(
+                contract["_ALLOWED_KEYS"][operation], set(request["properties"]),
+            )
+            self.assertEqual(
+                [operation], request["properties"]["operation"]["enum"],
+            )
+            if operation != "nodes.schema":
+                self.assertEqual(
+                    contract["MAX_PAGE_SIZE"],
+                    request["properties"]["page_size"]["maximum"],
+                )
+            if operation == "nodes.list":
+                self.assertIn("lake_id", request["required"])
+                self.assertEqual(
+                    contract["MAX_PAGE"], request["properties"]["page"]["maximum"],
+                )
+            if operation == "nodes.schema":
+                self.assertEqual(
+                    {"operation", "lake_id", "node_key"}, set(request["required"]),
+                )
+
+    def test_output_descriptors_expose_lookup_in_the_registered_asset_result(self):
+        for capability in ("dlm.lakes.list", "dlm.nodes.list"):
+            output = self.metadata()["capabilities"][capability]["remote_mcp"]["output_schema"]
+            self.assertEqual(["tool_results"], output["required"])
+            result = output["properties"]["tool_results"]
+            lookup = result["properties"]["lookup"]
+            self.assertFalse(lookup["additionalProperties"])
+            self.assertIn("requires_confirmation", lookup["required"])
+            self.assertIn("coverage", lookup["required"])
+            self.assertEqual(3, lookup["properties"]["candidates"]["maxItems"])
+            self.assertEqual(
+                {"exact", "suggestions", "ambiguous", "no_match", "unresolved"},
+                set(lookup["properties"]["status"]["enum"]),
+            )
+            candidate = lookup["properties"]["candidates"]["items"]
+            self.assertIn("lake_id", candidate["required"])
+            if capability == "dlm.nodes.list":
+                self.assertIn("node_key", candidate["required"])
+            else:
+                self.assertNotIn("next_page", result["properties"])
+        schema = self.metadata()["capabilities"]["dlm.nodes.schema"]["remote_mcp"]["output_schema"]
+        fields = schema["properties"]["tool_results"]["properties"]["records"]["items"]["properties"]["fields"]
+        self.assertEqual(100, fields["maxItems"])
+
+    def test_confirmed_lake_and_node_chain_uses_returned_identifiers(self):
+        # The simulated user confirmation is a conversational boundary, not
+        # an adapter permission field or automatic selection by the runtime.
+        adapter, _ = _subject()
+        class LakeSearchInput(ToolInput):
+            def invoke_tool(self, role, *, input, on_error):
+                self.calls.append((role, input, on_error))
+                rows = [] if "q" in input else [
+                    {"lake_id": "lake-7", "name": "Hyper"},
+                ]
+                return _trusted_fixture({"operation": "lakes.list"}, {
+                    "status": "completed", "records": rows, "has_more": False,
+                })
+        search = LakeSearchInput()
+        search["tool_request"] = {
+            "operation": "lakes.list", "q": "Hyser", "page_size": 20,
+        }
+        found = adapter.invoke(search, {})["outputs"]["tool_results"]["lookup"]
+        self.assertTrue(found["requires_confirmation"])
+        self.assertNotIn("resolved_id", found)
+        self.assertEqual(["dlm_lakes_list", "dlm_lakes_list"], [
+            call[0] for call in search.calls
+        ])
+        selected_lake = found["candidates"][0]  # simulated user: "Yes, Hyper"
+        self.assertEqual("Hyper", selected_lake["name"])
+        nodes, calls = _run(adapter, {
+            "operation": "nodes.list", "lake_id": selected_lake["lake_id"],
+            "q": "Trials", "page": 1, "page_size": 20,
+        }, {
+            "status": "completed", "has_more": False,
+            "records": [{"lake_id": "lake-7", "node_key": "node-9", "name": "Trials"}],
+        })
+        self.assertEqual("lake-7", calls[0][1]["lake_id"])
+        selected_node = nodes["lookup"]
+        self.assertFalse(selected_node["requires_confirmation"])
+        self.assertEqual("node-9", selected_node["resolved_id"])
+        schema, calls = _run(adapter, {
+            "operation": "nodes.schema", "lake_id": selected_lake["lake_id"],
+            "node_key": selected_node["resolved_id"],
+        }, {
+            "status": "completed",
+            "records": [{"lake_id": "lake-7", "node_key": "node-9",
+                         "fields": [{"name": "study_id", "type": "integer"}]}],
+        })
+        self.assertEqual(("dlm_nodes_schema", {
+            "lake_id": "lake-7", "node_key": "node-9",
+        }, "raise"), calls[0])
+        self.assertEqual("node-9", schema["records"][0]["node_key"])
+
+
 if __name__ == "__main__":
     unittest.main()
+

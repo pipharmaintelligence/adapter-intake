@@ -47,6 +47,13 @@
           }
         }
       },
+      "skills": [
+        {
+          "skill_ref": "nusaibah.dlm-discovery-orchestration",
+          "version": "1.0.0",
+          "digest": "sha256:cdeac019321a3203c97805c437210f3f8adb6e55fa579d39336cbba9d32ce6a9"
+        }
+      ],
       "runtime_tools": {
         "dlm_lakes_list": {
           "tool_handle": "@tool.abstract_mcp_dlm",
@@ -94,3 +101,4 @@
     }
   }
 }
+

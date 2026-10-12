@@ -1,0 +1,674 @@
+{
+  "metadata_version": "dlm_discovery_publication.v1",
+  "asset_key": "nusaibah.abstract_mcp_dlm",
+  "asset_version": "0.1.1",
+  "skill_ref": "nusaibah.dlm-discovery-orchestration",
+  "skill_version": "1.0.0",
+  "publication_status": "templates_only",
+  "capabilities": {
+    "dlm.lakes.list": {
+      "operation": "lakes.list",
+      "tool_role": "dlm_lakes_list",
+      "remote_mcp": {
+        "tool_name": "dlm_list_lakes",
+        "description": "Find authorized DLM lakes by name or spelling. Returns lake_id and lookup candidates. Confirm suggestions before using their IDs. Incomplete coverage is unresolved. Read-only; bounded to 50 rows; no lake pagination or semantic search.",
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tool_request"
+          ],
+          "properties": {
+            "tool_request": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "operation"
+              ],
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "lakes.list"
+                  ],
+                  "description": "Fixed operation for this public tool."
+                },
+                "q": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "description": "Literal lake or node name/spelling to search. Deterministic spelling suggestions are possible; synonyms and descriptions are not semantic queries."
+                },
+                "page_size": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 50,
+                  "default": 20,
+                  "description": "Maximum list records per read; default 20. The adapter's optional spelling fallback is independently bounded to 50 authorized records."
+                }
+              }
+            }
+          }
+        },
+        "output_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tool_results"
+          ],
+          "properties": {
+            "tool_results": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "page_size"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "dlm_mcp_read.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "lakes.list"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "lake_id",
+                      "name"
+                    ],
+                    "properties": {
+                      "lake_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      }
+                    }
+                  }
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "page_size": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 50
+                },
+                "has_more": {
+                  "type": "boolean",
+                  "description": "Explicit trusted pagination evidence. Absence means unknown, not false."
+                },
+                "truncated": {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ],
+                  "description": "The current read cannot provide a continuation."
+                },
+                "lookup": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "query",
+                    "status",
+                    "requires_confirmation",
+                    "coverage",
+                    "source",
+                    "candidates"
+                  ],
+                  "properties": {
+                    "query": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "exact",
+                        "suggestions",
+                        "ambiguous",
+                        "no_match",
+                        "unresolved"
+                      ],
+                      "description": "Suggestions and ambiguity require selection. no_match only establishes absence within complete searched coverage."
+                    },
+                    "requires_confirmation": {
+                      "type": "boolean",
+                      "description": "When true, ask the user before any dependent node/schema read. Ranking does not confirm intent."
+                    },
+                    "coverage": {
+                      "type": "string",
+                      "enum": [
+                        "complete",
+                        "partial",
+                        "unknown"
+                      ]
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "filtered_search",
+                        "bounded_catalogue",
+                        "discovery_unavailable"
+                      ]
+                    },
+                    "candidates": {
+                      "type": "array",
+                      "maxItems": 3,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "lake_id",
+                          "name",
+                          "match_type"
+                        ],
+                        "properties": {
+                          "lake_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120
+                          },
+                          "match_type": {
+                            "type": "string",
+                            "enum": [
+                              "exact",
+                              "partial_name",
+                              "close_spelling"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "resolved_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[A-Za-z0-9_.:-]{1,128}$",
+                      "description": "Resolved lake_id, not a display name. Only use with requires_confirmation=false."
+                    }
+                  },
+                  "description": "Present for a q search; the adapter may perform one bounded fallback through this same authorized list capability."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "dlm.nodes.list": {
+      "operation": "nodes.list",
+      "tool_role": "dlm_nodes_list",
+      "remote_mcp": {
+        "tool_name": "dlm_list_nodes",
+        "description": "Find authorized nodes in a selected lake_id. Returns node_key and lookup candidates. Confirm spelling suggestions before using their keys. Read-only; 50 rows per page. Follow returned next_page; unknown coverage is not proof of absence.",
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tool_request"
+          ],
+          "properties": {
+            "tool_request": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "operation",
+                "lake_id"
+              ],
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "nodes.list"
+                  ],
+                  "description": "Fixed operation for this public tool."
+                },
+                "lake_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9_.:-]{1,128}$",
+                  "description": "Exact lake_id returned by lake discovery and resolved or confirmed in this conversation."
+                },
+                "q": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "description": "Literal lake or node name/spelling to search. Deterministic spelling suggestions are possible; synonyms and descriptions are not semantic queries."
+                },
+                "page": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000,
+                  "default": 1,
+                  "description": "Start name discovery at page 1. Continue only with a returned next_page."
+                },
+                "page_size": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 50,
+                  "default": 20,
+                  "description": "Maximum list records per read; default 20. The adapter's optional spelling fallback is independently bounded to 50 authorized records."
+                }
+              }
+            }
+          }
+        },
+        "output_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tool_results"
+          ],
+          "properties": {
+            "tool_results": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "page_size",
+                "page"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "dlm_mcp_read.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "nodes.list"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "lake_id",
+                      "node_key"
+                    ],
+                    "properties": {
+                      "lake_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                      },
+                      "node_key": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      },
+                      "source_type": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      },
+                      "schema_status": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      },
+                      "processing_status": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      },
+                      "object_count": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "page_size": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 50
+                },
+                "page": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000
+                },
+                "next_page": {
+                  "type": "integer",
+                  "minimum": 2,
+                  "maximum": 1000,
+                  "description": "Only present for a real node continuation; never fabricate this value."
+                },
+                "has_more": {
+                  "type": "boolean",
+                  "description": "Explicit trusted pagination evidence. Absence means unknown, not false."
+                },
+                "truncated": {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ],
+                  "description": "The current read cannot provide a continuation."
+                },
+                "lookup": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "query",
+                    "status",
+                    "requires_confirmation",
+                    "coverage",
+                    "source",
+                    "candidates"
+                  ],
+                  "properties": {
+                    "query": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 120
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "exact",
+                        "suggestions",
+                        "ambiguous",
+                        "no_match",
+                        "unresolved"
+                      ],
+                      "description": "Suggestions and ambiguity require selection. no_match only establishes absence within complete searched coverage."
+                    },
+                    "requires_confirmation": {
+                      "type": "boolean",
+                      "description": "When true, ask the user before any dependent node/schema read. Ranking does not confirm intent."
+                    },
+                    "coverage": {
+                      "type": "string",
+                      "enum": [
+                        "complete",
+                        "partial",
+                        "unknown"
+                      ]
+                    },
+                    "source": {
+                      "type": "string",
+                      "enum": [
+                        "filtered_search",
+                        "bounded_catalogue",
+                        "discovery_unavailable"
+                      ]
+                    },
+                    "candidates": {
+                      "type": "array",
+                      "maxItems": 3,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "lake_id",
+                          "node_key",
+                          "name",
+                          "match_type"
+                        ],
+                        "properties": {
+                          "lake_id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                          },
+                          "node_key": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 120
+                          },
+                          "match_type": {
+                            "type": "string",
+                            "enum": [
+                              "exact",
+                              "partial_name",
+                              "close_spelling"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "resolved_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "pattern": "^[A-Za-z0-9_.:-]{1,128}$",
+                      "description": "Resolved node_key, not a display name. Only use with requires_confirmation=false."
+                    }
+                  },
+                  "description": "Present for a q search; the adapter may perform one bounded fallback through this same authorized list capability."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "dlm.nodes.schema": {
+      "operation": "nodes.schema",
+      "tool_role": "dlm_nodes_schema",
+      "remote_mcp": {
+        "tool_name": "dlm_get_node_schema",
+        "description": "Inspect an authorized node's schema using the selected lake_id and node_key. Resolve or confirm names with the list tools first. Returns up to 100 fields with names, types and optional nullable flags. Read-only; no document contents.",
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tool_request"
+          ],
+          "properties": {
+            "tool_request": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "operation",
+                "lake_id",
+                "node_key"
+              ],
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "nodes.schema"
+                  ],
+                  "description": "Fixed operation for this public tool."
+                },
+                "lake_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9_.:-]{1,128}$",
+                  "description": "Exact lake_id returned by lake discovery and resolved or confirmed in this conversation."
+                },
+                "node_key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "pattern": "^[A-Za-z0-9_.:-]{1,128}$",
+                  "description": "Exact node_key returned by node discovery in this same lake and resolved or confirmed in this conversation."
+                }
+              }
+            }
+          }
+        },
+        "output_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tool_results"
+          ],
+          "properties": {
+            "tool_results": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "field_count"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "dlm_mcp_read.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "nodes.schema"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 1,
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "lake_id",
+                      "node_key",
+                      "fields"
+                    ],
+                    "properties": {
+                      "lake_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                      },
+                      "node_key": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                      },
+                      "fields": {
+                        "type": "array",
+                        "maxItems": 100,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "name",
+                            "type"
+                          ],
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 120
+                            },
+                            "type": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 96
+                            },
+                            "nullable": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1
+                },
+                "field_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
