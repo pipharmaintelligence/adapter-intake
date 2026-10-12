@@ -58,7 +58,8 @@ class DiscoveryAgentSmokeTest(unittest.TestCase):
         namespace = {'__name__': 'prepared_smoke_test'}
         base = (ASSET / 'mcp_discovery_agent_smoke_adapter.py').read_text().replace('from adapters.base import Adapter', 'class Adapter:\n    pass')
         exec(compile(base, 'base_adapter', 'exec'), namespace)
-        module = (ASSET / 'mcp_discovery_agent_smoke_v0_1_1_adapter.py').read_text().replace('from .mcp_discovery_agent_smoke_adapter import McpDiscoveryAgentSmokeAdapter', '')
+        module = (ASSET / 'mcp_discovery_agent_smoke_v0_1_1_adapter.py').read_text().replace(
+            'try:\n    from .mcp_discovery_agent_smoke_adapter import McpDiscoveryAgentSmokeAdapter\nexcept ImportError:  # Existing external adapter-root discovery mode.\n    from mcp_discovery_agent_smoke_adapter import McpDiscoveryAgentSmokeAdapter', '')
         exec(compile(module, 'versioned_adapter', 'exec'), namespace)
         adapter = namespace['McpDiscoveryAgentSmokePreparedAdapter']()
         self.assertEqual(adapter.version, '0.1.1')
