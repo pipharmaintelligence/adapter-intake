@@ -1,5 +1,20 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.26 final-cycle candidate
+
+This version reads bounded supplied/retrieved source snapshots, resolves exact
+claim quotes through the existing pinned toolkit, and distinguishes ordinary
+single-company facts from bilateral relationships. Preview supports 1–3 portfolio
+passes with optional learned methodology. Existing runtime budgets remain finite.
+
+After exact independent caller review, the same asset's `memory_mode=apply`
+consumes its Core-retained candidate and uses the existing Dynamic Skill
+upload/CAS/history/readback capability without rerunning Agents. Preview retention
+alone is not publication. Partial/unconfirmed commits are reported honestly.
+
+See the [final-cycle developer guide](DEVELOPER_GUIDE.md)
+for evidence, review, initialization, budget and live-release criteria.
+
 ## 0.1.25 invocation response containment
 
 The existing safe runtime proof diagnostic now identifies terminal JSON failures
