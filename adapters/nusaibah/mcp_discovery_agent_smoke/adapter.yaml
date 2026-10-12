@@ -1,0 +1,13 @@
+asset_key: nusaibah.mcp_discovery_agent_smoke
+asset_version: 0.1.0
+package_target: python_runtime/adapters/intake/nusaibah/mcp_discovery_agent_smoke
+manifest: mcp_discovery_agent_smoke.asset.json
+adapter_module: mcp_discovery_agent_smoke_adapter.py
+optional_files:
+  - README.md
+release_stage: development
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false
