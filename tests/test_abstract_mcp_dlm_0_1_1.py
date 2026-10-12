@@ -124,6 +124,60 @@ class ReadOnlyMcpContractTest(unittest.TestCase):
         self.assertEqual(empty["records"], [])
         self.assertEqual(empty["status"], "completed")
 
+    def test_list_pagination_preserves_known_and_unknown_continuation(self):
+        adapter, _ = _subject()
+        first, _ = _run(adapter, {"operation": "lakes.list", "page_size": 1}, {
+            "status": "completed",
+            "records": [{"lake_id": "alpha", "name": "Alpha"}],
+            "has_more": True,
+        })
+        self.assertEqual(1, first["page_size"])
+        self.assertTrue(first["has_more"])
+        self.assertTrue(first["truncated"])
+        self.assertNotIn("next_page", first)
+
+        unknown, _ = _run(adapter, {"operation": "lakes.list"}, {
+            "status": "completed", "records": [],
+        })
+        self.assertEqual([], unknown["records"])
+        self.assertNotIn("has_more", unknown)
+        self.assertNotIn("truncated", unknown)
+
+        nodes, _ = _run(adapter, {
+            "operation": "nodes.list", "lake_id": "alpha", "page": 2, "page_size": 1,
+        }, {
+            "status": "completed",
+            "records": [{"lake_id": "alpha", "node_key": "n1"}],
+            "has_more": True,
+        })
+        self.assertEqual(2, nodes["page"])
+        self.assertEqual(3, nodes["next_page"])
+        self.assertTrue(nodes["has_more"])
+
+    def test_empty_node_list_is_valid_but_empty_schema_is_not(self):
+        adapter, error = _subject()
+        empty_nodes, _ = _run(adapter, {
+            "operation": "nodes.list", "lake_id": "alpha",
+        }, {"status": "completed", "records": [], "has_more": False})
+        self.assertEqual([], empty_nodes["records"])
+        self.assertFalse(empty_nodes["has_more"])
+
+        with self.assertRaisesRegex(error, "dlm_mcp_schema_unavailable"):
+            _run(adapter, {
+                "operation": "nodes.schema", "lake_id": "alpha", "node_key": "missing",
+            }, {"status": "completed", "records": []})
+
+    def test_inconsistent_pagination_fails_closed(self):
+        adapter, error = _subject()
+        for request, response in (
+            ({"operation": "lakes.list"}, {"status": "completed", "records": [], "has_more": True}),
+            ({"operation": "nodes.schema", "lake_id": "alpha", "node_key": "x"},
+             {"status": "completed", "records": [{"fields": [{"name": "id", "type": "integer"}]}], "has_more": False}),
+        ):
+            with self.subTest(request=request):
+                with self.assertRaisesRegex(error, "dlm_mcp_pagination_invalid"):
+                    _run(adapter, request, response)
+
     def test_node_inventory_pagination_and_no_storage_projection(self):
         adapter, _ = _subject()
         result, calls = _run(adapter, {
