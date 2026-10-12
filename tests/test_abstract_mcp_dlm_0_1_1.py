@@ -178,6 +178,73 @@ class ReadOnlyMcpContractTest(unittest.TestCase):
                 with self.assertRaisesRegex(error, "dlm_mcp_pagination_invalid"):
                     _run(adapter, request, response)
 
+    def test_misspelled_lake_returns_suggestion_not_silent_selection(self):
+        adapter, _ = _subject()
+        class SearchInput(ToolInput):
+            def invoke_tool(self, role, *, input, on_error):
+                self.calls.append((role, input, on_error))
+                if "q" in input:
+                    return _trusted_fixture({"operation": "lakes.list"}, {
+                        "status": "completed", "records": [], "has_more": False,
+                    })
+                return _trusted_fixture({"operation": "lakes.list"}, {
+                    "status": "completed",
+                    "records": [{"lake_id": "hyper", "lake_name": "Hyper"}],
+                    "has_more": False,
+                })
+        inputs = SearchInput()
+        inputs["tool_request"] = {"operation": "lakes.list", "q": "hyser"}
+        lookup = adapter.invoke(inputs, {})["outputs"]["tool_results"]["lookup"]
+        self.assertEqual("suggestions", lookup["status"])
+        self.assertTrue(lookup["requires_confirmation"])
+        self.assertNotIn("resolved_id", lookup)
+        self.assertEqual("Hyper", lookup["candidates"][0]["name"])
+        self.assertEqual(2, len(inputs.calls))
+
+    def test_exact_search_selects_id_only_when_supported(self):
+        adapter, _ = _subject()
+        result, _ = _run(adapter, {"operation": "lakes.list", "q": "hyper"}, {
+            "status": "completed", "has_more": False,
+            "records": [{"lake_id": "hyper", "name": "Hyper"}],
+        })
+        self.assertEqual("exact", result["lookup"]["status"])
+        self.assertEqual("hyper", result["lookup"]["resolved_id"])
+        self.assertFalse(result["lookup"]["requires_confirmation"])
+
+    def test_partial_coverage_never_claims_absence(self):
+        adapter, _ = _subject()
+        class PartialInput(ToolInput):
+            def invoke_tool(self, role, *, input, on_error):
+                self.calls.append((role, input, on_error))
+                return _trusted_fixture({"operation": "lakes.list"}, {
+                    "status": "completed", "records": [], "has_more": False,
+                }) if "q" in input else _trusted_fixture({"operation": "lakes.list"}, {
+                    "status": "completed", "has_more": True,
+                    "records": [{"lake_id": "alpha", "name": "Alpha"}],
+                })
+        inputs = PartialInput()
+        inputs["tool_request"] = {"operation": "lakes.list", "q": "hyser"}
+        result = adapter.invoke(inputs, {})["outputs"]["tool_results"]["lookup"]
+        self.assertEqual("unresolved", result["status"])
+        self.assertEqual("partial", result["coverage"])
+
+    def test_discovery_failure_does_not_fabricate_not_found(self):
+        adapter, _ = _subject()
+        class FailingInput(ToolInput):
+            def invoke_tool(self, role, *, input, on_error):
+                self.calls.append((role, input, on_error))
+                if "q" not in input:
+                    raise RuntimeError("confidential downstream failure")
+                return _trusted_fixture({"operation": "lakes.list"}, {
+                    "status": "completed", "records": [], "has_more": False,
+                })
+        inputs = FailingInput()
+        inputs["tool_request"] = {"operation": "lakes.list", "q": "hyser"}
+        result = adapter.invoke(inputs, {})["outputs"]["tool_results"]["lookup"]
+        self.assertEqual("unresolved", result["status"])
+        self.assertEqual("discovery_unavailable", result["source"])
+        self.assertNotIn("confidential", json.dumps(result))
+
     def test_node_inventory_pagination_and_no_storage_projection(self):
         adapter, _ = _subject()
         result, calls = _run(adapter, {
