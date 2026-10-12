@@ -1,12 +1,15 @@
 asset_key: nusaibah.abstract_mcp_dlm
-asset_version: 0.1.0
+asset_version: 0.1.1
 package_target: python_runtime/adapters/intake/nusaibah/abstract_mcp_dlm
 manifest: abstract_mcp_dlm.asset.json
-adapter_module: abstract_mcp_dlm_adapter.py
+adapter_module: abstract_mcp_dlm_v0_1_1_adapter.py
 reviewed_helpers:
   - abstract_mcp_capabilities.py
+  - mcp_read_resolution_v0_1_1.py
 optional_files:
   - README.md
+reviewed_support_files:
+  - capabilities.v0.1.1.json
 release_stage: development
 forbidden:
   allow_values: false
