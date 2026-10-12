@@ -1,5 +1,9 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.30 terminal JSON recovery
+
+The same one-time resolver now also covers trusted terminal JSON rejection before an Agent business object reaches the adapter. It receives the original bounded section/subsection inputs and response contract, reconstructs only from supplied evidence, and returns to all original validators, exact-span checks and scoped critics. It cannot recurse or request another schema backup. Persistent content problems become withheld work with diagnostics; validated sibling sections and other companies continue. Semantically identical company-ID string echoes normalize without inventing an identity; different model identity echoes are withheld. Core admission, authentication, privilege and transport errors remain strict. Benchmark remains disabled. See [the current guide](ENRICHMENT_V030_GUIDE.md).
+
 ## 0.1.29 benchmark disabled
 
 Benchmark Agent calls are disabled before review, after synthesis and after publication. Scores and non-regression remain unknown, never fabricated as a pass or zero. One targeted pass retains section/subsection planning, literal source chunks, exact evidence, section critics, baseline preservation and Core Skill CAS/readback/history. Active roles retain deterministic JSON/Markdown/triple-quote cleanup and at most one faithful backup per original invocation. This version requires no human approval packet. See [the current guide](ENRICHMENT_V029_GUIDE.md). Historical release sections below describe their own preserved versions.
