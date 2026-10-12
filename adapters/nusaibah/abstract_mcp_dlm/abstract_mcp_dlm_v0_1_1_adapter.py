@@ -11,9 +11,14 @@ import re
 from typing import Any
 
 from adapters.base import Adapter
-from .mcp_read_resolution_v0_1_1 import (
-    NameProfile, ReadContract, resolve_names, validate_read_result,
-)
+try:
+    from .mcp_read_resolution_v0_1_1 import (
+        NameProfile, ReadContract, resolve_names, validate_read_result,
+    )
+except ImportError:  # Existing local external adapter-root discovery mode.
+    from mcp_read_resolution_v0_1_1 import (
+        NameProfile, ReadContract, resolve_names, validate_read_result,
+    )
 
 
 TOOL_ROLES = {

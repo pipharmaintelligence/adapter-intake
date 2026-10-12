@@ -206,7 +206,7 @@ not a Skill ZIP or `SKILL.md` content.
 ## Adapter-owned capability metadata
 
 [`capabilities.v0.1.1.json`](capabilities.v0.1.1.json) remains in this adapter
-folder, declared in `adapter.yaml.optional_files` for normal Assets
+folder, declared in `adapter.yaml.reviewed_support_files` for normal Assets
 materialization. It contains exactly the three existing capabilities with
 publication-ready descriptions (within Assets' 240-character limit), strict
 per-operation input schemas and output schemas containing the actual
@@ -234,9 +234,9 @@ not MCP tools or authorization. Keep essential confirmation guidance in the
 public tool descriptions even when the plugin is not installed. Refresh
 custom MCP connection metadata after publication changes and verify it in a
 new conversation; submitted plugins follow their normal release process.
-See OpenAI's [plugin packaging](https://developers.openai.com/plugins/build/plugins),
-[Skill activation](https://developers.openai.com/plugins/concepts/skills),
-and [tool result reference](https://developers.openai.com/plugins/reference#tool-results).
+The independent plugin README links to OpenAI's official plugin packaging,
+Skill activation and tool-result references. External URLs remain outside this
+materialized package to satisfy the existing intake content guard.
 
 Regression checks cover the absence of execution Skill dependencies,
 self-contained plugin packaging, capability/role parity, schema selectors and

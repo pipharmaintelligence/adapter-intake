@@ -8,6 +8,7 @@ reviewed_helpers:
   - mcp_read_resolution_v0_1_1.py
 optional_files:
   - README.md
+reviewed_support_files:
   - capabilities.v0.1.1.json
 release_stage: development
 forbidden:

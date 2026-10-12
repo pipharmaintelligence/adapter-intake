@@ -437,6 +437,9 @@ class ReadOnlyMcpContractTest(unittest.TestCase):
                 "abstract_mcp_dlm_v0_1_1_adapter import AbstractMcpDlmReadAdapter\n"
                 "assert AbstractMcpDlmReadAdapter.key == 'nusaibah.abstract_mcp_dlm'\n"
                 "assert AbstractMcpDlmReadAdapter.version == '0.1.1'\n"
+                f"sys.path.insert(0, {str(package)!r})\n"
+                "from abstract_mcp_dlm_v0_1_1_adapter import AbstractMcpDlmReadAdapter as FlatAdapter\n"
+                "assert FlatAdapter.key == AbstractMcpDlmReadAdapter.key\n"
             )
             result = subprocess.run(
                 [sys.executable, "-I", "-c", code],
@@ -649,6 +652,8 @@ class DiscoveryOrchestrationPackageTest(unittest.TestCase):
         self.assertFalse((ASSET / "skills" / "dlm-discovery-orchestration").exists())
         yaml = (ASSET / "adapter.yaml").read_text(encoding="utf-8")
         self.assertIn("  - capabilities.v0.1.1.json", yaml)
+        self.assertIn("reviewed_support_files:\n  - capabilities.v0.1.1.json", yaml)
+        self.assertNotIn("optional_files:\n  - README.md\n  - capabilities.v0.1.1.json", yaml)
         metadata = self.metadata()
         self.assertNotIn("skill_ref", metadata)
         self.assertNotIn("skill_version", metadata)
