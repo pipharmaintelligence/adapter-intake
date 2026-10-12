@@ -48,7 +48,7 @@ class Inputs(dict):
 class DiscoveryAgentSmokeTest(unittest.TestCase):
     def test_new_version_declares_bounded_server_preparation_and_preserves_legacy(self):
         manifest = json.loads((ASSET / 'mcp_discovery_agent_smoke.asset.json').read_text())
-        self.assertEqual(manifest['default'], '0.1.1')
+        self.assertEqual(manifest['default'], '0.1.2')
         legacy = manifest['versions']['0.1.0']
         current = copy.deepcopy(manifest['versions']['0.1.1'])
         self.assertEqual(current['callable_assets']['discovery'].pop('prepared_inputs'), {

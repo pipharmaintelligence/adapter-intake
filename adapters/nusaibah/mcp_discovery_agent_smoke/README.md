@@ -1,6 +1,6 @@
 # MCP discovery Agent smoke — development only
 
-`nusaibah.mcp_discovery_agent_smoke@0.1.1` performs one declared callable read and
+`nusaibah.mcp_discovery_agent_smoke@0.1.2` performs one declared callable read and
 one declared Agent summary. It follows the pharma evaluation asset's ownership
 pattern: Python makes the child call, the Agent receives a bounded packet, and
 Python validates the Agent's result before returning success.
@@ -30,6 +30,12 @@ paths; its optional local-Core mode uses the existing admitted DLM registration.
 No paid model call, new Core admission, publication or deployment is implied.
 The local PHP JSON-text result and signed `agent_result.v1` JSON result are both
 validated against the same closed business contract.
+
+Version 0.1.2 additionally accepts the existing signed Bedrock `agent_result.v1`
+text envelope when its single text block contains the same bounded JSON object.
+Duplicate keys, malformed JSON, changed observations and multiple text blocks
+still fail. It reuses the existing provider transport and temporary worker role
+identity. Versions 0.1.0 and 0.1.1 remain unchanged.
 
 Version 0.1.1 declares the fixed semantic request in its pinned callable
 dependency's `prepared_inputs.tool_request`. This requires Assets' generic
