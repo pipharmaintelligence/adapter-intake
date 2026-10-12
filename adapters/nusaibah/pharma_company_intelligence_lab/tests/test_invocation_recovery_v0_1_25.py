@@ -52,7 +52,7 @@ def run(inputs):
 class InvocationRecoveryTests(unittest.TestCase):
     def test_current_release_keeps_all_agent_and_skill_contracts(self):
         root=Path(__file__).resolve().parents[1]
-        current=json.loads((root/'nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
+        current=json.loads((root/'tests/fixtures/release-0.1.25/nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
         previous=json.loads((root/'tests/fixtures/release-0.1.24/nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
         self.assertEqual('0.1.25',current['default'])
         self.assertEqual(previous['execution'],current['execution'])

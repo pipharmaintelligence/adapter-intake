@@ -11,6 +11,8 @@ class CitationRef:
     source_kind: str | None = None
     provider_family: str | None = None
     provider_turn_index: int | None = None
+    evidence_digest: str | None = None
+    source_pointer: tuple[str | int, ...] = ()
 
 
 def dedupe_citations(citations: Iterable[CitationRef]) -> tuple[CitationRef, ...]:
