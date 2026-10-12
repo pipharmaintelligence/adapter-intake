@@ -50,6 +50,53 @@ executor is selected; no new bridge or transport is invented in intake.
 Intake tests: `python -m unittest discover -s tests -p
 "test_abstract_mcp_dlm_0_1_1.py" -v`.
 
+## Pagination and response inspection
+
+The adapter version packages **all three roles** (`lakes.list`, `nodes.list`,
+`nodes.schema`) once. Remote MCP visibility is a separate Assets publication
+decision: existing publication records advertise **one public tool name each**,
+not an automatic expansion of the adapter's roles. Do not claim three separately
+named ChatGPT tools are exposed by one publication until the current publication
+configuration is verified. No special-case Assets executor is needed in this
+adapter.
+
+- Lakes list accepts `q` and `page_size` (1–50). The current Core lakes API
+  has `limit` but **no page/cursor selector**. A bounded first-page result
+  can include `has_more=true` and `truncated=true`, but **never** a
+  fabricated `next_page`. If the trusted executor omits `has_more`, the
+  adapter omits it too; absence is **unknown**, not `false`.
+- Nodes list accepts `lake_id`, `q`, `page` (1–1000) and `page_size`
+  (1–50). A real `has_more=true` with a page below 1000 permits `next_page`.
+  The upstream admitted capability must honor page selection, not merely
+  echo the same records.
+- A successful empty lake/node list is `status=completed`,
+  `records=[]`, `record_count=0`. A missing or unavailable node schema is
+  an error; it must not be mislabeled as a successful empty schema.
+- If a backend exceeds a requested limit, exceeds the byte/field budget,
+  returns malformed pagination, or reports `has_more=true` with no records,
+  the adapter fails closed. It does not silently discard records or make up
+  a continuation token.
+
+### Inspecting real API responses safely
+
+Use an **approved authenticated server-side** Core client to capture sanitized
+response-shape evidence (status, array locations, safe counts and pagination
+keys). Operators may use cURL in their authorized environment, but **do not**
+add Core URL, credentials, tokens, headers, or network calls to adapter code or
+commit raw cURL responses as fixtures. Confirm these Core API envelopes before
+any live MCP binding:
+
+| Core read | Response data | Continuation evidence |
+| --- | --- | --- |
+| Lakes list | `data.lakes` | `meta.counts.has_more`; no Core page selector |
+| Node inventory | `data.nodes` | `meta.pagination.page`, `meta.pagination.has_more` |
+| Node schema | `data.schema_definition` and presentation | 404/unavailable is not an empty successful schema |
+
+The current Python adapter expects a **trusted normalized tool envelope** with
+`records` and verified provenance, **not** an unfiltered HTTP/cURL response.
+Only the server-owned runtime/Core integration can map the Core API envelope to
+those records. Do not implement a custom HTTP client in the Python adapter.
+
 ## Server-owned gate before promotion/publication
 
 Per PI-2047 G0, verify **real** DLM read execution for the exact declared
