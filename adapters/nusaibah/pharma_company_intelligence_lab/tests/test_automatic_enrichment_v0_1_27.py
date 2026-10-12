@@ -33,7 +33,7 @@ def invoke(inputs):
 
 class AutomaticEnrichmentTests(unittest.TestCase):
     def test_every_agent_chain_matches_its_admitted_identity_and_version(self):
-        version=json.loads((ROOT/'nusaibah_pharma_company_intelligence_lab.asset.json').read_text())['versions']['0.1.27']
+        version=json.loads((ROOT/'tests/fixtures/release-0.1.27/nusaibah_pharma_company_intelligence_lab.asset.json').read_text())['versions']['0.1.27']
         for role,contract in version['agents'].items():
             with self.subTest(role=role):
                 self.assertEqual(contract['contract_version'],contract['definition']['chain']['version'])
@@ -192,7 +192,7 @@ class AutomaticEnrichmentTests(unittest.TestCase):
         self.assertNotIn('\n## Other Section',value.markdown)
         self.assertNotIn('<script>',value.markdown)
     def test_new_research_contract_has_one_json_turn_and_old_contract_is_preserved_in_fixture(self):
-        manifest=json.loads((ROOT/'nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
+        manifest=json.loads((ROOT/'tests/fixtures/release-0.1.27/nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
         for role in ('portfolio_researcher','market_researcher','regulatory_risk_researcher'):
             chain=manifest['versions']['0.1.27']['agents'][role]['definition']['chain']
             self.assertEqual(1,len(chain['steps']))
