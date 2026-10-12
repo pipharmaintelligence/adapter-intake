@@ -2,8 +2,6 @@
   "metadata_version": "dlm_discovery_publication.v1",
   "asset_key": "nusaibah.abstract_mcp_dlm",
   "asset_version": "0.1.1",
-  "skill_ref": "nusaibah.dlm-discovery-orchestration",
-  "skill_version": "1.0.0",
   "publication_status": "templates_only",
   "capabilities": {
     "dlm.lakes.list": {

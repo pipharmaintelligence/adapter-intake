@@ -6,10 +6,10 @@ compatibility: Requires the existing read-only DLM tools backed by nusaibah.abst
 
 # DLM discovery orchestration
 
-This fixed skill belongs to `nusaibah.abstract_mcp_dlm@0.1.1`. Its pinned
-version and package digest are declared in that asset version's `skills[]`.
-It guides a conversation; it does not execute transport, grant access, or
-select a resource on the user's behalf.
+This skill is owned and distributed by the `dms-dlm-discovery` ChatGPT plugin.
+It guides the conversational host using an existing authorized DLM connection.
+It is not an Assets execution dependency. It does not execute transport, grant
+access, or select a resource on the user's behalf.
 
 ## Choose the available read
 
@@ -22,9 +22,9 @@ The public names below are publication targets, not proof they are installed.
 | Find or browse nodes in a selected lake | `dlm.nodes.list` | `dlm_list_nodes` | Returned `lake_id` |
 | Inspect a selected node's fields | `dlm.nodes.schema` | `dlm_get_node_schema` | Returned `lake_id` and `node_key` |
 
-Read [capability metadata](references/capabilities.v0.1.1.json) when preparing
-publication descriptions or checking a tool's exact input and output shape.
-One public call supplies `{"tool_request":{...}}` with one fixed `operation`.
+Use each advertised tool's own description and schema for its exact contract.
+If no matching DLM tool is available, explain that this conversation needs an
+authorized DLM connection. One public call supplies `{"tool_request":{...}}` with one fixed `operation`.
 When only the lakes tool is advertised, complete lake discovery and explain
 that node browsing or schema inspection is unavailable through this connection.
 Do not invent another capability or use a different tool as a Core proxy.
@@ -107,15 +107,14 @@ Do not promise recognition of unrelated synonyms or descriptions. An internal
 agent without an interactive user must return the unresolved/confirmation
 state to its caller and stop dependent reads; it must not fabricate a reply.
 
-## What ChatGPT can discover
+## Host distribution
 
-Bundling this skill in Assets does not install it in ChatGPT. A host must load
-the skill through its supported plugin/skill packaging path for these complete
-instructions to apply. Assets' existing `tools/list` projection advertises
-publication names, descriptions, input schemas, and optional output schemas.
-The capability metadata reference is publication source material, not an
-automatic fourth tool or an automatic registry projection.
+Install and enable the `dms-dlm-discovery` plugin through the host's supported
+plugin mechanism. The plugin provides this instruction set; the user's
+separately authorized DLM connection provides the tools. Installation does not
+grant lake access or create an MCP connection.
 
-Keep the essential selection guidance in each publication's description as
-well. Model-visible tool `content`/`structuredContent` carries the lookup
-state; tool-result `_meta` is not a channel for instructions to the model.
+Only use tools advertised to this conversation. Keep essential selection
+guidance in public tool descriptions as well, because a caller may invoke a
+DLM tool without this plugin. Tool `content`/`structuredContent` carries the
+lookup state; tool-result `_meta` is not a channel for model instructions.

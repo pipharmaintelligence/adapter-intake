@@ -510,37 +510,52 @@ class ReadOnlyMcpContractTest(unittest.TestCase):
 
 
 class DiscoveryOrchestrationPackageTest(unittest.TestCase):
-    SKILL_ROOT = ASSET / "skills" / "dlm-discovery-orchestration"
+    PLUGIN_ROOT = ROOT / "plugins" / "dms-dlm-discovery"
+    SKILL_ROOT = PLUGIN_ROOT / "skills" / "dlm-discovery-orchestration"
 
     def metadata(self):
         return json.loads(
-            (self.SKILL_ROOT / "references" / "capabilities.v0.1.1.json").read_text(
+            (ASSET / "capabilities.v0.1.1.json").read_text(
                 encoding="utf-8",
             )
         )
 
-    def test_fixed_skill_is_pinned_to_this_asset_version(self):
+    def test_adapter_execution_has_no_chatgpt_skill_dependency(self):
         manifest = json.loads((ASSET / "abstract_mcp_dlm.asset.json").read_text())
-        reference, = manifest["versions"]["0.1.1"]["skills"]
-        entries = [
-            {"path": path.relative_to(self.SKILL_ROOT).as_posix(),
-             "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
-            for path in sorted(self.SKILL_ROOT.rglob("*")) if path.is_file()
-        ]
-        entries.sort(key=lambda item: item["path"])
-        canonical = json.dumps(
-            entries, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
-        ).encode("utf-8")
-        self.assertEqual({
-            "skill_ref": "nusaibah.dlm-discovery-orchestration",
-            "version": "1.0.0",
-            "digest": "sha256:" + hashlib.sha256(canonical).hexdigest(),
-        }, reference)
+        version = manifest["versions"]["0.1.1"]
+        self.assertNotIn("skills", version)
+        self.assertNotIn("published_skills", version)
+        self.assertFalse((ASSET / "skills" / "dlm-discovery-orchestration").exists())
+        yaml = (ASSET / "adapter.yaml").read_text(encoding="utf-8")
+        self.assertIn("  - capabilities.v0.1.1.json", yaml)
+        metadata = self.metadata()
+        self.assertNotIn("skill_ref", metadata)
+        self.assertNotIn("skill_version", metadata)
+
+    def test_chatgpt_plugin_owns_a_contained_instruction_package(self):
+        plugin = json.loads((self.PLUGIN_ROOT / "plugin.json").read_text(encoding="utf-8"))
+        self.assertEqual("dms-dlm-discovery", plugin["name"])
+        self.assertEqual("1.0.0", plugin["version"])
+        self.assertEqual(
+            "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+            plugin["$schema"],
+        )
+        self.assertNotIn("skills", plugin)  # portable hosts use the fixed skills/ location
+        self.assertNotIn("mcpServers", plugin)
+        self.assertNotIn("apps", plugin)
+        self.assertFalse((self.PLUGIN_ROOT / "mcp.json").exists())
+        self.assertFalse((self.PLUGIN_ROOT / ".app.json").exists())
+        interface = plugin["extensions"]["com.openai"]["interface"]
+        self.assertLessEqual(len(interface["shortDescription"]), 30)
         markdown = (self.SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         self.assertTrue(markdown.startswith("---\nname: dlm-discovery-orchestration\n"))
         self.assertIn("description:", markdown.split("---", 2)[1])
-        self.assertTrue(
-            (self.SKILL_ROOT / "references" / "capabilities.v0.1.1.json").is_file(),
+        self.assertIn("not an Assets execution dependency", markdown)
+        self.assertNotIn("references/capabilities.v0.1.1.json", markdown)
+        self.assertEqual(
+            {"README.md", "plugin.json", "skills/dlm-discovery-orchestration/SKILL.md"},
+            {path.relative_to(self.PLUGIN_ROOT).as_posix()
+             for path in self.PLUGIN_ROOT.rglob("*") if path.is_file()},
         )
 
     def test_metadata_has_exact_capability_and_role_parity(self):

@@ -2,7 +2,8 @@
 
 This folder declares one **read-only, local-first** DLM MCP adapter version. It
 does not call DLM Core, Assets, providers, MCP servers, or storage from Python.
-It packages the existing three read capabilities and a fixed conversation skill.
+It packages the existing three read capabilities and their publication metadata.
+The conversation skill is distributed separately as a ChatGPT plugin.
 The existing governed runtime must prove the selected read and caller scope
 before this version is published through Remote MCP.
 
@@ -119,28 +120,48 @@ not assert that a lake or node does not exist. This is deterministic spelling
 assistance, **not semantic embeddings or a comprehensive fuzzy-index search**.
 A missing match in an incomplete catalogue remains `unresolved`.
 
-## Fixed discovery skill and capability metadata
+## Skill ownership: ChatGPT conversation orchestration
 
-Version `0.1.1` declares the bundled fixed Skill
-`nusaibah.dlm-discovery-orchestration@1.0.0` in `skills[]`, with the exact
-package digest. Its source is
-[`skills/dlm-discovery-orchestration/SKILL.md`](skills/dlm-discovery-orchestration/SKILL.md).
-The normal materializer validates and copies this package with the asset;
-no new Assets handler, tool role, Core endpoint, or fourth capability is needed.
-The prior `0.1.0` version and its shared capability helper remain unchanged.
+`dlm-discovery-orchestration` is a **ChatGPT-facing Skill**. The adapter is
+deterministic and has no Skill call. Its execution does not require those
+conversational instructions. Version `0.1.1` therefore declares neither a
+bundled `skills[]` dependency nor a `published_skills[]` dependency.
 
-The skill teaches the host to search a spelling, inspect `lookup`, ask for
+The Skill is owned by the independent
+[`dms-dlm-discovery` plugin](../../../plugins/dms-dlm-discovery/README.md)
+at repository path `plugins/dms-dlm-discovery/`. That portable package contains
+root `plugin.json` and `skills/dlm-discovery-orchestration/SKILL.md`; use the
+normal ChatGPT Plugin Skill distribution and installation path. It is not
+copied into the Python runtime by this adapter's materializer.
+
+The Skill teaches ChatGPT to search a spelling, inspect `lookup`, ask for
 confirmation, and continue with the returned `lake_id` / `node_key`.
 The adapter already performs a bounded fallback after zero literal hits;
 the conversational host must not repeat that fallback. A noninteractive
-runtime returns the confirmation state without performing dependent reads.
-Skill instructions do not turn a deterministic adapter into a conversation
-agent or establish execution authority.
+caller returns the confirmation state without performing dependent reads.
 
-The skill's [versioned capability metadata](skills/dlm-discovery-orchestration/references/capabilities.v0.1.1.json)
-contains exactly the three existing capabilities with publication-ready
-descriptions (within Assets' 240-character limit), strict per-operation input
-schemas and output schemas that include the actual `lookup` fields.
+Removing the runtime dependency avoids the unrelated immutable Skill
+publication/client-visibility gate. It does not change DLM access checks,
+OAuth, admission, or any other execution readiness requirement. No internal
+Skill publication is needed for this adapter's execution.
+
+A published Fixed Skill may still be stored canonically as a ZIP object in a
+lake/node using the existing exact-version/digest publication registry.
+A real Assets runtime consumer can declare it through `published_skills`
+and resolve it through the admitted Skill API. That is a separate consuming
+asset/agent decision; lake storage alone does not justify adding a dependency
+to this adapter. The three discovery capabilities return metadata/schema,
+not a Skill ZIP or `SKILL.md` content.
+
+## Adapter-owned capability metadata
+
+[`capabilities.v0.1.1.json`](capabilities.v0.1.1.json) remains in this adapter
+folder, declared in `adapter.yaml.optional_files` for normal Assets
+materialization. It contains exactly the three existing capabilities with
+publication-ready descriptions (within Assets' 240-character limit), strict
+per-operation input schemas and output schemas containing the actual
+`lookup` fields. The shared capability helper remains byte-identical.
+
 These are **templates only**, not published tools or a new auto-expansion
 mechanism. Copy the chosen entry's `remote_mcp.tool_name`, `description`,
 `input_schema`, and `output_schema` into the existing publication process
@@ -151,28 +172,27 @@ The first live publication remains `dlm_list_lakes`; the other two templates
 become usable only when their own publications are approved and advertised.
 
 **What ChatGPT sees:** publishing an adapter version alone does not expose
-its Python registry, manifest, or bundled skill. The current Assets
+its Python registry, manifest, or plugin Skill. The current Assets
 `RemoteMcpToolProjectionAdapter` exposes each eligible publication's name,
 description, input schema and optional output schema through `tools/list`.
 Results put `tool_results.lookup` in model-visible `structuredContent` and
-`content`. Tool-result `_meta` is hidden from the model and must not carry
-the orchestration instructions.
+`content`. Tool-result `_meta` is hidden from the model.
 
-For the full skill to guide ChatGPT, package/install these same skill files
-through a supported ChatGPT plugin/skill-loading path. Assets' bundled
-`skills[]` is an asset-runtime dependency, not automatic ChatGPT installation.
-Keep essential confirmation guidance in the public tool descriptions even
-when the full skill is not installed. Refresh the custom MCP connection
-metadata after publication changes and verify the advertised fields in a
-new conversation; submitted plugins require their normal release process.
-See OpenAI's [skill model](https://developers.openai.com/plugins/concepts/skills),
-[tool result reference](https://developers.openai.com/plugins/reference#tool-results),
-and [connection metadata refresh](https://developers.openai.com/plugins/deploy/connect-chatgpt#refresh-metadata).
+For full orchestration guidance, install/enable the separate ChatGPT plugin
+and the intended authorized DLM connection. The plugin provides instructions,
+not MCP tools or authorization. Keep essential confirmation guidance in the
+public tool descriptions even when the plugin is not installed. Refresh
+custom MCP connection metadata after publication changes and verify it in a
+new conversation; submitted plugins follow their normal release process.
+See OpenAI's [plugin packaging](https://developers.openai.com/plugins/build/plugins),
+[Skill activation](https://developers.openai.com/plugins/concepts/skills),
+and [tool result reference](https://developers.openai.com/plugins/reference#tool-results).
 
-Regression checks cover digest pinning, exact capability/role parity, schema
-selectors and limits, descriptor size, and a lake-to-node-to-schema trace
-using fixture-returned identifiers. They are deterministic; they do not
-certify ChatGPT compliance or live remote execution.
+Regression checks cover the absence of execution Skill dependencies,
+self-contained plugin packaging, capability/role parity, schema selectors and
+limits, descriptor size, and a lake-to-node-to-schema trace using returned
+identifiers. These are source checks; plugin installation, host instruction
+loading and live ChatGPT behavior remain unproven until observed.
 
 ## Existing runtime proof before promotion/publication
 
