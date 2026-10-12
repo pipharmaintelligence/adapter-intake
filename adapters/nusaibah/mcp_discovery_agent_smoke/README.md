@@ -1,6 +1,6 @@
 # MCP discovery Agent smoke — development only
 
-`nusaibah.mcp_discovery_agent_smoke@0.1.0` performs one declared callable read and
+`nusaibah.mcp_discovery_agent_smoke@0.1.1` performs one declared callable read and
 one declared Agent summary. It follows the pharma evaluation asset's ownership
 pattern: Python makes the child call, the Agent receives a bounded packet, and
 Python validates the Agent's result before returning success.
@@ -31,10 +31,14 @@ No paid model call, new Core admission, publication or deployment is implied.
 The local PHP JSON-text result and signed `agent_result.v1` JSON result are both
 validated against the same closed business contract.
 
-The existing production callable bridge does not automatically supply the
-required child request. Before admitting a real consumer, review its preparation
-binding and the exact child tool session in the chosen substrate. The fixture
-preparer is test support, not a production runtime extension. The summarizer's
+Version 0.1.1 declares the fixed semantic request in its pinned callable
+dependency's `prepared_inputs.tool_request`. This requires Assets' generic
+manifest preparation contract, including signed callable plan v3. Model
+variables cannot replace that request. Version 0.1.0 remains unchanged and
+still requires separate server preparation. Before promotion, verify support
+for the new contract in the selected Assets runtime. Signed child MCP execution
+and the summarizer's authority require separate substrate validation; this
+declaration does not grant tool or provider rights. The summarizer's
 logical contract must also be admitted before any real model run. No provider,
 model, provider binding or credential is embedded in this adapter.
 

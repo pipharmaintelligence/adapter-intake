@@ -46,6 +46,25 @@ class Inputs(dict):
 
 
 class DiscoveryAgentSmokeTest(unittest.TestCase):
+    def test_new_version_declares_bounded_server_preparation_and_preserves_legacy(self):
+        manifest = json.loads((ASSET / 'mcp_discovery_agent_smoke.asset.json').read_text())
+        self.assertEqual(manifest['default'], '0.1.1')
+        legacy = manifest['versions']['0.1.0']
+        current = copy.deepcopy(manifest['versions']['0.1.1'])
+        self.assertEqual(current['callable_assets']['discovery'].pop('prepared_inputs'), {
+            'tool_request': {'operation': 'lakes.list', 'page_size': 5},
+        })
+        self.assertEqual(current, legacy)
+        namespace = {'__name__': 'prepared_smoke_test'}
+        base = (ASSET / 'mcp_discovery_agent_smoke_adapter.py').read_text().replace('from adapters.base import Adapter', 'class Adapter:\n    pass')
+        exec(compile(base, 'base_adapter', 'exec'), namespace)
+        module = (ASSET / 'mcp_discovery_agent_smoke_v0_1_1_adapter.py').read_text().replace(
+            'try:\n    from .mcp_discovery_agent_smoke_adapter import McpDiscoveryAgentSmokeAdapter\nexcept ImportError:  # Existing external adapter-root discovery mode.\n    from mcp_discovery_agent_smoke_adapter import McpDiscoveryAgentSmokeAdapter', '')
+        exec(compile(module, 'versioned_adapter', 'exec'), namespace)
+        adapter = namespace['McpDiscoveryAgentSmokePreparedAdapter']()
+        self.assertEqual(adapter.version, '0.1.1')
+        self.assertEqual(adapter.invoke(Inputs(), {})['outputs']['smoke_result']['returned_record_count'], 5)
+
     def test_one_child_then_one_agent_receiving_only_observations(self):
         inputs = Inputs()
         result = subject().invoke(inputs, {})["outputs"]["smoke_result"]
