@@ -1,6 +1,10 @@
 # Nusaibah Pharma Company Intelligence Lab
 
-## 0.1.28 section enrichment parity
+## 0.1.29 benchmark disabled
+
+Benchmark Agent calls are disabled before review, after synthesis and after publication. Scores and non-regression remain unknown, never fabricated as a pass or zero. One targeted pass retains section/subsection planning, literal source chunks, exact evidence, section critics, baseline preservation and Core Skill CAS/readback/history. Active roles retain deterministic JSON/Markdown/triple-quote cleanup and at most one faithful backup per original invocation. This version requires no human approval packet. See [the current guide](ENRICHMENT_V029_GUIDE.md). Historical release sections below describe their own preserved versions.
+
+## 0.1.28 historical section enrichment parity
 
 The live 0.1.27 cycle completed but withheld publication at section critique. This opt-in correction declares the critic's exact allowed IDs, uses each actual section planner chunk, retains negative diagnostics, and benchmarks the complete memory document. It preserves explicit inference/date/relationship qualifications and the existing Core Skill ZIP/partition/CAS/history lane. One targeted pass; automated checks do not require human approval. See [the current developer guide](ENRICHMENT_V028_GUIDE.md). Promotion/tests alone are not live publication proof.
 
