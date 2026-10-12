@@ -98,6 +98,11 @@ class AbstractMcpDlmReadAdapter(Adapter):
         if operation != "nodes.schema" and len(raw_records) > tool_input["limit"]:
             raise DlmMcpReadError("dlm_mcp_response_limit_exceeded")
 
+        # Core reports unavailable schema as a failed read, never as a
+        # successful zero-column response. Keep list emptiness independent.
+        if operation == "nodes.schema" and not raw_records:
+            raise DlmMcpReadError("dlm_mcp_schema_unavailable")
+
         records = self._project(operation, raw_records, tool_input)
         projected: dict[str, Any] = {
             "schema_version": "dlm_mcp_read.v1",
@@ -106,12 +111,29 @@ class AbstractMcpDlmReadAdapter(Adapter):
             "records": records,
             "record_count": len(records),
         }
-        if operation == "nodes.schema" and records:
+        if operation == "nodes.schema":
             projected["field_count"] = len(records[0]["fields"])
+        else:
+            projected["page_size"] = tool_input["limit"]
+            if operation == "nodes.list":
+                projected["page"] = tool_input["page"]
+
+        # Real trusted tool envelopes may omit pagination metadata. Do not
+        # invent has_more=false or a next page from the returned row count.
         if "has_more" in result:
-            if not isinstance(result["has_more"], bool):
+            has_more = result["has_more"]
+            if operation == "nodes.schema" or type(has_more) is not bool:
                 raise DlmMcpReadError("dlm_mcp_pagination_invalid")
-            projected["has_more"] = result["has_more"]
+            if has_more and not records:
+                raise DlmMcpReadError("dlm_mcp_pagination_invalid")
+            projected["has_more"] = has_more
+            if has_more:
+                if operation == "nodes.list" and tool_input["page"] < MAX_PAGE:
+                    projected["next_page"] = tool_input["page"] + 1
+                else:
+                    # Lake discovery has no page selector in the current Core
+                    # API. At MAX_PAGE, node pagination is also exhausted.
+                    projected["truncated"] = True
 
         response = {
             "response_version": "1",
