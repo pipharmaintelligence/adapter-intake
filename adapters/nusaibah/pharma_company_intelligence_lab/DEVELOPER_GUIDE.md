@@ -1,5 +1,3 @@
-> Historical 0.1.26 qualification workflow. Its caller-review requirement is not the current production enrichment contract. For 0.1.27 use [ENRICHMENT_GUIDE.md](ENRICHMENT_GUIDE.md): one targeted pass with automatic evidence/critic/benchmark checks and existing Core Skill publication.
-
 # Objective
 
 Qualify pharma 0.1.26 as the final release candidate through one complete Company Scope → preparation/reflection → exact review → Dynamic Skill publication → readback cycle. Workflow completion alone is insufficient.
