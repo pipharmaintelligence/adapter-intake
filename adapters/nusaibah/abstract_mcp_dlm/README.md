@@ -264,4 +264,3 @@ publication, or terminal ChatGPT behavior.
 P1 readiness/object/partition capabilities and P2 data queries remain
 unpublished until separately reviewed and authorized. Do not add raw HTTP,
 leases, retries, worker orchestration, or publication logic to this adapter.
-
