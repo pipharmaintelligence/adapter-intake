@@ -97,6 +97,27 @@ The current Python adapter expects a **trusted normalized tool envelope** with
 Only the server-owned runtime/Core integration can map the Core API envelope to
 those records. Do not implement a custom HTTP client in the Python adapter.
 
+## Search correction and conversational selection
+
+The existing lakes and nodes list roles provide bounded typo-tolerant name
+suggestions. For example, a search for `hyser` can suggest an authorized lake
+named `Hyper` after a filtered search returns no rows. The adapter does not
+use a language model, embedding service, external network call, or Core query
+outside its declared `invoke_tool` role.
+
+The `lookup` output distinguishes `exact`, `suggestions`, `ambiguous`,
+`no_match` and `unresolved`, includes at most three safe candidates, and
+reports `requires_confirmation`. Only an exact ID/name with sufficiently
+known coverage can emit `resolved_id`. Suggestions are **never selected**
+silently. ChatGPT should ask the user to confirm a suggestion before using it.
+
+A fallback unfiltered catalogue read runs only when a filtered name search
+returns no records; it remains bounded to the same approved role and 50
+records. Without explicit completed pagination evidence the adapter must
+not assert that a lake or node does not exist. This is deterministic spelling
+assistance, **not semantic embeddings or a comprehensive fuzzy-index search**.
+A missing match in an incomplete catalogue remains `unresolved`.
+
 ## Server-owned gate before promotion/publication
 
 Per PI-2047 G0, verify **real** DLM read execution for the exact declared
