@@ -39,10 +39,11 @@ def invoke_v0_1_29(inputs,*,asset_identity):
     bounded=FinalBoundedAgentInputs(forwarded,request,review_passes=1)
     # Four section critics replace one aggregate critic; all calls remain finite.
     bounded._role_limits[legacy.CRITIC_ROLE]=4
-    bounded._ordinary_company_limit=15
-    bounded._per_company_limit=30
-    bounded._role_limits[legacy.RESEARCH_RESOLVER_ROLE]=15
-    bounded.agent_call_limit=len(records)*30
+    bounded._role_limits[legacy.BENCHMARK_ROLE]=0
+    bounded._ordinary_company_limit=13
+    bounded._per_company_limit=26
+    bounded._role_limits[legacy.RESEARCH_RESOLVER_ROLE]=13
+    bounded.agent_call_limit=len(records)*26
     states=[]
     # Readonly preparation is an internal phase of the same execution, not another workflow.
     preparation_request=replace(request,memory_mode='preview')
@@ -65,6 +66,8 @@ def invoke_v0_1_29(inputs,*,asset_identity):
             if 'independent_review' in key or 'pre_review' in key or key in {'automated_quality_gate_passed','memory_mutation_eligible','methodology_learning_apply_authority'}:
                 result.pop(key)
         result['human_approval_required']=False
+        result['benchmark_enabled']=False
+        result['benchmark_agent_call_count']=bounded.company_agent_counts(state['company_id']).get(legacy.BENCHMARK_ROLE,0)
         result['search_enabled_agent_call_count']=0
         result['enrichment_stage']='one_targeted_pass'
         result['agent_response_recovery_trace']=bounded.company_recovery_trace(state['company_id'])

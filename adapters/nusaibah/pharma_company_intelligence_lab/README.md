@@ -1,8 +1,8 @@
 # Nusaibah Pharma Company Intelligence Lab
 
-## 0.1.29 advisory benchmark containment
+## 0.1.29 benchmark disabled
 
-An invalid benchmark must not stop the whole enrichment pass. Version 0.1.29 retains an explicitly unscored observation after its single faithful backup and continues supported section work. Publication is based on selected exact evidence, scoped critics, preservation and Core CAS/readback/history; benchmark feedback is advisory and no human approval packet is required. See [the current guide](ENRICHMENT_V029_GUIDE.md).
+Benchmark Agent calls are disabled before review, after synthesis and after publication. Scores and non-regression remain unknown, never fabricated as a pass or zero. One targeted pass retains section/subsection planning, literal source chunks, exact evidence, section critics, baseline preservation and Core Skill CAS/readback/history. Active roles retain deterministic JSON/Markdown/triple-quote cleanup and at most one faithful backup per original invocation. This version requires no human approval packet. See [the current guide](ENRICHMENT_V029_GUIDE.md). Historical release sections below describe their own preserved versions.
 
 ## 0.1.28 historical section enrichment parity
 

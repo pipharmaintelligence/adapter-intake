@@ -1,27 +1,29 @@
 # Objective
 
-One targeted enrichment pass followed by automatic Core Skill publication. Benchmark observations enrich work and do not act as approval.
+One targeted enrichment pass and automatic Core Dynamic Skill publication, with benchmark Agent calls disabled.
 
 # System Context
 
-Company Scope supplies CompanyContext; pharma uses section/chunk planning, retrieved evidence, exact spans and scoped critics. Core owns Skill ZIPs, partitions, CAS and history. The separate E runner saves only a checkpoint.
+Company Scope supplies CompanyContext. Pharma retains section/subsection planning, literal chunks, source snapshots, exact spans and scoped critics. Core owns Skill ZIPs, partitions, CAS and history. The separate E runner saves only a checkpoint.
 
 # Approach
 
-An invalid benchmark receives deterministic parsing and at most one faithful backup. If it remains invalid, mark it unscored with its diagnostic; never invent coverage, zero scores or non-regression. Planning/research may continue from actual memory and fixed/optional learned methodology.
+No before, proposed or committed benchmark is dispatched. The benchmark role has a zero execution allowance. Its preserved declaration does not enable execution. Results report disabled with unknown scores and non-regression; no zero or passed score is invented. Planning uses actual memory and fixed/optional learned methodology.
+
+Active original roles use the existing shared recovery: unwrap a complete JSON object through bounded Markdown/triple-quote/string layers, apply deterministic formatting normalization, then at most one resolver per original invocation. The resolver preserves facts, IDs, exact quotes and negative critic decisions. It cannot recurse. If no faithful business object reaches the adapter, report that affected response as unresolved; unavailable provider text cannot be reconstructed. Authority, transport and identity failures propagate.
 
 # Changes Made
 
-Benchmark feedback is advisory. Publication still requires exact selected evidence, valid selected section critiques, preserved baseline text and fresh content/package CAS checks. Genuine negative critic verdicts withhold their facts. Authority, transport and identity errors are not suppressed. Actual planning and benchmark availability may enrich methodology without falsely claiming a passed score.
+Publication requires complete selected exact evidence, valid selected section critiques, baseline preservation and fresh content/package CAS. Genuine negative critics withhold their facts while valid sibling sections can continue. Methodology learning records actual procedural planning without a fabricated benchmark claim. Publication receipts and independent readback/history establish success.
 
 # Modularity Impact
 
-Reuse the existing Core Dynamic Skill lane and 0.1.28 scoped critics/full-document projection. Preserve all historical helpers and contracts. Runtime stays 0.1.105; use official workflow promotion. No human approval packet, new policy, provider/storage client or parallel persistence lane is introduced.
+Reuse existing section critics and Core Skill capabilities. All historical helpers and contracts remain unchanged. Runtime stays 0.1.105 and delivery uses official workflow promotion. No new provider/storage client, policy, human approval packet or persistence lane.
 
 # Validation
 
-Provider-free regressions prove unrepairable benchmarks remain explicitly unscored while supported enrichment can publish, and negative critics/authority failures still block unsupported writes. The 0.1.28 run 501f00c4-6aa8-4cd7-8214-72bed3c20156 was completed but unpublished after benchmark backup changed business content; it is not live publication proof.
+Provider-free regressions assert zero benchmark/benchmark-backup calls, wrapper parsing and one-time backup wiring for active roles, continued sibling work, negative critic preservation and authority propagation. The 0.1.28 run 501f00c4-6aa8-4cd7-8214-72bed3c20156 completed but did not publish: its benchmark backup changed business content. Promotion tests are not live publication proof.
 
 # Risks / Open Questions
 
-No advisory score is independent factual certification. Initialized selected packages remain required. Partial commits and unverifiable readback/history do not advance last success. Preserve all old knowledge and report missing evidence; never force an unsupported finding to meet a publication target.
+Initialized selected Skill packages remain required. Evidence/source availability can still limit enrichment. Partial commits or unverifiable readback/history never advance the E last-success checkpoint. Unknown scores remain unknown. Never force an unsupported finding to achieve publication.

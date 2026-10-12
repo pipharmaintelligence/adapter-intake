@@ -1,7 +1,7 @@
 """Prepare one bounded enrichment result for version 0.1.29.
 
 The module composes existing deterministic planning, analysis, critique,
-synthesis and benchmark helpers with the version-owned claim evidence path. It
+synthesis helpers with the version-owned claim evidence path. It
 builds validated evidence without mutation authority. The version-owned
 publication phase uses that evidence automatically through Core capabilities.
 """
@@ -230,22 +230,8 @@ def prepare_company_v0_1_29(
         maximum_citations=legacy.MAX_CITATIONS_PER_COMPANY,
     )
 
-    try:
-        from .benchmark_projection_v0_1_28 import projected_memory_document
-    except ImportError:
-        from benchmark_projection_v0_1_28 import projected_memory_document
-    benchmark_memory=projected_memory_document(memory_state['handle'],candidate,selection.public_citations())
-    projected_after_benchmark = observe_benchmark(
-        inputs,
-        company_id=company_id,
-        company_name_value=company_name_value,
-        memory_text=benchmark_memory,
-        questions=methodology.benchmark_questions,
-        stage="proposed",
-    )
-    benchmarks_scored=before_benchmark['status']=='completed' and projected_after_benchmark['status']=='completed'
-    benchmark_non_regression, improvement_count = (_benchmark_change(before_benchmark,projected_after_benchmark)
-        if benchmarks_scored else (None,None))
+    projected_after_benchmark = observe_benchmark(inputs, company_id=company_id)
+    benchmark_non_regression, improvement_count = None, None
 
     candidate_changed = candidate.markdown.strip() != (
         before_target_text or ""
@@ -253,24 +239,12 @@ def prepare_company_v0_1_29(
     pre_review_candidate_eligible = (
         bool(candidate.fact_ids)
         and candidate_changed
-        and benchmark_non_regression
         and selection.complete
     )
 
-    planner_snapshot = None
-    # A partial section critique may publish verified memory deltas, but must
-    # never masquerade as an overall passed planner-learning snapshot.
-    if benchmark_non_regression and critic['recommendation']=='pass':
-        planner_snapshot = legacy._build_methodology_learning_candidate(
-            company_id=company_id,
-            planner_chunks=planner_chunks,
-            critic=critic,
-            methodology_plan=methodology_plan,
-            benchmark_non_regression=True,
-        )
-
-    if planner_snapshot is None and critic['recommendation']=='pass':
-        planner_snapshot=procedural_snapshot(company_id,planner_chunks,before_benchmark,projected_after_benchmark)
+    # Record actual procedural work only; do not claim a benchmark passed.
+    planner_snapshot = (procedural_snapshot(company_id,planner_chunks,before_benchmark,projected_after_benchmark)
+        if critic['recommendation']=='pass' else None)
     methodology_proposal = (
         build_methodology_learning_proposal(
             methodology_learning_text,
@@ -353,7 +327,7 @@ def prepare_company_v0_1_29(
         }
     state['candidate_changed'] = candidate_changed
     state['benchmark_non_regression'] = benchmark_non_regression
-    observation={'status':'scored' if benchmarks_scored else 'unscored','is_publication_authority':False,
+    observation={'status':'disabled','enabled':False,'scores_known':False,'is_publication_authority':False,
         'non_regression':benchmark_non_regression,'baseline':before_benchmark['status'],
         'proposed':projected_after_benchmark['status'],
         'diagnostics':[b['diagnostic'] for b in (before_benchmark,projected_after_benchmark) if 'diagnostic' in b]}
@@ -361,10 +335,10 @@ def prepare_company_v0_1_29(
     state['result']['benchmark_non_regression']=benchmark_non_regression
     state['result']['benchmark_improvement_count']=improvement_count
     for prefix,benchmark in (('before',before_benchmark),('after',projected_after_benchmark)):
-        if benchmark['status']=='unscored':
+        if benchmark['status']=='disabled':
             for suffix in ('covered_count','partially_covered_count'):
                 state['result']['benchmark_'+prefix+'_'+suffix]=None
-    state['result']['benchmark_result_basis']='full_memory_document_advisory'
+    state['result']['benchmark_result_basis']='benchmark_disabled'
 
     return state
 
@@ -378,32 +352,8 @@ def _before_benchmark(
     memory_initialized: bool,
     benchmark_questions: tuple[dict[str, Any], ...],
 ) -> dict[str, Any]:
-    """Evaluate existing memory or project deterministic absence."""
-
-    if memory_initialized:
-        return observe_benchmark(
-            inputs,
-            company_id=company_id,
-            company_name_value=company_name_value,
-            memory_text=memory_text,
-            questions=benchmark_questions,
-            stage="before",
-        )
-
-    return {
-        "schema_version": legacy.BENCHMARK_SCHEMA_VERSION,
-        "company_id": company_id,
-        "role": legacy.BENCHMARK_ROLE,
-        "status": "completed",
-        "results": [
-            {
-                "question_id": question["question_id"],
-                "coverage": "not_covered",
-                "evidence_basis": "No company memory package is initialized.",
-            }
-            for question in benchmark_questions
-        ],
-    }
+    """No baseline scoring, including when company memory is absent."""
+    return observe_benchmark(inputs,company_id=company_id)
 
 
 def _benchmark_change(

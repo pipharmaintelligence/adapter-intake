@@ -29,8 +29,7 @@ def publish_company(inputs,state):
     validated={o['section_id'] for o in critic.get('section_outcomes',[]) if o['status']=='validated'}
     checks={'selected_section_critic_complete':sections.issubset(validated),
             'selected_evidence_complete':selection.complete and exact,
-            'benchmark_is_advisory':True,
-            'baseline_preserved':state['result']['section_enrichment']['baseline_preserved'] or not state['before_target_text']}
+                        'baseline_preserved':state['result']['section_enrichment']['baseline_preserved'] or not state['before_target_text']}
     row['enrichment_checks']=checks
     row['benchmark_observation']=state['result'].get('benchmark_observation',{})
     if not all(checks.values()):
