@@ -8,6 +8,7 @@ ASSET_ROOT = Path(__file__).resolve().parents[1]
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 
 EXPECTED_REVIEWED_HELPERS = {
+    'agent_chunks_v0_1_39.py', 'planner_execution_v0_1_39.py', 'research_execution_v0_1_39.py', 'source_evidence_v0_1_39.py', 'targeted_inputs_v0_1_39.py', 'section_critic_v0_1_39.py', 'company_preparation_v0_1_39.py', 'continuation_v0_1_39.py',
     "nusaibah_pharma_company_intelligence_lab_v0_1_38_adapter.py",
     "orchestration_v0_1_39.py", "automatic_publication_v0_1_39.py", "no_enrichment_v0_1_39.py",
     "nusaibah_pharma_company_intelligence_lab_v0_1_37_adapter.py",

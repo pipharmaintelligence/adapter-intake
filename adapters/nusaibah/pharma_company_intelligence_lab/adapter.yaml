@@ -5,6 +5,14 @@ manifest: nusaibah_pharma_company_intelligence_lab.asset.json
 adapter_module: nusaibah_pharma_company_intelligence_lab_v0_1_39_adapter.py
 
 reviewed_helpers:
+  - agent_chunks_v0_1_39.py
+  - planner_execution_v0_1_39.py
+  - research_execution_v0_1_39.py
+  - source_evidence_v0_1_39.py
+  - targeted_inputs_v0_1_39.py
+  - section_critic_v0_1_39.py
+  - company_preparation_v0_1_39.py
+  - continuation_v0_1_39.py
   - nusaibah_pharma_company_intelligence_lab_v0_1_38_adapter.py
   - orchestration_v0_1_39.py
   - automatic_publication_v0_1_39.py

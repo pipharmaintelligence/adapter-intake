@@ -4,20 +4,22 @@ try:
     from . import legacy_preparation_helpers_v0_1_23 as legacy
     from .orchestration_v0_1_26 import invoke_v0_1_26
     from .invocation_recovery_v0_1_35 import InvocationRecoveryInputs,BoundedRecoveryInputs
-    from .company_preparation_v0_1_36 import prepare_company_v0_1_36
+    from .company_preparation_v0_1_39 import prepare_company_v0_1_39
     from .company_result_v0_1_21 import augment_incomplete_company_state_v0_1_21
     from .candidate_validation_v0_1_21 import CandidateContractError
     from .automatic_publication_v0_1_39 import publish_company
     from .no_enrichment_v0_1_39 import complete_no_enrichment
+    from .continuation_v0_1_39 import admit_retention,review_annex
 except ImportError:
     import legacy_preparation_helpers_v0_1_23 as legacy
     from orchestration_v0_1_26 import invoke_v0_1_26
     from invocation_recovery_v0_1_35 import InvocationRecoveryInputs,BoundedRecoveryInputs
-    from company_preparation_v0_1_36 import prepare_company_v0_1_36
+    from company_preparation_v0_1_39 import prepare_company_v0_1_39
     from company_result_v0_1_21 import augment_incomplete_company_state_v0_1_21
     from candidate_validation_v0_1_21 import CandidateContractError
     from automatic_publication_v0_1_39 import publish_company
     from no_enrichment_v0_1_39 import complete_no_enrichment
+    from continuation_v0_1_39 import admit_retention,review_annex
 
 def invoke_v0_1_39(inputs,*,asset_identity):
     request=legacy.validate_batch_request(inputs)
@@ -38,9 +40,9 @@ def invoke_v0_1_39(inputs,*,asset_identity):
     methodology=legacy.load_methodology(inputs)
     legacy._require_runtime_helpers(inputs)
     try:
-        from .agent_chunks_v0_1_33 import ChunkCoordinator,MeasuredDispatchInputs
+        from .agent_chunks_v0_1_39 import ChunkCoordinator,MeasuredDispatchInputs
     except ImportError:
-        from agent_chunks_v0_1_33 import ChunkCoordinator,MeasuredDispatchInputs
+        from agent_chunks_v0_1_39 import ChunkCoordinator,MeasuredDispatchInputs
     import json
     # A reviewed conservative bound replaces a filesystem manifest read.
     # Source-contract tests prove all pinned prompts fit; the isolated runtime
@@ -58,9 +60,10 @@ def invoke_v0_1_39(inputs,*,asset_identity):
     # Readonly preparation is an internal phase of the same execution, not another workflow.
     preparation_request=replace(request,memory_mode='preview')
     for record in records:
+        coordinator.active_company_id=int(record['company_id'])
         progress={}
         try:
-            state=prepare_company_v0_1_36(bounded,request=preparation_request,record=record,
+            state=prepare_company_v0_1_39(bounded,request=preparation_request,record=record,
                 methodology=methodology,review_passes=1,progress=progress)
         except (legacy.UnresolvedAgentResponse,CandidateContractError,legacy.AgentContractValidationError) as error:
             if isinstance(error,legacy.AgentContractValidationError) and not legacy.recoverable_quality(error):
@@ -72,29 +75,10 @@ def invoke_v0_1_39(inputs,*,asset_identity):
                     field='business_identity',rule='business_identity_invalid')
             state=legacy._incomplete_company_state(bounded,record=record,diagnostic=detail,progress=progress)
             state=augment_incomplete_company_state_v0_1_21(state)
+            progress.setdefault('planner_diagnostics',getattr(bounded,'planner_diagnostics',[]))
             complete_no_enrichment(state,detail)
         states.append(state)
-    # Admit the complete retained business result before any Core mutation.
-    # Publication receipts get a separate 64 KiB allowance; never truncate a
-    # candidate and then publish it, or discover an output cap after a write.
-    from hashlib import sha256
-    probe={'company_results':[s['result'] for s in states],
-        'agent_input_preflight':coordinator.proof(),
-        'research_response_observations':forwarded.observations,
-        'agent_invocation_response_issues':forwarded.invocation_issues}
-    encoded=json.dumps(probe,ensure_ascii=False,sort_keys=True,separators=(',',':'),allow_nan=False).encode('utf-8')
-    if len(encoded)>448*1024:
-        detail=legacy.evidence_diagnostic(role='orchestration',stage='retention_admission',
-            field='dossier',rule='retention_budget_exceeded_publication_withheld')
-        for state in states:
-            previous=state['result']
-            state['incomplete_schema_preview']=True
-            state['result']={'company_id':state['company_id'],'company_name':previous.get('company_name'),
-                'review_outcome':'incomplete','research_incomplete':True,
-                'issues_annex':{'unresolved':[detail],'canonical_candidates_withheld':True},
-                'retention_admission':{'status':'incomplete','publication_withheld':True,
-                    'original_size_bytes':len(encoded),'original_sha256':sha256(encoded).hexdigest(),
-                    'candidate_truncated':False,'business_body_retained':False}}
+    admit_retention(states,coordinator,forwarded)
     rows=[]
     for state in states:
         result=state['result']
@@ -103,7 +87,6 @@ def invoke_v0_1_39(inputs,*,asset_identity):
             if 'independent_review' in key or 'pre_review' in key or key in {'automated_quality_gate_passed','memory_mutation_eligible','methodology_learning_apply_authority'}:
                 result.pop(key)
         result['human_approval_required']=False
-        result['agent_input_preflight']=coordinator.proof()
         result['benchmark_enabled']=False
         result['benchmark_observation']={'status':'disabled','enabled':False,'scores_known':False,'is_publication_authority':False}
         result['benchmark_non_regression']=None
@@ -118,6 +101,7 @@ def invoke_v0_1_39(inputs,*,asset_identity):
             publication=publish_company(inputs,state)
         else:
             publication={'company_id':state['company_id'],'publication_complete':False,'status':'not_requested'}
+        state['publication']=publication
         result['skill_publication']=publication
         # Keep role-level exhaustion visible even when surviving sections publish.
         unresolved=state.get('joined_research',{}).get('unresolved_research_responses')
@@ -137,6 +121,8 @@ def invoke_v0_1_39(inputs,*,asset_identity):
             result[prefix+'_history_verified']=receipt.get('history_verified',False)
         result['business_result_state']=('no_change' if state.get('no_supported_enrichment') and publication['publication_complete'] else
             'enriched_and_published' if publication['publication_complete'] else 'enrichment_ready_or_partial')
+        annex=result.get('issues_annex')
+        if annex is not None:annex['canonical_candidates_withheld']=not publication['publication_complete']
         rows.append(result)
     complete=request.memory_mode=='apply' and all(r['skill_publication']['publication_complete'] for r in rows)
     dossier={'schema_version':'pharma_company_intelligence_dossier.v1','status':'completed',
@@ -144,6 +130,7 @@ def invoke_v0_1_39(inputs,*,asset_identity):
         'business_result_state':('no_change' if complete and all(r['business_result_state']=='no_change' for r in rows) else
             'enriched_and_published' if complete else 'enrichment_ready_or_partial'),
         'human_approval_required':False,'publication_complete':complete,'portfolio_review_passes':1,
+        'execution_complete':True,'continuation_allowed':all(r['skill_publication'].get('publication_complete') or r['skill_publication'].get('continuation_allowed') for r in rows),
         'company_results':rows,'research_response_observations':forwarded.observations,
         'agent_invocation_response_issues':forwarded.invocation_issues}
     legacy.require_output_bound(dossier)

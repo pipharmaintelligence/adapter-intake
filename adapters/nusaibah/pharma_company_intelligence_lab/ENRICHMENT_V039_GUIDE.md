@@ -30,5 +30,10 @@ boundaries, exact spans, the sole schema backup, 600-second Agent timeouts,
 benchmark-disabled behavior, runtime version, and Core storage authority are
 unchanged. Earlier adapter versions are immutable.
 
-See [the execution exception audit](EXECUTION_EXCEPTION_AUDIT.md) for remaining
-continuation gaps. Offline tests are not evidence of live first-package upload.
+See [the execution exception audit](EXECUTION_EXCEPTION_AUDIT.md) for the corrected
+continuation paths and the required hard-stop boundaries. Offline tests are not evidence of live first-package upload.
+
+Resolved incomplete work also advances the range without claiming publication.
+The latest incomplete run is checkpointed separately from last_successful.
+A compact Annex: Need Review table preserves quality gaps by section/paragraph
+and simple source number; no source text or prompts are copied into the annex.
