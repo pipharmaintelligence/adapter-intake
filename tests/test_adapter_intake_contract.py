@@ -113,6 +113,17 @@ def _skill_refs(raw: object, *, field: str, manifest_path: Path) -> list[dict[st
 
 
 class AdapterIntakeContractTests(unittest.TestCase):
+    def test_declared_file_lists_use_framework_block_syntax(self) -> None:
+        list_keys = {'reviewed_helpers', 'reviewed_support_files', 'optional_files'}
+        for path in ADAPTERS_ROOT.glob('*/*/adapter.yaml'):
+            for line in path.read_text(encoding='utf-8-sig').splitlines():
+                if line[:1].isspace() or ':' not in line:
+                    continue
+                key, value = line.split(':', 1)
+                if key in list_keys:
+                    self.assertFalse(value.split('#', 1)[0].strip(),
+                                     f'{path.relative_to(REPO_ROOT)}: {key} requires an indented block')
+
     def test_all_adapter_intakes_are_promotion_shape_safe(self) -> None:
         adapter_yamls = sorted(ADAPTERS_ROOT.glob("*/*/adapter.yaml"))
         self.assertTrue(adapter_yamls, "No adapter.yaml contracts were discovered")
