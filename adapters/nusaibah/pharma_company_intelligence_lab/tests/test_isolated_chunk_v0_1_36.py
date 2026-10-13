@@ -53,7 +53,7 @@ print(json.dumps({'status':'passed','network_calls':0,'real_provider_calls':0,'r
 
 class IsolatedChunkTests(unittest.TestCase):
     def test_pinned_prompt_text_fits_reviewed_conservative_bound(self):
-        manifest=json.loads((ROOT/'nusaibah_pharma_company_intelligence_lab.asset.json').read_text(encoding='utf-8'))
+        manifest=json.loads((ROOT/'tests/fixtures/release-0.1.36/nusaibah_pharma_company_intelligence_lab.asset.json').read_text(encoding='utf-8'))
         for role,contract in manifest['versions']['0.1.36']['agents'].items():
             if isinstance(contract.get('definition'),dict):
                 prompt=contract['definition']['chain']['steps'][0]['input']['text']

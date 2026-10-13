@@ -729,3 +729,5 @@ See ENRICHMENT_V034_GUIDE.md for the isolated-runtime repair and mandatory provi
 See ENRICHMENT_V035_GUIDE.md for reusable toolkit size parity and explicit availability handling.
 
 See ENRICHMENT_V036_GUIDE.md for valid critic-disposition consolidation and the mandatory evidence-gap regressions.
+
+See ENRICHMENT_V037_GUIDE.md for exact publication section selection and nested-baseline SDK qualification.
