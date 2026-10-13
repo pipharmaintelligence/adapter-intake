@@ -1,3 +1,10 @@
+## 0.1.38 first-package publication
+
+Missing memory or methodology is a supported first-run review state. Eligible
+new content uses Core's existing guarded first-upload path and verified readback;
+existing packages retain their changeset/update path. Optional methodology with
+no new learning remains absent. See [the release guide](ENRICHMENT_V038_GUIDE.md).
+
 # Nusaibah Pharma Company Intelligence Lab
 
 ## 0.1.33 measured paragraph/subsection execution
@@ -28,7 +35,7 @@ The live 0.1.27 cycle completed but withheld publication at section critique. Th
 
 Run one targeted intelligence pass from supplied CompanyContext using section plans, literal source chunks, exact evidence, independent section critics and per-question benchmark checks. `memory_mode=apply` publishes supported memory and methodology changes through the existing Core Dynamic Skill ZIP/partition/history lane. These automated checks improve enrichment and do not require human candidate approval.
 
-The standalone company-range runner lives in E: developer code, outside this adapter. It runs Company Scope then this production asset and saves only a progress checkpoint. Packages must already be initialized; partial/unconfirmed publication does not advance last success. No runtime version bump is required: deliver this version through official workflow promotion.
+The standalone company-range runner lives in E: developer code, outside this adapter. It runs Company Scope then this production asset and saves only a progress checkpoint. Version 0.1.37 requires initialized packages; version 0.1.38 adds guarded first upload. Partial/unconfirmed publication does not advance last success. No runtime version bump is required: deliver this version through official workflow promotion.
 
 See [the current enrichment developer guide](ENRICHMENT_GUIDE.md) for authority boundaries, source limits, per-section withholding, publication and live verification.
 
