@@ -194,6 +194,23 @@ class ParagraphChunkTests(unittest.TestCase):
             bounded.invoke_agent(role,input={'company_id':13})
         self.assertEqual(21,engine.calls)
         self.assertEqual(21,sum(bounded.company_agent_counts(13).values()))
+    def test_long_historical_memory_does_not_crowd_out_public_source_chunks(self):
+        from targeted_inputs_v0_1_33 import TargetedSourceInputs
+        inputs=object.__new__(TargetedSourceInputs)
+        inputs._inputs=SimpleNamespace(coordinator=ChunkCoordinator())
+        inputs.entity_id='company:13';inputs.source_digest='0'*64;inputs.snapshot_id='source:'+inputs.source_digest
+        inputs.units=[{'locator':locator,'entity_id':inputs.entity_id,'text':text,'accessible':True}
+            for locator,text in [('company_context:13','Governed context.'),
+                ('skill:company_memory:13','\n\n'.join('Historical paragraph '+str(i) for i in range(30))),
+                ('https://example.test/','Fresh public source.'),
+                ('https://example.test/about','Second public source.')]]
+        packets,omitted=inputs.research_packets('portfolio_researcher',{
+            'company_id':13,'required_sections':[{'section_id':'company_profile'}],'response_contract':{}})
+        self.assertFalse(omitted)
+        first={packet['retrieved_sources'][0]['locator'] for packet in packets[:6]}
+        self.assertEqual({u['locator'] for u in inputs.units},first)
+        self.assertEqual(33,len(packets))
+        self.assertEqual(list(range(1,34)),[p['chunk_execution']['chunk_index'] for p in packets])
     def test_authority_rejection_still_propagates_without_backup_or_write(self):
         from devtools.runtime_agent_invocation import RuntimeAgentInvocationError
         class Authority(ChunkInputs):
