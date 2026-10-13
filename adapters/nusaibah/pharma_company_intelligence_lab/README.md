@@ -1,5 +1,9 @@
 # Nusaibah Pharma Company Intelligence Lab
 
+## 0.1.33 measured paragraph/subsection execution
+
+Every original Agent and its sole backup is measured before dispatch. Paragraph/subsection pieces run under one bounded parallelism limit and consolidate only validated, source-qualified findings. Oversized or unresolved pieces remain explicit gaps; negative critics are preserved. Benchmark stays disabled, review remains one targeted pass, and publication uses the existing Core Dynamic Skill lane. See [the current guide](ENRICHMENT_V033_GUIDE.md). Promotion and offline tests are not proof of live publication.
+
 ## 0.1.32 exhausted research backup continuation
 
 The same one-time backup now remains scoped to its failed research role even when its own JSON is unusable. Successful sibling research continues through exact evidence checks, section critics and baseline-preserving Core Skill publication. Failed-role content remains withheld with its actual diagnostic; no second backup or benchmark call is introduced. See [the current guide](ENRICHMENT_V032_GUIDE.md). Tests are not a claim of live publication.

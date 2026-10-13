@@ -1,0 +1,94 @@
+"""Parallel scoped critics; negative chunk verdicts are never repaired into passes."""
+from copy import deepcopy
+try:
+    from . import legacy_preparation_helpers_v0_1_23 as legacy
+    from .agent_chunks_v0_1_33 import unique
+    from .downstream_chunks_v0_1_33 import evidence_units
+    from .section_critic_v0_1_28 import select_validated_sections
+except ImportError:
+    import legacy_preparation_helpers_v0_1_23 as legacy
+    from agent_chunks_v0_1_33 import unique
+    from downstream_chunks_v0_1_33 import evidence_units
+    from section_critic_v0_1_28 import select_validated_sections
+
+def run_section_critics(inputs,*,company_id,company_name_value,joined_research,strategic,
+                       methodology,methodology_plan,planner_chunks):
+    section_ids=[s for role in legacy.RESEARCH_ROLES for s in legacy.RESEARCH_ROLE_SECTIONS[role]]
+    def section_work(section_id):
+        evidence=deepcopy(legacy._research_for_downstream(joined_research))
+        evidence['claims']=[c for c in evidence['claims'] if c['section_id']==section_id]
+        evidence['sections']=[s for s in evidence['sections'] if s['section_id']==section_id]
+        owner=next(r for r in legacy.RESEARCH_ROLES if section_id in legacy.RESEARCH_ROLE_SECTIONS[r])
+        evidence['no_evidence_research_roles']=[] if evidence['claims'] else [owner]
+        evidence['unresolved_research_responses']=[d for d in evidence['unresolved_research_responses'] if d.get('role')==owner]
+        chunk=next(c for c in planner_chunks if c['section_id']==section_id and c['research_role']==owner)
+        fields={'question':'questions','freshness_focus':'freshness_focus','evidence_focus':'evidence_focus'}
+        requirements=[{**r,'section_id':section_id,'reviewed_section_id':section_id}
+            for r in methodology_plan.requirement_catalog() if r['role']==owner and r['kind'] in fields
+            and r['text'] in chunk[fields[r['kind']]]]
+        ids=tuple(r['requirement_id'] for r in requirements)
+        base={'company_id':company_id,'company_name':company_name_value,
+            'methodology_packet':{'evidence_rules':list(methodology.planner_packet.evidence_rules)},
+            'planner_requirements':requirements,'reviewed_section_ids':[section_id],
+            'reviewed_sections':legacy._section_requests((section_id,)),
+            'enrichment_instruction':'Critique only this supplied paragraph/subsection piece. Preserve negative verdicts, exact source qualifications and uncertainty. Missing context here is not proof of a global negative. Other pieces are independently checked; do not invent citations, coverage or non-applicability.'}
+        def attach(payload,rows):
+            claims=[r['claim'] for r in rows];claim_ids=[c['claim_id'] for c in claims]
+            contract=legacy.response_contract_for_role(legacy.CRITIC_ROLE,company_id=company_id,planner_requirement_ids=ids)
+            payload['response_contract']={**contract,'allowed_section_ids':[section_id],'allowed_claim_ids':claim_ids,
+                'allowed_requirement_ids':list(ids),'validation_contract':{**contract['validation_contract'],
+                    'missing_section_ids_allowed_values':[section_id],'unsupported_claim_ids_allowed_values':claim_ids,
+                    'stale_claim_ids_allowed_values':claim_ids,'unmet_plan_requirement_ids_allowed_values':list(ids)}}
+            payload['research_evidence']={**evidence,'claims':claims}
+            result=inputs.prepare_input(legacy.CRITIC_ROLE,payload)
+            result['_piece_claims']=claims
+            return result
+        units=evidence_units(inputs,evidence['claims']) or [{'section_id':section_id,'subsection':'no_evidence',
+            'unit_id':section_id,'claim':None}]
+        if not evidence['claims']:
+            def empty_attach(payload,rows):return attach(payload,[])
+            packets,omitted=inputs.coordinator.partition(legacy.CRITIC_ROLE,base,units,empty_attach)
+        else:packets,omitted=inputs.coordinator.partition(legacy.CRITIC_ROLE,base,units,attach)
+        def work(packet):
+            known={c['claim_id'] for c in packet['_piece_claims']};contract=packet['response_contract']
+            envelope=inputs.invoke_agent(legacy.CRITIC_ROLE,input=packet,on_error='raise')
+            return legacy._validated_agent_response(inputs,envelope,role=legacy.CRITIC_ROLE,
+                company_id=company_id,contract=contract,validator=lambda v:legacy.validate_critic_payload(v,
+                    company_id=company_id,known_claim_ids=known,known_section_ids={section_id},known_plan_requirement_ids=set(ids)))
+        outcomes=inputs.coordinator.parallel(packets,work)
+        values=[o['value'] for o in outcomes if o['status']=='completed']
+        diagnostics=[o['diagnostic'] for o in outcomes if o['status']=='unresolved']
+        if omitted:diagnostics.append(legacy.evidence_diagnostic(role=legacy.CRITIC_ROLE,stage='input_preflight',
+            field='paragraphs',rule='indivisible_paragraph_or_subsection_exceeds_budget'))
+        def merged(field):return unique([v for row in values for v in row[field]])
+        # Every negative is retained; this reduction cannot manufacture a pass.
+        passed=bool(values) and len(values)==len(packets) and not diagnostics and all(
+            row['recommendation']=='pass' and row['citation_coverage']['status']=='sufficient'
+            and not row['unsupported_claim_ids'] and not row['stale_claim_ids'] and not row['missing_section_ids']
+            and not row['contradiction_items'] and not any(d['disposition']=='unsatisfied' for d in row['unmet_plan_requirements']) for row in values)
+        dispositions=[]
+        rank={'satisfied':0,'not_applicable':1,'unsatisfied':2}
+        for requirement_id in ids:
+            rows=[d for row in values for d in row['unmet_plan_requirements'] if d['requirement_id']==requirement_id]
+            if rows:dispositions.append(max(rows,key=lambda d:rank[d['disposition']]))
+        result={'unsupported_claim_ids':merged('unsupported_claim_ids'),'stale_claim_ids':merged('stale_claim_ids'),
+            'missing_section_ids':merged('missing_section_ids'),'contradiction_items':merged('contradiction_items'),
+            'unmet_plan_requirements':dispositions,'residual_uncertainties':merged('residual_uncertainties')}
+        outcome={'section_id':section_id,'status':'validated' if passed else 'unresolved' if diagnostics else 'needs_enrichment',
+            'recommendation':'pass' if passed else 'fail','citation_coverage_status':'sufficient' if passed else 'insufficient',
+            'unsupported_claim_ids':result['unsupported_claim_ids'],'stale_claim_ids':result['stale_claim_ids'],
+            'missing_section_ids':result['missing_section_ids'],'contradiction_count':len(result['contradiction_items']),
+            'requirement_dispositions':[{k:d[k] for k in ('requirement_id','disposition')} for d in dispositions],
+            'chunk_count':len(packets),'chunk_diagnostics':diagnostics}
+        return result,outcome
+    outer=inputs.coordinator.parallel(section_ids,section_work)
+    values=[];outcomes=[]
+    for section_id,result in zip(section_ids,outer):
+        if result['status']=='completed':row,outcome=result['value'];values.append(row);outcomes.append(outcome)
+        else:outcomes.append({'section_id':section_id,'status':'unresolved','diagnostic':result['diagnostic']})
+    complete=all(o['status']=='validated' for o in outcomes)
+    return {'schema_version':legacy.CRITIC_SCHEMA_VERSION,'company_id':company_id,'role':legacy.CRITIC_ROLE,'status':'completed',
+        **{k:unique([v for row in values for v in row[k]]) for k in ('unsupported_claim_ids','stale_claim_ids',
+            'missing_section_ids','contradiction_items','unmet_plan_requirements','residual_uncertainties')},
+        'citation_coverage':{'status':'sufficient' if complete else 'insufficient','notes':'See actual scoped chunk verdicts.'},
+        'recommendation':'pass' if complete else 'fail','section_outcomes':outcomes}
