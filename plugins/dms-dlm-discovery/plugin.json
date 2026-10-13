@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "dms-dlm-discovery",
-  "version": "1.1.0",
-  "description": "Resolve resource names with existing authorized MCP read tools, confirm spelling suggestions, and preserve selected identities. Includes the concrete DLM lake and node binding.",
+  "version": "1.2.0",
+  "description": "Resolve authorized resource names and retrieve approved Skill guidance through advertised MCP read tools. Preserve scope, spelling confirmation and snapshot identity.",
   "author": {
     "name": "DMS AI"
   },
@@ -11,7 +11,7 @@
       "interface": {
         "displayName": "DMS AI Discovery",
         "shortDescription": "Find authorized resources",
-        "longDescription": "Use existing authorized MCP reads to resolve resource names, confirm spelling suggestions, and preserve scope. Includes specific lake and node guidance. This skills-only package does not supply or authorize MCP tools.",
+        "longDescription": "Use advertised authorized MCP reads to find resources and retrieve approved Skill instructions. Preserve scope, spelling confirmation and observed snapshots. Includes DLM guidance. This skills-only package does not supply or authorize MCP tools.",
         "developerName": "DMS AI",
         "category": "Productivity",
         "capabilities": [

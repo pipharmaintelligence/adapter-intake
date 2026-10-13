@@ -1,0 +1,68 @@
+{
+  "key": "nusaibah.skill_reader",
+  "default": "0.1.0",
+  "allowed_surfaces": [
+    "v1_asset_execute"
+  ],
+  "allowed_modes": [
+    "balanced"
+  ],
+  "execution": {
+    "allowed_substrates": [
+      "local_worker"
+    ],
+    "default_substrate": "local_worker",
+    "timeout_seconds": 60
+  },
+  "versions": {
+    "0.1.0": {
+      "state": "active",
+      "allow_resume": false,
+      "inputs": {
+        "variables": {
+          "required": true,
+          "source": "direct",
+          "shape": "object"
+        }
+      },
+      "outputs": {
+        "skill_result": {
+          "required": true,
+          "shape": "object"
+        }
+      },
+      "callable": {
+        "enabled": true,
+        "result_key": "skill_result",
+        "result_shape": "object",
+        "max_result_bytes": 32768,
+        "timeout_seconds": 30
+      },
+      "skills": [
+        {
+          "skill_ref": "nusaibah.reader-guidance",
+          "version": "1.0.0",
+          "digest": "sha256:df0d0b2d0735169c9d3e470ffacc62d4b23a16d4686b2d9b0e9dcff1ed1e8417"
+        }
+      ],
+      "runtime_skills": {
+        "guidance": {
+          "source": {
+            "lake_ref": "hykshdasds",
+            "node_key": "fixed_skill_packages"
+          },
+          "resolution": "current",
+          "mutation": "read_only",
+          "partition": {
+            "skill_ref": {
+              "value": "nusaibah.reader-guidance-dynamic"
+            },
+            "skill_version": {
+              "value": "development"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -63,6 +63,10 @@ Deterministic spelling matching does not guarantee synonyms or semantic search.
 
 ## Distribution and authority
 
+If the user's task needs approved Skill guidance, use `mcp-skill-guidance` with an
+actually advertised reader. Keep the selected resource scope and snapshot identity
+with the retrieved instructions. Resource discovery alone does not read Skills.
+
 This plugin supplies instructions; the separately authorized MCP connection
 supplies tools. Essential guidance must also appear in tool descriptions and
 model-visible results because callers may not have this skill installed.

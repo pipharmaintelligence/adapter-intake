@@ -1,8 +1,9 @@
 # DMS AI Discovery — ChatGPT plugin
 
-Version `1.1.0` of this skills-only plugin owns the generic
+Version `1.2.0` of this skills-only plugin owns the generic
 `mcp-resource-discovery` skill and the existing `dlm-discovery-orchestration`
-binding. The generic skill applies to reviewed MCP resource search contracts,
+binding, plus `mcp-skill-guidance` for advertised approved Skill readers.
+The generic skill applies to reviewed MCP resource search contracts,
 including projects, collections, documents and jobs. The DLM binding keeps the
 existing three operation names and their lake/node scope rules. The plugin
 identity stays `dms-dlm-discovery` for continuity.
@@ -15,7 +16,7 @@ publication do not install it into ChatGPT.
 ## Distribution
 
 The portable source is this directory: root `plugin.json` and
-both `skills/*/SKILL.md` files. Package the directory as a ZIP
+all three `skills/*/SKILL.md` files. Package the directory as a ZIP
 with one top-level `dms-dlm-discovery/` folder. Publish/install it through the
 normal ChatGPT Plugin Skill mechanism, separately from adapter promotion.
 This PR supplies reviewed source; it does not publish or install the plugin.
@@ -62,6 +63,13 @@ internal Skill package has `SKILL.md` at its package root; this plugin has
 `plugin.json` and `skills/dlm-discovery-orchestration/SKILL.md`.
 Do not substitute the full plugin archive for an internal Skill package.
 The existing three DLM discovery tools cannot read either package's content.
+
+The separate generic Skill reader can return approved bounded instruction text
+and snapshot evidence when it is actually published. The development reader's
+normal result is retained as workflow output. It neither installs a host Skill
+nor creates persistent ChatGPT memory. Verify fixed and dynamic reads, scope
+changes, missing selectors, digest changes, oversize and denied-access behavior
+through the target connection before distributing the combined workflow.
 
 See OpenAI's [plugin packaging](https://developers.openai.com/plugins/build/plugins)
 and [skill activation](https://developers.openai.com/plugins/concepts/skills)
