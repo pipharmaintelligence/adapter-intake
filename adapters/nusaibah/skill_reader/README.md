@@ -6,8 +6,11 @@ provider, network, storage, mutation or DLM discovery capability.
 
 Supply `variables` with `source_kind`, a declared `selector`, and a `read` mode:
 `sections` (default), `section`, `resource`, or `document`. Section reads take an
-exact heading string or heading path. Resource reads take an admitted relative
-path. Optional `expected_digest` detects a changed snapshot. Dynamic `selectors`
+exact heading string or heading path. The public resource argument uses components,
+for example `["references", "policy.md"]`, so it stays within the existing safe
+variable rules; the reader joins and validates an admitted relative resource.
+Optional `expected_digest` checks the Skill document digest. Package/resource
+changes must also be assessed using the returned package and snapshot identity. Dynamic `selectors`
 must match the consuming publication's declared variable contract.
 
 Text is limited to 8 KiB UTF-8; section inventories to 20 entries. Oversized text
@@ -15,6 +18,8 @@ fails instead of being truncated. The result includes model-visible identity,
 digest, snapshot evidence, completeness and `retention=workflow_result`.
 Normal workflow results are retained. Only content approved for that audience
 and retention may be bound to this reader.
+The separately configured Remote MCP envelope budget also applies, including its
+visible text and structured projections; a smaller budget can reject a read.
 
 The development manifest pins a synthetic fixed package and a separate read-only
 dynamic fixture in an existing development node. It does not expose existing

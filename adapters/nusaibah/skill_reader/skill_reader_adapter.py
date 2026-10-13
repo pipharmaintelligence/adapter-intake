@@ -65,13 +65,23 @@ def _request(value: Any) -> dict[str, Any]:
     elif "section" in value:
         raise SkillReaderError("skill_reader_request_invalid")
     if read == "resource":
-        path = _text(value.get("resource"))
+        resource = value.get("resource")
+        if isinstance(resource, list) and 1 <= len(resource) <= 6:
+            parts = [_text(part, 120) for part in resource]
+            if any("/" in part for part in parts):
+                raise SkillReaderError("skill_reader_resource_invalid")
+            path = "/".join(parts)
+        else:
+            path = _text(resource)
         if ("\\" in path or ":" in path or path.startswith("/")
                 or any(part in {"", ".", ".."} or part.startswith(".") for part in path.split("/"))):
             raise SkillReaderError("skill_reader_resource_invalid")
     elif "resource" in value:
         raise SkillReaderError("skill_reader_request_invalid")
-    return {**value, "source_kind": kind, "selector": selector, "read": read, "selectors": dict(selectors)}
+    query = {**value, "source_kind": kind, "selector": selector, "read": read, "selectors": dict(selectors)}
+    if read == "resource":
+        query["resource"] = path
+    return query
 
 
 def read_skill(inputs: Any, request: Any) -> dict[str, Any]:

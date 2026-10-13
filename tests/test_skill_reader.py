@@ -114,6 +114,15 @@ class SkillReaderTest(unittest.TestCase):
         self.assertEqual("ready", result["outputs"]["skill_result"]["status"])
         self.assertEqual(0, result["metrics"]["mutation_calls"])
 
+    def test_resource_components_preserve_existing_safe_variable_contract(self):
+        query = self.query(read="resource", resource=["references", "policy.md"])
+        query.pop("section")
+        result = reader.read_skill(Inputs(View()), query)
+        self.assertEqual("references/policy.md", result["resource"])
+        for parts in (["..", "policy.md"], ["references/policy.md"], ["references", ".private"]):
+            with self.assertRaises(reader.SkillReaderError):
+                reader.read_skill(Inputs(View()), {**query, "resource": parts})
+
     def test_inventory_is_bounded_with_truthful_completeness(self):
         result = reader.read_skill(Inputs(View(count=21)), {"source_kind": "fixed", "selector": "demo.guidance"})
         self.assertEqual(20, len(result["sections"]))
