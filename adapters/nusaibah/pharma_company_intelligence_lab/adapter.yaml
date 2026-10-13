@@ -112,8 +112,6 @@ reviewed_helpers:
 reviewed_support_files:
   - pharma_roles_v0_1_34.json
   - materialization_promotion_acceptance_v0_1_34.json
-  - pharma_roles_v0_1_34.json
-  - materialization_promotion_acceptance_v0_1_34.json
   - pharma_roles_v0_1_33.json
   - materialization_promotion_acceptance_v0_1_33.json
   - pharma_roles_v0_1_32.json
