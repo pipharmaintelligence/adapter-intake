@@ -180,6 +180,20 @@ class ParagraphChunkTests(unittest.TestCase):
         engine.dispatch(legacy.SYNTHESIS_ROLE,{'company_id':13},lambda:True)
         self.assertEqual(9,engine.calls)
         self.assertTrue(all(r['diagnostic'] for r in outcomes if r['status']=='unresolved'))
+    def test_deferred_chunks_do_not_exhaust_runtime_attempt_counters(self):
+        class Inputs(dict):
+            def invoke_agent(self,role,*,input,on_error):return {'ok':True}
+        engine=ChunkCoordinator();raw=Inputs()
+        bounded=BoundedRecoveryInputs(MeasuredDispatchInputs(raw,engine),
+            SimpleNamespace(company_ids=(13,),memory_mode='preview'),review_passes=1,coordinator=engine)
+        for role in legacy.RESEARCH_ROLES:
+            results=engine.parallel(list(range(60)),lambda n:bounded.invoke_agent(role,input={'company_id':13}))
+            self.assertEqual(60,len(results))
+            self.assertEqual(6,sum(r['status']=='completed' for r in results))
+        for role in (legacy.STRATEGIC_ROLE,legacy.CRITIC_ROLE,legacy.SYNTHESIS_ROLE):
+            bounded.invoke_agent(role,input={'company_id':13})
+        self.assertEqual(21,engine.calls)
+        self.assertEqual(21,sum(bounded.company_agent_counts(13).values()))
     def test_authority_rejection_still_propagates_without_backup_or_write(self):
         from devtools.runtime_agent_invocation import RuntimeAgentInvocationError
         class Authority(ChunkInputs):
