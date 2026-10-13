@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.mcp_discovery_agent_smoke",
-  "default": "0.1.1",
+  "default": "0.1.2",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -50,6 +50,46 @@
       }
     },
     "0.1.1": {
+      "state": "active",
+      "allow_resume": false,
+      "inputs": {
+        "variables": {
+          "required": false,
+          "source": "direct",
+          "shape": "object"
+        }
+      },
+      "outputs": {
+        "smoke_result": {
+          "required": true,
+          "shape": "object"
+        }
+      },
+      "callable_assets": {
+        "discovery": {
+          "asset_key": "nusaibah.abstract_mcp_dlm",
+          "asset_version": "0.1.1",
+          "result_key": "tool_results",
+          "result_shape": "object",
+          "cache": false,
+          "on_error": "raise",
+          "prepared_inputs": {
+            "tool_request": {
+              "operation": "lakes.list",
+              "page_size": 5
+            }
+          }
+        }
+      },
+      "agents": {
+        "read_summarizer": {
+          "contract_key": "agent.nusaibah.mcp_discovery_smoke.read_summarizer",
+          "contract_version": "1.0.0",
+          "reference": "agent://contracts/nusaibah-mcp-discovery-smoke-read-summarizer"
+        }
+      }
+    },
+    "0.1.2": {
       "state": "active",
       "allow_resume": false,
       "inputs": {
