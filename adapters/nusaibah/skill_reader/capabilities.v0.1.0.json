@@ -16,6 +16,7 @@
           "openWorldHint": false
         },
         "recheck_dependencies": true,
+        "retained_output_role": "skill_result",
         "input_schema": {
           "type": "object",
           "additionalProperties": false,
@@ -257,10 +258,10 @@
                     "type": "object",
                     "additionalProperties": false,
                     "required": [
-                      "path"
+                      "headings"
                     ],
                     "properties": {
-                      "path": {
+                      "headings": {
                         "type": "array",
                         "minItems": 1,
                         "maxItems": 6,

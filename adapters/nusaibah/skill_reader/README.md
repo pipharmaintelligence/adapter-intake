@@ -16,8 +16,12 @@ must match the consuming publication's declared variable contract.
 Text is limited to 8 KiB UTF-8; section inventories to 20 entries. Oversized text
 fails instead of being truncated. The result includes model-visible identity,
 digest, snapshot evidence, completeness and `retention=workflow_result`.
-Normal workflow results are retained. Only content approved for that audience
-and retention may be bound to this reader.
+For a Remote MCP publication, `retained_output_role=skill_result` opts into the
+existing temporary Core result artifact and exports only that declared role.
+PHP checkpoints retain summaries and the reference; approved text stays in the
+artifact until its expiry. Reading also checks producer/client scope and byte
+integrity. Only content approved for that audience and retention may be bound
+to this reader. A fresh read is required after the artifact expires.
 The separately configured Remote MCP envelope budget also applies, including its
 visible text and structured projections; a smaller budget can reject a read.
 

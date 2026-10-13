@@ -124,7 +124,7 @@ def read_skill(inputs: Any, request: Any) -> dict[str, Any]:
         if query["read"] == "sections":
             available = view.list_sections()
             has_more = len(available) > MAX_SECTIONS
-            sections = [{"path": list(item.path.parts)} for item in available[:MAX_SECTIONS]]
+            sections = [{"headings": list(item.path.parts)} for item in available[:MAX_SECTIONS]]
         elif query["read"] == "section":
             if not view.has_section(query["section"]):
                 raise SkillReaderError("skill_reader_section_unavailable")
