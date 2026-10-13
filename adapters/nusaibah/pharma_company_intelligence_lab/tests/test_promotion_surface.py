@@ -8,6 +8,8 @@ ASSET_ROOT = Path(__file__).resolve().parents[1]
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 
 EXPECTED_REVIEWED_HELPERS = {
+    "company_preparation_v0_1_34.py", "orchestration_v0_1_34.py", "targeted_inputs_v0_1_34.py",
+    "nusaibah_pharma_company_intelligence_lab_v0_1_33_adapter.py",
     "agent_chunks_v0_1_33.py",
     "invocation_recovery_v0_1_33.py",
     "source_evidence_v0_1_33.py",
@@ -110,6 +112,7 @@ EXPECTED_REVIEWED_HELPERS = {
 }
 
 EXPECTED_REVIEWED_SUPPORT_FILES = {
+    "pharma_roles_v0_1_34.json", "materialization_promotion_acceptance_v0_1_34.json",
     "pharma_roles_v0_1_33.json",
     "materialization_promotion_acceptance_v0_1_33.json",
     "pharma_roles_v0_1_32.json",
@@ -140,7 +143,8 @@ EXPECTED_REVIEWED_SUPPORT_FILES = {
 }
 
 EXPECTED_RUNTIME_FILES = {
-    "nusaibah_pharma_company_intelligence_lab_v0_1_33_adapter.py",
+    "nusaibah_pharma_company_intelligence_lab_v0_1_34_adapter.py",
+    "ENRICHMENT_V034_GUIDE.md",
     "ENRICHMENT_V033_GUIDE.md",
     "ENRICHMENT_V032_GUIDE.md",
     "ENRICHMENT_V031_GUIDE.md",
@@ -190,7 +194,7 @@ class PromotionSurfaceTests(unittest.TestCase):
 
         self.assertEqual(reviewed_helpers, EXPECTED_REVIEWED_HELPERS)
         self.assertEqual(reviewed_support, EXPECTED_REVIEWED_SUPPORT_FILES)
-        self.assertEqual(optional_files, {"README.md", "DEVELOPER_GUIDE.md", "ENRICHMENT_GUIDE.md", "ENRICHMENT_V028_GUIDE.md", "ENRICHMENT_V029_GUIDE.md", "ENRICHMENT_V030_GUIDE.md", "ENRICHMENT_V031_GUIDE.md", "ENRICHMENT_V032_GUIDE.md", "ENRICHMENT_V033_GUIDE.md"})
+        self.assertEqual(optional_files, {"README.md", "DEVELOPER_GUIDE.md", "ENRICHMENT_GUIDE.md", "ENRICHMENT_V028_GUIDE.md", "ENRICHMENT_V029_GUIDE.md", "ENRICHMENT_V030_GUIDE.md", "ENRICHMENT_V031_GUIDE.md", "ENRICHMENT_V032_GUIDE.md", "ENRICHMENT_V033_GUIDE.md", "ENRICHMENT_V034_GUIDE.md"})
         self.assertNotIn("tests", text)
         self.assertNotIn("evaluation", text)
         self.assertNotIn("stubs", text)
@@ -210,7 +214,7 @@ class PromotionSurfaceTests(unittest.TestCase):
         self.assertTrue(current_manifest.exists())
         self.assertIn(current_manifest.name, declared_runtime_files)
         import json
-        self.assertEqual({"0.1.33"}, set(json.loads(current_manifest.read_text(encoding="utf-8"))["versions"]))
+        self.assertEqual({"0.1.34"}, set(json.loads(current_manifest.read_text(encoding="utf-8"))["versions"]))
 
     def test_wp_reference_modules_remain_under_tests_only(self) -> None:
         evaluation_root = ASSET_ROOT / "tests" / "evaluation"
