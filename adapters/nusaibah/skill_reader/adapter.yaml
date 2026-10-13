@@ -3,7 +3,7 @@ asset_version: 0.1.0
 package_target: python_runtime/adapters/intake/nusaibah/skill_reader
 manifest: skill_reader.asset.json
 adapter_module: skill_reader_adapter.py
-reviewed_helpers: []
+reviewed_helpers:
 reviewed_support_files:
   - capabilities.v0.1.0.json
 optional_files:
