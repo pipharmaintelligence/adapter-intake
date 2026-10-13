@@ -1,0 +1,9 @@
+# Critic disposition parity — 0.1.36
+
+0.1.35 accepts a valid critic response with `unresolved_evidence`, then its reducer raises `KeyError` because it ranks invented `satisfied`/`not_applicable` values instead. A provider-free full fixture reproduces the crash before synthesis. The real company-14 run completed 37 Agent calls and stopped before synthesis; the runtime discarded the original exception, so that run's exact Python exception remains unavailable. No Skill package changed.
+
+0.1.36 ranks only the validator's two permitted dispositions: `unresolved_evidence` and `unsatisfied`. For repeated requirements across chunks, `unsatisfied` wins and every distinct explanatory note survives. Valid evidence gaps require no JSON repair or paid backup. Negative recommendations, insufficient citation coverage, unsupported/stale claims and unsatisfied requirements still withhold the affected section. Independently validated siblings can continue to synthesis and Core publication.
+
+The repair preserves paragraph/subsection inventory, exact offsets, input measurement, one backup per original malformed response, the shared concurrency ceiling, finite phase budgets, one targeted review pass, 600-second thinking allowances and disabled benchmark. It reuses toolkit 0.1.2 and the existing Core Dynamic Skill ZIP/CAS/history/readback lane. All older adapter/helper bytes and version contracts remain unchanged. Runtime stays 0.1.105; deliver through official promotion.
+
+Before another paid execution, run the complete production preparation fixture with every allowed critic disposition, negative sibling cases, repeated mixed dispositions, malformed-disposition backup and the real Python-only isolated closure. Synthetic success does not establish live publication. Inspect actual Core receipts and unchanged/changed package snapshots separately; no-change is not an upload.

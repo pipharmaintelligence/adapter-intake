@@ -727,3 +727,5 @@ workflow. Runtime 0.1.104 and previous version/helper bytes remain unchanged.
 See ENRICHMENT_V034_GUIDE.md for the isolated-runtime repair and mandatory provider-free execution-closure test.
 
 See ENRICHMENT_V035_GUIDE.md for reusable toolkit size parity and explicit availability handling.
+
+See ENRICHMENT_V036_GUIDE.md for valid critic-disposition consolidation and the mandatory evidence-gap regressions.
