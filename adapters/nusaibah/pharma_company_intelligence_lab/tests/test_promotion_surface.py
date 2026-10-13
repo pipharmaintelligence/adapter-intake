@@ -182,6 +182,13 @@ def _scalar(lines: list[str], key: str) -> str:
 
 
 class PromotionSurfaceTests(unittest.TestCase):
+    def test_declared_file_lists_are_unique_before_set_comparison(self):
+        lines=ADAPTER_YAML.read_text(encoding='utf-8').splitlines()
+        for key in ('reviewed_helpers','reviewed_support_files','optional_files'):
+            with self.subTest(key=key):
+                items=_list_under(lines,key)
+                self.assertEqual(len(items),len(set(items)))
+
     def test_runtime_materialization_surface_excludes_evaluation_and_test_scaffolding(self) -> None:
         text = ADAPTER_YAML.read_text(encoding="utf-8")
         lines = text.splitlines()
