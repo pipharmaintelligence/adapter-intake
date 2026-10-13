@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.pharma_company_intelligence_lab",
-  "default": "0.1.34",
+  "default": "0.1.35",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -16,7 +16,7 @@
     "timeout_seconds": 1800
   },
   "versions": {
-    "0.1.34": {
+    "0.1.35": {
       "state": "active",
       "inputs": {
         "company_context": {
@@ -934,7 +934,7 @@
       "callable_assets": {
         "review_toolkit": {
           "asset_key": "nusaibah.structured_review_toolkit",
-          "asset_version": "0.1.1",
+          "asset_version": "0.1.2",
           "result_key": "tool_result",
           "result_shape": "object"
         }
