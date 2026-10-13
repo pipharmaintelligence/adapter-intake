@@ -59,4 +59,18 @@ class TargetedSourceInputs(SourceEvidenceInputs):
             payload['packing_scope']={'section_ids':[s['section_id'] for s in sections],
                 'source_chunk_count':len(rows),'source_inventory_complete':False,'one_targeted_pass':True}
             return payload
-        return self.coordinator.partition(role,base,atoms,attach)
+        packets,omitted=self.coordinator.partition(role,base,atoms,attach)
+        # Fair source rounds: a long historical-memory section cannot consume
+        # every research call before any admitted public source is seen.
+        from collections import deque
+        groups={source['locator']:deque() for source in self.units}
+        for packet in packets:
+            groups[packet['retrieved_sources'][0]['locator']].append(packet)
+        ordered=[]
+        while any(groups.values()):
+            for group in groups.values():
+                if group:
+                    packet=group.popleft()
+                    packet['chunk_execution']['chunk_index']=len(ordered)+1
+                    ordered.append(packet)
+        return ordered,omitted
