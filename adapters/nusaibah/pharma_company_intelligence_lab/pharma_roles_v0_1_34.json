@@ -1,0 +1,79 @@
+{
+  "schema_version": "pharma_agent_role_catalog.v1",
+  "target_asset_version": "0.1.34",
+  "roles": [
+    {
+      "role": "methodology_planner",
+      "phase": "planning",
+      "responsibility": "Plan bounded section work from the governed baseline, fixed methodology, benchmark state and reviewed procedural learning.",
+      "search_authority": false,
+      "claim_evidence_owner": false,
+      "mutation_authority": false
+    },
+    {
+      "role": "portfolio_researcher",
+      "phase": "research",
+      "responsibility": "Research current-company profile and product portfolio facts and return claim-level admitted evidence references.",
+      "search_authority": false,
+      "claim_evidence_owner": true,
+      "mutation_authority": false
+    },
+    {
+      "role": "market_researcher",
+      "phase": "research",
+      "responsibility": "Research current-company market and commercial facts and return claim-level admitted evidence references.",
+      "search_authority": false,
+      "claim_evidence_owner": true,
+      "mutation_authority": false
+    },
+    {
+      "role": "regulatory_risk_researcher",
+      "phase": "research",
+      "responsibility": "Research current-company regulatory, clinical and safety facts and return claim-level admitted evidence references.",
+      "search_authority": false,
+      "claim_evidence_owner": true,
+      "mutation_authority": false
+    },
+    {
+      "role": "strategic_analyst",
+      "phase": "analysis",
+      "responsibility": "Analyze only the accepted same-company evidence and preserve uncertainty without introducing new facts.",
+      "search_authority": false,
+      "claim_evidence_owner": false,
+      "mutation_authority": false
+    },
+    {
+      "role": "evidence_critic",
+      "phase": "quality",
+      "responsibility": "Check only one supplied section per invocation. Preserve negative verdicts and withhold affected facts without erasing validated sibling enrichment.",
+      "search_authority": false,
+      "claim_evidence_owner": false,
+      "mutation_authority": false
+    },
+    {
+      "role": "intelligence_synthesizer",
+      "phase": "synthesis",
+      "responsibility": "Synthesize only accepted claims and qualifications into the dossier and a bounded memory candidate.",
+      "search_authority": false,
+      "claim_evidence_owner": false,
+      "mutation_authority": false
+    },
+    {
+      "role": "memory_benchmark_reviewer",
+      "phase": "benchmark",
+      "responsibility": "Evaluate supplied current-company memory against the fixed benchmark without adding public facts or authorizing mutation.",
+      "search_authority": false,
+      "claim_evidence_owner": false,
+      "mutation_authority": false
+    },
+    {
+      "role": "research_response_resolver",
+      "phase": "format_recovery",
+      "responsibility": "Perform one bounded faithful response-format repair without research, citation invention or business-authority expansion.",
+      "search_authority": false,
+      "claim_evidence_owner": false,
+      "mutation_authority": false
+    }
+  ],
+  "production_semantics": "one_targeted_enrichment_pass; automated_checks_are_not_human_approval"
+}

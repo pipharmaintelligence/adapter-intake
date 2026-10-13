@@ -24,7 +24,11 @@ class ChunkInputs(EnrichmentInputs):
         return envelope
 
 def invoke(inputs):
-    with patch.object(legacy,'_agent_citations',side_effect=_fake_citations):
+    original_read=Path.read_text
+    historical=(Path(__file__).resolve().parent/'fixtures/release-0.1.33/nusaibah_pharma_company_intelligence_lab.asset.json').read_text(encoding='utf-8')
+    def read(path,*args,**kwargs):
+        return historical if path.name=='nusaibah_pharma_company_intelligence_lab.asset.json' else original_read(path,*args,**kwargs)
+    with patch.object(Path,'read_text',read),patch.object(legacy,'_agent_citations',side_effect=_fake_citations):
         return invoke_v0_1_33(inputs,asset_identity='nusaibah.pharma_company_intelligence_lab:0.1.33')
 
 class ParagraphChunkTests(unittest.TestCase):

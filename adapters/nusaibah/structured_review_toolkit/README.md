@@ -72,3 +72,7 @@ Evaluation candidate 0.2.2 invokes 0.1.1 once per bounded chunk, then applies st
 Run the deterministic tests and the optional installed-runtime proof in the developer guide. The proof uses official intake file plans, a generated temporary catalog, exact module/helper hashes, a locally signed worker request, actual isolated parent/child subprocesses and verified response signatures. Both domains resolve the same child entry hash.
 
 The proof creates no provider execution, application registration, persistent output publication or production binding. Its safe report explicitly distinguishes offline worker support from live admission and measured quality.
+
+## Bounded exact spans in 0.1.2
+
+The opt-in exact-span operation accepts at most 32 source units, 60,000 characters per unit, 120,000 characters total, and a 262,144-byte request. Quote count (16), quote length (600), closed schemas, authority-key rejection and zero Agent/mutation effects remain unchanged. The six historical operations retain their prior budgets. Versions 0.1.0 and 0.1.1 are byte unchanged. Consumers must premeasure requests and pin 0.1.2 explicitly; source size is never relaxed without a finite budget.

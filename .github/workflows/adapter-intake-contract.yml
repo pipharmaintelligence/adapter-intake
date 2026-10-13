@@ -164,6 +164,7 @@ jobs:
           set -euo pipefail
           python -m unittest discover -s tests -p "test_structured_review_toolkit.py" -v
           python -m unittest discover -s tests -p "test_review_exact_spans.py" -v
+          python -m unittest discover -s tests -p "test_exact_spans_v0_1_2.py" -v
 
       - name: Validate evaluation asset packaged imports and baseline parity
         shell: bash

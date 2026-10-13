@@ -1,3 +1,18 @@
+## 0.1.39 completed no-change review
+
+A resolved review with no supported enrichment completes without synthesis or
+Skill writes. The E runner can continue the range with `uploaded=false`. Real
+execution/storage failures remain distinct. See [the release guide](ENRICHMENT_V039_GUIDE.md)
+and [the exception/continuation audit](EXECUTION_EXCEPTION_AUDIT.md) for corrected
+paths and remaining priorities.
+
+## 0.1.38 first-package publication
+
+Missing memory or methodology is a supported first-run review state. Eligible
+new content uses Core's existing guarded first-upload path and verified readback;
+existing packages retain their changeset/update path. Optional methodology with
+no new learning remains absent. See [the release guide](ENRICHMENT_V038_GUIDE.md).
+
 # Nusaibah Pharma Company Intelligence Lab
 
 ## 0.1.33 measured paragraph/subsection execution
@@ -28,7 +43,7 @@ The live 0.1.27 cycle completed but withheld publication at section critique. Th
 
 Run one targeted intelligence pass from supplied CompanyContext using section plans, literal source chunks, exact evidence, independent section critics and per-question benchmark checks. `memory_mode=apply` publishes supported memory and methodology changes through the existing Core Dynamic Skill ZIP/partition/history lane. These automated checks improve enrichment and do not require human candidate approval.
 
-The standalone company-range runner lives in E: developer code, outside this adapter. It runs Company Scope then this production asset and saves only a progress checkpoint. Packages must already be initialized; partial/unconfirmed publication does not advance last success. No runtime version bump is required: deliver this version through official workflow promotion.
+The standalone company-range runner lives in E: developer code, outside this adapter. It runs Company Scope then this production asset and saves only a progress checkpoint. Version 0.1.37 requires initialized packages; version 0.1.38 adds guarded first upload. Partial/unconfirmed publication does not advance last success. No runtime version bump is required: deliver this version through official workflow promotion.
 
 See [the current enrichment developer guide](ENRICHMENT_GUIDE.md) for authority boundaries, source limits, per-section withholding, publication and live verification.
 
@@ -723,3 +738,11 @@ all slot subsets, opaque values, unknown and missing roles, the full two-company
 preview with 24 Agent calls and zero mutation, real installed SDK RuntimeInputs,
 and retained 0.1.12/0.1.13/0.1.14 business suites. Publish through the official
 workflow. Runtime 0.1.104 and previous version/helper bytes remain unchanged.
+
+See ENRICHMENT_V034_GUIDE.md for the isolated-runtime repair and mandatory provider-free execution-closure test.
+
+See ENRICHMENT_V035_GUIDE.md for reusable toolkit size parity and explicit availability handling.
+
+See ENRICHMENT_V036_GUIDE.md for valid critic-disposition consolidation and the mandatory evidence-gap regressions.
+
+See ENRICHMENT_V037_GUIDE.md for exact publication section selection and nested-baseline SDK qualification.

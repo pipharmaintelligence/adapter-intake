@@ -8,6 +8,20 @@ ASSET_ROOT = Path(__file__).resolve().parents[1]
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 
 EXPECTED_REVIEWED_HELPERS = {
+    'agent_chunks_v0_1_39.py', 'planner_execution_v0_1_39.py', 'research_execution_v0_1_39.py', 'source_evidence_v0_1_39.py', 'targeted_inputs_v0_1_39.py', 'section_critic_v0_1_39.py', 'company_preparation_v0_1_39.py', 'continuation_v0_1_39.py',
+    "nusaibah_pharma_company_intelligence_lab_v0_1_38_adapter.py",
+    "orchestration_v0_1_39.py", "automatic_publication_v0_1_39.py", "no_enrichment_v0_1_39.py",
+    "nusaibah_pharma_company_intelligence_lab_v0_1_37_adapter.py",
+    "orchestration_v0_1_38.py", "automatic_publication_v0_1_38.py", "skill_initialization_v0_1_38.py",
+    "nusaibah_pharma_company_intelligence_lab_v0_1_36_adapter.py", "orchestration_v0_1_37.py",
+    "automatic_publication_v0_1_37.py", "skill_publication_v0_1_37.py",
+    "nusaibah_pharma_company_intelligence_lab_v0_1_35_adapter.py",
+    "company_preparation_v0_1_36.py", "orchestration_v0_1_36.py", "section_critic_v0_1_36.py",
+    "company_preparation_v0_1_35.py", "orchestration_v0_1_35.py", "targeted_inputs_v0_1_35.py",
+    "source_evidence_v0_1_35.py", "invocation_recovery_v0_1_35.py",
+    "nusaibah_pharma_company_intelligence_lab_v0_1_34_adapter.py",
+    "company_preparation_v0_1_34.py", "orchestration_v0_1_34.py", "targeted_inputs_v0_1_34.py",
+    "nusaibah_pharma_company_intelligence_lab_v0_1_33_adapter.py",
     "agent_chunks_v0_1_33.py",
     "invocation_recovery_v0_1_33.py",
     "source_evidence_v0_1_33.py",
@@ -110,6 +124,10 @@ EXPECTED_REVIEWED_HELPERS = {
 }
 
 EXPECTED_REVIEWED_SUPPORT_FILES = {
+    "pharma_roles_v0_1_37.json", "materialization_promotion_acceptance_v0_1_37.json",
+    "pharma_roles_v0_1_36.json", "materialization_promotion_acceptance_v0_1_36.json",
+    "pharma_roles_v0_1_35.json", "materialization_promotion_acceptance_v0_1_35.json",
+    "pharma_roles_v0_1_34.json", "materialization_promotion_acceptance_v0_1_34.json",
     "pharma_roles_v0_1_33.json",
     "materialization_promotion_acceptance_v0_1_33.json",
     "pharma_roles_v0_1_32.json",
@@ -140,7 +158,14 @@ EXPECTED_REVIEWED_SUPPORT_FILES = {
 }
 
 EXPECTED_RUNTIME_FILES = {
-    "nusaibah_pharma_company_intelligence_lab_v0_1_33_adapter.py",
+    "ENRICHMENT_V039_GUIDE.md", "EXECUTION_EXCEPTION_AUDIT.md",
+    "nusaibah_pharma_company_intelligence_lab_v0_1_39_adapter.py",
+    "nusaibah_pharma_company_intelligence_lab_v0_1_38_adapter.py", "ENRICHMENT_V038_GUIDE.md",
+    "nusaibah_pharma_company_intelligence_lab_v0_1_37_adapter.py", "ENRICHMENT_V037_GUIDE.md",
+    "nusaibah_pharma_company_intelligence_lab_v0_1_36_adapter.py", "ENRICHMENT_V036_GUIDE.md",
+    "nusaibah_pharma_company_intelligence_lab_v0_1_35_adapter.py",
+    "ENRICHMENT_V035_GUIDE.md",
+    "ENRICHMENT_V034_GUIDE.md",
     "ENRICHMENT_V033_GUIDE.md",
     "ENRICHMENT_V032_GUIDE.md",
     "ENRICHMENT_V031_GUIDE.md",
@@ -178,6 +203,13 @@ def _scalar(lines: list[str], key: str) -> str:
 
 
 class PromotionSurfaceTests(unittest.TestCase):
+    def test_declared_file_lists_are_unique_before_set_comparison(self):
+        lines=ADAPTER_YAML.read_text(encoding='utf-8').splitlines()
+        for key in ('reviewed_helpers','reviewed_support_files','optional_files'):
+            with self.subTest(key=key):
+                items=_list_under(lines,key)
+                self.assertEqual(len(items),len(set(items)))
+
     def test_runtime_materialization_surface_excludes_evaluation_and_test_scaffolding(self) -> None:
         text = ADAPTER_YAML.read_text(encoding="utf-8")
         lines = text.splitlines()
@@ -190,7 +222,7 @@ class PromotionSurfaceTests(unittest.TestCase):
 
         self.assertEqual(reviewed_helpers, EXPECTED_REVIEWED_HELPERS)
         self.assertEqual(reviewed_support, EXPECTED_REVIEWED_SUPPORT_FILES)
-        self.assertEqual(optional_files, {"README.md", "DEVELOPER_GUIDE.md", "ENRICHMENT_GUIDE.md", "ENRICHMENT_V028_GUIDE.md", "ENRICHMENT_V029_GUIDE.md", "ENRICHMENT_V030_GUIDE.md", "ENRICHMENT_V031_GUIDE.md", "ENRICHMENT_V032_GUIDE.md", "ENRICHMENT_V033_GUIDE.md"})
+        self.assertEqual(optional_files, {"README.md", "DEVELOPER_GUIDE.md", "ENRICHMENT_GUIDE.md", "ENRICHMENT_V028_GUIDE.md", "ENRICHMENT_V029_GUIDE.md", "ENRICHMENT_V030_GUIDE.md", "ENRICHMENT_V031_GUIDE.md", "ENRICHMENT_V032_GUIDE.md", "ENRICHMENT_V033_GUIDE.md", "ENRICHMENT_V034_GUIDE.md", "ENRICHMENT_V035_GUIDE.md", "ENRICHMENT_V036_GUIDE.md", "ENRICHMENT_V037_GUIDE.md", "ENRICHMENT_V038_GUIDE.md", "ENRICHMENT_V039_GUIDE.md", "EXECUTION_EXCEPTION_AUDIT.md"})
         self.assertNotIn("tests", text)
         self.assertNotIn("evaluation", text)
         self.assertNotIn("stubs", text)
@@ -210,7 +242,7 @@ class PromotionSurfaceTests(unittest.TestCase):
         self.assertTrue(current_manifest.exists())
         self.assertIn(current_manifest.name, declared_runtime_files)
         import json
-        self.assertEqual({"0.1.33"}, set(json.loads(current_manifest.read_text(encoding="utf-8"))["versions"]))
+        self.assertEqual({"0.1.39"}, set(json.loads(current_manifest.read_text(encoding="utf-8"))["versions"]))
 
     def test_wp_reference_modules_remain_under_tests_only(self) -> None:
         evaluation_root = ASSET_ROOT / "tests" / "evaluation"
