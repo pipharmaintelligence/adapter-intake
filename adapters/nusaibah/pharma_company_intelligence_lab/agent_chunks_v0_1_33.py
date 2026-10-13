@@ -154,6 +154,12 @@ class ChunkCoordinator:
             self.outcomes.extend({'chunk_id':item.get('chunk_execution',{}).get('chunk_id') if isinstance(item,dict) else str(item),
                 'status':result['status'],'diagnostic':result.get('diagnostic')} for item,result in zip(items,results))
         return results
+    def require_available(self,role,payload):
+        owner=payload.get('original_role',role) if role==legacy.RESEARCH_RESOLVER_ROLE else role
+        with self.lock:
+            if self.calls>=self.max_calls or self.role_dispatches.get(owner,0)>=self.role_budgets.get(owner,0):
+                raise legacy.UnresolvedAgentResponse(legacy.evidence_diagnostic(role=owner,
+                    stage='chunk_admission',field='calls',rule='phase_call_budget_reserved_for_downstream'))
     def dispatch(self,role,payload,call):
         self.require_fit(role,payload,record=True)
         remaining=self.deadline-self.clock()

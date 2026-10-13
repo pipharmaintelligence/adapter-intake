@@ -19,6 +19,7 @@ class BoundedRecoveryInputs(FinalBoundedAgentInputs):
     def invoke_agent(self,role,*,input,on_error='raise'):
         company_id=input.get('company_id')
         self.coordinator.require_fit(role,input)
+        self.coordinator.require_available(role,input)
         with self._lock:
             if role==legacy.RESEARCH_RESOLVER_ROLE:
                 reservation=(company_id,input.get('original_role'),input.get('original_invocation_ordinal'))
