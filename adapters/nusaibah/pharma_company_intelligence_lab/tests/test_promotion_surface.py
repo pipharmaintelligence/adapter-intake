@@ -230,7 +230,7 @@ class PromotionSurfaceTests(unittest.TestCase):
         self.assertTrue(current_manifest.exists())
         self.assertIn(current_manifest.name, declared_runtime_files)
         import json
-        self.assertEqual({"0.1.35", "0.1.36"}, set(json.loads(current_manifest.read_text(encoding="utf-8"))["versions"]))
+        self.assertEqual({"0.1.36"}, set(json.loads(current_manifest.read_text(encoding="utf-8"))["versions"]))
 
     def test_wp_reference_modules_remain_under_tests_only(self) -> None:
         evaluation_root = ASSET_ROOT / "tests" / "evaluation"
