@@ -1,0 +1,2 @@
+class RuntimeCallableBridgeError(RuntimeError):
+    pass

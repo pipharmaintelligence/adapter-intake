@@ -725,3 +725,5 @@ and retained 0.1.12/0.1.13/0.1.14 business suites. Publish through the official
 workflow. Runtime 0.1.104 and previous version/helper bytes remain unchanged.
 
 See ENRICHMENT_V034_GUIDE.md for the isolated-runtime repair and mandatory provider-free execution-closure test.
+
+See ENRICHMENT_V035_GUIDE.md for reusable toolkit size parity and explicit availability handling.
