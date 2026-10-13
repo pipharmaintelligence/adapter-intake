@@ -1,10 +1,14 @@
 asset_key: nusaibah.pharma_company_intelligence_lab
-asset_version: 0.1.38
+asset_version: 0.1.39
 package_target: python_runtime/adapters/intake/nusaibah/pharma_company_intelligence_lab
 manifest: nusaibah_pharma_company_intelligence_lab.asset.json
-adapter_module: nusaibah_pharma_company_intelligence_lab_v0_1_38_adapter.py
+adapter_module: nusaibah_pharma_company_intelligence_lab_v0_1_39_adapter.py
 
 reviewed_helpers:
+  - nusaibah_pharma_company_intelligence_lab_v0_1_38_adapter.py
+  - orchestration_v0_1_39.py
+  - automatic_publication_v0_1_39.py
+  - no_enrichment_v0_1_39.py
   - nusaibah_pharma_company_intelligence_lab_v0_1_37_adapter.py
   - orchestration_v0_1_38.py
   - automatic_publication_v0_1_38.py
@@ -165,6 +169,8 @@ reviewed_support_files:
   - pharma_response_budgets_v0_1_22.json
 
 optional_files:
+  - ENRICHMENT_V039_GUIDE.md
+  - EXECUTION_EXCEPTION_AUDIT.md
   - ENRICHMENT_V038_GUIDE.md
   - ENRICHMENT_V037_GUIDE.md
   - ENRICHMENT_V036_GUIDE.md

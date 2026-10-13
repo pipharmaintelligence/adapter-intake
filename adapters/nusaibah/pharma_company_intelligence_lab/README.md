@@ -1,3 +1,11 @@
+## 0.1.39 completed no-change review
+
+A resolved review with no supported enrichment completes without synthesis or
+Skill writes. The E runner can continue the range with `uploaded=false`. Real
+execution/storage failures remain distinct. See [the release guide](ENRICHMENT_V039_GUIDE.md)
+and [the exception/continuation audit](EXECUTION_EXCEPTION_AUDIT.md) for corrected
+paths and remaining priorities.
+
 ## 0.1.38 first-package publication
 
 Missing memory or methodology is a supported first-run review state. Eligible
