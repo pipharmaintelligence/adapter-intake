@@ -62,5 +62,3 @@ Live closure requires fresh scope completion, actual methodology/memory reads, s
 - Preview supports absent memory or methodology. Apply currently requires initialized selected packages; first packages use the existing ordinary authorized DLM ZIP upload/partition/readback capability. No empty fabricated package or new create-if-absent authority is introduced.
 - No-change proposals must not be forced into fake uploads/history entries. Factual entailment, correct entity scope and candidate prose require the actual review even when exact quotes resolve.
 - This candidate is not final-qualified until the real cycle closes. Do not claim all business requirements, broad calibration or ECS execution are proven by fixtures or one local-worker case.
-
-See ENRICHMENT_V036_GUIDE.md for valid critic-disposition consolidation and the mandatory evidence-gap regressions.
