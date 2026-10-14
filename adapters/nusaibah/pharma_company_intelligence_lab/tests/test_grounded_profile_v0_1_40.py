@@ -62,7 +62,7 @@ class GroundedProfileTests(unittest.TestCase):
         self.assertIn('Company Intelligence Update',inputs.store[(13,'company_memory')]['text'])
 
     def test_current_contracts_enable_grounding_without_modifying_old_release(self):
-        current=json.loads((ROOT/'nusaibah_pharma_company_intelligence_lab.asset.json').read_text())['versions']['0.1.40']
+        current=json.loads((ROOT/'tests/fixtures/release-0.1.40/nusaibah_pharma_company_intelligence_lab.asset.json').read_text())['versions']['0.1.40']
         old=json.loads((ROOT/'tests/fixtures/release-0.1.39/nusaibah_pharma_company_intelligence_lab.asset.json').read_text())['versions']['0.1.39']
         for role in legacy.RESEARCH_ROLES:
             policy=current['agents'][role]['definition']['chain']['steps'][0]['provider_policy']
