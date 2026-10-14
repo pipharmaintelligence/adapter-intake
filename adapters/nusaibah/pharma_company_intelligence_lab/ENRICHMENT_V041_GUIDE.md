@@ -1,5 +1,9 @@
 # Pharma 0.1.41: bounded heavy research and critic priority
 
+The 3,600-second workflow allowance is declared inside the 0.1.41 version's
+execution contract. The shared manifest execution contract stays at 1,800 seconds,
+preserving previously promoted versions and the package-history composition guard.
+
 This release preserves CompanyContext, grounded public search, exact readable
 source spans, per-claim criticism, optional prior methodology, one-time format
 recovery and the existing Dynamic Skill ZIP publication lane.
