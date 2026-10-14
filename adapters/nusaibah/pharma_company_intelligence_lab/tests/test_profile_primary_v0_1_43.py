@@ -150,4 +150,17 @@ class ProfilePrimaryTests(unittest.TestCase):
         self.assertEqual(('verified',),result.fact_ids)
         self.assertFalse(meta['unverified_research'])
 
+    def test_114_distinct_draft_statements_are_retained_once_with_existing_memory(self):
+        from profile_research_v0_1_43 import BUSINESS_SECTIONS,MAX_PROFILE_CHARS
+        research=[{'claim_id':'draft:'+str(i),'section_id':BUSINESS_SECTIONS[i%4],
+                   'statement':'Distinct proposed research observation number '+str(i)+'.',
+                   'citation_locators':[],'evidence_qualifiers':[],'verification_status':'unverified'} for i in range(114)]
+        old='Previous memory is preserved verbatim.\n'*350
+        candidate=MemoryCandidate(59,MEMORY_TARGET_SECTION,'',())
+        result,meta=build_profile_candidate(candidate,old,[],research=research,company_name='Pfizer')
+        self.assertFalse(meta['omitted_facts']);self.assertEqual(4,len(meta['sections']))
+        for claim in research:self.assertEqual(1,result.markdown.count(claim['statement']))
+        self.assertIn(old,result.markdown);self.assertLessEqual(len(result.markdown),MAX_PROFILE_CHARS)
+        self.assertEqual((),result.fact_ids)
+
 if __name__=='__main__':unittest.main()
