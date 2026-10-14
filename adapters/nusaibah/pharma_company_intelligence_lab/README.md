@@ -1,3 +1,5 @@
+> Current development candidate: [0.1.40 grounded profile guide](ENRICHMENT_V040_GUIDE.md), [requirements](REQUIREMENTS_V040.md), and [acceptance criteria](ACCEPTANCE_V040.md). Historical version sections below retain their original contracts.
+
 ## 0.1.39 completed no-change review
 
 A resolved review with no supported enrichment completes without synthesis or

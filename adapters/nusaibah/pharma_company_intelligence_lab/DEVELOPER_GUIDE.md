@@ -1,3 +1,5 @@
+> Current development candidate: [0.1.40 grounded profile guide](ENRICHMENT_V040_GUIDE.md), [requirements](REQUIREMENTS_V040.md), and [acceptance criteria](ACCEPTANCE_V040.md). Historical version sections below retain their original contracts.
+
 # Objective
 
 Qualify pharma 0.1.26 as the final release candidate through one complete Company Scope → preparation/reflection → exact review → Dynamic Skill publication → readback cycle. Workflow completion alone is insufficient.
