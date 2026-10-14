@@ -104,7 +104,7 @@ class NoEnrichmentTests(unittest.TestCase):
     def test_new_agent_and_skill_contracts_equal_the_released_contracts(self):
         import json
         old=json.loads((ROOT/'tests/fixtures/release-0.1.38/nusaibah_pharma_company_intelligence_lab.asset.json').read_text())['versions']['0.1.38']
-        new=json.loads((ROOT/'nusaibah_pharma_company_intelligence_lab.asset.json').read_text())['versions']['0.1.39']
+        new=json.loads((ROOT/'tests/fixtures/release-0.1.39/nusaibah_pharma_company_intelligence_lab.asset.json').read_text())['versions']['0.1.39']
         for field in ('agents','runtime_skills','inputs','outputs','execution'):
             self.assertEqual(old.get(field),new.get(field),field)
 
