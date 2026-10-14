@@ -13,11 +13,19 @@
       "ecs"
     ],
     "default_substrate": "local_worker",
-    "timeout_seconds": 3600
+    "timeout_seconds": 1800
   },
   "versions": {
     "0.1.41": {
       "state": "active",
+      "execution": {
+        "allowed_substrates": [
+          "local_worker",
+          "ecs"
+        ],
+        "default_substrate": "local_worker",
+        "timeout_seconds": 3600
+      },
       "inputs": {
         "company_context": {
           "required": true,
