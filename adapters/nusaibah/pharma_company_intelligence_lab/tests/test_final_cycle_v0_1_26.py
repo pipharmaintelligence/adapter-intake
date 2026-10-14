@@ -85,6 +85,7 @@ class FinalSourceTests(unittest.TestCase):
 
 class Change:
     def __init__(self,text=''): self.text=text; self.citations=[]
+    def rename_title(self,title): self.title=title; return self
     def replace_section(self,path,text): self.text=text; return self
     def add_citation(self,path,citation): self.citations.append(citation); return self
 
