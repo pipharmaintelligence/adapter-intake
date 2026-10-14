@@ -90,7 +90,7 @@ class PhaseBudgetTests(unittest.TestCase):
         self.assertTrue(row['issues_annex']['items'])
 
     def test_contract_time_expansion_is_new_and_historical_manifest_remains_pinned(self):
-        current=json.loads((ROOT/'nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
+        current=json.loads((ROOT/'tests/fixtures/release-0.1.41/nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
         prior=json.loads((ROOT/'tests/fixtures/release-0.1.40/nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
         self.assertEqual('0.1.41',current['default'])
         self.assertEqual(prior['execution'],current['execution'])
