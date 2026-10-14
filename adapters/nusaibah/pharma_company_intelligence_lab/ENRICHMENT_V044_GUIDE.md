@@ -1,90 +1,120 @@
 # Objective
 
-Improve readable prose in the existing company profile. Preserve all safe research,
-its uncertainty, company-name title and numeric-only Unverified Research annex.
-This release changes editorial preparation and rendering only.
+Build a readable company profile and improve its source verification. Preserve
+useful safe research when a source cannot be verified, with visible qualification
+and a numeric-only `Annex: Unverified Research` table (Section, Paragraph).
+Verification enriches the profile; it is not a new whole-profile publication gate.
 
 # System Context
 
-Company Scope and pharma retain the existing CompanyContext handoff. Research,
-source verification, critics, optional methodology, reflection, Core Skill ZIP
-publication, partition selection, history and readback use their existing contracts.
-No runtime version, provider, timeout, call limit or concurrency increase is needed.
-Only the synthesis Agent contract advances, from 1.0.10 to 1.0.11.
+Company Scope supplies CompanyContext through the existing handoff. The existing
+section research, exact-span toolkit, critic, optional methodology, reflection,
+Core Skill ZIP publication, partition history and readback remain in place.
+Only the synthesis Agent contract advances, from 1.0.10 to 1.0.11. Agent count,
+call/concurrency budgets and provider/workflow timeouts are unchanged. Benchmark
+remains disabled. No new Agent or storage authority is introduced.
 
 # Approach
 
-In completed company-59 run `95954812-a386-4e43-b77f-f7c439bdeccc`, synthesis
-planned 19 packets against its six-call allowance; 16 claim units did not fit even
-individually. The packets included global critic/analysis/plan context which was
-unnecessary for the editorial task. The result used 15 synthesized paragraphs
-and 12 fallback paragraphs. The fallback concatenated groups of three statements
-and prefixed an ISO date even when the statement already contained the same date
-in words.
+The completed company-59 run planned 19 synthesis packets against a six-call
+allowance and had 16 individually unfit claim units. Global critic/analysis/plan
+context made editorial prompts unnecessarily large. The resulting profile had
+15 synthesized and 12 fallback paragraphs. The fallback grouped three statements
+and repeated dates already present in prose.
 
-Give the prose writer whole claim statements for one section/subsection, their
-complete qualifications and applicable learned guidance. Keep the global critic
-record and source inventory in the dossier. Schedule the first packet from each
-section before overflow. Separate complete claim statements to fit input/output
-budgets; never slice a sentence or silently discard an oversized claim.
+That run also reported search queries without projected native grounding chunks.
+Model-returned URLs are discovery leads, not proof. Version 0.1.44 can retrieve a
+bounded selection through the existing runtime public-reference capability, select
+a literal passage and pass it through the exact-span toolkit and existing critic.
+It does not guess missing provider grounding or treat a successful HTTP response
+as semantic verification.
 
 # Changes Made
 
-- Synthesis receives focused claim packets and the existing complete JSON response
-  contract. The prompt requests connected topical paragraphs, every distinct claim
-  once, and no invented transitions or causal explanations.
-- Whole statements are packed within the existing measured input ceiling. A
-  5,000-character statement-text grouping bound also avoids oversized prose tasks;
-  individual long statements remain indivisible and retain the existing fallback.
-- If synthesis remains unavailable, each original statement gets its own paragraph
-  instead of arbitrary groups of three. Equivalent written/ISO dates are recognized;
-  repeated equivalent leading dates are collapsed. Different material dates,
-  historical scope, negative findings, interpretation and qualifications remain.
-- Verification status is unchanged. Missing grounding does not stop editorial work,
-  erase useful research or create a new publication gate.
+- Synthesis receives whole statements for one section/subsection, their complete
+  dates, entity/rights qualifications, verification state and learned guidance.
+  Quotes remain with the critic and retained evidence; only their references and
+  offsets go to the prose writer. A section gets its first packet before overflow.
+  Statements are never silently sliced or dropped to meet the input budget.
+- Synthesis requests connected topical prose without invented transitions. When
+  unavailable, each original statement becomes its own paragraph. Equivalent
+  written/ISO dates are recognized; distinct material dates and uncertainty remain.
+- Existing native-citation and supplied-readable-source paths keep their authority.
+  Only unresolved discovered-source claims use the additional retrieval fallback.
+  HTTPS targets go through the runtime's DNS, IP and redirect checks. The adapter
+  has no direct HTTP client or credentials.
+- Source text stays in a company-local RAM cache. Requested/final URL cache entries
+  avoid repeated reads; two different opaque redirects may need separate reads
+  before their common final URL is known. Full fetched documents are not added to
+  Agent prompts or the retained dossier.
+- Complete paragraph/sentence passages and adjacent PDF table lines are ranked for
+  relevance. A unique literal passage of at most 600 characters is resolved by the
+  existing toolkit against an 8,000-character source window. Evidence records keep
+  window and document offsets, text digests, final locator and PDF page if present.
+  Offsets refer to the extracted text, not to original PDF bytes.
+- The critic must assess every material clause, entity, date, number, units,
+  territory and relationship. Lexical overlap, URL matching and literal occurrence
+  alone never establish entailment. Partial evidence remains `needs_review`;
+  contradictions remain `unsupported`. Both preserve visibly unverified research.
+- Challenges, blocked/empty sources, malformed PDFs, time/read limits and unresolved
+  exact-span results leave claims unverified and continue the company profile.
+
+## Finite retrieval limits
+
+| Resource | Bound |
+| --- | --- |
+| Candidate locators | First two per unresolved claim |
+| New source attempts | 16 per research piece; 48 per company preparation |
+| Concurrent public reads | Two |
+| Active retrieval allowance | 120 seconds; no new read after exhaustion |
+| Source text | 300,000 characters/document; 1,500,000 cached characters |
+| Exact-span calls | Existing shared 32-call ceiling |
+| Toolkit input window / quote | 8,000 / 600 characters |
+
+The time allowance counts retrieval work, not intervening Agent thinking. An
+already-started read can finish under the existing runtime timeout (bridge ceiling
+45 seconds); this is not a strict 120-second wall-clock cancellation guarantee.
+Budgets reset for a separately requested preparation/reflection pass. No provider
+retry is launched solely to recover missing source metadata.
 
 # Modularity Impact
 
-Version-owned 0.1.44 wiring reuses the 0.1.43 acquisition, critique, context,
-publication and retention helpers. Historical Python files and manifest versions
-remain unchanged. Core remains the sole persistence authority. Use official
-adapter-intake promotion for deployment; do not build or upgrade a runtime wheel.
+The additive 0.1.44 helper uses the existing public-reference result contract and
+structured-review toolkit 0.1.2. PDF extraction belongs to a generic Assets reader
+change, not this adapter. On a runtime without that reader capability, unreadable
+PDFs stay unverified and the profile still proceeds. The companion reader limits
+PDF bytes, pages, extracted text, parser time, memory and concurrent parser children;
+encrypted/scanned documents are not decrypted or OCR-processed.
+
+Historical adapter files, manifests and published guides remain immutable. Core
+remains the sole persistence authority. Deploy later through official intake
+promotion and packaged-runtime CI; this PR does not install or upgrade a wheel.
 
 # Validation
 
-Provider-free regressions cover equivalent/different dates, uncertainty preservation,
-one-statement fallback, numeric-only annexes, 50 claims fitting four section packets,
-fair overflow ordering, actual SDK fixture publication/readback, optional reflection
-and historical contract preservation. No live provider invocation is part of these
-tests. A readable generated paragraph cannot be guaranteed by a prompt or fixture;
-inspect the next separately authorized live result for editorial quality.
+Provider-free tests exercise fetched-source exact spans reaching the existing
+critic, native-citation compatibility, partial clauses, source failure continuation,
+cache reuse, concurrency/read/time budgets, PDF locations and unchanged source text.
+They also prove full fixture publication/readback with every source unavailable,
+quote separation between critic and writer, reflection, numeric-only annexes and
+historical contracts. Synthetic PDFs exercise the generic reader separately.
 
-Before live use: confirm intake CI, official promotion/package CI, official artifact
-delivery, exact asset admission, and actual availability of synthesis contract
-1.0.11. Planned chain inspection is not activation. Keep the existing eight Agent
-contracts; verify all roles resolve before launching paid work.
+Acceptance requires all of those checks, official intake validation and PR CI.
+Before a later authorized live run, also require official promotion/package CI,
+artifact delivery, exact asset admission and active synthesis contract 1.0.11.
+Fixture success does not establish the next generated profile's editorial quality
+or certify every real claim. No live provider execution belongs to this PR update.
 
 # Risks / Open Questions
 
-Vertex source behavior is separate from this prose repair. The completed run's
-four search-enabled calls reported 40 queries and zero projected grounding chunks.
-Those receipts are normalized metadata, not retained raw HTTP response bodies.
-They do not prove which provider/normalization boundary lost or omitted sources.
+The original raw Vertex HTTP response was not retained. Normalized receipts prove
+zero projected chunks, not which provider/normalization boundary omitted them.
+Google documentation allows absent source-link metadata; forum reports do not
+establish an incident for this exact run. A bounded document excerpt can be partial
+or stale, and PDF tables can lose layout. The critic must retain qualifications and
+must not infer that unexamined pages contain no evidence.
 
-Google's grounding documentation
-explains that source-link metadata can be absent, including when source relevance
-is low or information incomplete. A first-hand developer report and forum reply
-describe missing grounding chunks with structured output; the reply recommends a
-source-URL field in JSON. Later first-hand reports
-describe related symptoms, including reports without structured output. These are
-community reports, not confirmation of an incident affecting this exact run.
-
-Our current researchers use `response_format=text` with JSON requested in the
-prompt. Therefore the structured-output report is not an exact configuration
-match. A model-written URL alone is not proof of grounding. This change neither
-adds mandatory source fields nor changes native citation admission. Sources remain
-an independent investigation; all uncertain research stays visibly qualified.
-
-External source links and retained-case replay measurements are in the repository
-review note: docs/pharma-readable-prose-044-review.md. The package guide contains
-no external URLs, consistent with the existing intake scan.
+No access-control bypass or browser challenge solving is added. Source retrieval
+can improve evidence coverage without guaranteeing complete verification. The
+repository review note records investigation evidence, external references and
+the companion runtime PR. This package guide deliberately contains no external URLs.

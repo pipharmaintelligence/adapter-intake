@@ -5,6 +5,7 @@ manifest: nusaibah_pharma_company_intelligence_lab.asset.json
 adapter_module: nusaibah_pharma_company_intelligence_lab_v0_1_44_adapter.py
 
 reviewed_helpers:
+  - source_verification_v0_1_44.py
   - company_preparation_v0_1_44.py
   - downstream_chunks_v0_1_44.py
   - orchestration_v0_1_44.py

@@ -98,9 +98,9 @@ def prepare_company_v0_1_44(
         )
     )
     try:
-        from .targeted_inputs_v0_1_43 import TargetedSourceInputs as SourceEvidenceInputs
+        from .source_verification_v0_1_44 import TargetedSourceInputs as SourceEvidenceInputs
     except ImportError:
-        from targeted_inputs_v0_1_43 import TargetedSourceInputs as SourceEvidenceInputs
+        from source_verification_v0_1_44 import TargetedSourceInputs as SourceEvidenceInputs
     source_inputs = SourceEvidenceInputs(inputs, record=record, memory_text=memory_text,
                                         memory_digest=before_digest)
     inputs = source_inputs

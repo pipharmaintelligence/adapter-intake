@@ -8,6 +8,7 @@ ASSET_ROOT = Path(__file__).resolve().parents[1]
 ADAPTER_YAML = ASSET_ROOT / "adapter.yaml"
 
 EXPECTED_REVIEWED_HELPERS = {
+    "source_verification_v0_1_44.py",
     'company_preparation_v0_1_44.py', 'downstream_chunks_v0_1_44.py',
     'orchestration_v0_1_44.py', 'profile_narrative_v0_1_44.py',
     'profile_rendering_v0_1_44.py', 'profile_research_v0_1_44.py', 'reflection_v0_1_44.py',
