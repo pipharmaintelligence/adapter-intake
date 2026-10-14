@@ -1,10 +1,18 @@
 asset_key: nusaibah.pharma_company_intelligence_lab
-asset_version: 0.1.40
+asset_version: 0.1.41
 package_target: python_runtime/adapters/intake/nusaibah/pharma_company_intelligence_lab
 manifest: nusaibah_pharma_company_intelligence_lab.asset.json
-adapter_module: nusaibah_pharma_company_intelligence_lab_v0_1_40_adapter.py
+adapter_module: nusaibah_pharma_company_intelligence_lab_v0_1_41_adapter.py
 
 reviewed_helpers:
+  - nusaibah_pharma_company_intelligence_lab_v0_1_40_adapter.py
+  - agent_chunks_v0_1_41.py
+  - company_preparation_v0_1_41.py
+  - invocation_recovery_v0_1_41.py
+  - orchestration_v0_1_41.py
+  - reflection_v0_1_41.py
+  - research_execution_v0_1_41.py
+  - section_critic_v0_1_41.py
   - agent_response_recovery_v0_1_40.py
   - critic_response_v0_1_40.py
   - invocation_recovery_v0_1_40.py
@@ -160,6 +168,8 @@ reviewed_helpers:
 # The reviewed role catalogue covers all manifest Agent roles. The separate
 # acceptance contract records Assets materialization and promotion gates.
 reviewed_support_files:
+  - pharma_roles_v0_1_41.json
+  - materialization_promotion_acceptance_v0_1_41.json
   - pharma_roles_v0_1_40.json
   - materialization_promotion_acceptance_v0_1_40.json
   - pharma_roles_v0_1_37.json
@@ -199,6 +209,7 @@ reviewed_support_files:
   - pharma_response_budgets_v0_1_22.json
 
 optional_files:
+  - ENRICHMENT_V041_GUIDE.md
   - VERIFICATION_V040.md
   - ENRICHMENT_V040_GUIDE.md
   - REQUIREMENTS_V040.md
