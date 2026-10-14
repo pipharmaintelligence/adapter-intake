@@ -1,0 +1,292 @@
+{
+  "metadata_version": "skill_reader_publication.v1",
+  "asset_key": "nusaibah.skill_reader",
+  "asset_version": "0.1.1",
+  "publication_status": "templates_only",
+  "capabilities": {
+    "skill.read": {
+      "remote_mcp": {
+        "tool_name": "read_skill",
+        "title": "Read approved Skill guidance",
+        "description": "Read an approved immutable Fixed Skill via ECS. Read exact section or resource; bounded text/digest response. No mutation or dynamic external replay.",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "recheck_dependencies": true,
+        "retained_output_role": "skill_result",
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "variables"
+          ],
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source_kind",
+                "selector"
+              ],
+              "properties": {
+                "source_kind": {
+                  "type": "string",
+                  "enum": [
+                    "fixed"
+                  ]
+                },
+                "selector": {
+                  "type": "string",
+                  "enum": [
+                    "nusaibah.reader-guidance",
+                    "guidance"
+                  ]
+                },
+                "read": {
+                  "type": "string",
+                  "enum": [
+                    "sections",
+                    "section",
+                    "resource",
+                    "document"
+                  ],
+                  "default": "sections"
+                },
+                "section": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 240
+                    },
+                    {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 6,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 240
+                      }
+                    }
+                  ]
+                },
+                "resource": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 6,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  }
+                },
+                "selectors": {
+                  "type": "object",
+                  "additionalProperties": false
+                },
+                "expected_digest": {
+                  "type": "string",
+                  "pattern": "^sha256:[0-9a-f]{64}$"
+                }
+              }
+            }
+          }
+        },
+        "output_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "skill_result"
+          ],
+          "properties": {
+            "skill_result": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "schema_version",
+                "status",
+                "source_kind",
+                "selector",
+                "identity",
+                "resolution",
+                "read",
+                "section",
+                "resource",
+                "text",
+                "byte_count",
+                "sections",
+                "has_more",
+                "retention"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "skill_read_result.v1"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ready"
+                  ]
+                },
+                "source_kind": {
+                  "type": "string",
+                  "enum": [
+                    "fixed",
+                    "dynamic"
+                  ]
+                },
+                "selector": {
+                  "type": "string",
+                  "maxLength": 191
+                },
+                "identity": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "content_digest",
+                    "package_digest",
+                    "skill_ref",
+                    "version",
+                    "snapshot_id",
+                    "observed_at"
+                  ],
+                  "properties": {
+                    "content_digest": {
+                      "type": "string",
+                      "pattern": "^sha256:[0-9a-f]{64}$"
+                    },
+                    "package_digest": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 240
+                    },
+                    "skill_ref": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 240
+                    },
+                    "version": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 240
+                    },
+                    "snapshot_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 240
+                    },
+                    "observed_at": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 240
+                    }
+                  }
+                },
+                "resolution": {
+                  "type": "string",
+                  "enum": [
+                    "execution_snapshot"
+                  ]
+                },
+                "read": {
+                  "type": "string",
+                  "enum": [
+                    "sections",
+                    "section",
+                    "resource",
+                    "document"
+                  ]
+                },
+                "section": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 6,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 240
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "resource": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 240
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 8192
+                },
+                "byte_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 8192
+                },
+                "sections": {
+                  "type": "array",
+                  "maxItems": 20,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "headings"
+                    ],
+                    "properties": {
+                      "headings": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 6,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 240
+                        }
+                      }
+                    }
+                  }
+                },
+                "has_more": {
+                  "type": "boolean"
+                },
+                "retention": {
+                  "type": "string",
+                  "enum": [
+                    "workflow_result"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

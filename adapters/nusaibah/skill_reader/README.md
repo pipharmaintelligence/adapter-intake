@@ -1,6 +1,6 @@
 # Generic Skill reader
 
-`nusaibah.skill_reader@0.1.0` returns approved instruction content through the
+`nusaibah.skill_reader@0.1.1` returns approved instruction content through the
 existing `inputs.skill()` and `inputs.dynamic_skill()` interfaces. It has no
 provider, network, storage, mutation or DLM discovery capability.
 
@@ -31,7 +31,21 @@ company memory. Its initial public schema allows no caller partition overrides.
 Other source/selector bindings use the same adapter logic and the normal reviewed
 manifest/publication process; they cannot be supplied as transport authority.
 
-`capabilities.v0.1.0.json` contains publication templates, not a live publication.
+`capabilities.v0.1.1.json` contains publication templates, not a live publication.
 Ordinary intake promotion, registration/admission and final ChatGPT compatibility
 testing are required. Public publishing and downloadable Skill artifacts are
 separate from returning approved text. This asset does not install a host Skill.
+
+
+## ECS successor 0.1.1
+
+This intake packages `nusaibah.skill_reader@0.1.1` using the identical reviewed
+read-only projection algorithm, with ECS as the version-specific default.
+The promoted Assets materializer must preserve the immutable 0.1.0 version and
+its previous module; the new version uses a separate module path.
+Both bundled Fixed Skill and governed read-only Dynamic Skill execution require
+exact worker/catalog and Core delivery proof on the ECS substrate. The public
+publication template is intentionally fixed-only; dynamic external retained
+replay stays disabled pending current source-grant revocation proof.
+The standard ECS pool planner must honor version-specific execution contracts
+(Assets PR #592); merely merging this intake does not deploy an ECS image.
