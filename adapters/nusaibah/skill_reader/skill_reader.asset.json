@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.skill_reader",
-  "default": "0.1.0",
+  "default": "0.1.1",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -15,7 +15,7 @@
     "timeout_seconds": 60
   },
   "versions": {
-    "0.1.0": {
+    "0.1.1": {
       "state": "active",
       "allow_resume": false,
       "inputs": {
@@ -62,6 +62,14 @@
             }
           }
         }
+      },
+      "execution": {
+        "allowed_substrates": [
+          "local_worker",
+          "ecs"
+        ],
+        "default_substrate": "ecs",
+        "timeout_seconds": 60
       }
     }
   }

@@ -1,11 +1,11 @@
 asset_key: nusaibah.skill_reader
-asset_version: 0.1.0
+asset_version: 0.1.1
 package_target: python_runtime/adapters/intake/nusaibah/skill_reader
 manifest: skill_reader.asset.json
-adapter_module: skill_reader_adapter.py
+adapter_module: skill_reader_v0_1_1_adapter.py
 reviewed_helpers:
 reviewed_support_files:
-  - capabilities.v0.1.0.json
+  - capabilities.v0.1.1.json
 optional_files:
   - README.md
 release_stage: development
