@@ -1,0 +1,90 @@
+{
+  "schema_version": "pharma_agent_role_catalog.v1",
+  "target_asset_version": "0.1.46",
+  "roles": [
+    {
+      "role": "methodology_planner",
+      "phase": "planning",
+      "responsibility": "Compatibility contract; the current flow routes canonical section tasks deterministically without dispatching this Agent.",
+      "search_authority": false,
+      "claim_evidence_owner": false,
+      "mutation_authority": false
+    },
+    {
+      "role": "portfolio_researcher",
+      "phase": "research",
+      "responsibility": "Research current-company profile and product portfolio facts and return claim-level admitted evidence references.",
+      "search_authority": true,
+      "claim_evidence_owner": true,
+      "mutation_authority": false
+    },
+    {
+      "role": "market_researcher",
+      "phase": "research",
+      "responsibility": "Research current-company market and commercial facts and return claim-level admitted evidence references.",
+      "search_authority": true,
+      "claim_evidence_owner": true,
+      "mutation_authority": false
+    },
+    {
+      "role": "regulatory_risk_researcher",
+      "phase": "research",
+      "responsibility": "Research current-company regulatory, clinical and safety facts and return claim-level admitted evidence references.",
+      "search_authority": true,
+      "claim_evidence_owner": true,
+      "mutation_authority": false
+    },
+    {
+      "role": "strategic_analyst",
+      "phase": "analysis",
+      "responsibility": "Analyze only the accepted same-company evidence and preserve uncertainty without introducing new facts.",
+      "search_authority": false,
+      "claim_evidence_owner": false,
+      "mutation_authority": false
+    },
+    {
+      "role": "evidence_critic",
+      "phase": "quality",
+      "responsibility": "Review bounded claim chunks and return actionable future guidance. In a separate bounded paragraph check, verify every synthesized proposition against its admitted claims. Incomplete coverage does not veto supported claims.",
+      "search_authority": false,
+      "claim_evidence_owner": false,
+      "mutation_authority": false
+    },
+    {
+      "role": "intelligence_synthesizer",
+      "phase": "synthesis",
+      "responsibility": "Write readable section/subsection paragraphs using accepted claims, explicit claim mappings and preserved qualifications. Paragraphs receive the existing evidence critic check before publication.",
+      "search_authority": false,
+      "claim_evidence_owner": false,
+      "mutation_authority": false
+    },
+    {
+      "role": "memory_benchmark_reviewer",
+      "phase": "benchmark",
+      "responsibility": "Compatibility contract; benchmark is disabled in the current flow.",
+      "search_authority": false,
+      "claim_evidence_owner": false,
+      "mutation_authority": false
+    },
+    {
+      "role": "research_response_resolver",
+      "phase": "format_recovery",
+      "responsibility": "Perform one bounded faithful response-format repair without research, citation invention or business-authority expansion.",
+      "search_authority": false,
+      "claim_evidence_owner": false,
+      "mutation_authority": false
+    }
+  ],
+  "production_semantics": "one_targeted_enrichment_pass; automated_checks_are_not_human_approval",
+  "primary_objective": "Build the readable company profile; evidence verification and criticism enrich it without eliminating safe research.",
+  "unverified_research_contract": {
+    "content_location": "original_profile_section",
+    "annex_columns": [
+      "Section",
+      "Paragraph"
+    ],
+    "annex_content": "numeric references only",
+    "verified_fact_authority": "unchanged supported-claim evidence and critic checks",
+    "missing_verification_disposition": "retain useful safe research with an explicit unverified label"
+  }
+}
