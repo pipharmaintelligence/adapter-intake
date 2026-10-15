@@ -148,7 +148,7 @@ class ReadableProseTests(unittest.TestCase):
 
     def test_historical_contracts_and_all_other_agent_roles_are_unchanged(self):
         m=json.loads((ROOT/'nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
-        previous={k:v for k,v in m['versions'].items() if k!='0.1.44'}
+        previous={k:v for k,v in m['versions'].items() if tuple(map(int,k.split('.'))) < (0,1,44)}
         self.assertEqual('abdeefb6e64f0c933ad1ca2e895dd0ffacdb074b8bf737d20ccbb45d415cbb95',sha256(json.dumps(previous,sort_keys=True,separators=(',',':')).encode()).hexdigest())
         old=m['versions']['0.1.43'];new=m['versions']['0.1.44']
         self.assertEqual({k:v for k,v in old.items() if k!='agents'},{k:v for k,v in new.items() if k!='agents'})
