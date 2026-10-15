@@ -8,4 +8,4 @@ adapters/nusaibah/abstract_mcp_dlm/*.py text eol=lf
 # Preserve the exact published pharma runtime closure across checkout platforms.
 adapters/nusaibah/pharma_company_intelligence_lab/*.py text eol=lf
 adapters/nusaibah/pharma_company_intelligence_lab/*.json text eol=lf
-adapters/nusaibah/pharma_company_intelligence_lab/*.md -text
+adapters/nusaibah/pharma_company_intelligence_lab/*.md -text whitespace=cr-at-eol
