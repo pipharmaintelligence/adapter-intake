@@ -173,7 +173,7 @@ class SynthesisCandidateTests(unittest.TestCase):
 
     def test_release_reuses_exact_agent_storage_and_authority_contracts(self):
         manifest = json.loads((ROOT / 'nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
-        self.assertEqual('0.1.46', manifest['default'])
+        self.assertIn('0.1.46', manifest['versions'])
         self.assertEqual(manifest['versions']['0.1.45'], manifest['versions']['0.1.46'])
 
 
