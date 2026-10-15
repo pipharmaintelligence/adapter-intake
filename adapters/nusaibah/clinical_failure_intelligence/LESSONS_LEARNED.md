@@ -43,3 +43,12 @@ pairs, not authority failures or uncontrolled repair loops.
 No test double grants live authority. The thirteen source seeds are hypotheses,
 not expected supported verdicts. Graph integrity does not prove clinical causality.
 The inherited nested toolkit path is deliberately not copied into this child.
+
+## Product-first correction
+
+A whole Lessons section and a class partition are the wrong defaults for repeated
+product events. Use one product identity, exact internal case scope, TOC and ranked
+complete paragraphs. Edits are reviewed deltas, not complete document rewrites.
+Preserve dates, uncertainty and independent cases; reject unread/stale targets.
+Class analysis is opt-in, not implicit from the presence of a class ID. Exact text
+deduplication is not semantic equivalence and proposal IDs are not durable receipts.

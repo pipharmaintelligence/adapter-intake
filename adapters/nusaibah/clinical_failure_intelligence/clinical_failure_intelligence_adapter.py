@@ -11,9 +11,9 @@ else:
 class ClinicalFailureIntelligenceAdapter(Adapter):
     """Interpret governed context through admitted roles; never own execution authority."""
     key: ClassVar[str] = "nusaibah.clinical_failure_intelligence"
-    version: ClassVar[str] = "0.1.0"
+    version: ClassVar[str] = "0.1.1"
 
     def invoke(self, inputs: Any, context: Any) -> dict[str, Any]:
-        """Return a validated preview without publishing or changing group memory."""
+        """Return a validated preview without publishing or changing product/class memory."""
         del context
         return run_analysis(inputs)

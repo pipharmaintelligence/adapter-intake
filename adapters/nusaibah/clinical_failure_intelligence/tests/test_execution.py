@@ -18,18 +18,18 @@ def result(fake=None, **kwargs):
 class ExecutionTests(unittest.TestCase):
     def test_complete_fixture_six_agents_no_writes(self):
         fake = FakeInputs(); value = result(fake)
-        self.assertEqual(6, len(fake.calls)); self.assertEqual('completed', value['quality']['status'])
+        self.assertEqual(8, len(fake.calls)); self.assertEqual('completed', value['quality']['status'])
         self.assertFalse(value['memory_update']['write_attempted']); self.assertEqual('not_attested', value['persistence']['status'])
         self.assertFalse(value['quality']['external_truth_verified'])
     def test_text_kind_wrapped_json_completes(self):
         self.assertEqual('completed', result(FakeInputs(response_kind='text'))['quality']['status'])
     def test_no_network_or_storage_transport(self):
         with patch('socket.socket.connect', side_effect=AssertionError('network forbidden')):
-            self.assertEqual(6, result()['execution']['logical_agent_calls'])
+            self.assertEqual(8, result()['execution']['logical_agent_calls'])
     def test_known_optional_failure_preserves_work(self):
         fake = FakeInputs(faults={'event_researcher': CodedFailure('agent_execution_provider_retry_exhausted', 'provider_execution_transport_timeout')})
         value = result(fake); self.assertEqual('partial', value['quality']['status'])
-        self.assertTrue(value['hypothesis_results']); self.assertEqual(6, len(fake.calls))
+        self.assertTrue(value['hypothesis_results']); self.assertEqual(8, len(fake.calls))
     def test_unknown_or_authority_failure_does_not_escape(self):
         for error in (RuntimeError('unknown'), CodedFailure('agent_execution_provider_retry_exhausted', 'authority_revoked')):
             with self.assertRaisesRegex(ContractError, 'runtime_blocked'): result(FakeInputs(faults={'event_researcher': error}))
@@ -78,7 +78,7 @@ class ExecutionTests(unittest.TestCase):
         def follow(p, _):
             p['followup_requests'] = [{'role': 'literature_researcher', 'question': 'Check measured exposure.', 'affected_item_ids': ['H_SYN']}]; return p
         fake = FakeInputs(raw, transforms={'evidence_critic': follow}); value = result(fake)
-        self.assertEqual(1, value['execution']['refinement_rounds']); self.assertEqual(10, len(fake.calls))
+        self.assertEqual(1, value['execution']['refinement_rounds']); self.assertEqual(12, len(fake.calls))
         self.assertEqual(1, sum(role == 'trial_researcher' for role, _ in fake.calls))
     def test_refinement_omission_keeps_old_candidate(self):
         raw = example_inputs(); raw['variables']['enable_refinement'] = True
@@ -190,7 +190,10 @@ class MemoryTests(unittest.TestCase):
         self.assertFalse(any(e['source_id'] == 'group_memory' for e in value['evidence']))
         self.assertEqual('prior_memory_not_fresh_evidence', fake.calls[0][1]['memory_context']['origin'])
     def test_large_memory_not_silently_truncated(self):
-        with self.assertRaisesRegex(ContractError, 'compaction'): result(FakeInputs(memory=MemoryView('x' * 16001)))
+        fake = FakeInputs(memory=MemoryView('x' * 16001)); value = result(fake)
+        projection = fake.calls[0][1]['memory_context']
+        self.assertEqual(1, projection['omitted_count']); self.assertEqual([], projection['paragraphs'])
+        self.assertTrue(value['hypothesis_results'])
     def test_guarded_commit_cannot_write(self):
         with self.assertRaisesRegex(ContractError, 'not_admitted'): commit_memory_change()
     def test_lesson_preview_and_duplicate_no_change(self):
@@ -198,12 +201,14 @@ class MemoryTests(unittest.TestCase):
             p['items'][0].update(proposed_verdict='supported', lesson='Separate the endpoint result from a possible explanation.'); return p
         value = result(FakeInputs(transforms={'hypothesis_analyst': learning}))
         proposal = value['memory_update']; self.assertEqual('preview', proposal['status']); self.assertFalse(proposal['write_attempted'])
-        again = result(FakeInputs(transforms={'hypothesis_analyst': learning}, memory=MemoryView(proposal['proposed_section'])))
+        again = result(FakeInputs(transforms={'hypothesis_analyst': learning}, memory=MemoryView(proposal['operations'][0]['new_text'])))
         self.assertEqual('no_change', again['memory_update']['status'])
     def test_inconclusive_hypothesis_not_learned(self):
         def learning(p, _):
             p['items'][0]['lesson'] = 'Potential idea only'; return p
-        self.assertEqual('no_change', result(FakeInputs(transforms={'hypothesis_analyst': learning}))['memory_update']['status'])
+        value = result(FakeInputs(transforms={'hypothesis_analyst': learning}))
+        self.assertFalse(value['hypothesis_results'][0]['memory_eligibility'])
+        self.assertNotIn('Potential idea only', str(value['memory_update']['operations']))
 
 
 if __name__ == '__main__': unittest.main()

@@ -1,7 +1,7 @@
 # PI-2061 Assets and repository handoff
 
 Reviewed baselines: adapter-intake 48bbdecc944a0458d00b40ec50cecffbdce18515;
-Assets d850262f092422decfbd2795e5bdc2954dce6f1b. Recheck current source before changes.
+Assets d23e019d6efa3fb33dc85e38141603f598d1f6f3 (paragraph/changeset and callable Skill restriction rechecked). Recheck current source before changes.
 No Assets, Core, UI, deployment or installed-wheel change is included in this PR.
 
 ## A1. Child-owned Agent session - Assets/trusted runtime, blocking
@@ -40,10 +40,10 @@ span checks are not an attested toolkit receipt or semantic factual proof.
 
 ## A4. Exact admission - configuration and intake qualification
 
-admission_requirements.json lists six proposed reference-only contracts with prompt
+admission_requirements.json lists seven proposed reference-only contracts with prompt
 hashes. Provide real reviewed definitions/model/tool policies and exact-version
 registration. Do not guess a binding or reuse shared-registry metadata accidentally.
-Select the approved group-memory source and partition and declare its read-only role.
+Select the approved product-memory source and product_id partition and declare its read-only role. Class roles are optional.
 Do not infer deployment or admission from the bundled Fixed Skill or method names.
 
 ## A5. Child mutable Skill and retention barrier - Assets/trusted runtime
@@ -71,7 +71,7 @@ In-process task reuse is implemented. Durable stage retention is not. No public
 checkpoint API was established. Use an existing governed retention lane with receipts,
 input/prompt/Skill/source identities, new-run authorization and safe rehydration.
 Test container termination and lost write acknowledgement. A hash is not a checkpoint;
-scientific group memory must not become an execution journal.
+scientific product/class memory must not become an execution journal.
 
 ## A8. Delivery and scientific qualification
 
@@ -81,3 +81,27 @@ published versions through the official promotion PR. Separately prove output
 retention, mutation/readback/history, source accuracy and adjudicated positive/negative
 cohorts. No new UI is needed for this core; UI work requires a demonstrated authoring
 or result-display gap, not an assumed platform redesign.
+
+## 0.1.1 product-first amendment (supersedes group-primary assumptions)
+
+Primary roles: product_memory / product_memory_update selected by product_id.
+The internal case is indication_id / trial_id / regimen_id. Different cases of
+one product must not share one mixed clinical conclusion. Class work defaults to
+false and has separate optional read/update roles. Current true behavior is a
+candidate-reference preview, not complete cross-product synthesis or a class write.
+
+Admit seven exact 1.1.0 Agent roles and Fixed methodology 1.1.0. Add the editor and
+critic edit-review task. Validate actual Gemini 3.8 model/tool/structured-output
+transport rather than assuming Markdown prompts prove admission.
+
+The SDK already has paragraph reads and structural changesets. The inspected
+callable child still restricts Dynamic Skills to read-only. Qualify product writes
+first: retained analysis, content/package CAS, approved if-absent initialization,
+same-product concurrency, receipt, fresh readback, history and unchanged siblings.
+Do not lend parent authority or bypass the mutation restriction. Optional class
+failure must not misreport a completed product effect; no global atomicity assumed.
+
+A smaller model packet does not imply partial storage retrieval: the document
+view operates after hydration. Investigate server-side bounded reads only if the
+package/hydration boundary is actually the measured blocker. ECS, new-source
+retrieval, exact admission and durable process-loss recovery remain separate gates.

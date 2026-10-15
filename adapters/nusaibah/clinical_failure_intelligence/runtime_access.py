@@ -95,11 +95,12 @@ class AgentRunner:
         identifier(task_id)
         identifiers(obligations, allow_empty=False)
         reserved = {"schema_version", "task_id", "role", "analysis_mode", "subject", "as_of_date",
-                    "assigned_obligation_ids", "response_contract", "instructions", "prompt_version"}
+                    "assigned_obligation_ids", "response_contract", "instructions", "prompt_version", "enable_pharmacological_class"}
         require(not set(packet_data) & reserved, "clinical_packet_override_forbidden")
         packet = {"schema_version": "clinical_agent_packet.v1", "task_id": task_id,
             "role": role, "analysis_mode": request["analysis_mode"],
             "subject": request["context"]["subject"], "as_of_date": request["as_of_date"],
+            "enable_pharmacological_class": request.get("enable_pharmacological_class", False),
             "assigned_obligation_ids": obligations, "response_contract": response_contract(role),
             "instructions": COMMON_PROMPT + "\n\n" + PROMPTS[role],
             "prompt_version": PROMPT_VERSION, **deepcopy(packet_data)}

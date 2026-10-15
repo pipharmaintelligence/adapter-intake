@@ -28,12 +28,13 @@ def example_inputs(mode="mechanistic_case"):
         "trial_ids": ["TRIAL_SYN"]}]
     return {"variables": {"schema_version": "clinical_analysis_request.v1", "request_id": "REQUEST_SYN",
         "analysis_mode": mode, "subject_id": "CASE_SYN", "as_of_date": "2025-02-01", "event_ids": ["EVENT_SYN"],
-        "memory_mode": "preview", "enable_refinement": False},
+        "memory_mode": "preview", "enable_refinement": False, "enable_pharmacological_class": False},
         "clinical_context": {"schema_version": "clinical_context.v1", "context_id": "CONTEXT_SYN", "subject": subject,
         "event_ids": ["EVENT_SYN"], "source_assertions": [{"assertion_id": "SEED_SYN", "source_ref": "synthetic_fixture",
         "statement": "An exposure limitation may contribute to a negative endpoint result.",
         "general_research_observation": "This is a synthetic candidate hypothesis, not clinical evidence.",
         "example_drugs": ["Synthetic product Alpha"], "indicators_to_measure_and_validate": ["Exposure", "Endpoint result"]}],
+        "case_scope": {"indication_id": "IND_SYN", "trial_id": "TRIAL_SYN", "regimen_id": "REG_SYN"},
         "evidence": sources, "cohort": example_cohort() if mode == "cohort_pattern" else None}}
 
 
@@ -63,6 +64,18 @@ class MemoryView:
     def section_text(self, section):
         assert section == "Lessons"
         return self.text
+    def table_of_contents(self):
+        primary = ["Indication IND_SYN", "Trial TRIAL_SYN", "Regimen REG_SYN", "Assessment"]
+        return [SimpleNamespace(path=SimpleNamespace(parts=tuple(primary[:i]))) for i in range(1, 5)] + [SimpleNamespace(path=SimpleNamespace(parts=("Lessons",))), SimpleNamespace(path=SimpleNamespace(parts=("Product memory v1",)))]
+    def has_section(self, section):
+        return tuple(section) in [x.path.parts for x in self.table_of_contents()]
+    def paragraphs(self, section):
+        values = [x for x in self.text.split("\n\n") if x]
+        hashes = [text_digest(x) for x in values]
+        return tuple(SimpleNamespace(text=value, kind="paragraph", ref=SimpleNamespace(
+            section=SimpleNamespace(parts=tuple(section)), ordinal_hint=i, digest=hashes[i],
+            previous_digest=hashes[i-1] if i else None, next_digest=hashes[i+1] if i+1<len(hashes) else None))
+            for i,value in enumerate(values))
     def content_digest(self):
         return text_digest(self.text)
     def provenance(self):
@@ -92,8 +105,8 @@ class FakeInputs(dict):
         return FixedView()
     def dynamic_skill(self, role, *, variables):
         self.memory_calls.append((role, variables))
-        assert role == "group_memory"
-        assert variables == {"pharmacological_group_id": "GROUP_SYN"}
+        assert role in {"product_memory", "group_memory"}
+        assert variables == ({"product_id": "PRODUCT_SYN"} if role == "product_memory" else {"pharmacological_group_id": "GROUP_SYN"})
         if isinstance(self.memory, Exception):
             raise self.memory
         return self.memory
@@ -133,6 +146,19 @@ class FakeInputs(dict):
                 "proposed_verdict": "inconclusive", "alternative_explanations": ["Target biology", "Endpoint design"],
                 "validation_indicators": ["Measure exposure", "Measure target engagement"],
                 "falsification_condition": "Adequate exposure with unchanged outcomes would challenge the explanation.", "lesson": None}]
+        elif role == "product_memory_editor":
+            accepted = packet["accepted_items"]
+            hypothesis = next((x for x in accepted if x["kind"] == "hypothesis"), None)
+            wording = (hypothesis["lesson"] if hypothesis and hypothesis["memory_eligibility"] else None)
+            wording = wording or "In this synthetic trial the primary endpoint was not met; the exposure hypothesis remains inconclusive."
+            items = [{"edit_id": "EDIT_SYN", "operation": "append_paragraph" if packet["memory_context"]["section_exists"] else "add_section",
+                "section_path": packet["memory_context"]["section_path"], "target_paragraph_id": None,
+                "before_digest": None, "new_text": wording,
+                "supporting_item_ids": [x["item_id"] for x in accepted], "rationale": "Synthetic scoped new event only."}]
+        elif role == "evidence_critic" and packet.get("review_kind") == "product_memory_edits":
+            items = [{"edit_id": x["edit_id"], "accepted": True, "scope_preserved": True,
+                "evidence_supported": True, "prior_content_preserved": True, "rationale": "Synthetic edit review only."}
+                for x in packet["candidate_edits"]]
         elif role == "evidence_critic":
             items = [{"item_id": i["item_id"], "verdict": "accepted", "rationale": "Synthetic scoped review only.",
                 "supporting_evidence_ids": i["supporting_evidence_ids"], "contradicting_evidence_ids": i["contradicting_evidence_ids"],

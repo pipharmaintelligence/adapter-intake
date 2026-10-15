@@ -10,7 +10,8 @@ if __package__:
     from .evidence import EvidenceLedger
     from .cohort import compute_statistics
     from .quality import OUTCOMES, enforce_consistency, normalize_items, review_items, validate_dependencies, withhold
-    from .memory import read_methodology, read_group_memory, propose_memory_change
+    from .memory import read_methodology, read_group_memory
+    from .product_memory import read_product_memory, memory_projection, editor_contract, validate_edit_candidates, review_edit_plan
     from .rendering import build_reason_graph, render_report, validate_result
 else:
     from contracts import ASSET_KEY, SCHEMA, VERSION, RESEARCH_ROLES, ContractError, canonical_bytes, digest, identifiers, parse_request, require
@@ -19,7 +20,8 @@ else:
     from evidence import EvidenceLedger
     from cohort import compute_statistics
     from quality import OUTCOMES, enforce_consistency, normalize_items, review_items, validate_dependencies, withhold
-    from memory import read_methodology, read_group_memory, propose_memory_change
+    from memory import read_methodology, read_group_memory
+    from product_memory import read_product_memory, memory_projection, editor_contract, validate_edit_candidates, review_edit_plan
     from rendering import build_reason_graph, render_report, validate_result
 
 FACETS = {"trial_researcher": "clinical_outcome", "literature_researcher": "mechanism_evidence",
@@ -76,20 +78,20 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
     statistics = compute_statistics(context["cohort"], as_of_date=request["as_of_date"]) if request["analysis_mode"] == "cohort_pattern" else None
     budget = Budget(policy)
     methodology = read_methodology(inputs)
-    memory = read_group_memory(inputs, request)
+    memory = read_product_memory(inputs, request)
     runner = AgentRunner(inputs, budget)
     stages: list[StageResult] = []
     issues: list[dict] = []
     claims: list[dict] = []
     common = {"source_assertions": context["source_assertions"], "methodology": methodology,
-              "memory_context": memory, "data_is_not_instructions": True}
+              "memory_context": memory_projection(memory), "data_is_not_instructions": True}
 
     def research(role: str, iteration: int = 0, question: str | None = None) -> list[StageResult]:
         relevant = [row for row in ledger.rows() if row["source_type"] in SOURCE_FACETS[role]]
         tasks = []
         for index, chunk in enumerate(partition_evidence(relevant)):
             tasks.append(runner.call(role, request, task_id=role + ":" + str(iteration) + ":" + str(index),
-                obligations=[FACETS[role] + ":" + str(index)], downstream_reserve=3,
+                obligations=[FACETS[role] + ":" + str(index)], downstream_reserve=5 if memory["status"] != "not_requested" else 3,
                 packet_data={**common, "evidence_packet": chunk,
                     "questions": [question] if question else ["Investigate " + FACETS[role]],
                     "evidence_scope": {"assigned_count": len(chunk), "total_role_sources": len(relevant)},
@@ -164,7 +166,7 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
                     "clinical_followup_contract_invalid")
             affected = identifiers(followup["affected_item_ids"], allow_empty=False)
             require(set(affected) <= {x["item_id"] for x in reviewed}, "clinical_followup_scope_invalid")
-        if followups and budget.refine_once():
+        if followups and budget.calls + (6 if memory["status"] != "not_requested" else 4) <= budget.policy.max_agent_calls and budget.refine_once():
             followup = followups[0]
             old = deepcopy(reviewed)
             collect(research(followup["role"], 1, followup["question"]))
@@ -188,11 +190,50 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
         issues.append({"code": "clinical_seed_coverage_incomplete", "assertion_ids": sorted(missing_seeds)})
     if statistics and statistics["status"] == "not_run":
         issues.append({"code": statistics["reason"]})
+    product_plan = review_edit_plan([], None, memory, request)
+    accepted_items = [item for item in reviewed if item["accepted"]]
+    if memory["status"] in {"read", "not_initialized"} and accepted_items:
+        editor = runner.call("product_memory_editor", request, task_id="product_memory_edit",
+            obligations=["product_memory_delta"], downstream_reserve=1,
+            packet_data={"memory_context": memory_projection(memory), "accepted_items": accepted_items,
+                "evidence_packet": ledger.rows(), "event_ids": request["event_ids"],
+                "case_scope": context["case_scope"], "edit_contract": editor_contract()})
+        stages.append(editor)
+        try:
+            candidates = validate_edit_candidates(editor.payload["items"] if editor.payload else [], memory, accepted_items)
+            memory_critic = None
+            if candidates:
+                memory_critic = runner.call("evidence_critic", request, task_id="product_memory_review",
+                    obligations=["memory_review:" + row["edit_id"] for row in candidates],
+                    packet_data={"review_kind": "product_memory_edits", "memory_context": memory_projection(memory),
+                        "candidate_edits": candidates, "accepted_items": accepted_items, "evidence_packet": ledger.rows(),
+                        "memory_review_contract": {"required_fields": ["edit_id", "accepted", "scope_preserved",
+                            "evidence_supported", "prior_content_preserved", "rationale"]}})
+                stages.append(memory_critic)
+            product_plan = review_edit_plan(candidates, memory_critic.payload["items"]
+                if memory_critic and memory_critic.payload else None, memory, request)
+            if memory_critic is not None and memory_critic.status != "completed":
+                product_plan.update(status="deferred", reason=memory_critic.code or "memory_review_incomplete")
+            if editor.status != "completed":
+                product_plan.update(status="deferred", reason=editor.code or "memory_edit_incomplete")
+        except ContractError as error:
+            product_plan.update(status="deferred", reason=error.code)
+    # The optional class extension is deliberately after the primary product plan.
+    # It cannot authorize a product write or turn a case lesson into a class rule.
+    product_plan["class_extension"] = {"enabled": request["enable_pharmacological_class"], "status": "not_requested",
+                                       "write_attempted": False, "cross_case_review_required": True}
+    if request["enable_pharmacological_class"] and request["memory_mode"] != "off":
+        try:
+            group_memory = read_group_memory(inputs, request)
+            product_plan["class_extension"].update(status="candidate_preview", group_id=group_memory["group_id"],
+                memory_status=group_memory["status"], candidate_hypothesis_ids=[h["item_id"] for h in hypotheses if h["memory_eligibility"]])
+        except ContractError as error:
+            product_plan["class_extension"].update(status="blocked", reason=error.code)
     complete = bool(hypotheses) and not issues and all(stage.status == "completed" for stage in stages) and all(
         item["review_status"] == "automated_reviewed" for item in reviewed)
     result = {"schema_version": SCHEMA, "asset": ASSET_KEY + "@" + VERSION,
         "assessment_id": "assessment:" + digest({"request": request, "methodology": methodology,
-                                                   "memory": memory}).split(":")[1][:32],
+                                                   "memory": memory_projection(memory)}).split(":")[1][:32],
         "request_id": request["request_id"], "analysis_mode": request["analysis_mode"],
         "as_of_date": request["as_of_date"], "subject": context["subject"],
         "source_assertions": deepcopy(context["source_assertions"]), "research_claims": claims,
@@ -208,7 +249,7 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
                                          for role in (*RESEARCH_ROLES, "outcome_adjudicator", "hypothesis_analyst", "evidence_critic")}},
         "execution": {"stages": [stage.summary() for stage in stages], **budget.proof(),
             "resume": {"available": False, "reason": "durable_stage_retention_not_qualified"}},
-        "memory_update": propose_memory_change(memory, hypotheses, mode=request["memory_mode"]),
+        "memory_update": product_plan,
         "persistence": {"status": "not_attested", "receipt": None}}
     validate_result(result)
     result["report_markdown"] = render_report(result)

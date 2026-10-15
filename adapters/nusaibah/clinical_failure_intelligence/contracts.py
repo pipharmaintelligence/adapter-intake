@@ -11,12 +11,12 @@ from typing import Any
 
 JsonObject = dict[str, Any]
 ASSET_KEY = "nusaibah.clinical_failure_intelligence"
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 SCHEMA = "clinical_failure_intelligence.v1"
 REQUEST_SCHEMA = "clinical_analysis_request.v1"
 ROLE_SCHEMA = "clinical_agent_response.v1"
 RESEARCH_ROLES = ("trial_researcher", "literature_researcher", "event_researcher")
-ROLES = (*RESEARCH_ROLES, "outcome_adjudicator", "hypothesis_analyst", "evidence_critic")
+ROLES = (*RESEARCH_ROLES, "outcome_adjudicator", "hypothesis_analyst", "evidence_critic", "product_memory_editor")
 REASON_CODES = frozenset({"efficacy", "safety_tolerability", "pk_pd_exposure_dose",
     "target_moa_biology", "design_statistics_endpoint", "recruitment_execution",
     "manufacturing_quality", "regulatory_benefit_risk", "strategic_commercial", "undetermined"})
@@ -150,7 +150,7 @@ def parse_request(inputs: Any) -> JsonObject:
     require(isinstance(inputs, dict), "clinical_inputs_invalid")
     require(set(inputs) == {"variables", "clinical_context"}, "clinical_input_roles_invalid")
     values = object_fields(inputs["variables"], {"schema_version", "request_id", "analysis_mode",
-        "subject_id", "as_of_date", "event_ids"}, {"memory_mode", "enable_refinement"})
+        "subject_id", "as_of_date", "event_ids"}, {"memory_mode", "enable_refinement", "enable_pharmacological_class"})
     safe_json(values)
     require(values["schema_version"] == REQUEST_SCHEMA, "clinical_request_schema_invalid")
     require(isinstance(values["analysis_mode"], str) and values["analysis_mode"] in {"mechanistic_case", "cohort_pattern"}, "clinical_mode_invalid")
@@ -163,7 +163,7 @@ def parse_request(inputs: Any) -> JsonObject:
     require(isinstance(memory_mode, str) and memory_mode in {"off", "preview"}, "clinical_memory_apply_not_admitted")
     require(type(values.get("enable_refinement", False)) is bool, "clinical_refinement_flag_invalid")
     context = object_fields(inputs["clinical_context"], {"schema_version", "context_id", "subject",
-        "event_ids", "source_assertions", "evidence", "cohort"})
+        "event_ids", "source_assertions", "evidence", "cohort"}, {"case_scope"})
     safe_json(context)
     require(context["schema_version"] == "clinical_context.v1", "clinical_context_schema_invalid")
     identifier(context["context_id"])
@@ -182,6 +182,19 @@ def parse_request(inputs: Any) -> JsonObject:
                 "clinical_case_subject_incomplete")
     require(set(identifiers(context["event_ids"], maximum=32)) == set(values["event_ids"]),
             "clinical_event_scope_mismatch")
+    class_enabled = values.get("enable_pharmacological_class", False)
+    require(type(class_enabled) is bool, "clinical_class_flag_invalid")
+    if class_enabled:
+        require(subject["pharmacological_group_id"] is not None, "clinical_class_identity_required")
+    if values["analysis_mode"] == "mechanistic_case" and memory_mode != "off":
+        scope = object_fields(context.get("case_scope"), {"indication_id", "trial_id", "regimen_id"})
+        for field in scope:
+            identifier(scope[field])
+        require(subject["trial_ids"] == [scope["trial_id"]], "clinical_memory_requires_single_trial_scope")
+    elif "case_scope" in context:
+        scope = object_fields(context["case_scope"], {"indication_id", "trial_id", "regimen_id"})
+        for field in scope:
+            identifier(scope[field])
     require(isinstance(context["source_assertions"], list) and len(context["source_assertions"]) <= 32,
             "clinical_source_assertions_invalid")
     seen: set[str] = set()
@@ -207,4 +220,5 @@ def parse_request(inputs: Any) -> JsonObject:
     require(context["cohort"] is None or isinstance(context["cohort"], dict), "clinical_cohort_invalid")
     require(len(canonical_bytes(context)) <= 256 * 1024, "clinical_context_requires_partitioning")
     return {**deepcopy(values), "memory_mode": memory_mode,
-            "enable_refinement": values.get("enable_refinement", False), "context": deepcopy(context)}
+            "enable_refinement": values.get("enable_refinement", False),
+            "enable_pharmacological_class": class_enabled, "context": deepcopy(context)}

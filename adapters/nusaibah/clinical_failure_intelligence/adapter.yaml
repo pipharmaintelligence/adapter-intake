@@ -1,5 +1,5 @@
 asset_key: nusaibah.clinical_failure_intelligence
-asset_version: 0.1.0
+asset_version: 0.1.1
 package_target: python_runtime/adapters/intake/nusaibah/clinical_failure_intelligence
 manifest: clinical_failure_intelligence.asset.json
 adapter_module: clinical_failure_intelligence_adapter.py
@@ -10,6 +10,7 @@ reviewed_helpers:
   - contracts.py
   - evidence.py
   - memory.py
+  - product_memory.py
   - orchestration.py
   - policies.py
   - prompt_catalog.py
@@ -20,6 +21,7 @@ reviewed_helpers:
 reviewed_support_files:
   - admission_requirements.json
   - prompts/common.md
+  - prompts/product_memory_editor.md
   - prompts/event_researcher.md
   - prompts/evidence_critic.md
   - prompts/hypothesis_analyst.md
@@ -38,6 +40,8 @@ optional_files:
   - LESSONS_LEARNED.md
   - ASSETS_HANDOFF.md
   - VERIFICATION.md
+  - PRODUCT_MEMORY_REVISION.md
+  - GEMINI_PROMPT_PROFILE.md
 
 release_stage: development
 

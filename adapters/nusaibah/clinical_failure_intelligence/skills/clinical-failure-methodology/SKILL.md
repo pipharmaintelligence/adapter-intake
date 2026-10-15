@@ -1,6 +1,6 @@
 ---
 name: clinical-failure-methodology
-description: Evidence-first assessment of clinical outcomes, competing hypotheses and scoped pharmacological learning.
+description: Evidence-first assessment of clinical outcomes, competing hypotheses and product-first longitudinal learning.
 ---
 # Clinical Failure Methodology
 
@@ -25,8 +25,15 @@ not a universal causal conclusion.
 
 ## Learning Rules
 
-Keep group applicability, evidence references, limitations and counterexamples
-with lessons. Prior memory is not fresh evidence. Supplied hypotheses are untested
-until reviewed. Preview never initializes or mutates a Skill. Maintain one current
-document, not recursively copied prior reports. Runtime owns authority, retention
-and future commit receipts. Never invent persistence success.
+Product memory is primary: select the canonical product_id and keep indication,
+trial, regimen and event scope explicit. Read only selected complete paragraphs,
+not the full current Skill. Preserve earlier supported facts and qualifiers when
+enriching a paragraph; an explicit correction must retain relevant chronology.
+Use exact revision-local paragraph references and digests. Never overwrite a
+sibling indication/trial or rewrite a whole document to add one event.
+
+Pharmacological-class work is opt-in and disabled by default. A product-specific
+finding is not a class-wide rule. Prior memory is not fresh evidence. Preview never
+initializes or mutates a Skill. The editor proposes a delta; the critic reviews
+its evidence and preservation of prior content. Runtime alone owns admission,
+retention, CAS commits, receipts and history. Never invent persistence success.

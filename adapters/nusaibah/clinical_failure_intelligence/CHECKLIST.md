@@ -4,9 +4,9 @@ Checked items refer to source and provider-free tests, not deployment or science
 
 ## Implemented
 
-- [x] Independent 0.1.0 asset; no modification of historical pharma packages.
+- [x] Independent 0.1.1 asset; no modification of historical pharma packages.
 - [x] Closed case/cohort context, subject, event and cutoff validation.
-- [x] Six explicit Agent roles, packaged prompts and reference-only declarations.
+- [x] Seven explicit Agent roles, packaged prompts and reference-only declarations.
 - [x] Exact-byte bundled Fixed methodology Skill.
 - [x] Two-way research concurrency, whole-source-window chunks and stable joins.
 - [x] Shared calls/time budget, completion reserve and one focused refinement.
@@ -22,7 +22,7 @@ Checked items refer to source and provider-free tests, not deployment or science
 - [x] Valid siblings and omitted refinement candidates preserved with clear gaps.
 - [x] Descriptive cohort denominators, duplicate units and overlap/conflict guards.
 - [x] Canonical JSON, graph reference closure and attached-model report headings.
-- [x] Read-only group snapshot; qualified non-writing lesson preview; no-change repeats.
+- [x] Primary product snapshot via TOC/paragraphs; reviewed delta preview; no-change repeats.
 - [x] Exact first-run absence handling, no missing-node-as-empty fallback.
 - [x] Apply blocked before calls; learning and persistence statuses independent.
 - [x] Synthetic fixtures, thirteen untested source seeds and dedicated CI definition.
@@ -43,7 +43,7 @@ Checked items refer to source and provider-free tests, not deployment or science
 - [ ] A1: child-owned Agent and public-reference capability preparation.
 - [ ] A2: actual parent DTO and binding-owned clinical_context handoff.
 - [ ] A3: clinical/PubMed/event source capabilities and safe retrieval projection.
-- [ ] A4: exact Agent/provider/tool admission and group-memory declaration.
+- [ ] A4: exact Agent/provider/tool admission and product-memory declaration; class role only when enabled.
 - [ ] A5: child mutation, retention-before-apply, CAS, receipt, readback and history.
 - [ ] A6: generic ECS callable parity.
 - [ ] A7: durable stage retention, restart authorization and uncertain-write recovery.
@@ -51,3 +51,21 @@ Checked items refer to source and provider-free tests, not deployment or science
 
 See ASSETS_HANDOFF.md for owners and acceptance criteria. No Core or UI redesign
 is authorized merely because these tasks exist.
+
+## Product-first amendment
+
+- [x] Product selector is product_id; names remain display metadata.
+- [x] Indication/trial/regimen case_scope isolates repeated product events.
+- [x] Strict class boolean defaults to false; no default class-memory calls.
+- [x] Product delta precedes optional class candidate preview.
+- [x] Ranked complete paragraphs; no stored-document reordering or full read.
+- [x] Oversized/unread context is explicit; unread replacements are forbidden.
+- [x] Exact old digest and independent edit review for enrich/correct.
+- [x] Append/new section preserves unrelated cases; whole rewrite forbidden.
+- [x] Legacy product documents defer for explicit index migration.
+- [x] Seven Gemini 3.8-oriented role prompts authored with decision examples.
+- [ ] Real SDK compilation/preview/apply and unchanged sibling-byte proof.
+- [ ] Live Gemini scientific and paragraph-preservation benchmark.
+- [ ] Durable event/source-revision receipt index and concurrent-write recovery.
+- [ ] Full staged paragraph pagination for oversized scoped sections.
+- [ ] Complete optional class synthesis and separately admitted class commit.
