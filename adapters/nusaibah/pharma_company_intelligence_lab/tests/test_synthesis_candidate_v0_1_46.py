@@ -154,6 +154,9 @@ class SynthesisCandidateTests(unittest.TestCase):
         self.assertLessEqual(row['agent_input_preflight']['provider_dispatch_count'], 48)
 
     def test_all_null_verified_candidates_still_publish_reviewed_claim_fallback(self):
+        import devtools.agent_citation_view as citation_view
+        if not hasattr(citation_view, '_validated_turns'):
+            self.skipTest('Native-grounding qualification requires the real runtime citation projection')
         inputs = MalformedVerifiedInputs()
         result = invoke_v0_1_46(inputs, asset_identity='nusaibah.pharma_company_intelligence_lab:0.1.46')
         row = result['outputs']['intelligence_dossier']['company_results'][0]
