@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import unittest
 from pathlib import Path
 
@@ -8,6 +9,16 @@ ROOT = Path(__file__).resolve().parents[1] / "adapters/nusaibah/skill_reader"
 
 
 class SkillReaderEcsVersionTest(unittest.TestCase):
+    def test_promotion_inventory_declares_retained_runtime_files(self) -> None:
+        contract = (ROOT / 'adapter.yaml').read_text(encoding='utf-8')
+        declared = set(re.findall(r'^  - ([A-Za-z0-9_.-]+)$', contract, re.M))
+        declared.update(re.findall(r'^(?:manifest|adapter_module): ([A-Za-z0-9_.-]+)$', contract, re.M))
+        declared.add('adapter.yaml')
+        actual = {p.name for p in ROOT.iterdir() if p.is_file()}
+        self.assertEqual(set(), actual - declared)
+        self.assertIn('skill_reader_adapter.py', declared)
+        self.assertIn('capabilities.v0.1.0.json', declared)
+
     def test_ecs_successor_preserves_exact_read_only_contract(self) -> None:
         manifest = json.loads((ROOT / "skill_reader.asset.json").read_text(encoding="utf-8"))
         self.assertEqual("0.1.1", manifest["default"])
