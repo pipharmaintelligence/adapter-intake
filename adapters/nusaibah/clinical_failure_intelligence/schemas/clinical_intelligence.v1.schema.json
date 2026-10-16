@@ -16,7 +16,7 @@
       "type": "string"
     },
     "asset": {
-      "const": "nusaibah.clinical_failure_intelligence@0.1.2"
+      "const": "nusaibah.clinical_failure_intelligence@0.1.1"
     },
     "case_assessments": {
       "items": {
