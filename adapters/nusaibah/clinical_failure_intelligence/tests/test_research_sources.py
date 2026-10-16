@@ -60,6 +60,72 @@ class DiscoveryContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "partitioning"):
             _admit_inspected(self.inspection, self.citation, self.request)
 
+    def test_combined_citation_to_inspected_evidence_uses_trusted_bridges(self):
+        import sys
+        import types
+        from unittest.mock import patch
+
+        self.inspection.text = ("NCT12345678 reports Synthetic product Alpha. "
+                                "These synthetic words establish source scope only.")
+        evidence = EvidenceLedger("CASE_SYN", "2025-02-01", [])
+        calls = []
+        citation = self.citation
+
+        class CitationView:
+            @classmethod
+            def from_agent_result(cls, value):
+                self.assertEqual(value["provider_metadata"]["schema_version"],
+                                 "agent_provider_metadata.v1")
+                return cls()
+
+            def deduped_citations(self):
+                return (citation,)
+
+        class Target:
+            @staticmethod
+            def from_agent_citation(value):
+                self.assertIs(value, citation)
+                return value
+
+        class Runner:
+            def call(self, role, request, *, task_id, obligations, downstream_reserve, packet_data):
+                calls.append((role, task_id, packet_data["search_queries"][0]))
+                return SimpleNamespace(
+                    task_id=task_id, status="completed", code=None,
+                    payload={"items": [], "followup_requests": []},
+                    semantic_metadata={"provider_metadata": {
+                        "schema_version": "agent_provider_metadata.v1"}})
+
+        class Inputs:
+            def open_reference(self, target, *, mode):
+                self_ref.assertEqual(mode, "http")
+                self_ref.assertIs(target, citation)
+                return self_ref.inspection
+
+        self_ref = self
+        agent_mod = types.ModuleType("devtools.agent_citation_view")
+        agent_mod.AgentCitationView = CitationView
+        agent_mod.AgentCitationViewError = type("AgentCitationViewError", (ValueError,), {})
+        public_mod = types.ModuleType("devtools.public_reference")
+        public_mod.ReferenceTarget = Target
+        public_mod.PublicReferenceError = type("PublicReferenceError", (ValueError,), {})
+        web_mod = types.ModuleType("devtools.public_web_runtime")
+        web_mod.PublicWebRuntimeError = type("PublicWebRuntimeError", (RuntimeError,), {})
+        stage_list = []
+        with patch.dict(sys.modules, {
+            "devtools": types.ModuleType("devtools"),
+            "devtools.agent_citation_view": agent_mod,
+            "devtools.public_reference": public_mod,
+            "devtools.public_web_runtime": web_mod,
+        }):
+            issues = acquire_sources(Inputs(), self.request, Runner(),
+                                     Budget(ExecutionPolicy()), evidence, stage_list)
+        self.assertEqual([], issues)
+        self.assertEqual(3, len(calls))
+        self.assertEqual(3, len(stage_list))
+        self.assertEqual(1, len(evidence.rows()))
+        self.assertEqual("source_available", evidence.rows()[0]["verification"])
+
     def test_without_reference_helper_does_not_use_network(self):
         fake = FakeInputs()
         ledger = EvidenceLedger("CASE_SYN", "2025-02-01", [])
