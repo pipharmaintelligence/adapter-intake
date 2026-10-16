@@ -82,6 +82,9 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
     runner = AgentRunner(inputs, budget)
     stages: list[StageResult] = []
     issues: list[dict] = []
+    if "source_event_metadata" in context and not context["evidence"]:
+        # A source-sheet signal is not a verified clinical outcome.
+        issues.append({"code": "clinical_source_only_independent_evidence_required"})
     claims: list[dict] = []
     common = {"source_assertions": context["source_assertions"], "methodology": methodology,
               "memory_context": memory_projection(memory), "data_is_not_instructions": True}
@@ -251,6 +254,8 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
             "resume": {"available": False, "reason": "durable_stage_retention_not_qualified"}},
         "memory_update": product_plan,
         "persistence": {"status": "not_attested", "receipt": None}}
+    if "source_event_metadata" in context:
+        result["source_event_metadata"] = deepcopy(context["source_event_metadata"])
     validate_result(result)
     result["report_markdown"] = render_report(result)
     return {"response_version": "1", "status": "success", "outputs": {"clinical_intelligence": result},

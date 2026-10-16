@@ -23,8 +23,12 @@ def case_path(request: dict) -> list[str]:
     """Address one indication/trial/regimen inside the product, never a class."""
     scope = request["context"].get("case_scope")
     require(isinstance(scope, dict), "clinical_product_memory_scope_required")
-    return ["Indication " + scope["indication_id"], "Trial " + scope["trial_id"],
-            "Regimen " + scope["regimen_id"], "Assessment"]
+    # Event scopes are distinct from trial identities; missing data is not a trial ID.
+    trial_section = ("Trial " + scope["trial_id"] if scope["trial_id"] is not None
+                     else "Event " + scope["event_id"] + " trial unreported")
+    regimen_section = ("Regimen " + scope["regimen_id"] if scope["regimen_id"] is not None
+                       else "Regimen unreported")
+    return ["Indication " + scope["indication_id"], trial_section, regimen_section, "Assessment"]
 
 
 def _parts(path: Any) -> list[str]:

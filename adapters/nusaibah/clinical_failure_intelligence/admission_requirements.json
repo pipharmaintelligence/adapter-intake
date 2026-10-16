@@ -1,1 +1,136 @@
-{"document_kind":"admission_requirements_not_runtime_authority","asset":"nusaibah.clinical_failure_intelligence@0.1.1","implementation_stage":"provider_free_development","agent_contracts":[{"role":"trial_researcher","contract_key":"agent.nusaibah.clinical_failure_intelligence_trial_researcher","contract_version":"1.1.0","prompt_version":"1.1.0","prompt_digest":"sha256:095b98c3d9563b71f903e0ec46725ea903598846e6c8ef2c6e9b24f680843ff2","prompt_file":"prompts/trial_researcher.md","provider_binding_status":"not_selected","role_admission_status":"not_admitted","capabilities_required":["clinical_trial_search_and_read"],"recommended_model":"gemini-3.8-flash","model_admission_status":"not_verified"},{"role":"literature_researcher","contract_key":"agent.nusaibah.clinical_failure_intelligence_literature_researcher","contract_version":"1.1.0","prompt_version":"1.1.0","prompt_digest":"sha256:2d45adca4138ca994526a98d7d4c02079f64b769da1b4bafc8ac0f3d714a2516","prompt_file":"prompts/literature_researcher.md","provider_binding_status":"not_selected","role_admission_status":"not_admitted","capabilities_required":["pubmed_search_and_read"],"recommended_model":"gemini-3.8-flash","model_admission_status":"not_verified"},{"role":"event_researcher","contract_key":"agent.nusaibah.clinical_failure_intelligence_event_researcher","contract_version":"1.1.0","prompt_version":"1.1.0","prompt_digest":"sha256:d903ddfe79c1fd7eff08e1bf39d4b4e2a4600ce259fed441e30d89b642819814","prompt_file":"prompts/event_researcher.md","provider_binding_status":"not_selected","role_admission_status":"not_admitted","capabilities_required":["native_grounded_search"],"recommended_model":"gemini-3.8-flash","model_admission_status":"not_verified"},{"role":"outcome_adjudicator","contract_key":"agent.nusaibah.clinical_failure_intelligence_outcome_adjudicator","contract_version":"1.1.0","prompt_version":"1.1.0","prompt_digest":"sha256:0337f1372785ed85a5d872f44ea3bdaad06a12cda2ed351a33ab5c16c5e58477","prompt_file":"prompts/outcome_adjudicator.md","provider_binding_status":"not_selected","role_admission_status":"not_admitted","capabilities_required":[],"recommended_model":"gemini-3.8-flash","model_admission_status":"not_verified"},{"role":"hypothesis_analyst","contract_key":"agent.nusaibah.clinical_failure_intelligence_hypothesis_analyst","contract_version":"1.1.0","prompt_version":"1.1.0","prompt_digest":"sha256:654c6160dcef24f1d5cf8e44821dc6e37aee82daa369cc02e5a39e78342b8bd1","prompt_file":"prompts/hypothesis_analyst.md","provider_binding_status":"not_selected","role_admission_status":"not_admitted","capabilities_required":[],"recommended_model":"gemini-3.8-flash","model_admission_status":"not_verified"},{"role":"evidence_critic","contract_key":"agent.nusaibah.clinical_failure_intelligence_evidence_critic","contract_version":"1.1.0","prompt_version":"1.1.0","prompt_digest":"sha256:559f0820681804ddb48d824871c48f64da4406ab85922f0a5dbb8f84dd2be7a3","prompt_file":"prompts/evidence_critic.md","provider_binding_status":"not_selected","role_admission_status":"not_admitted","capabilities_required":[],"recommended_model":"gemini-3.8-flash","model_admission_status":"not_verified"},{"role":"product_memory_editor","contract_key":"agent.nusaibah.clinical_failure_intelligence_product_memory_editor","contract_version":"1.1.0","prompt_file":"prompts/product_memory_editor.md","provider_binding_status":"not_selected","role_admission_status":"not_admitted","capabilities_required":[],"prompt_version":"1.1.0","recommended_model":"gemini-3.8-flash","model_admission_status":"not_verified","prompt_digest":"sha256:4de2bef52cabf52f8401a34454dd8021d05a90e016a1b14af53c858e8a593434"}],"memory_roles":{"product_memory":"Primary read-only role; selector product_id; binding pending","product_memory_update":"Primary mutable role; not admitted; apply blocked","group_memory":"Optional read-only role; never requested by default","group_memory_update":"Optional separate mutation; not admitted"},"blocked":["child_owned_agent_session","governed_child_context_preparation","exact_agent_admission","dynamic_product_role_binding","source_retrieval_integration","mutable_skill_and_retention_before_apply","ecs_callable_parity","durable_resume"],"defaults":{"enable_pharmacological_class":false,"memory_mode":"preview"}}
+{
+  "document_kind": "admission_requirements_not_runtime_authority",
+  "asset": "nusaibah.clinical_failure_intelligence@0.1.2",
+  "implementation_stage": "provider_free_development",
+  "agent_contracts": [
+    {
+      "role": "trial_researcher",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_trial_researcher",
+      "contract_version": "1.1.0",
+      "prompt_version": "1.1.0",
+      "prompt_digest": "sha256:095b98c3d9563b71f903e0ec46725ea903598846e6c8ef2c6e9b24f680843ff2",
+      "prompt_file": "prompts/trial_researcher.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [
+        "clinical_trial_search_and_read"
+      ],
+      "recommended_model": "gemini-3.8-flash",
+      "model_admission_status": "not_verified"
+    },
+    {
+      "role": "literature_researcher",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_literature_researcher",
+      "contract_version": "1.1.0",
+      "prompt_version": "1.1.0",
+      "prompt_digest": "sha256:2d45adca4138ca994526a98d7d4c02079f64b769da1b4bafc8ac0f3d714a2516",
+      "prompt_file": "prompts/literature_researcher.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [
+        "pubmed_search_and_read"
+      ],
+      "recommended_model": "gemini-3.8-flash",
+      "model_admission_status": "not_verified"
+    },
+    {
+      "role": "event_researcher",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_event_researcher",
+      "contract_version": "1.1.0",
+      "prompt_version": "1.1.0",
+      "prompt_digest": "sha256:d903ddfe79c1fd7eff08e1bf39d4b4e2a4600ce259fed441e30d89b642819814",
+      "prompt_file": "prompts/event_researcher.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [
+        "native_grounded_search"
+      ],
+      "recommended_model": "gemini-3.8-flash",
+      "model_admission_status": "not_verified"
+    },
+    {
+      "role": "outcome_adjudicator",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_outcome_adjudicator",
+      "contract_version": "1.1.0",
+      "prompt_version": "1.1.0",
+      "prompt_digest": "sha256:0337f1372785ed85a5d872f44ea3bdaad06a12cda2ed351a33ab5c16c5e58477",
+      "prompt_file": "prompts/outcome_adjudicator.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [],
+      "recommended_model": "gemini-3.8-flash",
+      "model_admission_status": "not_verified"
+    },
+    {
+      "role": "hypothesis_analyst",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_hypothesis_analyst",
+      "contract_version": "1.1.0",
+      "prompt_version": "1.1.0",
+      "prompt_digest": "sha256:654c6160dcef24f1d5cf8e44821dc6e37aee82daa369cc02e5a39e78342b8bd1",
+      "prompt_file": "prompts/hypothesis_analyst.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [],
+      "recommended_model": "gemini-3.8-flash",
+      "model_admission_status": "not_verified"
+    },
+    {
+      "role": "evidence_critic",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_evidence_critic",
+      "contract_version": "1.1.0",
+      "prompt_version": "1.1.0",
+      "prompt_digest": "sha256:559f0820681804ddb48d824871c48f64da4406ab85922f0a5dbb8f84dd2be7a3",
+      "prompt_file": "prompts/evidence_critic.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [],
+      "recommended_model": "gemini-3.8-flash",
+      "model_admission_status": "not_verified"
+    },
+    {
+      "role": "product_memory_editor",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_product_memory_editor",
+      "contract_version": "1.1.0",
+      "prompt_file": "prompts/product_memory_editor.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [],
+      "prompt_version": "1.1.0",
+      "recommended_model": "gemini-3.8-flash",
+      "model_admission_status": "not_verified",
+      "prompt_digest": "sha256:4de2bef52cabf52f8401a34454dd8021d05a90e016a1b14af53c858e8a593434"
+    }
+  ],
+  "memory_roles": {
+    "product_memory": "Primary read-only role; selector product_id; binding pending",
+    "product_memory_update": "Primary mutable role; not admitted; apply blocked",
+    "group_memory": "Optional read-only role; never requested by default",
+    "group_memory_update": "Optional separate mutation; not admitted"
+  },
+  "blocked": [
+    "child_owned_agent_session",
+    "exact_agent_admission",
+    "dynamic_product_role_binding",
+    "source_retrieval_integration",
+    "mutable_skill_and_retention_before_apply",
+    "ecs_callable_parity",
+    "durable_resume",
+    "exact_test_database_lake_file_object_binding",
+    "source_event_evidence_retrieval",
+    "signed_child_file_object_composition"
+  ],
+  "defaults": {
+    "enable_pharmacological_class": false,
+    "memory_mode": "preview"
+  },
+  "governed_source_candidate": {
+    "lake_id": "test_database_lake",
+    "node_key": "clinical_development_events",
+    "format": "jsonl",
+    "source_schema": "clinical_event_source.v1",
+    "role": "clinical_context",
+    "ownership": "binding",
+    "file_object_id": "configure_from_Core_authorized_object_id",
+    "live_binding_status": "unverified"
+  }
+}

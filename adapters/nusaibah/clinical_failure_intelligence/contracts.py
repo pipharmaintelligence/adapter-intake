@@ -11,7 +11,7 @@ from typing import Any
 
 JsonObject = dict[str, Any]
 ASSET_KEY = "nusaibah.clinical_failure_intelligence"
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 SCHEMA = "clinical_failure_intelligence.v1"
 REQUEST_SCHEMA = "clinical_analysis_request.v1"
 ROLE_SCHEMA = "clinical_agent_response.v1"
@@ -150,7 +150,7 @@ def parse_request(inputs: Any) -> JsonObject:
     require(isinstance(inputs, dict), "clinical_inputs_invalid")
     require(set(inputs) == {"variables", "clinical_context"}, "clinical_input_roles_invalid")
     values = object_fields(inputs["variables"], {"schema_version", "request_id", "analysis_mode",
-        "subject_id", "as_of_date", "event_ids"}, {"memory_mode", "enable_refinement", "enable_pharmacological_class"})
+        "subject_id", "as_of_date", "event_ids"}, {"memory_mode", "enable_refinement", "enable_pharmacological_class", "product_id", "indication_id", "trial_id", "source_object_id"})
     safe_json(values)
     require(values["schema_version"] == REQUEST_SCHEMA, "clinical_request_schema_invalid")
     require(isinstance(values["analysis_mode"], str) and values["analysis_mode"] in {"mechanistic_case", "cohort_pattern"}, "clinical_mode_invalid")
@@ -162,14 +162,30 @@ def parse_request(inputs: Any) -> JsonObject:
     # Callable mutation and retention-before-apply are not admitted in this release.
     require(isinstance(memory_mode, str) and memory_mode in {"off", "preview"}, "clinical_memory_apply_not_admitted")
     require(type(values.get("enable_refinement", False)) is bool, "clinical_refinement_flag_invalid")
-    context = object_fields(inputs["clinical_context"], {"schema_version", "context_id", "subject",
-        "event_ids", "source_assertions", "evidence", "cohort"}, {"case_scope"})
+    for selector in ("product_id", "indication_id", "trial_id"):
+        if values.get(selector) is not None:
+            identifier(values[selector])
+    if values.get("source_object_id") is not None:
+        require(type(values["source_object_id"]) is int and values["source_object_id"] > 0,
+                "clinical_source_object_selector_invalid")
+    source_input = inputs["clinical_context"]
+    if isinstance(source_input, dict) and set(source_input) == {"records", "provenance"}:
+        if __package__:
+            from .source_events import normalize_event_records
+        else:
+            from source_events import normalize_event_records
+        source_input = normalize_event_records(values, source_input)
+    context = object_fields(source_input, {"schema_version", "context_id", "subject",
+        "event_ids", "source_assertions", "evidence", "cohort"}, {"case_scope", "source_event_metadata"})
     safe_json(context)
     require(context["schema_version"] == "clinical_context.v1", "clinical_context_schema_invalid")
     identifier(context["context_id"])
     subject = object_fields(context["subject"], {"subject_id", "product_id", "product_name",
         "pharmacological_group_id", "indication", "regimen", "trial_ids"})
     require(subject["subject_id"] == values["subject_id"], "clinical_subject_mismatch")
+    if values.get("product_id") is not None:
+        require(subject["product_id"] == values["product_id"],
+                "clinical_source_product_scope_mismatch")
     for key in ("product_id", "pharmacological_group_id"):
         if subject[key] is not None:
             identifier(subject[key])
@@ -187,14 +203,32 @@ def parse_request(inputs: Any) -> JsonObject:
     if class_enabled:
         require(subject["pharmacological_group_id"] is not None, "clinical_class_identity_required")
     if values["analysis_mode"] == "mechanistic_case" and memory_mode != "off":
-        scope = object_fields(context.get("case_scope"), {"indication_id", "trial_id", "regimen_id"})
-        for field in scope:
-            identifier(scope[field])
-        require(subject["trial_ids"] == [scope["trial_id"]], "clinical_memory_requires_single_trial_scope")
+        scope = object_fields(context.get("case_scope"), {"indication_id", "trial_id", "regimen_id"},
+                              {"event_id"})
+        identifier(scope["indication_id"])
+        for field in ("trial_id", "regimen_id"):
+            if scope[field] is not None:
+                identifier(scope[field])
+        if scope["trial_id"] is None:
+            require(subject["trial_ids"] == [] and len(context["event_ids"]) == 1
+                    and scope.get("event_id") == context["event_ids"][0],
+                    "clinical_memory_unreported_trial_requires_event_scope")
+        else:
+            require(subject["trial_ids"] == [scope["trial_id"]],
+                    "clinical_memory_requires_single_trial_scope")
+        if values.get("indication_id") is not None:
+            require(values["indication_id"] == scope["indication_id"],
+                    "clinical_source_indication_scope_mismatch")
+        if values.get("trial_id") is not None:
+            require(values["trial_id"] == scope["trial_id"],
+                    "clinical_source_trial_scope_mismatch")
     elif "case_scope" in context:
-        scope = object_fields(context["case_scope"], {"indication_id", "trial_id", "regimen_id"})
-        for field in scope:
-            identifier(scope[field])
+        scope = object_fields(context["case_scope"], {"indication_id", "trial_id", "regimen_id"},
+                              {"event_id"})
+        identifier(scope["indication_id"])
+        for field in ("trial_id", "regimen_id"):
+            if scope[field] is not None:
+                identifier(scope[field])
     require(isinstance(context["source_assertions"], list) and len(context["source_assertions"]) <= 32,
             "clinical_source_assertions_invalid")
     seen: set[str] = set()

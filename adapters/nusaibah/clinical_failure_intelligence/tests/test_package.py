@@ -39,7 +39,7 @@ class PackageTests(unittest.TestCase):
     def test_manifest_identity_and_binding_ownership(self):
         data = json.loads((ASSET_ROOT / 'clinical_failure_intelligence.asset.json').read_text()); meta = declaration()
         self.assertEqual(data['key'], meta['asset_key']); self.assertEqual(data['default'], meta['asset_version'])
-        version = data['versions']['0.1.1']; self.assertEqual('binding', version['inputs']['clinical_context']['source'])
+        version = data['versions']['0.1.2']; self.assertEqual('binding', version['inputs']['clinical_context']['source'])
         self.assertNotIn('runtime_skills', version); self.assertNotIn('callable_assets', version)
         self.assertEqual(['local_worker'], data['execution']['allowed_substrates'])
     def test_role_references_and_prompt_hashes(self):
@@ -55,7 +55,7 @@ class PackageTests(unittest.TestCase):
                    for p in sorted(skill.rglob('*')) if p.is_file()]
         sha = 'sha256:' + hashlib.sha256(canonical_bytes(entries)).hexdigest()
         manifest = json.loads((ASSET_ROOT / 'clinical_failure_intelligence.asset.json').read_text())
-        self.assertEqual(sha, manifest['versions']['0.1.1']['skills'][0]['digest'])
+        self.assertEqual(sha, manifest['versions']['0.1.2']['skills'][0]['digest'])
     def test_source_seed_indices_are_not_gold_verdicts(self):
         seeds = json.loads((ASSET_ROOT / 'references/source_hypothesis_catalog.json').read_text())
         self.assertEqual(13, len(seeds)); self.assertTrue(all(x['verdict'] == 'untested' for x in seeds))
@@ -85,7 +85,7 @@ b=types.ModuleType('adapters.base');b.Adapter=type('Adapter',(),{})
 sys.modules['adapters']=a;sys.modules['adapters.base']=b
 m=importlib.import_module(sys.argv[2])
 classes=[x for x in vars(m).values() if isinstance(x,type) and getattr(x,'key',None)=='nusaibah.clinical_failure_intelligence']
-assert len(classes)==1 and classes[0].version=='0.1.1'
+assert len(classes)==1 and classes[0].version=='0.1.2'
 print('declared_import_closure_passed')
 """
             for package_mode in (True, False):
