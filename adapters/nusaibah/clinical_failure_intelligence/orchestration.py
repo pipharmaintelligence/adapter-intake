@@ -7,6 +7,7 @@ if __package__:
     from .contracts import ASSET_KEY, SCHEMA, VERSION, RESEARCH_ROLES, ContractError, canonical_bytes, digest, identifiers, parse_request, require
     from .policies import Budget, ExecutionPolicy
     from .runtime_access import AgentRunner, StageResult
+    from .research_sources import acquire_sources
     from .evidence import EvidenceLedger
     from .cohort import compute_statistics
     from .quality import OUTCOMES, enforce_consistency, normalize_items, review_items, validate_dependencies, withhold
@@ -17,6 +18,7 @@ else:
     from contracts import ASSET_KEY, SCHEMA, VERSION, RESEARCH_ROLES, ContractError, canonical_bytes, digest, identifiers, parse_request, require
     from policies import Budget, ExecutionPolicy
     from runtime_access import AgentRunner, StageResult
+    from research_sources import acquire_sources
     from evidence import EvidenceLedger
     from cohort import compute_statistics
     from quality import OUTCOMES, enforce_consistency, normalize_items, review_items, validate_dependencies, withhold
@@ -82,8 +84,11 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
     runner = AgentRunner(inputs, budget)
     stages: list[StageResult] = []
     issues: list[dict] = []
-    if "source_event_metadata" in context and not context["evidence"]:
-        # A source-sheet signal is not a verified clinical outcome.
+    # Only provider-native citations inspected through the trusted bridge can
+    # enrich the ledger; supplied event assertions never become evidence.
+    if callable(getattr(inputs, "open_reference", None)):
+        issues.extend(acquire_sources(inputs, request, runner, budget, ledger, stages))
+    if "source_event_metadata" in context and not ledger.rows():
         issues.append({"code": "clinical_source_only_independent_evidence_required"})
     claims: list[dict] = []
     common = {"source_assertions": context["source_assertions"], "methodology": methodology,
