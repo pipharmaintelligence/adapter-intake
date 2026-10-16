@@ -11,7 +11,7 @@ from typing import Any
 
 JsonObject = dict[str, Any]
 ASSET_KEY = "nusaibah.clinical_failure_intelligence"
-VERSION = "0.1.2"
+VERSION = "0.1.1"
 SCHEMA = "clinical_failure_intelligence.v1"
 REQUEST_SCHEMA = "clinical_analysis_request.v1"
 ROLE_SCHEMA = "clinical_agent_response.v1"
