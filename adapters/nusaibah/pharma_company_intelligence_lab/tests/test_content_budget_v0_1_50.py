@@ -159,6 +159,7 @@ class ContentBudgetTests(unittest.TestCase):
                 self.assertEqual(old['agents'][role], agent)
                 continue
             self.assertNotEqual(old['agents'][role]['contract_version'], agent['contract_version'])
+            self.assertEqual(agent['contract_version'], agent['definition']['chain']['version'])
             step = agent['definition']['chain']['steps'][0]
             self.assertIn('ROLE-SPECIFIC COVERAGE:', step['input']['text'])
             self.assertLessEqual(len(step['input']['text']), 8192)
