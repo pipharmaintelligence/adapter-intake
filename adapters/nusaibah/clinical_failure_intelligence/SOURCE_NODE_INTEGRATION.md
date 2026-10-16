@@ -1,10 +1,10 @@
-# PI-2061 — governed source node compatibility, development 0.1.2
+# PI-2061 — governed source node compatibility, development 0.1.1
 
 ## Intended source and ownership
 
 The user reports an upload into lake test_database_lake, node clinical_development_events. The expected object is the prior clinical_event_source.v1 JSONL (508 original event rows). This repo neither fetches that object nor supplies credentials. Core retains lake/node/storage authority.
 
-The exact asset identity is python_asset:nusaibah.clinical_failure_intelligence@0.1.2, logical role clinical_context with required source=binding and shape=object. No fallback to source=either/direct. Use the DLM/Assets authoring and readiness workflow to bind this specific node/asset-version/client/role. For an unpartitioned JSONL object, file_object with a Core-approved numeric object ID mapped from source_object_id is a candidate; never substitute event_id for the object ID.
+The exact asset identity is python_asset:nusaibah.clinical_failure_intelligence@0.1.1, logical role clinical_context with required source=binding and shape=object. No fallback to source=either/direct. Use the DLM/Assets authoring and readiness workflow to bind this specific node/asset-version/client/role. For an unpartitioned JSONL object, file_object with a Core-approved numeric object ID mapped from source_object_id is a candidate; never substitute event_id for the object ID.
 
 The existing runtime file-input record projection yields {records: [...], provenance: {...}}, with runtime-attested complete, source_ref, access_mode, record_count, sha256. Select a complete json_object /records materializer with max_records at least 508 and adequate max_bytes. Upload acceptance alone does not prove the object format, active object identity, binding readiness or child compatibility. If the actual uploaded object is XLSX, do not relabel it JSONL: inspect/migrate through a governed source workflow before this mapping.
 
