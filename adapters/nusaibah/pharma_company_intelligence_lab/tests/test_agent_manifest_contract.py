@@ -397,7 +397,7 @@ class PackagedAgentDefinitionTests(unittest.TestCase):
         self.assertEqual(
             {
                 "name": "pi-obs-python-runtime",
-                "minimum_version": "0.1.98",
+                "minimum_version": "0.1.108",
             },
             dependency_manifest["runtime_package"],
         )

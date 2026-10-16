@@ -6141,7 +6141,7 @@
         },
         "strategic_analyst": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_strategic_analyst",
-          "contract_version": "1.0.8",
+          "contract_version": "1.0.9",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-strategic-analyst",
           "definition": {
             "registry_entries": [
@@ -6172,7 +6172,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_strategic_analyst",
-              "version": "1.0.8",
+              "version": "1.0.9",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -6182,7 +6182,7 @@
                   "provider": "vertex_ai",
                   "provider_policy": {
                     "provider": "vertex_ai",
-                    "model": "gemini-3.1-pro-preview",
+                    "model": "gemini-4-argon",
                     "provider_vault": {
                       "provider_instance_ref": "vertex-primary",
                       "provider_family": "vertex_ai",
@@ -6226,7 +6226,7 @@
         },
         "evidence_critic": {
           "contract_key": "agent.nusaibah.pharma_company_intelligence_lab_evidence_critic",
-          "contract_version": "1.0.15",
+          "contract_version": "1.0.16",
           "reference": "agent://contracts/nusaibah.pharma-company-intelligence-lab-evidence-critic",
           "definition": {
             "registry_entries": [
@@ -6257,7 +6257,7 @@
             ],
             "chain": {
               "chain_id": "agent.nusaibah.pharma_company_intelligence_lab_evidence_critic",
-              "version": "1.0.15",
+              "version": "1.0.16",
               "visibility": "internal",
               "status": "active",
               "steps": [
@@ -6267,7 +6267,7 @@
                   "provider": "vertex_ai",
                   "provider_policy": {
                     "provider": "vertex_ai",
-                    "model": "gemini-3.1-pro-preview",
+                    "model": "gemini-4-argon",
                     "provider_vault": {
                       "provider_instance_ref": "vertex-primary",
                       "provider_family": "vertex_ai",
