@@ -1,6 +1,6 @@
 {
   "document_kind": "admission_requirements_not_runtime_authority",
-  "asset": "nusaibah.clinical_failure_intelligence@0.1.2",
+  "asset": "nusaibah.clinical_failure_intelligence@0.1.1",
   "implementation_stage": "provider_free_development",
   "agent_contracts": [
     {
@@ -13,7 +13,7 @@
       "provider_binding_status": "not_selected",
       "role_admission_status": "not_admitted",
       "capabilities_required": [
-        "clinical_trial_search_and_read"
+        "vertex_provider_grounding_intent"
       ],
       "recommended_model": "gemini-3.8-flash",
       "model_admission_status": "not_verified"
@@ -28,7 +28,7 @@
       "provider_binding_status": "not_selected",
       "role_admission_status": "not_admitted",
       "capabilities_required": [
-        "pubmed_search_and_read"
+        "vertex_provider_grounding_intent"
       ],
       "recommended_model": "gemini-3.8-flash",
       "model_admission_status": "not_verified"
@@ -43,7 +43,7 @@
       "provider_binding_status": "not_selected",
       "role_admission_status": "not_admitted",
       "capabilities_required": [
-        "native_grounded_search"
+        "vertex_provider_grounding_intent"
       ],
       "recommended_model": "gemini-3.8-flash",
       "model_admission_status": "not_verified"
@@ -117,7 +117,9 @@
     "durable_resume",
     "exact_test_database_lake_file_object_binding",
     "source_event_evidence_retrieval",
-    "signed_child_file_object_composition"
+    "signed_child_file_object_composition",
+    "exact_child_public_web_http_admission",
+    "combined_grounded_search_http_evidence_proof"
   ],
   "defaults": {
     "enable_pharmacological_class": false,
