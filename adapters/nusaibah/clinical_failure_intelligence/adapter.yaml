@@ -1,0 +1,55 @@
+asset_key: nusaibah.clinical_failure_intelligence
+asset_version: 0.1.1
+package_target: python_runtime/adapters/intake/nusaibah/clinical_failure_intelligence
+manifest: clinical_failure_intelligence.asset.json
+adapter_module: clinical_failure_intelligence_adapter.py
+
+reviewed_helpers:
+  - __init__.py
+  - cohort.py
+  - contracts.py
+  - evidence.py
+  - memory.py
+  - product_memory.py
+  - orchestration.py
+  - policies.py
+  - prompt_catalog.py
+  - quality.py
+  - rendering.py
+  - runtime_access.py
+  - research_sources.py
+  - source_events.py
+
+reviewed_support_files:
+  - admission_requirements.json
+  - prompts/common.md
+  - prompts/product_memory_editor.md
+  - prompts/event_researcher.md
+  - prompts/evidence_critic.md
+  - prompts/hypothesis_analyst.md
+  - prompts/literature_researcher.md
+  - prompts/outcome_adjudicator.md
+  - prompts/response_repair.md
+  - prompts/trial_researcher.md
+  - schemas/analysis_request.v1.schema.json
+  - schemas/clinical_intelligence.v1.schema.json
+  - schemas/hypothesis.v1.schema.json
+  - references/source_hypothesis_catalog.json
+
+optional_files:
+  - README.md
+  - CHECKLIST.md
+  - LESSONS_LEARNED.md
+  - ASSETS_HANDOFF.md
+  - VERIFICATION.md
+  - PRODUCT_MEMORY_REVISION.md
+  - GEMINI_PROMPT_PROFILE.md
+  - SOURCE_NODE_INTEGRATION.md
+
+release_stage: development
+
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false
