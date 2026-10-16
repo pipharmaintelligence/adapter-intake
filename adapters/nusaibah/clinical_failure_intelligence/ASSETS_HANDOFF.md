@@ -9,7 +9,7 @@ No Assets, Core, UI, deployment or installed-wheel change is included in this PR
 Inspect app/Services/Observability/Agents/DirectRuntimeCallablePlanBuilder.php,
 python_runtime/devtools/trusted_runtime_callable_invocation.py and
 python_runtime/devtools/agent_execution_mcp_executor.py::_safe_callable_context.
-The inspected child path does not attach its own Agent/public-reference bridge.
+Merged Assets PR #633 attaches child-scoped Agent and public-reference bridges in the generic callable path; clinical combined live qualification remains outstanding.
 Build capabilities from the exact admitted child manifest and run/client scope.
 Never borrow unrestricted parent authority.
 
@@ -18,8 +18,7 @@ result, plus wrong-client/role/revocation/deadline/isolation negative tests.
 
 ## A2. Governed clinical context - Assets/input resolver, blocking
 
-The existing direct-callable plan supports bounded fixed/prepared Runtime Source
-inputs, not arbitrary node/DB dataset handoff. Agree real parent selectors and event
+Merged Assets PR #633 supports the deferred child-owned file_object binding selector; actual Core object/binding readiness remains unverified. Agree real parent selectors and event
 DTO, then resolve the binding-owned clinical_context before child execution. Preserve
 event/product/trial identity, versions, dates, cohort grain and denominators.
 Do not smuggle records as a JSON string in variables, weaken binding overrides or
@@ -27,10 +26,10 @@ rename row filters into partitions. Core work is conditional on an observed Core
 
 ## A3. Research capabilities and source projection - Assets/config + adapter
 
-Admit exact ClinicalTrials.gov and PubMed semantic search/read capabilities. Keep
+Admit provider-grounded discovery for the clinical research roles and trusted child-owned HTTP reference inspection; citations are leads until source text is inspected. Keep
 native grounded event search separate unless that precise search+tool path is proven.
 Integrate safe retrieved source projections into evidence.py; current code only
-assesses the supplied context. A generated URL cannot self-attest source retrieval.
+assesses the supplied context. A generated URL cannot self-attest source retrieval; the adapter now projects only native provider citations and inspects them through trusted public-web.
 
 Reuse AgentCitationView/ReferenceTarget/open_reference primitives where admitted.
 Preserve citation origin, actual accessible extent, source/window digest and dates.
@@ -61,7 +60,7 @@ concrete missing authority/persistence contract.
 
 ## A6. ECS parity - Assets, separate release gate
 
-The inspected DirectRuntimeCallablePlanBuilder permits local_worker only. Prove the
+Clinical manifest remains local_worker-only; ECS is a separate qualification gate. Prove the
 generic ECS path, exact image/package, child capabilities, bounds, cleanup and terminal
 result before expanding this manifest. Green intake CI is not an ECS deployment.
 
