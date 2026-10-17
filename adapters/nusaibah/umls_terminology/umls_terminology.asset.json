@@ -27,8 +27,46 @@
         },
         "umls_response": {
           "required": false,
-          "source": "binding",
-          "shape": "object"
+          "source": "direct",
+          "shape": "object",
+          "contract": {
+            "source": {
+              "type": "api",
+              "authority": "dlm_core",
+              "reference": {
+                "service": "umls_terminology_search",
+                "runtime_source_reference_only": true,
+                "runtime_source_operation": "search",
+                "runtime_source_capability_ref": "umls.terminology.search",
+                "runtime_source_resolve": "eager"
+              }
+            },
+            "schema": {
+              "source": "governed"
+            },
+            "partitioning": {
+              "mode": "none",
+              "source": "none",
+              "dimensions": []
+            },
+            "access": {
+              "mode": "service"
+            },
+            "execution": {
+              "strategy": "single_call",
+              "developer_hint": "Resolve an approved UMLS search source through the trusted worker."
+            },
+            "explainability": {
+              "summary": "Governed UMLS terminology search records.",
+              "logic": "Only a typed Core-authorized Runtime Source reference is admitted; the worker resolves records."
+            },
+            "capabilities": {
+              "preview": {
+                "supported": false,
+                "default_in_developer_env": false
+              }
+            }
+          }
         }
       },
       "outputs": {
