@@ -200,7 +200,7 @@ class ContainedValidationTests(unittest.TestCase):
 
     def test_release_contracts_and_existing_synthesis_fix_are_preserved(self):
         manifest=json.loads((ROOT/'nusaibah_pharma_company_intelligence_lab.asset.json').read_text())
-        self.assertEqual('0.1.47',manifest['default'])
+        self.assertIn('0.1.47',manifest['versions'])
         self.assertEqual(manifest['versions']['0.1.46'],manifest['versions']['0.1.47'])
 
 

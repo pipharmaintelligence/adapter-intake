@@ -1,0 +1,11 @@
+# Pharma 0.1.51: independent finalization and bounded critic batching
+
+Requires official runtime SDK >=0.1.110 and exact critic contract 1.0.18 admission. The execution envelope is 2,100 seconds to reserve room for bounded finalization after the unchanged 1,650-second orchestration budget; this is a ceiling, not a target duration. Other Agent contracts, model policies, fixed methodology, governed input bindings and Dynamic Skill authorities are unchanged.
+
+The adapter factors identical fields across up to three independent critic packets and expands them without dropping evidence, qualifications, negative findings or required IDs. Each returned review passes the existing original validator. Missing, duplicated or malformed pieces remain unresolved; valid sibling findings survive. Oversized groups use the unchanged single-packet path. The coordinator still caps concurrent Agent calls at three and preserves role/session budgets. This reduces repeated prompt/context and invocation overhead without reducing research or synthesis content.
+
+The trusted worker journals a closed, content-free publication decision before attempting the large report archive. It records candidate presence, byte/character counts, validation reason, commit/readback/history flags and safe operation references. This is adapter decision evidence, never Core commit authority or permission for paid replay. Missing proof means unverified. Preview remains read-only. Dossier status explicitly distinguishes preview, published, no-change, withheld and unverified outcomes.
+
+Canonical memory capacity remains 384,000 characters / 960 KiB. Report and output budgets remain 1,760 KiB and 2 MiB. Optional report compaction does not rewrite canonical memory or the independent decision receipt. Artifact expiry remains Core policy; canonical memory follows governed lake/node publication.
+
+Provider-free parity and fault checks are required before immutable promotion. Fewer critic calls are an optimization mechanism, not measured wall-time proof. Claim 25–50% savings only after comparable new-version qualification demonstrates equivalent accepted evidence, coverage, citations and canonical content. Never rerun an old paid workflow merely to repair retention or recover historical diagnostics.
