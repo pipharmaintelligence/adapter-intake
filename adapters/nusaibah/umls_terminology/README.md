@@ -24,22 +24,31 @@ All operations share one `terminology_result` output role. In this draft,
 | Semantic-network type | `semantic_type_get` | `tui` |
 | Vocabulary list | `vocabularies` | none; `limit` optional |
 
-The `umls_response` is a **direct reference-only API role**: the Assets server
-must validate it before the existing trusted worker fetch. It is not a
-caller-supplied records field. Local deterministic fixtures use a strict normalized envelope
-with `operation`, `status`, `records` and exact `provenance.release`.
-The adapter can now also normalize the current *trusted worker* shape
-`{"records": [...], "metadata": {...}}` for plain `search` only. Worker
-pagination fields are checked; unavailable UMLS release, retrieval timestamp,
-query attestation and pagination completeness are not invented (`null` is
-preserved). Empty records do not assert `not_found`.
+The `umls_response` input is an optional **direct technical API role**,
+like the existing ClinicalTrials.gov lazy source roles. A real Assets run must
+attach one Core-approved Runtime Source reference to this role with
+`resolve: lazy`. Python calls the worker-provided `inputs.invoke` bridge; it
+does **not** trust caller-supplied records or obtain provider credentials.
 
-**Admission requires the reviewed Assets guard change.** The opt-in
-`runtime_source_reference_only` contract rejects caller-supplied records and
-requires an exact operation/capability reference before trusted worker fetch.
-This intake PR MUST NOT be released against older Assets builds that lack the
-guard. An intake-only CI pass is insufficient; the Assets guard and full
-package CI must pass together. No provider URL or authority moves into Python.
+Currently **only `describe` and plain `search` are connected to this governed
+execution path**. `search` builds the bounded allowlisted request parameters
+`string`, `searchType`, and optional `sabs` from validated business selectors.
+Confirm those keys against the operator's saved Runtime Source allowlist before
+the first signed run. Other listed operations retain deterministic normalization
+tests but require separate reviewed source mappings before live execution.
+
+Local test fixtures use a *pure normalization helper* and may supply a strict
+synthetic operation/status/release envelope. Production adapter invocation
+always requires the trusted lazy invoker returning
+`{"records": [...], "metadata": {...}}`. No fallback to direct records exists.
+Unknown UMLS release, retrieval timestamp, search-query attestation and upstream
+pagination completeness remain unknown rather than invented.
+
+This design uses an existing worker bridge instead of creating a shared Assets
+admission mechanism. The draft eager-only guard in Assets PR #648 is **not a
+prerequisite for the lazy UMLS lane**. A signed, exact-asset run is still required
+before calling this execution path live-qualified.
+
 
 ### Example business requests
 
@@ -77,23 +86,30 @@ package CI must pass together. No provider URL or authority moves into Python.
 
 ## Current technical boundaries
 
-The draft manifest keeps `variables` optional and direct and
-`umls_response` optional and server-guarded direct API reference-only. `describe` performs no fetch in
-adapter code. Worker `search` normalization is tested with synthetic inputs;
-this does not establish signed end-to-end adapter admission.
+The manifest keeps `variables` optional/direct and `umls_response`
+optional/direct as a technical Core API reference. The adapter never accepts
+direct provider data as proof. `describe` requires no retrieval. For a live
+`search` the operator-selected source reference must name the confirmed
+`search` operation and `umls.terminology.search` capability, with lazy resolution;
+the signed worker must provide the invoker in `local_worker` or ECS.
 
-No Runtime Source ID, API key, target, exact provider-request builder,
-UMLS pagination policy, raw UMLS payload contract, credential, output
-publication, helper-owned HTTP or source-specific Core/UI change has been
-configured here. The adapter is not a generic UMLS HTTP executor.
+No Runtime Source ID, API key, provider target, storage placement, output
+publication, or secret configuration is embedded in the adapter. This is not a
+generic UMLS HTTP executor.
+
+For future clinical-failure intelligence, this same mechanism can supply
+bounded, source-attributed terminology evidence alongside independently
+authorized clinical-trial inputs. It does not establish target engagement,
+mechanism causality, outcome efficacy or clinical-failure attribution.
+
 
 Current source accepts a maximum of 200 pre-normalized input records and
 projects a caller-bounded maximum of 50 records. It does not implement
 provider paging or guarantee full retrieval; that belongs to the trusted
 Runtime Source helper after runtime approval.
 
-Tests use synthetic, source-informed fixtures including worker hydration
-shapes, not live provider records. The separately verified UMLS Runtime Source
+Tests use synthetic, source-informed fixtures and a fake worker-attached lazy
+invoker, not live provider records. The separately verified UMLS Runtime Source
 search primitive does not establish packaged adapter execution, signed-worker
 admission, semantic correctness or ECS deployment.
 

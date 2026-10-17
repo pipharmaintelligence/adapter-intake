@@ -6,20 +6,21 @@ from __future__ import annotations
 
 import pytest
 
-from umls_terminology_adapter import UmlsTerminologyAdapter, SUPPORTED_OPERATIONS
+from umls_terminology_adapter import (
+    SUPPORTED_OPERATIONS, _normalize_terminology_result, _validate_request,
+)
 
 
 def call(variables, records, *, status="ok", release="2026AA", truncated=False):
-    return UmlsTerminologyAdapter().invoke({
-        "variables": variables,
-        "umls_response": {
-            "operation": variables["operation"],
-            "status": status,
-            "records": records,
-            "truncated": truncated,
-            "provenance": {"release": release, "retrieved_at": "2026-10-17T18:00:00Z"},
-        },
-    }, {})["outputs"]["terminology_result"]
+    """Exercise projection only; no runtime role is fabricated in these fixtures."""
+    payload = {
+        "operation": variables["operation"],
+        "status": status,
+        "records": records,
+        "truncated": truncated,
+        "provenance": {"release": release, "retrieved_at": "2026-10-17T18:00:00Z"},
+    }
+    return _normalize_terminology_result(_validate_request(variables), payload)
 
 
 def test_concept_semantic_types_can_be_name_and_tui_uri():
@@ -151,10 +152,10 @@ def test_numeric_identifier_is_not_coerced():
 
 def test_bad_provenance_fails_closed():
     with pytest.raises(ValueError, match="umls_provenance_retrieved_at_invalid"):
-        UmlsTerminologyAdapter().invoke({
-            "variables": {"operation": "search", "text": "gene"},
-            "umls_response": {
+        _normalize_terminology_result(
+            _validate_request({"operation": "search", "text": "gene"}),
+            {
                 "operation": "search", "status": "ok", "records": [],
                 "provenance": {"release": "2026AA", "retrieved_at": {"secret": "x"}},
             },
-        }, {})
+        )

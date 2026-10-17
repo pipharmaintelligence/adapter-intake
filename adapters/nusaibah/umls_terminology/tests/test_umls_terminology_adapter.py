@@ -4,16 +4,35 @@ from __future__ import annotations
 
 import pytest
 
-from umls_terminology_adapter import UmlsTerminologyAdapter
+from umls_terminology_adapter import (
+    UmlsTerminologyAdapter, _normalize_terminology_result, _validate_request,
+)
 
 
 def invoke(variables=None, payload=None):
+    """Keep offline normalization fixtures distinct from a governed invocation."""
+    if payload is not None:
+        return _normalize_terminology_result(_validate_request(variables), payload)
     inputs = {}
     if variables is not None:
         inputs["variables"] = variables
-    if payload is not None:
-        inputs["umls_response"] = payload
     return UmlsTerminologyAdapter().invoke(inputs, {})["outputs"]["terminology_result"]
+
+
+class FakeLazyRuntimeInputs(dict):
+    """Test-only worker-attached role; JSON callers cannot supply this invoker."""
+
+    def __init__(self, variables, resolved, *, failure=None):
+        super().__init__({"variables": variables, "umls_response": {"records": []}})
+        self.resolved = resolved
+        self.failure = failure
+        self.calls = []
+
+    def invoke(self, role, *, variables, on_error):
+        self.calls.append((role, variables, on_error))
+        if self.failure is not None:
+            raise self.failure
+        return self.resolved
 
 
 def response(operation, records, *, status="ok", release="2026AA"):
@@ -87,8 +106,8 @@ def test_source_operation_mismatch_is_not_a_success():
 
 
 def test_governed_input_required_for_real_operation():
-    with pytest.raises(ValueError, match="not_resolved"):
-        invoke({"operation": "concept_get", "cui": "C0004057"})
+    with pytest.raises(ValueError, match="runtime_source_not_prepared"):
+        invoke({"operation": "search", "text": "BRCA1"})
 
 
 def test_missing_release_is_not_a_success():
@@ -185,8 +204,8 @@ def test_unmapped_gene_search_does_not_use_plain_search_records_as_proof():
         invoke({"operation": "gene_search", "text": "BRCA1"}, worker_response([]))
 
 
-def test_manifest_requires_server_reference_only_guard():
-    """Do not weaken the role before Assets has a reference-only admission gate."""
+def test_manifest_declares_existing_lazy_api_role():
+    """The role matches ClinicalTrials-style API references without a new guard."""
     import json
     from pathlib import Path
 
@@ -195,8 +214,87 @@ def test_manifest_requires_server_reference_only_guard():
     )
     assert manifest["key"] == "umls_terminology"
     assert manifest["default"] == "0.1.0"
-    assert manifest["versions"]["0.1.0"]["inputs"]["umls_response"]["source"] == "direct"
-    ref = manifest["versions"]["0.1.0"]["inputs"]["umls_response"]["contract"]["source"]["reference"]
-    assert ref["runtime_source_reference_only"] is True
-    assert ref["runtime_source_operation"] == "search"
-    assert ref["runtime_source_capability_ref"] == "umls.terminology.search"
+    role = manifest["versions"]["0.1.0"]["inputs"]["umls_response"]
+    assert role["source"] == "direct" and role["shape"] == "object"
+    assert role["contract"]["source"]["type"] == "api"
+    assert role["contract"]["source"]["authority"] == "dlm_core"
+    assert role["contract"]["source"]["reference"] == {"service": "umls_terminology_search"}
+
+
+def test_lazy_search_requests_only_declared_governed_parameters():
+    params = {"operation": "search", "text": " BRCA1 ", "search_type": "exact", "sources": ["SNOMEDCT_US", "RXNORM"]}
+    inputs = FakeLazyRuntimeInputs(params, worker_response([{"ui": "C0000001", "name": "BRCA1"}]))
+    result = UmlsTerminologyAdapter().invoke(inputs, {})["outputs"]["terminology_result"]
+    assert inputs.calls == [(
+        "umls_response",
+        {"string": "BRCA1", "searchType": "exact", "sabs": "SNOMEDCT_US,RXNORM"},
+        "raise",
+    )]
+    assert result["records"][0]["name"] == "BRCA1"
+    assert result["provenance"]["release"] is None
+    assert result["completeness"]["truncated"] is None
+
+
+def test_lazy_worker_brac1_two_record_projection():
+    params = {"operation": "search", "text": "BRCA1"}
+    runtime = FakeLazyRuntimeInputs(params, worker_response([
+        {"ui": "C0000001", "name": "BRCA1"},
+        {"ui": "C0000002", "name": "BRCA1 gene"},
+    ]))
+    result = UmlsTerminologyAdapter().invoke(runtime, {})["outputs"]["terminology_result"]
+    assert runtime.calls == [("umls_response", {"string": "BRCA1", "searchType": "words"}, "raise")]
+    assert result["completeness"] == {"returned_count": 2, "truncated": None}
+    assert result["query_attested"] is False
+
+
+def test_describe_does_not_fetch_even_when_lazy_role_exists():
+    inputs = FakeLazyRuntimeInputs({"operation": "describe"}, worker_response([]))
+    result = UmlsTerminologyAdapter().invoke(inputs, {})["outputs"]["terminology_result"]
+    assert result["operation"] == "describe"
+    assert inputs.calls == []
+
+
+def test_caller_supplied_records_never_satisfy_runtime_invoker():
+    malicious_input = {
+        "variables": {"operation": "search", "text": "BRCA1"},
+        "umls_response": worker_response([{"ui": "C0000001", "name": "Forged concept"}]),
+    }
+    with pytest.raises(ValueError, match="runtime_source_not_prepared"):
+        UmlsTerminologyAdapter().invoke(malicious_input, {})
+
+
+def test_plain_runtime_dict_without_selected_source_is_rejected():
+    runtime = {"variables": {"operation": "search", "text": "BRCA1"}}
+    with pytest.raises(ValueError, match="runtime_source_not_prepared"):
+        UmlsTerminologyAdapter().invoke(runtime, {})
+
+
+def test_failed_lazy_fetch_is_value_safe():
+    runtime = FakeLazyRuntimeInputs(
+        {"operation": "search", "text": "BRCA1"},
+        worker_response([]),
+        failure=RuntimeError("confidential provider response"),
+    )
+    with pytest.raises(ValueError, match="^umls_runtime_source_fetch_failed$") as exc:
+        UmlsTerminologyAdapter().invoke(runtime, {})
+    assert "confidential" not in str(exc.value)
+
+
+def test_non_worker_envelopes_fail_from_the_runtime_invoker():
+    runtime = FakeLazyRuntimeInputs(
+        {"operation": "search", "text": "BRCA1"},
+        response("search", [{"ui": "C0000001"}]),
+    )
+    with pytest.raises(ValueError, match="runtime_source_envelope_invalid"):
+        UmlsTerminologyAdapter().invoke(runtime, {})
+
+
+def test_unconfigured_gene_and_mechanism_operations_do_not_fetch():
+    for vars in (
+        {"operation": "gene_search", "text": "BRCA1"},
+        {"operation": "mechanism_relations", "cui": "C0004057"},
+    ):
+        runtime = FakeLazyRuntimeInputs(vars, worker_response([]))
+        with pytest.raises(ValueError, match="runtime_operation_not_mapped"):
+            UmlsTerminologyAdapter().invoke(runtime, {})
+        assert runtime.calls == []

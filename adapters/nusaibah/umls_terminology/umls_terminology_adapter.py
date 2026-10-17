@@ -201,12 +201,46 @@ def _worker_metadata(metadata: Any) -> bool | None:
     return metadata.get("pagination_truncated")
 
 
-def _source_payload(inputs: dict[str, Any], operation: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    """Accept a strict fixture envelope or the signed-worker records shape.
+def _invoke_governed_search(inputs: dict[str, Any], request: dict[str, Any]) -> dict[str, Any]:
+    """Request exactly one search through a worker-attached lazy Runtime Source.
 
-    This normalizer does not grant Runtime Source authority. The input role
-    remains binding-owned until Assets can admit a reference without allowing
-    caller-provided records. Worker payloads have no release or operation echo.
+    The caller's input object only identifies the approved runtime role. Actual
+    records must come from the trusted RuntimeInputs invoker, never from direct
+    data supplied in the input dictionary. Other operations require separately
+    qualified source mappings.
+    """
+    if request["operation"] != "search":
+        raise ValueError("umls_runtime_operation_not_mapped")
+
+    role = inputs.get("umls_response")
+    invoker = getattr(inputs, "invoke", None)
+    if not isinstance(role, dict) or not callable(invoker):
+        raise ValueError("umls_runtime_source_not_prepared")
+
+    parameters = {
+        "string": request["text"],
+        "searchType": request["search_type"],
+    }
+    if "sources" in request:
+        parameters["sabs"] = ",".join(request["sources"])
+
+    try:
+        resolved = invoker("umls_response", variables=parameters, on_error="raise")
+    except Exception:
+        # Never expose provider/client details from a lower-level exception.
+        raise ValueError("umls_runtime_source_fetch_failed") from None
+
+    if not isinstance(resolved, dict) or set(resolved) != {"records", "metadata"}:
+        raise ValueError("umls_runtime_source_envelope_invalid")
+    return resolved
+
+
+def _source_payload(inputs: dict[str, Any], operation: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Normalize a trusted worker envelope or an offline synthetic fixture.
+
+    This pure validator does not grant source authority. Production calls must
+    first pass through _invoke_governed_search and receive a worker envelope;
+    strict operation/status/release fixtures are for deterministic tests only.
     """
     payload = inputs.get("umls_response")
     if not isinstance(payload, dict):
@@ -378,14 +412,45 @@ def _project_record(record: dict[str, Any], operation: str) -> dict[str, Any]:
     return projected
 
 
+def _normalize_terminology_result(request: dict[str, Any], source: dict[str, Any]) -> dict[str, Any]:
+    """Project bounded records; also used by source-informed offline fixtures."""
+    operation = request["operation"]
+    payload, records = _source_payload({"umls_response": source}, operation)
+    projected = [_project_record(record, operation) for record in records[:request["limit"]]]
+    upstream_truncated = payload.get("truncated")
+    sliced = len(records) > request["limit"]
+    truncated = True if sliced or upstream_truncated is True else upstream_truncated
+    upstream_status = payload["status"]
+    status = "partial" if truncated is True and upstream_status == "ok" else upstream_status
+    provenance = payload["provenance"]
+    provenance_fields = provenance if isinstance(provenance, dict) else {}
+    return {
+        "operation": operation,
+        "status": status,
+        "query": request,
+        "query_attested": False,  # Worker does not echo search selectors.
+        "records": projected,
+        "provenance": {
+            "provider": "UMLS",
+            "release": provenance_fields.get("release"),
+            "retrieved_at": _optional_provenance(provenance_fields, "retrieved_at"),
+            "source_vocabulary": _optional_provenance(provenance_fields, "source_vocabulary"),
+        },
+        "completeness": {
+            "returned_count": len(projected),
+            "truncated": truncated,  # None when completeness was not attested.
+        },
+    }
+
+
 class UmlsTerminologyAdapter(Adapter):
-    """Normalize one bounded operation result with exact release provenance."""
+    """Normalize UMLS records using only trusted RuntimeInputs retrieval."""
 
     key = ASSET_KEY
     version = ASSET_VERSION
 
     def invoke(self, inputs: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
-        """Validate business selectors, then consume runtime-supplied records."""
+        """Validate selectors, invoke the governed role, and project records."""
         request = _validate_request(inputs.get("variables"))
         operation = request["operation"]
         if operation == "describe":
@@ -396,32 +461,8 @@ class UmlsTerminologyAdapter(Adapter):
                 "completeness": {"returned_count": 0, "truncated": False},
             }
         else:
-            payload, records = _source_payload(inputs, operation)
-            projected = [_project_record(record, operation) for record in records[:request["limit"]]]
-            upstream_truncated = payload.get("truncated")
-            sliced = len(records) > request["limit"]
-            truncated = True if sliced or upstream_truncated is True else upstream_truncated
-            upstream_status = payload["status"]
-            status = "partial" if truncated is True and upstream_status == "ok" else upstream_status
-            provenance = payload["provenance"]
-            provenance_fields = provenance if isinstance(provenance, dict) else {}
-            result = {
-                "operation": operation,
-                "status": status,
-                "query": request,
-                "query_attested": False,  # Worker does not echo search selectors.
-                "records": projected,
-                "provenance": {
-                    "provider": "UMLS",
-                    "release": provenance_fields.get("release"),
-                    "retrieved_at": _optional_provenance(provenance_fields, "retrieved_at"),
-                    "source_vocabulary": _optional_provenance(provenance_fields, "source_vocabulary"),
-                },
-                "completeness": {
-                    "returned_count": len(projected),
-                    "truncated": truncated,  # None when completeness was not attested.
-                },
-            }
+            source = _invoke_governed_search(inputs, request)
+            result = _normalize_terminology_result(request, source)
         return {
             "response_version": "1",
             "status": "success",
