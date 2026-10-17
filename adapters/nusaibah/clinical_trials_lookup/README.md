@@ -31,7 +31,7 @@ classification, and programme readiness.
   governed lazy Runtime Source invoker; a caller cannot replace it with raw
   provider data. The 0.1.0 manifest does *not* automatically create/source-bind
   provider authority.
-- `local_worker` is the initial target; ECS and nested callable use need
+- `local_worker` is the default; both `local_worker` and `ecs` are allowed in the 0.1.0 manifest. Signed execution, image/catalog delivery, and source allowance require independent proof on each substrate; nested callable use needs
   independent admission/proof. No output publication is part of this intake.
 
 ## Source-only capabilities
