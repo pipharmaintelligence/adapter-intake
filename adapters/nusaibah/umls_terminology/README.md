@@ -90,7 +90,7 @@ configured here. The adapter is not a generic UMLS HTTP executor.
 Current source accepts a maximum of 200 pre-normalized input records and
 projects a caller-bounded maximum of 50 records. It does not implement
 provider paging or guarantee full retrieval; that belongs to the trusted
-Runtime Source helper after authorization.
+Runtime Source helper after runtime approval.
 
 Tests use synthetic, source-informed fixtures including worker hydration
 shapes, not live provider records. The separately verified UMLS Runtime Source
@@ -102,7 +102,7 @@ admission, semantic correctness or ECS deployment.
 **Keep asset version 0.1.0. Do not merge, promote, publish or edit DLM UI
 Runtime Source configuration.** Before a governed live test, obtain the
 operator-selected Runtime Source ID and verify its operation/format/target,
-credential authorization, source license, record projection, pagination and
+credential runtime approval, source license, record projection, pagination and
 worker admission. Review exact required input roles at that point.
 
 Tracking: PI-2070; draft PR #148.
