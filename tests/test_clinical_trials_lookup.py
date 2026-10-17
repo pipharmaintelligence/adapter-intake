@@ -249,6 +249,35 @@ class ClinicalTrialsLookupTests(unittest.TestCase):
                     module.ClinicalTrialsLookupAdapter().invoke(fake, {})
         self.assertEqual([], fake.calls)
 
+    def test_sensitive_header_text_is_rejected_without_source_fetch(self) -> None:
+        """Preserve source-only validation while satisfying package boundary scans."""
+        samples = (
+            "Authorization: Bearer synthetic",
+            "aUtHoRiZaTiOn : Basic synthetic",
+            "Bearer synthetic",
+            "token = synthetic",
+            "secret = synthetic",
+            "api_key = synthetic",
+        )
+        for value in samples:
+            with self.subTest(value=value):
+                fake = FakeInputs(search_page())
+                fake["variables"] = {"operation": "study_search", "text": value}
+                with self.assertRaisesRegex(ValueError, "clinical_trials_text_invalid"):
+                    module.ClinicalTrialsLookupAdapter().invoke(fake, {})
+                self.assertEqual([], fake.calls)
+
+    def test_package_forbidden_source_patterns_absent(self) -> None:
+        """Mirror the Assets raw-source PHP boundary for this packaged adapter."""
+        source = (ASSET / "clinical_trials_lookup_adapter.py").read_text(encoding="utf-8")
+        markers = (
+            "authorization", "provider_request", "provider_response",
+            "raw_payload", "api_key=", "headers", "endpoint", "base_url",
+        )
+        for marker in markers:
+            with self.subTest(marker=marker):
+                self.assertNotIn(marker, source)
+
     def test_detail_exact_identity_and_not_found(self) -> None:
         answer, fake = invoke({'operation': 'study_get', 'nct_id': 'nct01234567'}, {'records': [STUDY]})
         result = answer['outputs']['trial_result']
