@@ -1,6 +1,6 @@
 # DLM UI authoring and qualification — ClinicalTrials.gov lookup 0.1.0
 
-Status: **SOURCE-REVIEWED GUIDE + USER-SUPPLIED CORE DRAFT READINESS; NO PROVIDER FETCH PROVEN**.
+Status: **USER-SUPPLIED CORE READY/PUBLISHED (9/9 CHECKS); SELECTED EXECUTOR AND PROVIDER FETCH NOT YET PROVEN**.
 Scope: `nusaibah.clinical_trials_lookup@0.1.0`, PR #147 only; no platform code, credential, asset publishing, or clinical-failure change.
 Reviewed on 2026-10-17 against DLM UI `3cd45971e0484327c7a33f91758d82a97d5ad59b`, Core `f6145a9af38b142710f4a6e892e7fc772b1e4aad`, Assets `12904cbe39da79034ba873b86e0466f1a8a27b3a`. This is source evidence, **not a deployed version assertion**.
 
@@ -65,8 +65,8 @@ A saved Core source does **not** automatically attach a lazy runtime role to the
 | Current UI page/source form contract | source-reviewed | UI SHA, source file paths |
 | Core client-wide source/no-node contract | source+feature-test covered | Core SHA, `node_binding.status` |
 | Core root-object JSON r2 executor | source/test covered default; deployment unknown | Actual executor revision and readiness |
-| Native source created | **OBSERVED from operator-supplied Core readiness**: `draft` | `@clinical_trials_gov_v2`, `rt_src_421eba0e307942b781e252ba0f631691` (client/lake not in the projection) |
-| Published / readiness ready | **NOT YET**: `draft` / `blocked`; only `source_published` blocked | After operator publishes, capture new source status/readiness and checks |
+| Native source created | **OBSERVED, active** from operator-supplied Core readiness | `@clinical_trials_gov_v2`, `rt_src_421eba0e307942b781e252ba0f631691` (client/lake not in this projection) |
+| Published / readiness ready | **OBSERVED: `active`, `ready`, 9/9 checks `pass`** | Operator supplied fresh Core readiness response on 2026-10-17 |
 | Signed worker simple `query.intr` read | **NOT OBSERVED** | safe run reference, returned root/object study count, result status |
 | Complex Essie/alias/cursor | **NOT PROVEN** | error code or successful safe terminal proof |
 | Exact study/arms/outcomes/results reads | **NOT PROVEN** | safe NCT identity, section presence, typed result |
@@ -90,6 +90,71 @@ A saved Core source does **not** automatically attach a lazy runtime role to the
 **Interpretation:** Core recognizes a configured source and its public/no-node authority. The only observed readiness blocker is normal draft publication state. This readback does **not** prove the deployed Request URL, parameter allowlist, response parser/root preservation, HTTP transport, source-role mapping into Assets, successful trial search, or any provider result.
 
 **Next operator step:** Select **Publish** for this exact source in DLM UI, then **Recheck readiness**. Record the new safe `status`, `readiness_status`, and checks before attempting an independently admitted `local_worker` trial lookup. Do not infer that publication has occurred from this snapshot.
+
+### Published Core readiness readback (operator-provided; 2026-10-17)
+
+The operator supplied a **fresh** `runtime_source_readiness_retrieved` response for
+`rt_src_421eba0e307942b781e252ba0f631691`, handle
+`@clinical_trials_gov_v2`. Observed `status=active`,
+`readiness_status=ready`; **all nine** checks are `pass`,
+including `source_published`. No node binding required
+(`status=not_required`, `can_bind=false`) and public authority resolved
+(`auth_scheme=public`, `vault_owner=none`, `execution_resolvable=true`,
+`reason_code=runtime_source_authority_resolved`).
+
+This is **Core configuration readiness only**. It does not prove the exact
+runtime request target, allowlist, executable substrate, endpoint data,
+root JSON preservation, `trials_search_runtime` role attachment,
+or a completed signed adapter/worker execution. The prior draft
+readback above is retained as lifecycle history.
+
+### Next smallest proof: selected-executor source verification (still pending)
+
+The current Assets runtime package exposes the operator-only
+`obs-runtime-source-verify` CLI, which calls the governed selected
+`runtime_egress_v2` executor and projects safe counts/revision/substrate
+metadata **without any provider records**. It is separate from normal
+asset launch. The current Core `verification-tests` endpoint is
+not a substitute for `asset_runtime_fetch`: Core's
+`RuntimeSourceSelectedExecutorVerificationGateway` currently returns
+`runtime_source_selected_executor_verification_unavailable`
+unless a selected-executor delegation is separately implemented.
+
+**Only when the installed wheel, approved runtime environment, and actual
+source safe projection confirm `operation=query_studies`,
+`capability_ref=clinical_trials.studies.query`, `local_worker` allowed,
+and `query.intr,pageSize,countTotal` accepted**, run a single small
+logical request using the CLI:
+
+```json
+{
+  "operation": "query_studies",
+  "capability_ref": "clinical_trials.studies.query",
+  "input": {
+    "parameters": {
+      "query.intr": "metformin",
+      "pageSize": 1,
+      "countTotal": "false"
+    }
+  }
+}
+```
+
+The operator saves the above JSON as a local test-input file outside intake
+and invokes `obs-runtime-source-verify --source-id rt_src_421eba0e307942b781e252ba0f631691 --substrate local_worker --payload-file <operator-local-json> --pretty`
+from the approved runtime-enabled environment. **Do not** embed
+credentials, server URLs or session material in this file or commit it.
+
+A terminal `passed` result with `verified_substrate=local_worker` and
+`execution_strategy=runtime_egress_v2` supports the primitive selected
+executor transport proof. `records_observed=1` indicates **one root JSON
+object**, not one ClinicalTrials.gov study; the CLI discards provider data.
+Root `studies`/cursor fidelity and the adapter's normalized NCT/arm/outcome
+contract remain separate subsequent admission/proof gates.
+
+If the wheel or proper worker environment is absent, record `UNKNOWN`
+and stop rather than installing a different runtime or attempting a direct
+Core/provider call from business-adapter Python.
 
 ## 5. Source anchors (current main revisions)
 
