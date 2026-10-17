@@ -24,8 +24,9 @@ All operations share one `terminology_result` output role. In this draft,
 | Semantic-network type | `semantic_type_get` | `tui` |
 | Vocabulary list | `vocabularies` | none; `limit` optional |
 
-The `umls_response` role remains **binding-owned**, not a caller-supplied
-records field. Local deterministic fixtures use a strict normalized envelope
+The `umls_response` is a **direct reference-only API role**: the Assets server
+must validate it before the existing trusted worker fetch. It is not a
+caller-supplied records field. Local deterministic fixtures use a strict normalized envelope
 with `operation`, `status`, `records` and exact `provenance.release`.
 The adapter can now also normalize the current *trusted worker* shape
 `{"records": [...], "metadata": {...}}` for plain `search` only. Worker
@@ -33,12 +34,12 @@ pagination fields are checked; unavailable UMLS release, retrieval timestamp,
 query attestation and pagination completeness are not invented (`null` is
 preserved). Empty records do not assert `not_found`.
 
-**Assets reference admission remains blocked**: a worker source launch places
-a Runtime Source reference in a direct role, but binding-owned roles reject
-caller-supplied values. Changing this manifest to `source=direct` without an
-Assets-enforced *reference-only* gate would also allow forged records.
-Keep the protected binding declaration until that authority gate is implemented
-and tested. No provider URL, credential or authority moves into Python.
+**Admission requires the reviewed Assets guard change.** The opt-in
+`runtime_source_reference_only` contract rejects caller-supplied records and
+requires an exact operation/capability reference before trusted worker fetch.
+This intake PR MUST NOT be released against older Assets builds that lack the
+guard. An intake-only CI pass is insufficient; the Assets guard and full
+package CI must pass together. No provider URL or authority moves into Python.
 
 ### Example business requests
 
@@ -77,7 +78,7 @@ and tested. No provider URL, credential or authority moves into Python.
 ## Current technical boundaries
 
 The draft manifest keeps `variables` optional and direct and
-`umls_response` optional and binding-owned. `describe` performs no fetch in
+`umls_response` optional and server-guarded direct API reference-only. `describe` performs no fetch in
 adapter code. Worker `search` normalization is tested with synthetic inputs;
 this does not establish signed end-to-end adapter admission.
 
