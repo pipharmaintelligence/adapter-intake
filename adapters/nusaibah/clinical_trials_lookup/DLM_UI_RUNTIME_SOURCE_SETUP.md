@@ -1,6 +1,6 @@
 # DLM UI authoring and qualification — ClinicalTrials.gov lookup 0.1.0
 
-Status: **SOURCE-REVIEWED OPERATING GUIDE; NO LIVE DLM/PROVIDER RESULT RECORDED**.
+Status: **SOURCE-REVIEWED GUIDE + USER-SUPPLIED CORE DRAFT READINESS; NO PROVIDER FETCH PROVEN**.
 Scope: `nusaibah.clinical_trials_lookup@0.1.0`, PR #147 only; no platform code, credential, asset publishing, or clinical-failure change.
 Reviewed on 2026-10-17 against DLM UI `3cd45971e0484327c7a33f91758d82a97d5ad59b`, Core `f6145a9af38b142710f4a6e892e7fc772b1e4aad`, Assets `12904cbe39da79034ba873b86e0466f1a8a27b3a`. This is source evidence, **not a deployed version assertion**.
 
@@ -65,14 +65,31 @@ A saved Core source does **not** automatically attach a lazy runtime role to the
 | Current UI page/source form contract | source-reviewed | UI SHA, source file paths |
 | Core client-wide source/no-node contract | source+feature-test covered | Core SHA, `node_binding.status` |
 | Core root-object JSON r2 executor | source/test covered default; deployment unknown | Actual executor revision and readiness |
-| Native source created | **NOT OBSERVED** | client scope, logical handle, source ID |
-| Published / readiness ready | **NOT OBSERVED** | status, readiness checks and reason codes |
+| Native source created | **OBSERVED from operator-supplied Core readiness**: `draft` | `@clinical_trials_gov_v2`, `rt_src_421eba0e307942b781e252ba0f631691` (client/lake not in the projection) |
+| Published / readiness ready | **NOT YET**: `draft` / `blocked`; only `source_published` blocked | After operator publishes, capture new source status/readiness and checks |
 | Signed worker simple `query.intr` read | **NOT OBSERVED** | safe run reference, returned root/object study count, result status |
 | Complex Essie/alias/cursor | **NOT PROVEN** | error code or successful safe terminal proof |
 | Exact study/arms/outcomes/results reads | **NOT PROVEN** | safe NCT identity, section presence, typed result |
 | Callable child and Remote MCP publication | **NOT PROVEN** | separately admitted composition/publication proof |
 
 **Never post** credential values, authorization headers, Core encrypted config, raw provider response bodies, request target config, service keys or private execution material to this ledger. Provide only safe source IDs, counts, versions, observed status/reason codes and redacted output shape.
+
+### Core readiness readback (operator-provided; 2026-10-17)
+
+| Safe field | Observed state |
+| --- | --- |
+| Source ID / handle | `rt_src_421eba0e307942b781e252ba0f631691` / `@clinical_trials_gov_v2` |
+| Kind / execution | `generic_http` / `asset_runtime_fetch` |
+| Lifecycle | `status=draft`; `readiness_status=blocked` |
+| Eight passing checks | `source_kind_supported`, `execution_mode_supported`, `runtime_config_present`, `request_target_present`, `response_policy_present`, `authority_ready`, `authority_execution_resolvable`, `runtime_source_node_bound` |
+| Sole blocked check | `source_published` |
+| Node binding | `not_required`; `required=false`; `can_bind=false` |
+| Public authority | `state=ready`; `auth_scheme=public`; `vault_owner=none`; `execution_resolvable=true` |
+| Resolved authority reason | `runtime_source_authority_resolved` |
+
+**Interpretation:** Core recognizes a configured source and its public/no-node authority. The only observed readiness blocker is normal draft publication state. This readback does **not** prove the deployed Request URL, parameter allowlist, response parser/root preservation, HTTP transport, source-role mapping into Assets, successful trial search, or any provider result.
+
+**Next operator step:** Select **Publish** for this exact source in DLM UI, then **Recheck readiness**. Record the new safe `status`, `readiness_status`, and checks before attempting an independently admitted `local_worker` trial lookup. Do not infer that publication has occurred from this snapshot.
 
 ## 5. Source anchors (current main revisions)
 
