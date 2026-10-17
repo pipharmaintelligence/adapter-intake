@@ -1,5 +1,8 @@
 # UMLS Terminology — development 0.1.0
 
+**Logical asset identity:** `umls_terminology@0.1.0` (no `nusaibah.` prefix).
+The physical intake folder and package destination remain under `nusaibah/umls_terminology` because intake requires a two-level namespace/slug folder; this path is not part of the logical asset key.
+
 This is a **provider-blind** UMLS terminology adapter. The current branch is
 for contract development, **not release, promotion or live execution**.
 
