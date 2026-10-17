@@ -521,7 +521,7 @@ def _text(value: Any, name: str, max_length: int) -> str:
     text = value.strip()
     if (len(text) > max_length or any(ord(c) < 32 or ord(c) == 127 for c in text)
             or re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*:", text)
-            or re.search(r"(?i)\b(?:bearer\s+|token\s*=|secret\s*=|api_key\s*=|authorization\s*:)", text)):
+            or re.search(r"(?i)\b(?:bearer\s+|token\s*=|secret\s*=|api_key\s*=|auth(?:orization)\s*:)", text)):
         raise ValueError("clinical_trials_" + name + "_invalid")
     return text
 
