@@ -278,7 +278,7 @@ def _semantic_types(record: dict[str, Any]) -> list[dict[str, str | None]] | Non
     """Read NLM search-name arrays and concept name/URI objects without loss."""
     raw = record.get("semanticTypes", record.get("semantic_types"))
     if raw is None:
-        return None  # Not returned by this endpoint != known absence.
+        return None  # Not returned by this source operation != known absence.
     if not isinstance(raw, list) or len(raw) > 32:
         raise ValueError("umls_semantic_types_invalid")
     normalized = []
