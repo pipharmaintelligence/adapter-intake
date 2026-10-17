@@ -12,7 +12,7 @@ from typing import Any
 from adapters.base import Adapter
 
 
-ASSET_KEY = "nusaibah.umls_terminology"
+ASSET_KEY = "umls_terminology"
 ASSET_VERSION = "0.1.0"
 
 SEARCH_TYPES = frozenset({
