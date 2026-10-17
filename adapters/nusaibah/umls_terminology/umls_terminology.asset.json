@@ -1,5 +1,5 @@
 {
-  "key": "nusaibah.umls_terminology",
+  "key": "umls_terminology",
   "default": "0.1.0",
   "allowed_surfaces": [
     "v1_asset_execute"
