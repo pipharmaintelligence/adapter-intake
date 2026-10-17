@@ -280,7 +280,6 @@ def _source(inputs: dict[str, Any], role: str, params: dict[str, Any]) -> dict[s
             "runtime_source_dynamic_invocation_timed_out": "clinical_trials_source_timeout",
             "runtime_source_provider_forbidden": "clinical_trials_source_forbidden",
             "runtime_source_egress_provider_rejected": "clinical_trials_provider_rejected",
-            "runtime_source_egress_provider_request_failed": "clinical_trials_provider_unavailable",
             "runtime_source_egress_records_invalid": "clinical_trials_provider_records_invalid",
         }
         reason = exc.args[0] if len(exc.args) == 1 else None
@@ -302,15 +301,15 @@ def _search_page(source: Mapping[str, Any], page_size: int) -> tuple[list[dict[s
     studies = page["studies"]
     if len(studies) > page_size or any(not isinstance(study, dict) for study in studies):
         raise ValueError("clinical_trials_page_records_invalid")
-    token = page.get("nextPageToken")
-    if token is not None:
-        token = _cursor(token)
+    continuation = page.get("nextPageToken")
+    if continuation is not None:
+        continuation = _cursor(continuation)
     total = page.get("totalCount")
     if total is not None and (type(total) is not int or total < 0):
         raise ValueError("clinical_trials_total_count_invalid")
     return studies, {
-        "has_more": token is not None,
-        "next_page_token": token,
+        "has_more": continuation is not None,
+        "next_page_token": continuation,
         "total_count": total,
         "coverage": "one_page",
     }
