@@ -397,6 +397,7 @@ class ClinicalTrialsLookupTests(unittest.TestCase):
         for message,expected in [
             ('runtime_source_dynamic_invocation_timed_out','clinical_trials_source_timeout'),
             ('runtime_source_provider_forbidden','clinical_trials_source_forbidden'),
+            ('runtime_source_egress_provider_request_failed','clinical_trials_runtime_source_failed'),
             ('sensitive example user@example.com','clinical_trials_runtime_source_failed'),
         ]:
             with self.subTest(message=expected):
