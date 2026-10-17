@@ -1,8 +1,10 @@
-asset_key: nusaibah.umls_terminology
+asset_key: umls_terminology
 asset_version: 0.1.0
 adapter_module: umls_terminology_adapter.py
 manifest: umls_terminology.asset.json
 package_target: python_runtime/adapters/intake/nusaibah/umls_terminology
+optional_files:
+  - README.md
 release_stage: development
 dependency_manifest: adapter.dependencies.json
 forbidden:
