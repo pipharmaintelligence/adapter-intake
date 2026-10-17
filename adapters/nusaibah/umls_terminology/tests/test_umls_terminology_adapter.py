@@ -185,7 +185,7 @@ def test_unmapped_gene_search_does_not_use_plain_search_records_as_proof():
         invoke({"operation": "gene_search", "text": "BRCA1"}, worker_response([]))
 
 
-def test_manifest_does_not_permit_untrusted_inline_record_override():
+def test_manifest_requires_server_reference_only_guard():
     """Do not weaken the role before Assets has a reference-only admission gate."""
     import json
     from pathlib import Path
@@ -195,4 +195,8 @@ def test_manifest_does_not_permit_untrusted_inline_record_override():
     )
     assert manifest["key"] == "umls_terminology"
     assert manifest["default"] == "0.1.0"
-    assert manifest["versions"]["0.1.0"]["inputs"]["umls_response"]["source"] == "binding"
+    assert manifest["versions"]["0.1.0"]["inputs"]["umls_response"]["source"] == "direct"
+    ref = manifest["versions"]["0.1.0"]["inputs"]["umls_response"]["contract"]["source"]["reference"]
+    assert ref["runtime_source_reference_only"] is True
+    assert ref["runtime_source_operation"] == "search"
+    assert ref["runtime_source_capability_ref"] == "umls.terminology.search"
