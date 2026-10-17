@@ -145,7 +145,11 @@ public ChatGPT publication are each separately gated.
 
 ## Official references
 
-- ClinicalTrials.gov API v2: `https://clinicaltrials.gov/data-api/api`
-- Study data structure: `https://clinicaltrials.gov/data-api/about-api/study-data-structure`
-- Search areas: `https://clinicaltrials.gov/data-api/about-api/search-areas`
-- API data/version semantics: `https://clinicaltrials.gov/api/v2/version`
+- ClinicalTrials.gov Data API — API v2 endpoint reference (National Library of Medicine)
+- ClinicalTrials.gov Data API — Study Data Structure reference
+- ClinicalTrials.gov Data API — Search Areas reference
+- ClinicalTrials.gov Data API — API version and data timestamp reference
+
+The official documentation destinations are preserved in PR #147's review history.
+The published intake handoff deliberately contains no literal provider endpoint URLs
+or HTTP request targets; DLM Core owns the runtime source request configuration.
