@@ -57,6 +57,12 @@ jobs:
           set -o pipefail
           python -m unittest discover -s tests -p "test_adapter_intake_contract.py" -v
 
+      - name: Verify PubMed evidence 0.1.0 without providers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p "test_pubmed_evidence.py" -v
+
       - name: Verify DLM MCP 0.1.1 read contract without providers
         shell: bash
         run: |
