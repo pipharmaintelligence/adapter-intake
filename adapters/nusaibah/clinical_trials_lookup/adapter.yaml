@@ -9,6 +9,7 @@ reviewed_support_files:
 optional_files:
   - README.md
   - CAPABILITY_MATRIX.md
+  - DLM_UI_RUNTIME_SOURCE_SETUP.md
 release_stage: development
 forbidden:
   allow_values: false
