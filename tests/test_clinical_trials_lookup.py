@@ -428,6 +428,23 @@ class ClinicalTrialsLookupTests(unittest.TestCase):
         index=result['outputs']['trial_result']['records'][0]['results_group_modules']
         self.assertEqual('FG10',index['participantFlowModule']['flowGroups'][0]['id'])
 
+    def test_declared_intake_files_exclude_transport_urls(self) -> None:
+        """Prevent the strict Assets intake content scanner from blocking promotion."""
+        import re
+
+        descriptor = (ASSET / 'adapter.yaml').read_text(encoding='utf-8')
+        declared = ['adapter.yaml', 'clinical_trials_lookup.asset.json',
+                    'clinical_trials_lookup_adapter.py', 'adapter.dependencies.json',
+                    'capabilities.v0.1.0.json', 'README.md',
+                    'CAPABILITY_MATRIX.md', 'DLM_UI_RUNTIME_SOURCE_SETUP.md',
+                    'PROMOTION_DUAL_SUBSTRATE_CHECKLIST.md']
+        for name in declared:
+            with self.subTest(file=name):
+                content = (ASSET / name).read_text(encoding='utf-8')
+                self.assertIsNone(re.search(r'https?://|s3://', content, re.IGNORECASE))
+        self.assertIn('allowed_substrates', (ASSET / 'clinical_trials_lookup.asset.json').read_text())
+        self.assertIn('PROMOTION_DUAL_SUBSTRATE_CHECKLIST.md', descriptor)
+
     def test_exact_intake_identity_and_publication_template_status(self) -> None:
         manifest = json.loads((ASSET / 'clinical_trials_lookup.asset.json').read_text())
         self.assertEqual('0.1.0', manifest['default'])
