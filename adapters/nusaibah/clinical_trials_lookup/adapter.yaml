@@ -10,6 +10,7 @@ optional_files:
   - README.md
   - CAPABILITY_MATRIX.md
   - DLM_UI_RUNTIME_SOURCE_SETUP.md
+  - PROMOTION_DUAL_SUBSTRATE_CHECKLIST.md
 release_stage: development
 forbidden:
   allow_values: false
