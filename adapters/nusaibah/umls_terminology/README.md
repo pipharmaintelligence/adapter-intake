@@ -24,12 +24,21 @@ All operations share one `terminology_result` output role. In this draft,
 | Semantic-network type | `semantic_type_get` | `tui` |
 | Vocabulary list | `vocabularies` | none; `limit` optional |
 
-Every non-describe operation currently requires a *pre-normalized*,
-binding-owned `umls_response`. It must contain an exact `operation`,
-`status` (`ok`, `not_found`, `partial`), a `records` list and
-`provenance.release` as an exact resolved UMLS release such as `2026AA`.
-No HTTP envelope or caller-supplied provider credentials are accepted as
-the governed data role.
+The `umls_response` role remains **binding-owned**, not a caller-supplied
+records field. Local deterministic fixtures use a strict normalized envelope
+with `operation`, `status`, `records` and exact `provenance.release`.
+The adapter can now also normalize the current *trusted worker* shape
+`{"records": [...], "metadata": {...}}` for plain `search` only. Worker
+pagination fields are checked; unavailable UMLS release, retrieval timestamp,
+query attestation and pagination completeness are not invented (`null` is
+preserved). Empty records do not assert `not_found`.
+
+**Assets reference admission remains blocked**: a worker source launch places
+a Runtime Source reference in a direct role, but binding-owned roles reject
+caller-supplied values. Changing this manifest to `source=direct` without an
+Assets-enforced *reference-only* gate would also allow forged records.
+Keep the protected binding declaration until that authority gate is implemented
+and tested. No provider URL, credential or authority moves into Python.
 
 ### Example business requests
 
@@ -67,10 +76,10 @@ the governed data role.
 
 ## Current technical boundaries
 
-The existing draft manifest keeps `variables` optional and direct, and
-`umls_response` optional and **binding-owned**. `describe` reads no
-governed records in adapter code; whether an optional binding is eagerly
-resolved before adapter invocation still requires separate runtime proof.
+The draft manifest keeps `variables` optional and direct and
+`umls_response` optional and binding-owned. `describe` performs no fetch in
+adapter code. Worker `search` normalization is tested with synthetic inputs;
+this does not establish signed end-to-end adapter admission.
 
 No Runtime Source ID, API key, target, exact provider-request builder,
 UMLS pagination policy, raw UMLS payload contract, credential, output
@@ -82,9 +91,10 @@ projects a caller-bounded maximum of 50 records. It does not implement
 provider paging or guarantee full retrieval; that belongs to the trusted
 Runtime Source helper after authorization.
 
-Tests use synthetic, source-informed fixtures, not a live UMLS account.
-Local tests and intake CI do not establish packaged wheel/environment,
-governed binding, signed-worker admission or MCP publication.
+Tests use synthetic, source-informed fixtures including worker hydration
+shapes, not live provider records. The separately verified UMLS Runtime Source
+search primitive does not establish packaged adapter execution, signed-worker
+admission, semantic correctness or ECS deployment.
 
 ## Release hold
 

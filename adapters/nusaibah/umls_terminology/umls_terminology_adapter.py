@@ -169,18 +169,68 @@ def _validate_request(raw: Any) -> dict[str, Any]:
     return request
 
 
+def _worker_metadata(metadata: Any) -> bool | None:
+    """Validate only the bounded, worker-projected pagination facts.
+
+    These fields are *not* an operation echo, an API release, or proof of query
+    identity. Absent pagination facts mean unknown completeness.
+    """
+    if not isinstance(metadata, dict):
+        raise ValueError("umls_response_worker_metadata_invalid")
+    integer_fields = {
+        "start_page", "pages_crawled", "records_returned",
+        "requested_pages", "last_page",
+    }
+    boolean_fields = {"last_page_detected", "pagination_truncated"}
+    allowed = integer_fields | boolean_fields | {"stop_reason"}
+    if set(metadata) - allowed:
+        raise ValueError("umls_response_worker_metadata_invalid")
+    for key in integer_fields & metadata.keys():
+        value = metadata[key]
+        if type(value) is not int or not 0 <= value <= 1_000_000:
+            raise ValueError("umls_response_worker_metadata_invalid")
+    for key in boolean_fields & metadata.keys():
+        if type(metadata[key]) is not bool:
+            raise ValueError("umls_response_worker_metadata_invalid")
+    if "stop_reason" in metadata:
+        reason = metadata["stop_reason"]
+        if not isinstance(reason, str) or not 1 <= len(reason) <= 80:
+            raise ValueError("umls_response_worker_metadata_invalid")
+    if metadata.get("stop_reason") == "max_pages_reached" and metadata.get("pagination_truncated") is not True:
+        raise ValueError("umls_response_worker_metadata_inconsistent")
+    return metadata.get("pagination_truncated")
+
+
 def _source_payload(inputs: dict[str, Any], operation: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    """Validate a pre-normalized trusted input; do not reinterpret raw HTTP envelopes."""
+    """Accept a strict fixture envelope or the signed-worker records shape.
+
+    This normalizer does not grant Runtime Source authority. The input role
+    remains binding-owned until Assets can admit a reference without allowing
+    caller-provided records. Worker payloads have no release or operation echo.
+    """
     payload = inputs.get("umls_response")
     if not isinstance(payload, dict):
         raise ValueError("umls_response_not_resolved")
-    if payload.get("operation") != operation:
-        raise ValueError("umls_response_operation_mismatch")
     records = payload.get("records")
     if not isinstance(records, list) or any(not isinstance(item, dict) for item in records):
         raise ValueError("umls_response_records_invalid")
     if len(records) > MAX_PROVIDER_RECORDS:
         raise ValueError("umls_response_record_budget_exceeded")
+
+    if "operation" not in payload:
+        if set(payload) != {"records", "metadata"}:
+            raise ValueError("umls_response_worker_envelope_invalid")
+        if operation != "search":
+            raise ValueError("umls_response_worker_operation_not_mapped")
+        truncated = _worker_metadata(payload["metadata"])
+        return {
+            "status": "ok",  # A completed fetch, not a semantic match assertion.
+            "truncated": truncated,
+            "provenance": None,
+        }, records
+
+    if payload.get("operation") != operation:
+        raise ValueError("umls_response_operation_mismatch")
     status = payload.get("status")
     if not isinstance(status, str) or status not in {"ok", "not_found", "partial"}:
         raise ValueError("umls_response_status_invalid")
@@ -348,24 +398,28 @@ class UmlsTerminologyAdapter(Adapter):
         else:
             payload, records = _source_payload(inputs, operation)
             projected = [_project_record(record, operation) for record in records[:request["limit"]]]
-            truncated = len(records) > request["limit"] or payload.get("truncated", False)
+            upstream_truncated = payload.get("truncated")
+            sliced = len(records) > request["limit"]
+            truncated = True if sliced or upstream_truncated is True else upstream_truncated
             upstream_status = payload["status"]
-            status = "partial" if truncated and upstream_status == "ok" else upstream_status
+            status = "partial" if truncated is True and upstream_status == "ok" else upstream_status
             provenance = payload["provenance"]
+            provenance_fields = provenance if isinstance(provenance, dict) else {}
             result = {
                 "operation": operation,
                 "status": status,
                 "query": request,
+                "query_attested": False,  # Worker does not echo search selectors.
                 "records": projected,
                 "provenance": {
                     "provider": "UMLS",
-                    "release": provenance["release"],
-                    "retrieved_at": _optional_provenance(provenance, "retrieved_at"),
-                    "source_vocabulary": _optional_provenance(provenance, "source_vocabulary"),
+                    "release": provenance_fields.get("release"),
+                    "retrieved_at": _optional_provenance(provenance_fields, "retrieved_at"),
+                    "source_vocabulary": _optional_provenance(provenance_fields, "source_vocabulary"),
                 },
                 "completeness": {
                     "returned_count": len(projected),
-                    "truncated": bool(truncated),
+                    "truncated": truncated,  # None when completeness was not attested.
                 },
             }
         return {

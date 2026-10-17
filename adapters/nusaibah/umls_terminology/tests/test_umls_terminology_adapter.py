@@ -112,3 +112,87 @@ def test_provider_partial_is_not_silently_complete():
     result = invoke({"operation": "concept_relations", "cui": "C0004057"},
                     response("concept_relations", [], status="partial"))
     assert result["status"] == "partial"
+
+
+def worker_response(records, metadata=None):
+    """Model the exact Assets worker hydration shape, without provider access."""
+    return {"records": records, "metadata": {} if metadata is None else metadata}
+
+
+def test_worker_brca1_records_do_not_invent_release_or_attestation():
+    result = invoke(
+        {"operation": "search", "text": "BRCA1"},
+        worker_response([
+            {"ui": "C0000001", "name": "BRCA1"},
+            {"ui": "C0000002", "name": "BRCA1 gene"},
+        ]),
+    )
+    assert result["status"] == "ok"
+    assert result["completeness"] == {"returned_count": 2, "truncated": None}
+    assert result["provenance"]["release"] is None
+    assert result["provenance"]["retrieved_at"] is None
+    assert result["query_attested"] is False
+
+
+def test_worker_zero_rows_does_not_claim_authoritative_not_found():
+    result = invoke(
+        {"operation": "search", "text": "no-results"},
+        worker_response([]),
+    )
+    assert result["status"] == "ok"
+    assert result["records"] == []
+    assert result["completeness"]["truncated"] is None
+
+
+def test_worker_reports_known_pagination_truncation():
+    result = invoke(
+        {"operation": "search", "text": "BRCA1"},
+        worker_response([{"ui": "C0000001"}], {
+            "pages_crawled": 1,
+            "stop_reason": "max_pages_reached",
+            "pagination_truncated": True,
+        }),
+    )
+    assert result["status"] == "partial"
+    assert result["completeness"]["truncated"] is True
+
+
+def test_worker_local_limit_marks_partial_without_upstream_pagination():
+    result = invoke(
+        {"operation": "search", "text": "BRCA1", "limit": 1},
+        worker_response([{"ui": "C0000001"}, {"ui": "C0000002"}]),
+    )
+    assert result["status"] == "partial"
+    assert result["completeness"]["truncated"] is True
+
+
+@pytest.mark.parametrize("payload", [
+    {"records": []},
+    {"records": [], "metadata": {"apiKey": "not-allowed"}},
+    {"records": [], "metadata": {"pagination_truncated": "false"}},
+    {"records": [], "metadata": {"records_returned": True}},
+    {"records": [], "metadata": []},
+    {"records": [], "metadata": {}, "provenance": {"release": "2026AA"}},
+    {"records": [], "metadata": {"stop_reason": "max_pages_reached", "pagination_truncated": False}},
+])
+def test_worker_envelope_rejects_forged_or_invalid_metadata(payload):
+    with pytest.raises(ValueError, match="umls_response_worker_"):
+        invoke({"operation": "search", "text": "BRCA1"}, payload)
+
+
+def test_unmapped_gene_search_does_not_use_plain_search_records_as_proof():
+    with pytest.raises(ValueError, match="worker_operation_not_mapped"):
+        invoke({"operation": "gene_search", "text": "BRCA1"}, worker_response([]))
+
+
+def test_manifest_does_not_permit_untrusted_inline_record_override():
+    """Do not weaken the role before Assets has a reference-only admission gate."""
+    import json
+    from pathlib import Path
+
+    manifest = json.loads(
+        (Path(__file__).resolve().parents[1] / "umls_terminology.asset.json").read_text(encoding="utf-8")
+    )
+    assert manifest["key"] == "umls_terminology"
+    assert manifest["default"] == "0.1.0"
+    assert manifest["versions"]["0.1.0"]["inputs"]["umls_response"]["source"] == "binding"
