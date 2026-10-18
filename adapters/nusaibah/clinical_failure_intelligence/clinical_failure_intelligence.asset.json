@@ -27,6 +27,11 @@
           "required": true,
           "source": "binding",
           "shape": "object"
+        },
+        "clinical_evidence": {
+          "required": false,
+          "source": "binding",
+          "shape": "object"
         }
       },
       "outputs": {

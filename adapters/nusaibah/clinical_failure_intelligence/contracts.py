@@ -148,9 +148,10 @@ def strict_object(text_value: str) -> JsonObject:
 def parse_request(inputs: Any) -> JsonObject:
     """Validate the request and resolved context before spending Agent calls."""
     require(isinstance(inputs, dict), "clinical_inputs_invalid")
-    require(set(inputs) == {"variables", "clinical_context"}, "clinical_input_roles_invalid")
+    require({"variables", "clinical_context"} <= set(inputs) <=
+            {"variables", "clinical_context", "clinical_evidence"}, "clinical_input_roles_invalid")
     values = object_fields(inputs["variables"], {"schema_version", "request_id", "analysis_mode",
-        "subject_id", "as_of_date", "event_ids"}, {"memory_mode", "enable_refinement", "enable_pharmacological_class", "product_id", "indication_id", "trial_id", "source_object_id"})
+        "subject_id", "as_of_date", "event_ids"}, {"memory_mode", "enable_refinement", "enable_pharmacological_class", "product_id", "indication_id", "trial_id", "source_object_id", "preflight_only", "supplementary_search"})
     safe_json(values)
     require(values["schema_version"] == REQUEST_SCHEMA, "clinical_request_schema_invalid")
     require(isinstance(values["analysis_mode"], str) and values["analysis_mode"] in {"mechanistic_case", "cohort_pattern"}, "clinical_mode_invalid")
@@ -175,6 +176,9 @@ def parse_request(inputs: Any) -> JsonObject:
         else:
             from source_events import normalize_event_records
         source_input = normalize_event_records(values, source_input)
+    for flag in ("preflight_only", "supplementary_search"):
+        require(type(values.get(flag, flag == "supplementary_search")) is bool,
+                "clinical_execution_flag_invalid")
     context = object_fields(source_input, {"schema_version", "context_id", "subject",
         "event_ids", "source_assertions", "evidence", "cohort"}, {"case_scope", "source_event_metadata"})
     safe_json(context)
@@ -253,6 +257,15 @@ def parse_request(inputs: Any) -> JsonObject:
             "clinical_evidence_list_invalid")
     require(context["cohort"] is None or isinstance(context["cohort"], dict), "clinical_cohort_invalid")
     require(len(canonical_bytes(context)) <= 256 * 1024, "clinical_context_requires_partitioning")
-    return {**deepcopy(values), "memory_mode": memory_mode,
+    request = {**deepcopy(values), "memory_mode": memory_mode,
             "enable_refinement": values.get("enable_refinement", False),
             "enable_pharmacological_class": class_enabled, "context": deepcopy(context)}
+
+    if __package__:
+        from .source_bundle import prepare_bundle
+    else:
+        from source_bundle import prepare_bundle
+    request["preflight_only"] = values.get("preflight_only", False)
+    request["supplementary_search"] = values.get("supplementary_search", True)
+    request["prepared_sources"] = prepare_bundle(inputs.get("clinical_evidence"), request)
+    return request

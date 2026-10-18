@@ -1,31 +1,39 @@
-# Verification scope - product-first 0.1.1
+# Verification - clinical consumer 0.1.1
 
-Local provider-free tests use Python 3.13.5 and explicit synthetic runtime doubles.
-The production pi-obs-python-runtime package is not installed in this container.
-Read the PR for the exact final source SHA, test count and current CI status.
+## Exact source and local environment
 
-Checks cover request/response contracts, exact source windows, critic coverage,
-cohort denominators, conflict/dependency handling, refinement, budgets, learning
-previews, JSON schemas, Python 3.10 grammar and isolated import closure.
+The starting clinical source was obtained from the scoped GitHub Actions artifact
+for commit dfa989db9e79ded01f046d91fc2fb8dd8871d19f on PR #143. This is a local
+source snapshot, not a full network clone. Its configured origin is
+pipharmaintelligence/adapter-intake. No other adapter is edited or validated here.
 
-Import closure copies only declared files into a temporary root and uses an explicit
-test-only Adapter base stub. It is not real SDK or signed-worker evidence. The Fixed
-Skill digest is independently computed from the inspected exact-byte algorithm;
-the official package validator still needs to run.
+Python 3.13.5; jsonschema 4.26.0 locally. pi-obs-python-runtime is NOT installed in
+this execution container. The package import test uses an explicit test-only
+Adapter base stub; SDK-typed failure tests inject an explicit SDK exception double.
+Neither is installed-wheel, live provider or signed-worker proof.
 
-The added CI targets Linux/Windows, Python 3.10/3.13, with pinned jsonschema 4.25.1.
-Existing broad intake CI is untouched. A workflow file alone does not prove green CI.
+## Executed local gates
 
-NOT RUN LOCALLY: full historical repository suites (no complete clone), real SDK,
-official intake/materialization, live source or provider calls, parent-child admission,
-mutable Skill, retention/readback, deployment, ECS or durable interruption recovery.
-No fixture establishes clinical accuracy; automated supplied-source support is kept
-separate from independent external truth and domain-adjudicated qualification.
+- Baseline: 162 provider-free tests passed before implementation.
+- Revised consumer: 227 provider-free tests passed.
+- Python 3.10 grammar and syntax/import checks.
+- Existing legacy case/cohort fixtures plus prepared-evidence contract-only fixture.
+- Exact optional binding ownership, source keys/versions/output roles and bundle hashes.
+- NCT identity, protocol/results/arm separation, PMID metadata/abstract/history/integrity
+  joins, date precision, candidate-only UMLS and source window omissions.
+- Critic sibling/dependency containment, typed output exhaustion without retry,
+  report/canonical-delta independence, default class-off and preview-only memory.
+- Declared-file closure, exact prompt hashes and unchanged Fixed Skill digest.
+- Local-root and isolated packaged imports with the stated test-only Adapter stub.
 
-## Product-first candidate
+GitHub CI on the final pushed head must independently pass the existing intake
+contract plus Linux/Windows Python 3.10/3.13 clinical lanes. The PR and Linear note
+record that exact final head and observed CI state; this file is not a CI receipt.
 
-Baseline 0.1.0 had 105 provider-free tests. This revision adds product/case routing,
-zero default class calls, exact paragraph selection, omission metadata, unread/stale
-and cross-scope rejection, editor/critic contracts, legacy index migration and
-reviewed-plan integrity tests. The revised suite passed all 133 tests locally; the delivered log records the run.
-No test double proves real Gemini quality, live SDK persistence or a deployed worker.
+## Not established
+
+Actual source-adapter validation (parallel user work), real source records, live
+binding preparation, installed SDK, official Assets materialization, model/provider
+admission, scientific accuracy, actual product-memory initialization/apply,
+retention/readback/history, ECS deployment and process-loss recovery. No live
+clinical or commercial conclusion is certified by these synthetic fixtures.

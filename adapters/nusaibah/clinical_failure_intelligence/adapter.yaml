@@ -8,6 +8,9 @@ reviewed_helpers:
   - __init__.py
   - cohort.py
   - contracts.py
+  - source_bundle.py
+  - review_packets.py
+  - decision_outcome.py
   - evidence.py
   - memory.py
   - product_memory.py
@@ -34,6 +37,7 @@ reviewed_support_files:
   - schemas/analysis_request.v1.schema.json
   - schemas/clinical_intelligence.v1.schema.json
   - schemas/hypothesis.v1.schema.json
+  - schemas/clinical_evidence_bundle.v1.schema.json
   - references/source_hypothesis_catalog.json
 
 optional_files:
@@ -44,6 +48,8 @@ optional_files:
   - VERIFICATION.md
   - PRODUCT_MEMORY_REVISION.md
   - GEMINI_PROMPT_PROFILE.md
+  - PREPARED_EVIDENCE_CONTRACT.md
+  - INTAKE_IMPLEMENTATION_CHECKLIST.md
   - SOURCE_NODE_INTEGRATION.md
 
 release_stage: development

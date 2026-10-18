@@ -39,7 +39,7 @@ The source object is never passed in callable variables. The invoked child indep
 
 B0 is authored in the exact manifest: role clinical_context is binding-owned and still an object.
 B1/B2: verify actual node file type, active Core object id, exact binding mode and selector.
-B3-B6: prove selected binding active/ready for the exact client and @0.1.2; no ambiguous binding.
+B3-B6: prove selected binding active/ready for the exact client and @0.1.1; no ambiguous binding.
 B7: prove Core/Assets materialized complete 508 source rows with file provenance, no direct override.
 B8/B9: reconcile requested event/product/indication/trial against returned records and mapper output.
 Next: certify independent Agent/tool admissions, Fixed and product Dynamic Skill reads, signed parent-child composition, and only then a retained-analysis barrier plus mutable Skill receipt/readback/history.

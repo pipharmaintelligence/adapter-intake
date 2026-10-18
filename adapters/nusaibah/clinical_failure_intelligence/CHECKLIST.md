@@ -1,3 +1,9 @@
+# Latest consumer scope - 0.1.1 (same draft PR)
+
+The prepared-evidence consumer and failure-containment implementation is described
+in INTAKE_IMPLEMENTATION_CHECKLIST.md. Source adapters are independently validated;
+no source execution, live binding, Skill write or runtime deployment is implied.
+
 # PI-2061 checklist
 
 Checked items refer to source and provider-free tests, not deployment or science.
@@ -29,8 +35,10 @@ Checked items refer to source and provider-free tests, not deployment or science
 
 ## Remaining adapter work
 
-- [ ] A3: integrate new registry/PubMed/native-search evidence via approved runtime projections.
-- [ ] Qualify large downstream adjudicator/analyst/critic chunking; currently defer oversize packets.
+- [x] A3 consumer: normalize prepared registry/PubMed evidence; terminology stays separate.
+- [ ] A3 live proof: validate the runtime-owned prepared handoff and admitted HTTP sources.
+- [x] Critic packets preserve complete source/premise closure and isolate malformed verdicts.
+- [ ] Qualify large adjudicator/analyst chunking; current oversize packets defer explicitly.
 - [ ] Decide whether to activate one faithful model-repair call; prompt is currently reserved.
 - [ ] A5: implement admitted mutable initialization/apply after runtime and retention barriers.
 - [ ] A7: receipt-backed restart/resume after a real runtime contract is established.

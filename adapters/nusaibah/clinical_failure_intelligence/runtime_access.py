@@ -6,11 +6,11 @@ import threading
 from typing import Any
 if __package__:
     from .contracts import ROLE_SCHEMA, ROLES, ContractError, canonical_bytes, digest, identifier, identifiers, object_fields, require, safe_json, strict_object
-    from .policies import Budget, DeferredWork, recoverable_availability
+    from .policies import Budget, DeferredWork, recoverable_availability, trusted_output_exhaustion
     from .prompt_catalog import PROMPTS, COMMON_PROMPT, PROMPT_VERSION
 else:
     from contracts import ROLE_SCHEMA, ROLES, ContractError, canonical_bytes, digest, identifier, identifiers, object_fields, require, safe_json, strict_object
-    from policies import Budget, DeferredWork, recoverable_availability
+    from policies import Budget, DeferredWork, recoverable_availability, trusted_output_exhaustion
     from prompt_catalog import PROMPTS, COMMON_PROMPT, PROMPT_VERSION
 
 
@@ -128,6 +128,8 @@ class AgentRunner:
         try:
             response = self.inputs.invoke_agent(role, input=packet, on_error="raise")
         except Exception as exc:
+            if trusted_output_exhaustion(exc):
+                return StageResult(task_id, role, "failed", key, None, {}, "clinical_agent_output_exhausted")
             if recoverable_availability(exc):
                 return StageResult(task_id, role, "failed", key, None, {}, "clinical_agent_availability_exhausted")
             raise ContractError("clinical_agent_runtime_blocked") from None

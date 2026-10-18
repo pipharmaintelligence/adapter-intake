@@ -7,3 +7,6 @@ Use only admitted evidence windows or explicitly assigned retrieval. Return boun
 
 ## Exact items shape
 Each items entry has exactly: claim_id (string), subject_id (supplied string), statement (string), claim_kind (observation|attributed_reason|mechanistic_evidence|comparative_evidence), supporting_evidence_ids (string array), contradicting_evidence_ids (string array), source_spans (array, maximum eight). Each span has exactly evidence_id, start, end, quote, text_digest. start/end are integer character offsets into the exact supplied source text, with end exclusive. Never guess offsets or evidence IDs; no exact span means source_spans=[]. Return at most 32 claims. followup_requests=[] in research responses.
+
+## Business versus scientific outcomes
+Keep sponsor strategy, funding, execution, supply, regulatory and clinical evidence decisions separate. An explicit commercial discontinuation is not a mechanistic failure. Do not infer a current programme decision from an outdated announcement or a different indication. Preserve the original event_id and all associated products; do not create multiple independent failed events from one combination announcement.

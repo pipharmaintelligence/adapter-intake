@@ -7,7 +7,8 @@ else:
     from contracts import SCHEMA, digest, require, safe_json
 
 
-def build_reason_graph(subject: dict, items: list[dict], evidence: list[dict]) -> dict:
+def build_reason_graph(subject: dict, items: list[dict], evidence: list[dict], *,
+                       case_scope: dict | None = None, terminology: list[dict] | None = None) -> dict:
     """Render evidence/hypothesis edges without manufacturing a causal relationship."""
     subject_node = "subject:" + subject["subject_id"]
     nodes = [{"id": subject_node, "type": "subject", "reference": subject["subject_id"]}]
@@ -30,6 +31,37 @@ def build_reason_graph(subject: dict, items: list[dict], evidence: list[dict]) -
         for dependency in item["depends_on"]:
             edges.append({"from": node, "to": "assertion:" + dependency, "relation": "DEPENDS_ON",
                           "assertion_id": item["item_id"], "status": item["review_status"]})
+    # Identity/source relationships never imply treatment contribution or causality.
+    scope = case_scope or {}
+    for kind, values in (("product", [subject.get("product_id")]),
+                         ("trial", subject.get("trial_ids", [])),
+                         ("indication", [scope.get("indication_id")]),
+                         ("regimen", [scope.get("regimen_id")])):
+        for reference in values:
+            if reference is None:
+                continue
+            node_id = kind + ":" + reference
+            nodes.append({"id": node_id, "type": kind, "reference": reference})
+            edges.append({"from": subject_node, "to": node_id, "relation": "SUBJECT_" + kind.upper(),
+                          "status": "selected_identity_not_causality"})
+    source_nodes = set()
+    for row in evidence:
+        source = "source:" + row["source_id"]
+        if source not in source_nodes:
+            nodes.append({"id": source, "type": "source", "reference": row["source_id"]})
+            source_nodes.add(source)
+        edges.append({"from": "evidence:" + row["evidence_id"], "to": source,
+            "relation": "SOURCE_RECORD", "status": "source_available", "evidence_ids": [row["evidence_id"]]})
+    terminology_nodes = set()
+    for term in terminology or []:
+        node_id = "terminology:" + digest([term["cui"], term.get("source_vocabulary"), term.get("release")]).split(":")[1][:24]
+        if node_id in terminology_nodes:
+            continue
+        terminology_nodes.add(node_id)
+        nodes.append({"id": node_id, "type": "terminology", "reference": term["cui"],
+                      "mapping_status": "candidate", "clinical_equivalence_verified": False})
+        edges.append({"from": subject_node, "to": node_id, "relation": "TERM_CANDIDATE_FOR",
+                      "status": "candidate_link"})
     for edge in edges:
         edge["id"] = "edge:" + digest(edge).split(":", 1)[1][:24]
     return {"schema_version": "clinical_reason_graph.v1", "nodes": sorted(nodes, key=lambda x: x["id"]),
@@ -58,10 +90,20 @@ def validate_result(result: dict) -> None:
     require(len(nodes) == len(graph["nodes"]), "clinical_graph_duplicate")
     require(len({edge["id"] for edge in graph["edges"]}) == len(graph["edges"]), "clinical_graph_edge_duplicate")
     require(all(edge["from"] in nodes and edge["to"] in nodes for edge in graph["edges"]), "clinical_graph_dangling")
-    require(all(edge["relation"] in {"HAS_OUTCOME", "HAS_HYPOTHESIS", "SUPPORTS", "CONTRADICTS", "DEPENDS_ON"}
+    require(all(edge["relation"] in {"HAS_OUTCOME", "HAS_HYPOTHESIS", "SUPPORTS", "CONTRADICTS", "DEPENDS_ON",
+                  "SUBJECT_PRODUCT", "SUBJECT_TRIAL", "SUBJECT_INDICATION", "SUBJECT_REGIMEN",
+                  "SOURCE_RECORD", "TERM_CANDIDATE_FOR"}
                 for edge in graph["edges"]), "clinical_graph_causal_overreach")
     require(result["memory_update"]["write_attempted"] is False, "clinical_preview_mutation_forbidden")
     require(result["persistence"]["status"] == "not_attested", "clinical_persistence_not_attested")
+    if "memory_decision" in result:
+        decision = result["memory_decision"]
+        require(all(decision.get(flag) is False for flag in
+                    ("write_attempted", "commit_observed", "readback_verified", "history_verified"))
+                and decision.get("journal_status") == "not_attested", "clinical_memory_effect_not_attested")
+    if "decision_summary" in result:
+        require(result["decision_summary"].get("predictive_success_probability") is None,
+                "clinical_predictive_model_not_validated")
 
 
 def render_report(result: dict) -> str:
@@ -69,7 +111,17 @@ def render_report(result: dict) -> str:
     def literal(value: object) -> str:
         return html.escape(str(value)).replace("#", "&#35;").replace("*", "&#42;").replace("[", "&#91;")
     lines = ["# Clinical hypothesis assessment", "", "Analysis: " + result["analysis_mode"],
-             "Status: " + result["quality"]["status"], ""]
+             "Status: " + result["quality"]["status"], "",
+             "Source acquisition, scientific review and memory persistence are separate states.", ""]
+    decision = result.get("decision_summary")
+    if decision:
+        lines.extend(["Decision disposition: " + decision["disposition"],
+            "Next evidence action: " + decision["next_action"],
+            "Predictive probability and commercial recommendation: not assessed.", ""])
+    for item in result["case_assessments"]:
+        lines.append(literal(item["dimension"]) + ": " + literal(item["value"]) +
+                     (" (reviewed)" if item["accepted"] else " (unresolved candidate)"))
+    lines.append("")
     for number, item in enumerate(result["hypothesis_results"], 1):
         lines.extend(["## " + str(number) + ". " + literal(item["item_id"]), "",
             "Hypothesis: " + literal(item["statement"]), "Verdict: " + item["verdict"],

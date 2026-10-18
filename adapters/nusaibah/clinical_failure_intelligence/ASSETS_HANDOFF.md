@@ -1,3 +1,13 @@
+# Current scope clarification
+
+This update is adapter-intake only. The clinical consumer now accepts optional
+binding-owned clinical_evidence alongside clinical_context. See
+PREPARED_EVIDENCE_CONTRACT.md. The user is validating the three source adapters
+separately; this change does not ask for or perform their implementation work.
+No nested callable, runtime handoff API, source registration or mutable Skill
+bridge is introduced. The following platform gates remain external and are not
+claimed by local tests.
+
 # PI-2061 Assets and repository handoff
 
 Reviewed baselines: adapter-intake 48bbdecc944a0458d00b40ec50cecffbdce18515;

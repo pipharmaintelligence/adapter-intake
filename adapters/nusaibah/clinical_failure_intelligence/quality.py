@@ -169,11 +169,15 @@ def review_items(items: list[dict], verdicts: Any, ledger: EvidenceLedger) -> tu
             accepted = decision["verdict"] == "accepted" and decision["scope_preserved"]
             if accepted:
                 if item["kind"] == "outcome" and item["value"] not in {"unknown", "not_evaluable"}:
-                    ledger.assert_usable(support)
+                    ledger.assert_usable(support, outcome_dimension=item["dimension"])
                 proposed = item.get("proposed_verdict")
                 if proposed in {"supported", "refuted"}:
                     ledger.assert_usable(support if proposed == "supported" else against)
             item.update(review_status="automated_reviewed", review_reason=decision["rationale"], accepted=accepted)
+            if accepted:
+                # Only the critic-confirmed source subset becomes a reviewed graph edge.
+                item["supporting_evidence_ids"] = support
+                item["contradicting_evidence_ids"] = against
             if item["kind"] == "hypothesis":
                 item["verdict"] = item["proposed_verdict"] if accepted else "inconclusive"
                 item["memory_eligibility"] = accepted and item["verdict"] == "supported" and bool(item["lesson"])

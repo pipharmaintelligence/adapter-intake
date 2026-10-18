@@ -36,7 +36,8 @@ class ExecutionTests(unittest.TestCase):
     def test_critic_unavailable_preserves_candidates(self):
         fake = FakeInputs(faults={'evidence_critic': CodedFailure('agent_execution_provider_retry_exhausted', 'provider_execution_vertex_unavailable')})
         value = result(fake); self.assertTrue(value['hypothesis_results'])
-        self.assertTrue(all(not x['accepted'] for x in value['hypothesis_results'])); self.assertEqual('no_change', value['memory_update']['status'])
+        self.assertTrue(all(not x['accepted'] for x in value['hypothesis_results']))
+        self.assertEqual('no_change', value['memory_update']['status'])
     def test_empty_critic_coverage_not_complete(self):
         fake = FakeInputs(transforms={'evidence_critic': lambda p, _: {**p, 'coverage': []}})
         value = result(fake); self.assertEqual('partial', value['quality']['status']); self.assertFalse(value['hypothesis_results'][0]['accepted'])
@@ -47,8 +48,12 @@ class ExecutionTests(unittest.TestCase):
     def test_bad_critic_item_keeps_research(self):
         def wrong(p, _):
             p['items'][0]['item_id'] = 'UNKNOWN'; return p
-        value = result(FakeInputs(transforms={'evidence_critic': wrong})); self.assertTrue(value['research_claims'])
-        self.assertTrue(all(not x['accepted'] for x in value['hypothesis_results']))
+        value = result(FakeInputs(transforms={'evidence_critic': wrong}))
+        self.assertTrue(value['research_claims'])
+        # The missing verdict withholds its item, not independent valid siblings.
+        self.assertFalse(value['case_assessments'][0]['accepted'])
+        self.assertTrue(value['hypothesis_results'][0]['accepted'])
+        self.assertTrue(any(x['code'] == 'clinical_critic_identity_invalid' for x in value['quality']['issues']))
     def test_wrong_agent_subject_hard_fails(self):
         with self.assertRaisesRegex(ContractError, 'identity_mismatch'):
             result(FakeInputs(transforms={'event_researcher': lambda p, _: {**p, 'subject_id': 'OTHER'}}))

@@ -91,7 +91,7 @@ def _admit_inspected(
         source_type, extent = "trial_registry", "registry_record"
     elif host in {"pubmed.ncbi.nlm.nih.gov", "pmc.ncbi.nlm.nih.gov"}:
         # An index entry is not automatically a verified original clinical trial.
-        source_type, extent = "review", "abstract" if host.startswith("pubmed.") else "excerpt"
+        source_type, extent = "publication", "abstract" if host.startswith("pubmed.") else "excerpt"
     else:
         # Sponsor/news/regulator authority requires a separate semantic adjudication.
         source_type, extent = "news", "excerpt"
@@ -116,7 +116,7 @@ def _admit_inspected(
 
 
 def acquire_sources(inputs: Any, request: dict, runner: Any, budget: Budget, ledger: Any,
-                    stages: list) -> list[dict]:
+                    stages: list, *, roles: list[str] | None = None) -> list[dict]:
     """Discover source leads, inspect a bounded set, and admit only inspected windows.
 
     Each failure is an explicit unresolved obligation; no citation or snippet is
@@ -127,7 +127,10 @@ def acquire_sources(inputs: Any, request: dict, runner: Any, budget: Budget, led
         return [{"code": "clinical_reference_capability_unavailable"}]
     queries = query_plan(request)
     seen: set[str] = set()
-    for role in DISCOVERY_ROLES:
+    selected_roles = list(DISCOVERY_ROLES) if roles is None else roles
+    require(all(role in DISCOVERY_ROLES for role in selected_roles)
+            and len(set(selected_roles)) == len(selected_roles), "clinical_discovery_roles_invalid")
+    for role in selected_roles:
         stage = runner.call(role, request, task_id="discovery:" + role,
             obligations=["discovery:" + role], downstream_reserve=5,
             packet_data={

@@ -17,3 +17,8 @@ Repeated event, unchanged evidence: keep the selected paragraph and return new_t
 Same trial, new source resolves a previously unknown exposure: enrich that trial's selected paragraph, retaining its dated endpoint result and prior uncertainty.
 Same product, different indication or trial: use the supplied different section_path; add_section when absent. Never replace the earlier case's paragraph.
 Contradictory new source: retain the disagreement and attribution; replace only after evidence review supports the correction.
+
+## Longitudinal pharmaceutical memory
+Preserve the distinction between the drug, combination regimen, indication, trial and event. Never silently migrate an event-scoped paragraph to a newly discovered NCT or copy it into another indication. Record an explicit correction as a dated change of understanding; do not erase a formerly reported claim. A missing source/result is an open evidence gap, not a new failure explanation.
+
+Do not propose a factual memory addition using only an accepted unknown outcome or terminology match. An inconclusive hypothesis may be mentioned only as explicitly unresolved context alongside its actual supporting reviewed observation. All proposed replacements must preserve source qualifiers and the current paragraph's valid content.

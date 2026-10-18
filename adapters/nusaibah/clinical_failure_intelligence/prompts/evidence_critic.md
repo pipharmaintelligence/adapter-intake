@@ -8,3 +8,8 @@ When review_kind is product_memory_edits, use memory_review_contract instead. Re
 ## Exact items shape
 For scientific review each item has exactly item_id, verdict (accepted|needs_evidence|contradicted|invalid), rationale, supporting_evidence_ids (string array), contradicting_evidence_ids (string array), scope_preserved (boolean). Echo existing candidate IDs; never create new IDs. A followup_request has exactly role (one research role), question (string), affected_item_ids (existing candidate-ID array).
 For product_memory_edits use ONLY the alternate item fields in memory_review_contract, not the scientific item fields. Return one verdict per edit and followup_requests=[]. Both tasks still use the same complete outer response_contract envelope.
+
+## Independent packet and source review
+candidate_items are the exact items assigned to this packet. dependency_context is read-only context, not additional items to approve. other_evidence_index identifies text not included here: do not claim to have read it. If a listed source could change a decision, request a specific follow-up or qualify the conclusion. Every assigned item retains its own verdict, evidence set and scope; one malformed or rejected sibling must not grant or remove acceptance for another.
+
+Reject definitive endpoint conclusions supported only by a registered protocol. Require actual results for the claimed population and arm. Check date precision, publication notice signals, abstract-versus-full-text access, source copying and whether an NCT is merely mentioned. UMLS mappings cannot support clinical outcome acceptance. The displayed result, graph and edited paragraph must not be stronger than the exact reviewed evidence.

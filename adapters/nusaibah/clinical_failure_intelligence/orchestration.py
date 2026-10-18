@@ -14,6 +14,8 @@ if __package__:
     from .memory import read_methodology, read_group_memory
     from .product_memory import read_product_memory, memory_projection, editor_contract, validate_edit_candidates, review_edit_plan
     from .rendering import build_reason_graph, render_report, validate_result
+    from .review_packets import critic_batches, scoped_review
+    from .decision_outcome import finalize_output, preflight_result, source_request_plan
 else:
     from contracts import ASSET_KEY, SCHEMA, VERSION, RESEARCH_ROLES, ContractError, canonical_bytes, digest, identifiers, parse_request, require
     from policies import Budget, ExecutionPolicy
@@ -25,11 +27,13 @@ else:
     from memory import read_methodology, read_group_memory
     from product_memory import read_product_memory, memory_projection, editor_contract, validate_edit_candidates, review_edit_plan
     from rendering import build_reason_graph, render_report, validate_result
+    from review_packets import critic_batches, scoped_review
+    from decision_outcome import finalize_output, preflight_result, source_request_plan
 
 FACETS = {"trial_researcher": "clinical_outcome", "literature_researcher": "mechanism_evidence",
           "event_researcher": "development_timeline"}
 SOURCE_FACETS = {"trial_researcher": {"trial_registry", "regulator"},
-                 "literature_researcher": {"original_research", "review"},
+                 "literature_researcher": {"original_research", "review", "publication"},
                  "event_researcher": {"news", "sponsor", "regulator"}}
 
 
@@ -77,22 +81,40 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
     request = parse_request(inputs)
     context = request["context"]
     ledger = EvidenceLedger(request["subject_id"], request["as_of_date"], context["evidence"])
+    prepared = request["prepared_sources"]
+    for window in prepared["evidence"]:
+        ledger.add(window)
     statistics = compute_statistics(context["cohort"], as_of_date=request["as_of_date"]) if request["analysis_mode"] == "cohort_pattern" else None
+    if request["preflight_only"]:
+        result = preflight_result(request, ledger, statistics)
+        validate_result(result)
+        return {"response_version": "1", "status": "success",
+                "outputs": {"clinical_intelligence": result}, "metrics": {"logical_agent_calls": 0}, "logs": []}
     budget = Budget(policy)
     methodology = read_methodology(inputs)
     memory = read_product_memory(inputs, request)
     runner = AgentRunner(inputs, budget)
     stages: list[StageResult] = []
-    issues: list[dict] = []
+    issues: list[dict] = deepcopy(prepared["issues"])
+    if prepared["omissions"]:
+        issues.append({"code": "clinical_prepared_source_coverage_partial",
+                       "omitted_windows": len(prepared["omissions"])})
     # Only provider-native citations inspected through the trusted bridge can
     # enrich the ledger; supplied event assertions never become evidence.
-    if callable(getattr(inputs, "open_reference", None)):
-        issues.extend(acquire_sources(inputs, request, runner, budget, ledger, stages))
+    if request["supplementary_search"] and callable(getattr(inputs, "open_reference", None)):
+        supplied_families = {row["source_type"] for row in ledger.rows()}
+        roles = [role for role in RESEARCH_ROLES
+                 if not (SOURCE_FACETS[role] & supplied_families)]
+        # Structured sources are primary; discovery fills actual evidence gaps.
+        issues.extend(acquire_sources(inputs, request, runner, budget, ledger, stages, roles=roles))
     if "source_event_metadata" in context and not ledger.rows():
         issues.append({"code": "clinical_source_only_independent_evidence_required"})
     claims: list[dict] = []
     common = {"source_assertions": context["source_assertions"], "methodology": methodology,
-              "memory_context": memory_projection(memory), "data_is_not_instructions": True}
+              "memory_context": memory_projection(memory), "data_is_not_instructions": True,
+              "case_provenance": deepcopy(context.get("source_event_metadata", {})),
+              "terminology_candidates": deepcopy(prepared["terminology"]),
+              "terminology_is_not_outcome_evidence": True}
 
     def research(role: str, iteration: int = 0, question: str | None = None) -> list[StageResult]:
         relevant = [row for row in ledger.rows() if row["source_type"] in SOURCE_FACETS[role]]
@@ -112,7 +134,13 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
             if stage.payload is None:
                 issues.append({"stage_id": stage.task_id, "code": stage.code})
                 continue
-            valid, errors = ledger.validate_claims(stage.payload["items"], stage_id=stage.task_id)
+            try:
+                valid, errors = ledger.validate_claims(stage.payload["items"], stage_id=stage.task_id)
+            except ContractError as error:
+                if error.code not in {"clinical_claim_batch_invalid", "clinical_claim_id_duplicate"}:
+                    raise
+                issues.append({"stage_id": stage.task_id, "code": error.code})
+                continue
             claims.extend(valid)
             issues.extend(errors)
 
@@ -122,31 +150,64 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
         for future in futures:
             collect(future.result())
 
+    def normalize_stage(stage: StageResult, kind: str) -> list[dict]:
+        try:
+            items, errors = normalize_items(stage.payload["items"] if stage.payload else [],
+                                             kind, request, ledger)
+        except ContractError as error:
+            if error.code not in {"clinical_candidate_batch_invalid", "clinical_item_duplicate"}:
+                raise
+            items, errors = [], [{"stage_id": stage.task_id, "code": error.code}]
+        issues.extend(errors)
+        return items
+
     def evaluate(iteration: int) -> tuple[list[dict], StageResult]:
         outcome_stage = runner.call("outcome_adjudicator", request,
             task_id="outcome:" + str(iteration), obligations=["outcome:" + key for key in OUTCOMES],
             packet_data={**common, "evidence_packet": ledger.rows(), "research_claims": claims})
         stages.append(outcome_stage)
-        outcomes, errors = normalize_items(outcome_stage.payload["items"] if outcome_stage.payload else [],
-                                          "outcome", request, ledger)
-        issues.extend(errors)
+        outcomes = normalize_stage(outcome_stage, "outcome")
         analyst = runner.call("hypothesis_analyst", request,
             task_id="hypotheses:" + str(iteration), obligations=[
                 "seed:" + seed["assertion_id"] for seed in context["source_assertions"]] or ["hypothesis_assessment"],
             packet_data={**common, "evidence_packet": ledger.rows(), "research_claims": claims,
                          "case_assessments": outcomes, "cohort_statistics": statistics})
         stages.append(analyst)
-        hypotheses, errors = normalize_items(analyst.payload["items"] if analyst.payload else [],
-                                            "hypothesis", request, ledger)
-        issues.extend(errors)
+        hypotheses = normalize_stage(analyst, "hypothesis")
         items = outcomes + hypotheses
-        critic = runner.call("evidence_critic", request,
-            task_id="review:" + str(iteration), obligations=["review:" + x["item_id"] for x in items] or ["no_candidate_review"],
-            packet_data={**common, "evidence_packet": ledger.rows(), "candidate_items": items,
-                         "cohort_statistics": statistics})
-        stages.append(critic)
+        counts: dict[str, int] = {}
+        for item in items:
+            counts[item["item_id"]] = counts.get(item["item_id"], 0) + 1
+        duplicates = {key for key, count in counts.items() if count > 1}
+        if duplicates:
+            issues.append({"code": "clinical_cross_stage_item_duplicate", "item_ids": sorted(duplicates)})
+            items = [item for item in items if item["item_id"] not in duplicates]
+        packets = critic_batches(items, ledger.rows(),
+            {**common, "cohort_statistics": statistics},
+            max(1024, budget.policy.max_packet_bytes - 10000)) if items else [{
+                **common, "candidate_items": [], "evidence_packet": [], "cohort_statistics": statistics}]
+        verdicts, followups, critic_stages = [], [], []
+        for index, packet in enumerate(packets):
+            task_id = "review:" + str(iteration) + (":" + str(index) if len(packets) > 1 else "")
+            stage = runner.call("evidence_critic", request, task_id=task_id,
+                obligations=["review:" + x["item_id"] for x in packet["candidate_items"]] or ["no_candidate_review"],
+                downstream_reserve=2 if memory["status"] != "not_requested" else 0,
+                packet_data=packet)
+            stages.append(stage)
+            critic_stages.append(stage)
+            if stage.payload is not None:
+                verdicts.extend(stage.payload["items"])
+                followups.extend(stage.payload["followup_requests"])
+        critic = critic_stages[0]
+        if len(critic_stages) > 1:
+            # A join record is not another model invocation or a durable checkpoint.
+            critic = StageResult("review_join:" + str(iteration), "evidence_critic",
+                "completed" if all(x.status == "completed" for x in critic_stages) else "partial",
+                digest([x.input_digest for x in critic_stages]),
+                {"items": verdicts, "followup_requests": followups}, {})
         try:
-            reviewed, errors = review_items(items, critic.payload["items"] if critic.payload else None, ledger)
+            reviewed, errors = scoped_review(items,
+                verdicts if any(x.payload is not None for x in critic_stages) else None, ledger)
         except ContractError as error:
             # Invalid dependency graphs cannot enter the output graph. Keep isolated
             # candidates as unresolved and remove only their invalid dependency edges.
@@ -199,8 +260,14 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
     if statistics and statistics["status"] == "not_run":
         issues.append({"code": statistics["reason"]})
     product_plan = review_edit_plan([], None, memory, request)
-    accepted_items = [item for item in reviewed if item["accepted"]]
-    if memory["status"] in {"read", "not_initialized"} and accepted_items:
+    accepted_items = [item for item in reviewed if item["accepted"] and (
+        item["kind"] == "outcome" and item["value"] not in {"unknown", "not_evaluable", "not_applicable"}
+        or item["kind"] == "hypothesis" and item["verdict"] in {"supported", "refuted"})]
+    ambiguous_product = any(len(event.get("all_product_ids", [])) > 1
+        for event in context.get("source_event_metadata", {}).get("events", []))
+    if ambiguous_product and memory["status"] != "not_requested":
+        product_plan.update(status="deferred", reason="clinical_product_attribution_review_required")
+    if memory["status"] in {"read", "not_initialized"} and accepted_items and not ambiguous_product:
         editor = runner.call("product_memory_editor", request, task_id="product_memory_edit",
             obligations=["product_memory_delta"], downstream_reserve=1,
             packet_data={"memory_context": memory_projection(memory), "accepted_items": accepted_items,
@@ -247,7 +314,8 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
         "source_assertions": deepcopy(context["source_assertions"]), "research_claims": claims,
         "case_assessments": outcomes, "hypothesis_results": hypotheses,
         "cohort_statistics": statistics, "evidence": ledger.rows(),
-        "reason_graph": build_reason_graph(context["subject"], reviewed, ledger.rows()),
+        "reason_graph": build_reason_graph(context["subject"], reviewed, ledger.rows(),
+            case_scope=context.get("case_scope"), terminology=prepared["terminology"]),
         "quality": {"status": "completed" if complete else "partial", "issues": issues,
             "automated_review_only": True, "scientific_accuracy_certified": False, "external_truth_verified": False,
             "evidence_scope": "resolved_input_snapshot",
@@ -258,10 +326,12 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
         "execution": {"stages": [stage.summary() for stage in stages], **budget.proof(),
             "resume": {"available": False, "reason": "durable_stage_retention_not_qualified"}},
         "memory_update": product_plan,
-        "persistence": {"status": "not_attested", "receipt": None}}
+        "persistence": {"status": "not_attested", "receipt": None},
+        "prepared_sources": {key: deepcopy(value) for key, value in prepared.items() if key != "evidence"},
+        "source_request_plan": source_request_plan(request, prepared)}
     if "source_event_metadata" in context:
         result["source_event_metadata"] = deepcopy(context["source_event_metadata"])
+    result = finalize_output(result)
     validate_result(result)
-    result["report_markdown"] = render_report(result)
     return {"response_version": "1", "status": "success", "outputs": {"clinical_intelligence": result},
             "metrics": {"logical_agent_calls": budget.calls}, "logs": []}

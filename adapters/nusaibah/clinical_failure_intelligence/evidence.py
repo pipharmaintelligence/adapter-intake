@@ -10,7 +10,7 @@ else:
                            object_fields, require, text, text_digest)
 
 SOURCE_TYPES = {"trial_registry", "original_research", "regulator", "sponsor",
-                "news", "review", "supplied_assertion"}
+                "news", "review", "publication", "supplied_assertion"}
 EXTENTS = {"registry_record", "abstract", "full_text", "excerpt", "supplied_assertion"}
 
 
@@ -29,7 +29,7 @@ class EvidenceLedger:
         """Admit resolved source data; model-authored source leads never call this."""
         row = object_fields(value, {"evidence_id", "source_id", "subject_id", "source_type",
             "source_version", "published_on", "accessible_extent", "text", "trial_ids"},
-            {"reference", "title", "declared_text_digest"})
+            {"reference", "title", "declared_text_digest", "source_context"})
         eid = identifier(row["evidence_id"])
         identifier(row["source_id"])
         require(row["subject_id"] == self.subject_id, "clinical_evidence_subject_mismatch")
@@ -47,23 +47,42 @@ class EvidenceLedger:
             require(iso_date(row["published_on"]) <= self.as_of_date, "clinical_evidence_temporal_leak")
         checksum = text_digest(row["text"])
         require(row.get("declared_text_digest", checksum) == checksum, "clinical_evidence_digest_mismatch")
+        context = row.get("source_context")
+        if context is not None:
+            require(isinstance(context, dict), "clinical_source_context_invalid")
+            require(context.get("purpose") in {"case", "comparator", "mechanism"},
+                    "clinical_source_purpose_invalid")
+            interval = context.get("publication_interval")
+            require(isinstance(interval, dict), "clinical_source_interval_invalid")
+            earliest, latest = interval.get("start"), interval.get("end")
+            require((earliest is None) == (latest is None), "clinical_source_interval_invalid")
+            if latest is not None:
+                require(iso_date(earliest) <= iso_date(latest), "clinical_source_interval_invalid")
+            # Never trust an upstream temporal label in place of source dates.
+            expected_temporal = ("unknown" if latest is None else
+                "eligible_by_source_date" if latest <= self.as_of_date else
+                "after_cutoff" if earliest > self.as_of_date else "overlaps_cutoff")
+            require(context.get("temporal_status") == expected_temporal and expected_temporal != "after_cutoff",
+                    "clinical_evidence_temporal_leak")
         normalized = deepcopy(row)
         normalized.pop("declared_text_digest", None)
         normalized.update(text_digest=checksum, origin="resolved_context", verification="source_available")
         identity_keys = ("source_id", "source_version", "text_digest", "subject_id",
                          "published_on", "accessible_extent", "source_type", "trial_ids")
-        key = digest({k: normalized[k] for k in identity_keys})
+        key = digest({**{k: normalized[k] for k in identity_keys},
+                      "source_context": normalized.get("source_context")})
         if eid in self.aliases:
             old = self.items[self.aliases[eid]]
-            require(all(old[k] == normalized[k] for k in identity_keys), "clinical_evidence_id_collision")
+            require(all(old[k] == normalized[k] for k in identity_keys) and
+                    old.get("source_context") == normalized.get("source_context"), "clinical_evidence_id_collision")
             return self.aliases[eid]
         if key in self._keys:
             canonical = self._keys[key]
             self.aliases[eid] = canonical
             return canonical
         self._keys[key] = eid
-        self.aliases[eid] = eid
         self.items[eid] = normalized
+        self.aliases[eid] = eid
         return eid
 
     def refs(self, value: Any) -> list[str]:
@@ -76,14 +95,38 @@ class EvidenceLedger:
         """Return stable detached views rather than mutable shared Agent state."""
         return [deepcopy(self.items[key]) for key in sorted(self.items)]
 
-    def assert_usable(self, references: list[str]) -> None:
-        """Block supplied assertions or undated sources from definitive conclusions."""
+    def assert_usable(self, references: list[str], *, outcome_dimension: str | None = None) -> None:
+        """Require usable evidence without equating source access with scientific truth.
+
+        Protocol endpoints cannot establish that an endpoint was met/not met.
+        Comparator/mechanism context cannot establish this case's outcome. An
+        article carrying a notice or uncertain date remains review context only.
+        Legacy resolved evidence retains its original date-based contract.
+        """
         require(bool(references), "clinical_definitive_evidence_missing")
+        outcome_support = False
         for ref in references:
             source = self.items[ref]
+            context = source.get("source_context")
+            dated = source["published_on"] is not None
+            if context is not None:
+                dated = context["temporal_status"] == "eligible_by_source_date"
+                require(context.get("integrity_status") != "notice_reported",
+                        "clinical_publication_notice_requires_review")
+                if outcome_dimension:
+                    require(context["purpose"] == "case", "clinical_outcome_comparator_not_case")
+                    use = context.get("evidence_use")
+                    if outcome_dimension in {"primary_endpoint_result", "safety_assessment"}:
+                        outcome_support |= use in {"posted_results", "safety_results", "publication_text"}
+                    else:
+                        outcome_support = True
+            else:
+                outcome_support = True
             require(source["source_type"] != "supplied_assertion" and
-                    source["accessible_extent"] != "supplied_assertion" and
-                    source["published_on"] is not None, "clinical_definitive_evidence_unverified")
+                    source["accessible_extent"] != "supplied_assertion" and dated,
+                    "clinical_definitive_evidence_unverified")
+        if outcome_dimension:
+            require(outcome_support, "clinical_outcome_result_evidence_required")
 
     def validate_claims(self, rows: list, *, stage_id: str) -> tuple[list[dict], list[dict]]:
         """Keep valid siblings and flag bad spans; a literal match is not entailment."""

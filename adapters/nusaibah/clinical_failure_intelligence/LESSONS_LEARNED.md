@@ -52,3 +52,24 @@ complete paragraphs. Edits are reviewed deltas, not complete document rewrites.
 Preserve dates, uncertainty and independent cases; reject unread/stale targets.
 Class analysis is opt-in, not implicit from the presence of a class ID. Exact text
 deduplication is not semantic equivalence and proposal IDs are not durable receipts.
+
+## Intake consumer mapping from pharma 0.1.48-0.1.52
+
+- Scope business failures to their original work item; do not suppress unknown
+  programming, authority or identity failures. Original strict validators remain.
+- Preserve valid sibling critique findings and propagate unaccepted dependencies.
+- Recognize only SDK-typed provider output-limit exhaustion; do not parse truncated
+  JSON or rerun paid calls. No 64K limit or provider policy is copied implicitly.
+- Keep critic context shared and focused; preserve every assigned item and its
+  original source/premise closure. This is not a measured live latency claim.
+- Separate scientific result, product-memory decision and optional report size.
+  Canonical candidates stay intact. Content-free decision metadata is emitted,
+  but a durable journal or Core receipt is not manufactured in the adapter.
+- Keep product paragraph targets/digests, event/indication/trial separation,
+  first-run absence semantics, and class-disabled defaults unchanged.
+- Prefer prepared structured source evidence; public search is gap-filling, not
+  a substitute for provider metadata, dates, exact identities and source notices.
+
+This task validates only the clinical consumer using synthetic source results.
+The user is validating the three source adapters separately. No source adapter,
+provider, Assets/Core/UI implementation or deployed wheel was changed here.

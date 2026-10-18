@@ -23,21 +23,26 @@ No provider model, shared registry metadata, lake or node is copied from pharma.
 
 ## Evidence and safety boundary
 
-Current research operates on source windows already in the governed clinical_context.
-It does not admit model-authored URLs or invent retrieved documents. New registry,
-PubMed and native-search retrieval needs the A3 integration in ASSETS_HANDOFF.md.
+Research uses existing clinical_context source windows and the optional binding-owned
+clinical_evidence bundle. source_bundle.py consumes normalized ClinicalTrials.gov,
+PubMed and UMLS results without calling or importing their adapters. Missing source
+families may use the existing provider-grounded discovery and trusted HTTP path;
+model-authored URLs are not admitted as evidence. The source adapters, their live
+validation and runtime handoff remain separate work.
 Accepted means automated support assessment inside the supplied snapshot, not
 independently verified clinical truth. A literal passage match is not entailment.
 
 The bundled Fixed Skill has an exact digest. product_memory is the primary read-only helper
 use, selected by product_id; its approved node/partition declaration is pending.
-case_scope requires canonical indication/trial/regimen IDs. Mixed trial memory
-work must be split by the parent. memory_mode=off
+case_scope preserves canonical indication/trial/regimen identities. Missing trials
+remain event-scoped, not invented NCTs. Mixed trial memory work must be split by the
+parent; unresolved multi-product attribution defers product-memory changes. memory_mode=off
 skips it. Only the exact dynamic_skill_not_initialized error permits empty first-run
 memory; missing node or authority fails closed. memory_mode=apply fails before any
 Agent or Skill call. Preview does not initialize or publish anything.
 
-The manifest requires variables (direct) and clinical_context (binding). Local
+The manifest requires variables (direct) and clinical_context (binding), with an
+optional clinical_evidence (binding) role. Local
 fixture values are not a bypass for binding-owned live input. It declares only
 local_worker; callable eligibility does not prove child capabilities are installed.
 No nested callable, direct provider HTTP, credentials, queue or publisher is added.
@@ -51,6 +56,7 @@ Do not add the Assets checkout to PYTHONPATH or modify the installed wheel.
     python -m unittest discover -s tests -p "test_*.py" -v
     python tests/run_fixture.py mechanistic_case
     python tests/run_fixture.py cohort_pattern
+    python tests/run_fixture.py prepared_evidence_preflight
 
 The fixture runner uses explicitly synthetic doubles, not OBS or a provider. The
 production entrypoint requires the real runtime package. Only import-closure tests
@@ -74,8 +80,9 @@ budget and a 120-second completion reserve. Transport retries and actual request
 cancellation remain runtime-owned. Eight normal calls can become twelve after refinement.
 Oversize downstream packets defer explicitly rather than truncate content.
 
-response_repair.md is a reserved prompt, not an active Agent. The reference
-read counter is reserved; no public reference reader is connected in this release.
+response_repair.md is a reserved prompt, not an active Agent. The reference-read
+budget covers the trusted HTTP path; source adapter calls are not made by this child.
+A typed SDK output-limit failure withholds its stage without a paid retry.
 There is no paid planner, inferential statistics, graph database or custom checkpoint.
 Same-run reuse is not restart recovery. Persistence is explicitly not_attested.
 Thirteen source-hypothesis indices are provided; they are not a gold dataset or full
@@ -88,3 +95,23 @@ See GEMINI_PROMPT_PROFILE.md for Gemini 3.8 domain prompts and qualifications.
 Class true currently produces candidate references, not cross-product synthesis.
 Product edits remain preview plans, not writes. Legacy unindexed documents defer
 for migration instead of being treated as empty.
+
+## Prepared evidence and reliability additions (same 0.1.1 draft)
+
+See PREPARED_EVIDENCE_CONTRACT.md for the exact handoff and scientific gates, and
+INTAKE_IMPLEMENTATION_CHECKLIST.md for implementation versus external validation.
+The source adapters, Assets, Core, UI, selected wheel and provider settings are not
+changed by this consumer slice. No new asset version is introduced.
+
+source_bundle.py normalizes prepared source results and preserves provenance,
+NCT/PMID/CUI roles, date precision, article notices and complete source windows.
+review_packets.py splits focused critics without changing original validators.
+decision_outcome.py adds a scientific/business disposition and independent
+non-writing memory decision. Optional presentation compaction never truncates
+canonical evidence or the reviewed product-memory delta.
+
+Set preflight_only=true for zero-Agent/zero-Skill contract inspection; this does
+not prove a live binding. supplementary_search=false disables the optional HTTP
+fallback when testing the prepared-data path. Source plans describe unexecuted
+needs only. Canonical oversize, live handoff, actual SDK, product writes and durable
+restart recovery remain independently qualified gates.

@@ -95,3 +95,13 @@ def recoverable_availability(error: Exception) -> bool:
     return code in {"agent_execution_provider_retry_exhausted", "agent_execution_session_deadline_exceeded"} and cause in {
         "provider_execution_transport_timeout", "provider_execution_transport_failed",
         "provider_execution_vertex_rate_limited", "provider_execution_vertex_unavailable"}
+
+
+def trusted_output_exhaustion(error: Exception) -> bool:
+    """Recognize only the SDK-sanitized output-limit cause; never repair truncation."""
+    try:
+        from devtools.runtime_agent_invocation import RuntimeAgentInvocationError
+    except ImportError:
+        return False  # An absent SDK is not evidence that a generic error is safe.
+    return isinstance(error, RuntimeAgentInvocationError) and getattr(error, "cause_code", None) == (
+        "provider_execution_output_limit_reached")

@@ -178,6 +178,7 @@ def review_edit_plan(candidates: list[dict], verdicts: Any, snapshot: dict, requ
     if snapshot["status"] == "requires_index_migration":
         return {**base, "status": "deferred", "reason": "product_memory_index_migration_required"}
     if not candidates:
+        base["initialization_required"] = False
         return base
     require(verdicts is None or isinstance(verdicts, list), "clinical_memory_review_invalid")
     mapped, assigned = {}, {item["edit_id"] for item in candidates}
