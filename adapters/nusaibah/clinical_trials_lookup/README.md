@@ -1,4 +1,4 @@
-# ClinicalTrials.gov source lookup — `nusaibah.clinical_trials_lookup@0.1.0`
+# ClinicalTrials.gov source lookup â€” `nusaibah.clinical_trials_lookup@0.1.1`
 
 **Independent, read-only adapter-intake package.** Its source-of-truth is the
 ClinicalTrials.gov v2 study record, not an inference or registration assessment.
@@ -16,15 +16,18 @@ classification, and programme readiness.
 
 ## Exact identity and input ownership
 
-- `key`: `nusaibah.clinical_trials_lookup`; version and manifest default: `0.1.0`.
+- `key`: `nusaibah.clinical_trials_lookup`; version and manifest default: `0.1.1`; legacy `0.1.0` files remain unchanged.
 - Input `variables` is an **optional direct** semantic object. Absent or `{}`
   invokes `describe` without fetching a source. A retrieval operation requires
   valid selectors. An omitted `operation` is inferred only from `nct_id`,
   `nct_ids`, or meaningful search selectors.
 - Output: required `trial_result` object, callable result key `trial_result`,
-  byte cap 262,144. Adapter itself enforces a slightly smaller 240,000-byte
-  result cap to leave envelope headroom; large research responses fail visibly
-  rather than silently dropping modules.
+  2 MiB (2,097,152 bytes) advisory threshold. `size_policy` reports exact
+  serialized UTF-8 result bytes and `warnings` highlights threshold crossings.
+  Crossing 2 MiB preserves the complete result and does not reject execution.
+  The new callable manifest allows 16 MiB for transport; that framework ceiling
+  is independent from the adapter warning. Existing Core source read limits and
+  selected executor policies remain authoritative and unchanged.
 - Source roles `trials_search_runtime`, `trials_phase3_runtime`, and
   `trials_detail_runtime` are **optional direct technical role declarations**.
   For a real request, the trusted worker must attach the corresponding
@@ -68,8 +71,8 @@ Search arguments: `text`, `condition`, `intervention`, `intervention_terms`,
 - Search normally uses `view=summary`. `study_get` defaults to `research`.
   `research` retains the **complete source study**, including future protocol
   modules, results/derived/document/annotation sections if present. No list of
-  named fields truncates future records. Some very large studies exceed the
-  result byte budget; choose a narrower operation rather than silently dropping.
+  named fields truncates future records. Large source results carry size
+  warnings; model consumers partition complete evidence instead of discarding it.
 
 ## Arm group and results-group fidelity
 
@@ -83,10 +86,18 @@ When arm assignments are not registered, this tool does **not** invent them.
 
 `results_get` preserves the original `resultsSection` (participant flow,
 baseline characteristics, outcome measures, adverse events, more info). Where
-group arrays exist, `results_group_modules` keeps their **actual source field
-names**; they are not automatically matched to protocol arm groups.
-`results_outcome_measures` retains source outcome-measure entries including
-their original group references and reported statistics.
+group arrays exist, `results_group_module_refs` keeps their actual source field
+names as record-relative JSON Pointers with canonical content digests.
+`results_outcome_measures_ref` points to the native outcome-measure array.
+`registry_study` retains the complete native study once; neither reference copies
+the results. Pointers use RFC 6901 escaping and never identify an external read.
+Group definitions are not automatically matched to protocol arms.
+
+Compatibility: callers requiring copied `results_group_modules` and
+`results_outcome_measures` can continue using unchanged version `0.1.0`.
+Version `0.1.1` is an explicit reference-format opt-in, with
+`results_reference_schema=clinical_trials_results_refs.v1`. Consumers can read
+the same native `registry_study.resultsSection` in both versions.
 
 Absence remains distinct from false: `hasResults` can be true, false or absent;
 `results_state` is `posted`, `not_posted` or `not_present_in_record`.
@@ -135,7 +146,7 @@ Failure cases are stable safe codes (no provider body/log): missing selector,
 invalid NCT ID, invalid cursor/pagination/sort, duplicate IDs, wrong detail
 identity, ambiguous results, malformed page/list, missing trusted role,
 trusted timeout/provider rejection, and output byte-budget violation.
-A source failure is **not** a zero-result study search. Output limits are
+A source failure is **not** a zero-result study search. Transport limits are
 explicit; they protect callable/remote consumers without imposing a semantic
 upper limit on registry arm group counts or clinical text fields.
 
@@ -145,10 +156,10 @@ public ChatGPT publication are each separately gated.
 
 ## Official references
 
-- ClinicalTrials.gov Data API — API v2 endpoint reference (National Library of Medicine)
-- ClinicalTrials.gov Data API — Study Data Structure reference
-- ClinicalTrials.gov Data API — Search Areas reference
-- ClinicalTrials.gov Data API — API version and data timestamp reference
+- ClinicalTrials.gov Data API â€” API v2 endpoint reference (National Library of Medicine)
+- ClinicalTrials.gov Data API â€” Study Data Structure reference
+- ClinicalTrials.gov Data API â€” Search Areas reference
+- ClinicalTrials.gov Data API â€” API version and data timestamp reference
 
 The official documentation destinations are preserved in PR #147's review history.
 The published intake handoff deliberately contains no literal provider endpoint URLs

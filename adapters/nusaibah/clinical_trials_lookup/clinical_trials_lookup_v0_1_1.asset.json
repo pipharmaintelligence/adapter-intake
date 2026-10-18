@@ -1,0 +1,161 @@
+{
+  "key": "nusaibah.clinical_trials_lookup",
+  "default": "0.1.1",
+  "allowed_surfaces": [
+    "v1_asset_execute"
+  ],
+  "allowed_modes": [
+    "balanced"
+  ],
+  "execution": {
+    "allowed_substrates": [
+      "local_worker",
+      "ecs"
+    ],
+    "default_substrate": "local_worker",
+    "timeout_seconds": 120
+  },
+  "versions": {
+    "0.1.1": {
+      "state": "active",
+      "allow_resume": false,
+      "inputs": {
+        "variables": {
+          "required": false,
+          "source": "direct",
+          "shape": "object"
+        },
+        "trials_search_runtime": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "contract": {
+            "source": {
+              "type": "api",
+              "authority": "dlm_core",
+              "reference": {
+                "service": "clinical_trials_gov_v2_study_search"
+              }
+            },
+            "schema": {
+              "source": "governed"
+            },
+            "partitioning": {
+              "mode": "none",
+              "source": "none",
+              "dimensions": []
+            },
+            "access": {
+              "mode": "service"
+            },
+            "execution": {
+              "strategy": "single_call",
+              "developer_hint": "Worker-admitted lazy Runtime Source role. The configured JSON response must preserve the root studies/nextPageToken/totalCount envelope."
+            },
+            "explainability": {
+              "summary": "Read a single bounded ClinicalTrials.gov v2 study-search page.",
+              "logic": "Source authority, request target, and transport are configured in Core; Python only normalizes returned records."
+            },
+            "capabilities": {
+              "preview": {
+                "supported": false,
+                "default_in_developer_env": false
+              }
+            }
+          }
+        },
+        "trials_detail_runtime": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "contract": {
+            "source": {
+              "type": "api",
+              "authority": "dlm_core",
+              "reference": {
+                "service": "clinical_trials_gov_v2_study_detail"
+              }
+            },
+            "schema": {
+              "source": "governed"
+            },
+            "partitioning": {
+              "mode": "none",
+              "source": "none",
+              "dimensions": []
+            },
+            "access": {
+              "mode": "service"
+            },
+            "execution": {
+              "strategy": "single_call",
+              "developer_hint": "Worker-admitted lazy Runtime Source role. Exact study identifier must be bound to a governed path parameter, not constructed as a URL by Python."
+            },
+            "explainability": {
+              "summary": "Read one exact ClinicalTrials.gov v2 study and optional posted results.",
+              "logic": "Core owns the study path template, allowlisted identifier, and safe record delivery."
+            },
+            "capabilities": {
+              "preview": {
+                "supported": false,
+                "default_in_developer_env": false
+              }
+            }
+          }
+        },
+        "trials_phase3_runtime": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "contract": {
+            "source": {
+              "type": "api",
+              "authority": "dlm_core",
+              "reference": {
+                "service": "clinical_trials_gov_v2_phase3_interventional_search"
+              }
+            },
+            "schema": {
+              "source": "governed"
+            },
+            "partitioning": {
+              "mode": "none",
+              "source": "none",
+              "dimensions": []
+            },
+            "access": {
+              "mode": "service"
+            },
+            "execution": {
+              "strategy": "single_call",
+              "developer_hint": "Operator-review a Core-pinned Phase 3 INTERVENTIONAL filter. The adapter supplies only bounded basic search terms; the source must preserve its root JSON page."
+            },
+            "explainability": {
+              "summary": "Search within a governed Core-pinned Phase 3 interventional registry scope.",
+              "logic": "Source authority, request target, and transport are configured in Core; Python only normalizes returned records."
+            },
+            "capabilities": {
+              "preview": {
+                "supported": false,
+                "default_in_developer_env": false
+              }
+            }
+          }
+        }
+      },
+      "outputs": {
+        "trial_result": {
+          "required": true,
+          "shape": "object"
+        }
+      },
+      "callable": {
+        "enabled": true,
+        "result_key": "trial_result",
+        "result_shape": "object",
+        "max_result_bytes": 16777216,
+        "timeout_seconds": 90
+      }
+    }
+  }
+}
