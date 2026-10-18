@@ -8,6 +8,7 @@ not performed by this module.
 from __future__ import annotations
 
 from calendar import monthrange
+from collections import deque
 from copy import deepcopy
 from datetime import date
 import re
@@ -22,15 +23,14 @@ else:
 
 BUNDLE_SCHEMA = "clinical_evidence_bundle.v1"
 SOURCE_CONTRACTS = {
-    "nusaibah.clinical_trials_lookup": ("0.1.0", "trial_result", "clinical_trials_lookup.v1"),
-    "nusaibah.pubmed_evidence": ("0.1.0", "literature_result", "pubmed_evidence.v1"),
-    "umls_terminology": ("0.1.0", "terminology_result", None),
+    "nusaibah.clinical_trials_lookup": (("0.1.0", "0.1.1"), "trial_result", "clinical_trials_lookup.v1"),
+    "nusaibah.pubmed_evidence": (("0.1.0",), "literature_result", "pubmed_evidence.v1"),
+    "umls_terminology": (("0.1.0",), "terminology_result", None),
 }
-MAX_BUNDLE_BYTES = 1_048_576
+BUNDLE_WARNING_BYTES = 2 * 1024 * 1024
 MAX_SOURCE_RESULTS = 24
 MAX_RECORDS = 50
-MAX_WINDOWS = 64
-MAX_EVIDENCE_BYTES = 262_144
+EVIDENCE_WARNING_BYTES = 2 * 1024 * 1024
 MAX_WINDOW_BYTES = 16_000
 MAX_WINDOW_CHARS = 12_000
 _NCT = re.compile(r"NCT[0-9]{8}\Z")
@@ -102,7 +102,6 @@ def validate_bundle(value: Any, request: dict) -> dict:
     bundle = object_fields(value, {"schema_version", "bundle_id", "subject_id", "product_id",
                                   "event_ids", "sources"})
     safe_json(bundle)
-    require(len(canonical_bytes(bundle)) <= MAX_BUNDLE_BYTES, "clinical_source_bundle_too_large")
     require(bundle["schema_version"] == BUNDLE_SCHEMA, "clinical_source_bundle_schema_invalid")
     identifier(bundle["bundle_id"])
     require(bundle["subject_id"] == request["subject_id"] and
@@ -122,8 +121,8 @@ def validate_bundle(value: Any, request: dict) -> dict:
         asset = source["asset_key"]
         require(isinstance(asset, str) and asset in SOURCE_CONTRACTS,
                 "clinical_source_asset_not_declared")
-        version, role, schema = SOURCE_CONTRACTS[asset]
-        require(source["asset_version"] == version and source["output_role"] == role,
+        versions, role, schema = SOURCE_CONTRACTS[asset]
+        require(source["asset_version"] in versions and source["output_role"] == role,
                 "clinical_source_contract_mismatch")
         require(isinstance(source["purpose"], str) and source["purpose"] in {
             "case", "comparator", "mechanism", "terminology"}, "clinical_source_purpose_invalid")
@@ -201,13 +200,75 @@ class _Collector:
                 },
             }
             size = len(canonical_bytes(window))
-            if len(self.windows) >= MAX_WINDOWS or self.byte_count + size > MAX_EVIDENCE_BYTES:
-                self.omissions.append({"source_result_id": entry["source_result_id"],
-                    "code": "clinical_source_window_budget", "source_pointer": field_pointer,
-                    "text_digest": content_hash, "bytes": size})
-                continue
             self.windows.append(window)
             self.byte_count += size
+
+
+def evidence_priority(row: dict) -> int:
+    """Spend model attention on outcomes/safety before administrative metadata."""
+    context = row.get("source_context") or {}
+    use = context.get("evidence_use")
+    pointer = context.get("source_pointer", "")
+    if not isinstance(pointer, str):
+        pointer = ""
+    if use in {"posted_results", "publication_text"}:
+        return 0
+    if use == "safety_results":
+        return 1
+    if "contactsLocationsModule" in pointer:
+        return 9
+    if use == "result_context" or any(name in pointer for name in
+            ("armsInterventionsModule", "outcomesModule", "statusModule", "designModule")):
+        return 2
+    return 3
+
+
+def prioritize_evidence(rows: list[dict]) -> list[dict]:
+    """Interleave endpoint and safety evidence before lower-priority metadata."""
+    buckets = {key: deque() for key in ("posted_results", "safety_results", "publication_text")}
+    other = []
+    for row in rows:
+        use = (row.get("source_context") or {}).get("evidence_use")
+        if use in buckets:
+            buckets[use].append(row)
+        else:
+            other.append(row)
+    ordered = []
+    while any(buckets.values()):
+        for bucket in buckets.values():
+            if bucket:
+                ordered.append(bucket.popleft())
+    return ordered + sorted(other, key=evidence_priority)
+
+
+def _validate_trial_references(row: dict) -> None:
+    """Resolve only local JSON Pointers and verify their exact native content."""
+    if "results_reference_schema" not in row:
+        return
+    require(row["results_reference_schema"] == "clinical_trials_results_refs.v1",
+            "clinical_trial_reference_schema_invalid")
+    groups = row.get("results_group_module_refs")
+    require(isinstance(groups, dict) and all(isinstance(fields, dict) for fields in groups.values()),
+            "clinical_trial_result_reference_invalid")
+    references = [(ref, "/registry_study/resultsSection/" + _pointer(module) + "/" + _pointer(field))
+                  for module, fields in groups.items() for field, ref in fields.items()]
+    if row.get("results_outcome_measures_ref") is not None:
+        references.append((row["results_outcome_measures_ref"],
+                           "/registry_study/resultsSection/outcomeMeasuresModule/outcomeMeasures"))
+    for ref, expected in references:
+        object_fields(ref, {"json_pointer", "content_digest"})
+        pointer = ref["json_pointer"]
+        require(isinstance(pointer, str) and pointer == expected,
+                "clinical_trial_result_reference_invalid")
+        value = row
+        for token in pointer[1:].split("/"):
+            # Strict RFC 6901 tokens; an external address is never interpreted.
+            require(re.search(r"~(?![01])", token) is None, "clinical_trial_result_reference_invalid")
+            token = token.replace("~1", "/").replace("~0", "~")
+            require(isinstance(value, dict) and token in value, "clinical_trial_result_reference_invalid")
+            value = value[token]
+        require(isinstance(value, list) and ref["content_digest"] == digest(value),
+                "clinical_trial_result_reference_invalid")
 
 
 def _trial(entry: dict, collector: _Collector, summary: dict) -> None:
@@ -223,6 +284,7 @@ def _trial(entry: dict, collector: _Collector, summary: dict) -> None:
             and len(ids) == len(set(ids)), "clinical_trial_result_identity_invalid")
     summary["coverage"] = deepcopy(result.get("pagination", {}))
     for row in rows:
+        _validate_trial_references(row)
         nct = row["nct_id"]
         matched = nct in expected
         if entry["purpose"] == "case" and op not in {"study_search", "describe"} and expected:
@@ -250,13 +312,13 @@ def _trial(entry: dict, collector: _Collector, summary: dict) -> None:
             require(isinstance(identification, dict), "clinical_trial_modules_invalid")
             nested_id = identification.get("nctId")
             require(nested_id is None or nested_id == nct, "clinical_trial_case_identity_mismatch")
-            for name in sorted(protocol):
-                add(protocol[name], "/registry_study/protocolSection/" + _pointer(name), "protocol")
             for name in sorted(results):
                 require(isinstance(results[name], dict), "clinical_trial_results_module_invalid")
                 use = ("safety_results" if name == "adverseEventsModule" else
                        "posted_results" if name == "outcomeMeasuresModule" else "result_context")
                 add(results[name], "/registry_study/resultsSection/" + _pointer(name), use)
+            for name in sorted(protocol):
+                add(protocol[name], "/registry_study/protocolSection/" + _pointer(name), "protocol")
             # Documents and derived content remain separately identified, not silently discarded.
             for name in sorted(set(study) - {"protocolSection", "resultsSection"}):
                 add(study[name], "/registry_study/" + _pointer(name), "registry_metadata")
@@ -455,8 +517,15 @@ def prepare_bundle(value: Any, request: dict) -> dict:
         else:
             terminology.extend(_terminology(entry, summary))
         sources.append(summary)
+    issues = []
+    for code, size, threshold in (
+            ("clinical_source_bundle_size_warning", len(canonical_bytes(bundle)), BUNDLE_WARNING_BYTES),
+            ("clinical_prepared_evidence_size_warning", collector.byte_count, EVIDENCE_WARNING_BYTES)):
+        if size > threshold:
+            issues.append({"code": code, "bytes": size, "warning_threshold_bytes": threshold,
+                           "action": "preserved_complete"})
     return {"status": "partial" if collector.omissions else "normalized",
         "bundle_id": bundle["bundle_id"], "bundle_digest": digest(bundle),
-        "evidence": collector.windows, "terminology": terminology, "sources": sources,
-        "issues": [], "omissions": collector.omissions,
+        "evidence": prioritize_evidence(collector.windows), "terminology": terminology, "sources": sources,
+        "issues": issues, "omissions": collector.omissions,
         "authority": "binding_preparation_required_not_proven_by_digest"}

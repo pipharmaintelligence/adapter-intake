@@ -206,7 +206,7 @@ class PreparedEvidenceTests(unittest.TestCase):
         self.assert_blocked("clinical_umls_operation_not_qualified", bundle(entry(result, "umls", purpose="terminology")))
 
     def test_source_contract_version_and_key_match_exactly(self):
-        value = bundle(entry(trial_result())); value["sources"][0]["asset_version"] = "0.1.1"
+        value = bundle(entry(trial_result())); value["sources"][0]["asset_version"] = "0.1.2"
         self.assert_blocked("clinical_source_contract_mismatch", value)
         value = bundle(entry(terminology(), "umls", purpose="terminology")); value["sources"][0]["asset_key"] = "nusaibah.umls_terminology"
         self.assert_blocked("clinical_source_asset_not_declared", value)
@@ -298,15 +298,15 @@ class PreparedEvidenceTests(unittest.TestCase):
         value = self.normalize(entry(result))
         self.assertEqual("2025-02-01T12:00:00Z", value["sources"][0]["source_provenance"][0]["retrieved_at"])
 
-    def test_window_cap_reports_every_omitted_piece_without_slicing(self):
+    def test_more_than_64_windows_are_retained_without_slicing(self):
         result = abstract()
         result["records"][0]["sections"] = [
             {"section": "RESULTS", "offset": i * 5000, "text": str(i) + ":" + "x" * 4500}
             for i in range(80)]
         value = self.normalize(entry(metadata(), "pubmed"), entry(result, "pubmed"))
-        self.assertEqual("partial", value["status"])
-        self.assertLessEqual(len(value["evidence"]), 64)
-        self.assertEqual(80, len(value["evidence"]) + len(value["omissions"]))
+        self.assertEqual("normalized", value["status"])
+        self.assertEqual(80, len(value["evidence"]))
+        self.assertEqual([], value["omissions"])
         self.assertTrue(all(len(row["text"]) >= 4502 for row in value["evidence"]))
 
     def test_malformed_result_status_is_typed_not_unhashable_crash(self):

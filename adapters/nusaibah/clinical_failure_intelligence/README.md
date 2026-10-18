@@ -115,3 +115,14 @@ not prove a live binding. supplementary_search=false disables the optional HTTP
 fallback when testing the prepared-data path. Source plans describe unexecuted
 needs only. Canonical oversize, live handoff, actual SDK, product writes and durable
 restart recovery remain independently qualified gates.
+
+## Source artifacts and model packet budgets
+
+Complete prepared evidence is retained beyond 64 windows. Outcome and safety
+windows are prioritized before contact/location metadata. The 2 MiB artifact
+threshold is advisory: size warnings preserve canonical evidence and do not stop
+execution. Model packets still obey the existing byte/call/time policies and
+split only between complete, traceable windows with full premise closure.
+Deferred work is reported explicitly without claiming a completed review.
+Lookup 0.1.0 and reference-based 0.1.1 are accepted; source execution, retained
+handoff and runtime-owned product/event binding remain separate admission gates.

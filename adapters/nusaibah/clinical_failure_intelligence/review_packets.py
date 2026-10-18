@@ -39,11 +39,20 @@ def critic_batches(items: list[dict], evidence: list[dict], common: dict,
         extra = [{"evidence_id": row["evidence_id"], "source_type": row["source_type"],
                   "trial_ids": row["trial_ids"], "text_digest": row["text_digest"]}
                  for row in evidence if row["evidence_id"] not in refs]
-        return {**deepcopy(common), "candidate_items": candidates,
+        result = {**deepcopy(common), "candidate_items": candidates,
             "dependency_context": context_items, "evidence_packet": selected,
             "other_evidence_index": extra,
             "review_packet_scope": {"assigned_item_ids": sorted(keys),
                 "full_evidence_read": not extra, "no_independent_exhaustiveness_claim": True}}
+        if len(canonical_bytes(result)) > max_bytes and extra:
+            # The canonical result retains the complete inventory. Its optional
+            # discovery index cannot crowd out the assertion's actual premises.
+            result["other_evidence_index"] = []
+            from hashlib import sha256
+            result["other_evidence_index_receipt"] = {"count": len(extra),
+                "digest": "sha256:" + sha256(canonical_bytes(extra)).hexdigest(),
+                "status": "available_in_canonical_evidence_not_reviewed_in_this_packet"}
+        return result
 
     output: list[dict] = []
     current: list[dict] = []

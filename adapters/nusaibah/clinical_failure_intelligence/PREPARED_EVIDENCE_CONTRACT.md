@@ -44,7 +44,7 @@ See `schemas/clinical_evidence_bundle.v1.schema.json`. One bundle contains:
 
 - `schema_version=clinical_evidence_bundle.v1`, `bundle_id`, exact `subject_id`,
   `product_id`, and the exact requested `event_ids` set;
-- up to 24 `sources`, at most 1 MiB for the complete semantic bundle;
+- up to 24 `sources`; 2 MiB is an advisory size threshold for the semantic bundle, not an execution rejection;
 - per source: stable `source_result_id`, exact `asset_key`, `asset_version`,
   `output_role`, `purpose`, normalized inner `result`, and `result_digest`;
 - optional `execution_ref`, only when actually supplied by the owning runtime.
@@ -57,7 +57,7 @@ provider execution envelope, run context, raw source token or transport header.
 
 | Source key | Version | Output | Consumer use |
 | --- | --- | --- | --- |
-| nusaibah.clinical_trials_lookup | 0.1.0 | trial_result | Exact study/arm/outcome/results module projections; search candidates and page coverage |
+| nusaibah.clinical_trials_lookup | 0.1.0 / 0.1.1 | trial_result | Exact study/arm/outcome/results module projections; search candidates and page coverage |
 | nusaibah.pubmed_evidence | 0.1.0 | literature_result | Exact-PMID metadata/abstract joins, discovery results, partial dates, integrity notices |
 | umls_terminology | 0.1.0 | terminology_result | `describe`/`search` terminology candidates only; no clinical efficacy/causality authority |
 
@@ -102,11 +102,28 @@ That value cannot authorize a new clinical identity or provider call.
 ## Windows and model budgets
 
 Source modules split at JSON fields/list entries or complete paragraphs; exact
-JSON pointers or paragraph offsets and hashes survive. The collector admits at
-most 64 windows / 256 KiB, with each window <=12,000 characters and <=16,000 UTF-8
-bytes. Oversized scalar paragraphs and omitted windows have explicit digests,
-counts and reasons. This is not full-source retention; the owning runtime must
-retain the original prepared source result. No omitted text is called reviewed.
+JSON pointers or paragraph offsets and hashes survive. The collector retains
+all complete windows; there is no global 64-window/256-KiB discard. Bundle,
+prepared-evidence and canonical-output sizes above 2 MiB produce visible warnings
+without stopping execution or deleting canonical evidence. Individual windows
+remain <=12,000 characters / 16,000 UTF-8 bytes. An unfittable scalar has an
+explicit omission receipt; its complete native source remains with the owning
+runtime and is not called reviewed.
+
+Model requests use at most 64 assigned windows and the existing 120,000-byte
+packet policy, including prompts, identity, shared context, and claim premise
+closure. Outcome and safety windows take priority over contact/location metadata.
+Research, outcome and hypothesis stages split between complete windows; critics
+retain each assertion's complete premises and counterevidence. Executed and
+deferred batches carry exact source IDs, input digests and statuses. Unassigned
+or deferred content never becomes reviewed evidence. The original source result
+still requires runtime retention; hashes are not source storage.
+
+Lookup 0.1.1 preserves its native study once and replaces copied result arrays
+with local JSON Pointers and content digests. This consumer validates those
+references and continues to accept the unchanged 0.1.0 native-source shape.
+Callable manifests allow up to the framework's 16 MiB transport ceiling; Core
+source limits and signed admission remain independent and unchanged.
 
 The 12 Agent-call, 2-research-worker and 1,800-second local policy is unchanged.
 Structured sources reduce redundant discovery calls. Focused critic packets
@@ -139,9 +156,10 @@ Memory decision metadata reports real candidate presence/size/digest but always
 `write_attempted=false`, `commit_observed=false`, `journal_status=not_attested`.
 The adapter does not implement a durable publication journal. Optional report or
 provider metadata can be omitted whole with a hash/size receipt, without changing
-the canonical evidence or memory delta. An oversized canonical result still
-fails closed: runtime retention and subsequent partitioned execution are separate
-work, not something a hash can recover.
+the canonical evidence or memory delta. Canonical output exceeding the 2 MiB
+warning threshold remains complete and returns a size warning. Genuine runtime
+transport failures, entitlement failures and malformed inputs retain their safe
+failure behavior; the advisory threshold cannot override execution authority.
 
 ## Compatibility / external gates
 

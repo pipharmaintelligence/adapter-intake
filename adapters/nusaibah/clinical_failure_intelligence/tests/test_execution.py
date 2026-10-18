@@ -124,7 +124,7 @@ class ExecutionTests(unittest.TestCase):
         self.assertFalse(value['hypothesis_results'][0]['accepted']); validate_result(value)
     def test_required_roles_report_all_chunks_not_last_only(self):
         raw = example_inputs()
-        for i in range(4):
+        for i in range(12):
             raw['clinical_context']['evidence'].append({**raw['clinical_context']['evidence'][0], 'evidence_id': f'EX{i}', 'source_id': f'SRC{i}', 'text': 'x' * 11000})
         def first_chunk_incomplete(payload, packet):
             if packet['task_id'] == 'trial_researcher:0:0':

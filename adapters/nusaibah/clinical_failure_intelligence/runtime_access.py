@@ -88,22 +88,26 @@ class AgentRunner:
         self._lock = threading.Lock()
         self._key_locks: dict[str, threading.Lock] = {}
 
-    def call(self, role: str, request: dict, *, task_id: str, obligations: list[str],
-             packet_data: dict, downstream_reserve: int = 0) -> StageResult:
-        """Execute once; reserve shared calls before dispatch and keep task identity fixed."""
+    def packet(self, role: str, request: dict, *, task_id: str, obligations: list[str],
+               packet_data: dict) -> dict:
+        """Build the exact request for sizing before any call is reserved."""
         require(role in ROLES, "clinical_agent_role_invalid")
         identifier(task_id)
         identifiers(obligations, allow_empty=False)
         reserved = {"schema_version", "task_id", "role", "analysis_mode", "subject", "as_of_date",
                     "assigned_obligation_ids", "response_contract", "instructions", "prompt_version", "enable_pharmacological_class"}
         require(not set(packet_data) & reserved, "clinical_packet_override_forbidden")
-        packet = {"schema_version": "clinical_agent_packet.v1", "task_id": task_id,
+        return {"schema_version": "clinical_agent_packet.v1", "task_id": task_id,
             "role": role, "analysis_mode": request["analysis_mode"],
             "subject": request["context"]["subject"], "as_of_date": request["as_of_date"],
             "enable_pharmacological_class": request.get("enable_pharmacological_class", False),
             "assigned_obligation_ids": obligations, "response_contract": response_contract(role),
             "instructions": COMMON_PROMPT + "\n\n" + PROMPTS[role],
             "prompt_version": PROMPT_VERSION, **deepcopy(packet_data)}
+    def call(self, role: str, request: dict, *, task_id: str, obligations: list[str],
+             packet_data: dict, downstream_reserve: int = 0) -> StageResult:
+        """Execute once; reserve shared calls before dispatch and keep task identity fixed."""
+        packet = self.packet(role, request, task_id=task_id, obligations=obligations, packet_data=packet_data)
         key = digest(packet)
         with self._lock:
             key_lock = self._key_locks.setdefault(key, threading.Lock())
@@ -118,7 +122,8 @@ class AgentRunner:
                 saved = deepcopy(self._cache[key])
                 saved.cache_hit = True
                 return saved
-        if len(canonical_bytes(packet)) > self.budget.policy.max_packet_bytes:
+        if (len(canonical_bytes(packet)) > self.budget.policy.max_packet_bytes
+                or len(packet.get("evidence_packet", [])) > 64):
             return StageResult(task_id, role, "deferred", key, None, {}, "clinical_packet_requires_partitioning")
         try:
             self.budget.reserve(minimum_calls_remaining=downstream_reserve)
