@@ -16,7 +16,7 @@ classification, and programme readiness.
 
 ## Exact identity and input ownership
 
-- `key`: `nusaibah.clinical_trials_lookup`; version and manifest default: `0.1.1`; legacy `0.1.0` files remain unchanged.
+- `key`: `nusaibah.clinical_trials_lookup`; version and manifest default: `0.1.1`; legacy `0.1.0` code and version contract remain unchanged.
 - Input `variables` is an **optional direct** semantic object. Absent or `{}`
   invokes `describe` without fetching a source. A retrieval operation requires
   valid selectors. An omitted `operation` is inferred only from `nct_id`,
@@ -164,3 +164,11 @@ public ChatGPT publication are each separately gated.
 The official documentation destinations are preserved in PR #147's review history.
 The published intake handoff deliberately contains no literal provider endpoint URLs
 or HTTP request targets; DLM Core owns the runtime source request configuration.
+
+## Promotion manifest layout
+
+The package has one canonical `clinical_trials_lookup.asset.json` with both
+0.1.0 and 0.1.1 entries and default 0.1.1. The old version entry is unchanged.
+Keeping a second same-key version manifest causes the current promotion planner
+to select the first manifest before checking the requested version. This layout
+preserves exact version discovery through intake, promotion and runtime catalogs.

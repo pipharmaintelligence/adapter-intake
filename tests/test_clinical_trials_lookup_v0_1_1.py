@@ -28,6 +28,15 @@ def dereference(record, ref):
 
 
 class ClinicalTrialsLookupV011Tests(unittest.TestCase):
+    def test_promotion_has_one_cumulative_manifest_and_unchanged_legacy_contract(self):
+        manifests = sorted(ASSET.glob("*.asset.json"))
+        self.assertEqual([ASSET / "clinical_trials_lookup.asset.json"], manifests)
+        manifest = json.loads(manifests[0].read_text())
+        self.assertEqual("0.1.1", manifest["default"])
+        self.assertEqual({"0.1.0", "0.1.1"}, set(manifest["versions"]))
+        value = json.dumps(manifest["versions"]["0.1.0"], sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+        self.assertEqual("f0d7f8fe224ddba613dc75901be389f234f59fa23f91621336b2fba8b06e3d6d", hashlib.sha256(value).hexdigest())
+
     def test_all_publication_templates_accept_size_diagnostics(self):
         from jsonschema import Draft202012Validator
         definitions = json.loads((ASSET / "capabilities.v0.1.1.json").read_text())["capabilities"]
@@ -73,7 +82,7 @@ class ClinicalTrialsLookupV011Tests(unittest.TestCase):
 
     def test_over_two_mib_warns_without_dropping_fields_or_failing(self):
         study = deepcopy(STUDY)
-        text = "أ" * 1_100_000
+        text = "Ø£" * 1_100_000
         study["protocolSection"]["descriptionModule"]["briefSummary"] = text
         result = invoke(study, "study_get")
         self.assertEqual(text, result["records"][0]["registry_study"]["protocolSection"]["descriptionModule"]["briefSummary"])
@@ -97,7 +106,7 @@ class ClinicalTrialsLookupV011Tests(unittest.TestCase):
         self.assertEqual("0.1.0", legacy.ClinicalTrialsLookupAdapter.version)
         self.assertIn("results_outcome_measures", result["records"][0])
         self.assertEqual("0.1.1", module.ClinicalTrialsLookupAdapter.version)
-        manifest = json.loads((ASSET / "clinical_trials_lookup_v0_1_1.asset.json").read_text())
+        manifest = json.loads((ASSET / "clinical_trials_lookup.asset.json").read_text())
         self.assertEqual(16 * 1024 * 1024, manifest["versions"]["0.1.1"]["callable"]["max_result_bytes"])
 
     def test_missing_results_do_not_create_dangling_references(self):
