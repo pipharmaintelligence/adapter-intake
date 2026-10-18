@@ -1,11 +1,14 @@
 asset_key: nusaibah.clinical_trials_lookup
-asset_version: 0.1.0
+asset_version: 0.1.1
 package_target: python_runtime/adapters/intake/nusaibah/clinical_trials_lookup
 manifest: clinical_trials_lookup.asset.json
-adapter_module: clinical_trials_lookup_adapter.py
+adapter_module: clinical_trials_lookup_v0_1_1_adapter.py
 dependency_manifest: adapter.dependencies.json
+reviewed_helpers:
+  - clinical_trials_lookup_adapter.py
 reviewed_support_files:
   - capabilities.v0.1.0.json
+  - capabilities.v0.1.1.json
 optional_files:
   - README.md
   - CAPABILITY_MATRIX.md

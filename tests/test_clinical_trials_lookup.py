@@ -477,10 +477,10 @@ class ClinicalTrialsLookupTests(unittest.TestCase):
 
     def test_exact_intake_identity_and_publication_template_status(self) -> None:
         manifest = json.loads((ASSET / 'clinical_trials_lookup.asset.json').read_text())
-        self.assertEqual('0.1.0', manifest['default'])
+        self.assertEqual('0.1.1', manifest['default'])
         self.assertEqual(['local_worker', 'ecs'], manifest['execution']['allowed_substrates'])
         self.assertEqual('local_worker', manifest['execution']['default_substrate'])
-        self.assertEqual({'0.1.0'}, set(manifest['versions']))
+        self.assertEqual({'0.1.0', '0.1.1'}, set(manifest['versions']))
         self.assertFalse(manifest['versions']['0.1.0']['inputs']['variables']['required'])
         self.assertEqual('nusaibah.clinical_trials_lookup', module.ClinicalTrialsLookupAdapter.key)
         self.assertEqual('0.1.0', module.ClinicalTrialsLookupAdapter.version)

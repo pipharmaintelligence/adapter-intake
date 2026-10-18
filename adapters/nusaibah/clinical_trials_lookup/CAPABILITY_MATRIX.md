@@ -1,4 +1,4 @@
-# `nusaibah.clinical_trials_lookup@0.1.0` — capability and proof matrix
+# `nusaibah.clinical_trials_lookup@0.1.1` â€” capability and proof matrix
 
 This is a source tool, not a reimplementation of `GetRegistrationTrials.ipynb`.
 The notebook's registration-programme classification and group-inference
@@ -59,7 +59,7 @@ source tools; do not expose a generic provider HTTP proxy by default.
 | Malformed JSON/root page, wrong NCT, duplicate IDs, malformed registered lists | Fail visibly without replacing with empty evidence | Source configuration or provider/schema review |
 | No results module | `not_posted` if `hasResults=false`; otherwise `not_present_in_record` | Consumer treats unknown separately |
 | Valid empty page with cursor | `status=completed`, 0 records, `has_more=true` | Caller continues exact query |
-| Output > 240KB | Explicit `clinical_trials_result_too_large` | Caller selects summary/arms/outcomes view or smaller page |
+| Output > 2 MiB | `clinical_trials_result_size_warning`; complete result retained | Consumer partitions model packets; runtime transport ceiling remains independent |
 | Essie punctuation/cursor rejected by current lazy invoker | No covert fallback | Assets/Core approved query compiler/cursor contract |
 | Child callable/nested depth unavailable | No claim of runtime composition | Assets callable admission/proof |
 
