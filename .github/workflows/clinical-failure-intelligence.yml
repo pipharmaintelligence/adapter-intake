@@ -39,3 +39,14 @@ jobs:
           python -m unittest discover -s tests -p "test_*.py" -v
       - name: Existing repository promotion-shape gate
         run: python -m unittest discover -s tests -p test_adapter_intake_contract.py -v
+      - name: Retain scoped source for reproducible clinical qualification
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.13'
+        uses: actions/upload-artifact@v4
+        with:
+          name: clinical-failure-source-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            adapters/nusaibah/clinical_failure_intelligence/**
+            !adapters/nusaibah/clinical_failure_intelligence/**/__pycache__/**
+            !adapters/nusaibah/clinical_failure_intelligence/**/*.pyc
+          retention-days: 7
+          if-no-files-found: error
