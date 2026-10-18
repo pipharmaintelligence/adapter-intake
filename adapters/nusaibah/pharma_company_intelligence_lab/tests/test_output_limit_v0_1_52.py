@@ -105,6 +105,8 @@ class OutputLimitTests(unittest.TestCase):
         for role,agent in after['agents'].items():
             old=before['agents'][role]
             self.assertNotEqual(old['contract_version'],agent['contract_version'])
+            self.assertEqual(agent['contract_version'],agent['definition']['chain']['version'])
+            agent['definition']['chain']['version']=old['definition']['chain']['version']
             agent['contract_version']=old['contract_version']
             for index,step in enumerate(agent['definition']['chain']['steps']):
                 self.assertEqual(64000,step['provider_policy']['generation_policy']['max_tokens'])
