@@ -9,6 +9,7 @@ reviewed_helpers:
   - cohort.py
   - contracts.py
   - source_bundle.py
+  - evidence_batches.py
   - review_packets.py
   - decision_outcome.py
   - evidence.py

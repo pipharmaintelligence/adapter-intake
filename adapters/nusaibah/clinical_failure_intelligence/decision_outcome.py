@@ -17,7 +17,7 @@ else:
 def source_request_plan(request: dict, prepared: dict) -> list[dict]:
     """Describe remaining source needs only; these are not executed adapter calls."""
     subject = request["context"]["subject"]
-    supplied = {(row["source_asset"], row["operation"], observation.get("nct_id"))
+    supplied = {(row["source_asset"].split("@")[0], row["operation"], observation.get("nct_id"))
                 for row in prepared["sources"] for observation in row.get("observations", [])}
     publication_trials = {trial for row in prepared["evidence"]
                           if row["source_id"].startswith("pubmed:") for trial in row["trial_ids"]}
@@ -28,8 +28,8 @@ def source_request_plan(request: dict, prepared: dict) -> list[dict]:
             if not trial.startswith("NCT"):
                 continue
             for operation in ("study_get", "results_get"):
-                if ("nusaibah.clinical_trials_lookup@0.1.0", operation, trial) not in supplied:
-                    tasks.append({"source_asset": "nusaibah.clinical_trials_lookup@0.1.0",
+                if ("nusaibah.clinical_trials_lookup", operation, trial) not in supplied:
+                    tasks.append({"source_asset": "nusaibah.clinical_trials_lookup@0.1.1",
                         "operation": operation, "selectors": {"nct_id": trial},
                         "priority": "primary_evidence", "execution": "not_requested"})
             if trial not in publication_trials:
@@ -38,7 +38,7 @@ def source_request_plan(request: dict, prepared: dict) -> list[dict]:
                     "next_after_discovery": ["article_get", "abstract_get"],
                     "priority": "corroboration", "execution": "not_requested"})
     elif subject.get("product_name"):
-        tasks.append({"source_asset": "nusaibah.clinical_trials_lookup@0.1.0",
+        tasks.append({"source_asset": "nusaibah.clinical_trials_lookup@0.1.1",
             "operation": "study_search", "selectors": {"intervention": subject["product_name"],
                 "condition": subject.get("indication")}, "priority": "resolve_trial_identity",
             "execution": "not_requested"})
@@ -81,8 +81,8 @@ def memory_decision(result: dict) -> dict:
         "reason": plan.get("reason"), "independent_from_report": True}
 
 
-def finalize_output(result: dict, *, max_bytes: int = 1_048_576) -> dict:
-    """Compact optional presentation only; never shrink the canonical evidence/delta."""
+def finalize_output(result: dict, *, max_bytes: int = 2 * 1024 * 1024) -> dict:
+    """Warn on large canonical output; optional presentation can be compacted."""
     result["decision_summary"] = decision_summary(result)
     result["memory_decision"] = memory_decision(result)
     report = render_report(result)
@@ -103,7 +103,11 @@ def finalize_output(result: dict, *, max_bytes: int = 1_048_576) -> dict:
                     "field": "execution.stages." + str(index) + ".semantic_metadata",
                     "bytes": len(canonical_bytes(metadata)), "digest": digest(metadata)})
                 stage["semantic_metadata"] = {}
-    require(len(canonical_bytes(result)) <= max_bytes, "clinical_canonical_result_requires_partitioning")
+    size = len(canonical_bytes(result))
+    if size > max_bytes:
+        result["quality"]["issues"].append({"code": "clinical_result_size_warning",
+            "measured_bytes_before_warning": size, "warning_threshold_bytes": max_bytes,
+            "action": "canonical_evidence_preserved"})
     return result
 
 

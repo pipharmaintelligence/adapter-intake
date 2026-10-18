@@ -44,7 +44,7 @@
         "enabled": true,
         "result_key": "clinical_intelligence",
         "result_shape": "object",
-        "max_result_bytes": 1048576,
+        "max_result_bytes": 16777216,
         "timeout_seconds": 1800
       },
       "skills": [

@@ -208,10 +208,12 @@ class ConsumerIntegrationTests(unittest.TestCase):
         self.assertTrue(compacted["presentation"]["omitted_fields"])
         self.assertEqual(snapshot, {key: compacted[key] for key in snapshot})
 
-    def test_canonical_oversize_is_not_silently_cut(self):
+    def test_canonical_oversize_warns_without_stopping_or_cutting_evidence(self):
         result = self.result(SourceAwareInputs())
-        with self.assertRaisesRegex(ContractError, "canonical_result_requires_partitioning"):
-            finalize_output(result, max_bytes=1000)
+        before = deepcopy(result["evidence"])
+        output = finalize_output(result, max_bytes=1000)
+        self.assertEqual(before, output["evidence"])
+        self.assertTrue(any(issue["code"] == "clinical_result_size_warning" for issue in output["quality"]["issues"]))
 
     def test_prepared_and_preflight_results_validate_json_schemas(self):
         from jsonschema import Draft202012Validator

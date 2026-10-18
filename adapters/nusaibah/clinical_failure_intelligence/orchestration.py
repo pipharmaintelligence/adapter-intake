@@ -16,6 +16,7 @@ if __package__:
     from .rendering import build_reason_graph, render_report, validate_result
     from .review_packets import critic_batches, scoped_review
     from .decision_outcome import finalize_output, preflight_result, source_request_plan
+    from .evidence_batches import evidence_batches, closed_packet
 else:
     from contracts import ASSET_KEY, SCHEMA, VERSION, RESEARCH_ROLES, ContractError, canonical_bytes, digest, identifiers, parse_request, require
     from policies import Budget, ExecutionPolicy
@@ -29,6 +30,7 @@ else:
     from rendering import build_reason_graph, render_report, validate_result
     from review_packets import critic_batches, scoped_review
     from decision_outcome import finalize_output, preflight_result, source_request_plan
+    from evidence_batches import evidence_batches, closed_packet
 
 FACETS = {"trial_researcher": "clinical_outcome", "literature_researcher": "mechanism_evidence",
           "event_researcher": "development_timeline"}
@@ -95,6 +97,7 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
     memory = read_product_memory(inputs, request)
     runner = AgentRunner(inputs, budget)
     stages: list[StageResult] = []
+    batch_receipts: list[dict] = []
     issues: list[dict] = deepcopy(prepared["issues"])
     if prepared["omissions"]:
         issues.append({"code": "clinical_prepared_source_coverage_partial",
@@ -118,14 +121,27 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
 
     def research(role: str, iteration: int = 0, question: str | None = None) -> list[StageResult]:
         relevant = [row for row in ledger.rows() if row["source_type"] in SOURCE_FACETS[role]]
+        def data(chunk: list[dict]) -> dict:
+            return {**common, "evidence_packet": chunk,
+                "questions": [question] if question else ["Investigate " + FACETS[role]],
+                "evidence_scope": {"assigned_count": len(chunk), "total_role_sources": len(relevant),
+                    "assigned_evidence_ids": [r["evidence_id"] for r in chunk],
+                    "full_source_review": len(chunk) == len(relevant)},
+                "source_admission_rule": "Use supplied evidence IDs. New sources remain unadmitted leads. Unassigned windows remain unreviewed."}
+        chunks = evidence_batches(relevant, lambda chunk: runner.packet(role, request,
+            task_id=role + ":" + str(iteration) + ":sizing",
+            obligations=[FACETS[role] + ":sizing"], packet_data=data(chunk)),
+            max_bytes=budget.policy.max_packet_bytes)
         tasks = []
-        for index, chunk in enumerate(partition_evidence(relevant)):
-            tasks.append(runner.call(role, request, task_id=role + ":" + str(iteration) + ":" + str(index),
+        for index, chunk in enumerate(chunks):
+            task_id = role + ":" + str(iteration) + ":" + str(index)
+            stage = runner.call(role, request, task_id=task_id,
                 obligations=[FACETS[role] + ":" + str(index)], downstream_reserve=5 if memory["status"] != "not_requested" else 3,
-                packet_data={**common, "evidence_packet": chunk,
-                    "questions": [question] if question else ["Investigate " + FACETS[role]],
-                    "evidence_scope": {"assigned_count": len(chunk), "total_role_sources": len(relevant)},
-                    "source_admission_rule": "Use supplied evidence IDs. New sources remain unadmitted leads."}))
+                packet_data=data(chunk))
+            tasks.append(stage)
+            batch_receipts.append({"task_id": task_id, "role": role, "batch_index": index,
+                "batch_count": len(chunks), "evidence_ids": [r["evidence_id"] for r in chunk],
+                "input_digest": stage.input_digest, "status": stage.status, "code": stage.code})
         return tasks
 
     def collect(tasks: list[StageResult]) -> None:
@@ -150,10 +166,21 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
         for future in futures:
             collect(future.result())
 
-    def normalize_stage(stage: StageResult, kind: str) -> list[dict]:
+    def normalize_stage(stage: StageResult, kind: str, *, namespace: bool = False) -> list[dict]:
+        rows = deepcopy(stage.payload["items"]) if stage.payload else []
+        if stage.payload is None:
+            issues.append({"stage_id": stage.task_id, "code": stage.code})
+        if namespace:
+            names = {row["item_id"]: "batch:" + digest([stage.task_id, row["item_id"]]).split(":")[1][:32]
+                     for row in rows if isinstance(row, dict) and isinstance(row.get("item_id"), str)}
+            for row in rows:
+                if isinstance(row, dict) and isinstance(row.get("item_id"), str):
+                    row["item_id"] = names[row["item_id"]]
+                    if isinstance(row.get("depends_on"), list):
+                        row["depends_on"] = [names.get(dep, dep) if isinstance(dep, str) else dep
+                                             for dep in row["depends_on"]]
         try:
-            items, errors = normalize_items(stage.payload["items"] if stage.payload else [],
-                                             kind, request, ledger)
+            items, errors = normalize_items(rows, kind, request, ledger)
         except ContractError as error:
             if error.code not in {"clinical_candidate_batch_invalid", "clinical_item_duplicate"}:
                 raise
@@ -162,18 +189,33 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
         return items
 
     def evaluate(iteration: int) -> tuple[list[dict], StageResult]:
-        outcome_stage = runner.call("outcome_adjudicator", request,
-            task_id="outcome:" + str(iteration), obligations=["outcome:" + key for key in OUTCOMES],
-            packet_data={**common, "evidence_packet": ledger.rows(), "research_claims": claims})
-        stages.append(outcome_stage)
-        outcomes = normalize_stage(outcome_stage, "outcome")
-        analyst = runner.call("hypothesis_analyst", request,
-            task_id="hypotheses:" + str(iteration), obligations=[
-                "seed:" + seed["assertion_id"] for seed in context["source_assertions"]] or ["hypothesis_assessment"],
-            packet_data={**common, "evidence_packet": ledger.rows(), "research_claims": claims,
-                         "case_assessments": outcomes, "cohort_statistics": statistics})
-        stages.append(analyst)
-        hypotheses = normalize_stage(analyst, "hypothesis")
+        def candidates(role: str, prefix: str, kind: str, obligations: list[str], extra: dict,
+                       reserve: int) -> list[dict]:
+            inventory = ledger.rows()
+            def data(chunk: list[dict]) -> dict:
+                return closed_packet(chunk, inventory, claims, {**common, **extra})
+            chunks = evidence_batches(inventory, lambda chunk: runner.packet(role, request,
+                task_id=prefix + ":" + str(iteration) + ":sizing", obligations=obligations,
+                packet_data=data(chunk)), max_bytes=budget.policy.max_packet_bytes)
+            output = []
+            for index, chunk in enumerate(chunks):
+                task_id = prefix + ":" + str(iteration) + (":" + str(index) if len(chunks) > 1 else "")
+                packet = data(chunk)
+                stage = runner.call(role, request, task_id=task_id, obligations=obligations,
+                    packet_data=packet, downstream_reserve=reserve)
+                stages.append(stage)
+                output.extend(normalize_stage(stage, kind, namespace=len(chunks) > 1))
+                batch_receipts.append({"task_id": task_id, "role": role, "batch_index": index,
+                    "batch_count": len(chunks), "evidence_ids": [r["evidence_id"] for r in packet["evidence_packet"]],
+                    "input_digest": stage.input_digest, "status": stage.status, "code": stage.code})
+            return output
+
+        outcomes = candidates("outcome_adjudicator", "outcome", "outcome",
+            ["outcome:" + key for key in OUTCOMES], {}, 4 if memory["status"] != "not_requested" else 2)
+        hypotheses = candidates("hypothesis_analyst", "hypotheses", "hypothesis",
+            ["seed:" + seed["assertion_id"] for seed in context["source_assertions"]] or ["hypothesis_assessment"],
+            {"case_assessments": outcomes, "cohort_statistics": statistics},
+            3 if memory["status"] != "not_requested" else 1)
         items = outcomes + hypotheses
         counts: dict[str, int] = {}
         for item in items:
@@ -324,6 +366,7 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
             "required_roles_completed": {role: all(stage.status == "completed" for stage in stages if stage.role == role)
                                          for role in (*RESEARCH_ROLES, "outcome_adjudicator", "hypothesis_analyst", "evidence_critic")}},
         "execution": {"stages": [stage.summary() for stage in stages], **budget.proof(),
+            "evidence_batches": sorted(batch_receipts, key=lambda row: row["task_id"]),
             "resume": {"available": False, "reason": "durable_stage_retention_not_qualified"}},
         "memory_update": product_plan,
         "persistence": {"status": "not_attested", "receipt": None},
