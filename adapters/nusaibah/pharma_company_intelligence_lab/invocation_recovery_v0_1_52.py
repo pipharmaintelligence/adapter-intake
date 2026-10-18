@@ -23,7 +23,7 @@ class InvocationRecoveryInputs(Base):
             owner = role
             if role == legacy.RESEARCH_RESOLVER_ROLE:
                 owner = input.get('original_role')
-                if owner not in ACTIVE_ROLES:
+                if not isinstance(owner, str) or owner not in ACTIVE_ROLES:
                     raise
             detail = legacy.evidence_diagnostic(role=owner, stage='agent_output_budget',
                 field='content', rule='provider_output_limit_reached')
