@@ -64,7 +64,9 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install pytest
-          python -m pytest -q adapters/nusaibah/umls_terminology/tests
+          # The installed-wheel tests skip visibly on intake CI (no SDK wheel).
+          # They must run separately, without skips, in the E: installed SDK venv.
+          python -m pytest -q -ra adapters/nusaibah/umls_terminology/tests
 
       - name: Verify DLM MCP 0.1.1 read contract without providers
         shell: bash

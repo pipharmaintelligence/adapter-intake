@@ -113,6 +113,31 @@ invoker, not live provider records. The separately verified UMLS Runtime Source
 search primitive does not establish packaged adapter execution, signed-worker
 admission, semantic correctness or ECS deployment.
 
+## Installed SDK offline contract gate (separate from intake CI)
+
+The ordinary intake tests use a minimal `adapters.base` stub and a fake
+lazy bridge. The dedicated `tests/test_umls_installed_runtime_inputs.py` module
+additionally exercises **the actual `system.runtime.RuntimeInputs` class**
+from an installed `pi-obs-python-runtime` wheel. It never contacts the
+provider or starts a worker. Intake CI skips these tests if no wheel is
+installed; a CI green result is **not** installed-wheel proof.
+
+For the isolated E: SDK `0.1.115` virtual environment in DataSpell, first
+check out the exact reviewed PR commit. Set these Run/Debug environment
+variables before starting pytest:
+
+
+`UMLS_REQUIRE_INSTALLED_RUNTIME=1`
+`UMLS_EXPECT_RUNTIME_VERSION=0.1.115`
+
+Execute `tests/test_umls_installed_runtime_inputs.py` using that
+interpreter with pytest's `--import-mode=importlib` and no source-root
+`PYTHONPATH` override. All seven tests must run rather than skip.
+The tests assert the real SDK passes `cooldown_seconds` to its attached
+invoker and the UMLS adapter produces the declared bounded output, rejecting
+caller record injection. This still does not prove an Assets-admitted signed
+adapter execution, installed ECS image or published adapter.
+
 ## Release hold
 
 **Keep asset version 0.1.0. Do not merge, promote, publish or edit DLM UI
