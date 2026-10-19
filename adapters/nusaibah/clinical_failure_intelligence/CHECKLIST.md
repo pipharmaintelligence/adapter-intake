@@ -1,79 +1,37 @@
-# Latest consumer scope - 0.1.1 (same draft PR)
+## Implementation checklist
 
-The prepared-evidence consumer and failure-containment implementation is described
-in INTAKE_IMPLEMENTATION_CHECKLIST.md. Source adapters are independently validated;
-no source execution, live binding, Skill write or runtime deployment is implied.
+Checked items are source/provider-free evidence, not paid/live approval. Package and hosted-CI evidence is captured against the exact candidate commit separately.
 
-# PI-2061 checklist
+- [x] Linear scope, complete clinical model, source ownership and staged evidence requirements.
+- [x] Clinical 0.1.2; Agent contract/prompt 1.2.0; unchanged Fixed methodology 1.1.0.
+- [x] Exact dependency pins: Lookup 0.1.1, PubMed 0.1.0, UMLS 0.1.1.
+- [x] Deterministic governed identity/selector preparation; actual discovered PMIDs; missing identity fails before source submission.
+- [x] Independent source invocation via official SDK operator and existing retained-output references; no nested or direct provider calls.
+- [x] Exact source/result/operation/record identity, count, digest, subject, date and partial-result validation.
+- [x] Registry/PubMed normalization and terminology attestation consumption without semantic overclaim.
+- [x] Complete evidence packets, claim/premise closure, scientific priority, exact per-stage scope and bounded downstream budgets.
+- [x] One reflection round, novelty stop, four extra calls, dependent invalidation; one product proposal/review, no learning writes.
+- [x] Standard/high role policies and bounded governed public search with independently inspected references.
+- [x] Provider-free default plan, unknown-ack stop, same-UUID resume, checkpoint locks, code/server binding and retained-file integrity checks.
+- [x] 4 MiB warning behavior preserves canonical content; model packet allowances remain separate and explicit.
+- [x] Fix original official-intake packaging rejection and wheel prompt import closure; retain exact prompt digests.
+- [x] Regressions for case/cohort denominators, partial-source failures, scope forgery, malformed attestation, complete-window priority and scientific/reference closure.
 
-Checked items refer to source and provider-free tests, not deployment or science.
+## Promotion and release gates
 
-## Implemented
+These are not marked done by passing source tests:
 
-- [x] Independent 0.1.1 asset; no modification of historical pharma packages.
-- [x] Closed case/cohort context, subject, event and cutoff validation.
-- [x] Seven explicit Agent roles, packaged prompts and reference-only declarations.
-- [x] Exact-byte bundled Fixed methodology Skill.
-- [x] Two-way research concurrency, whole-source-window chunks and stable joins.
-- [x] Shared calls/time budget, completion reserve and one focused refinement.
-- [x] Typed JSON/text decoding, whole wrappers and duplicate-key/NaN rejection.
-- [x] Safe semantic metadata preserved even when business JSON fails parsing.
-- [x] Same-input in-flight task reuse; changed inputs invalidate reuse.
-- [x] Source aliases, exact digest/offset/quote checks; no invented evidence IDs.
-- [x] Literal checking separate from automated semantic and external truth.
-- [x] Separate study, efficacy, safety, programme and regulatory dimensions.
-- [x] Required seeds, dimensions, role obligations and critic coverage counted.
-- [x] Competing hypotheses, falsification, indicators and original source wording.
-- [x] Contradictory outcomes withheld; dependent acceptance invalidated.
-- [x] Valid siblings and omitted refinement candidates preserved with clear gaps.
-- [x] Descriptive cohort denominators, duplicate units and overlap/conflict guards.
-- [x] Canonical JSON, graph reference closure and attached-model report headings.
-- [x] Primary product snapshot via TOC/paragraphs; reviewed delta preview; no-change repeats.
-- [x] Exact first-run absence handling, no missing-node-as-empty fallback.
-- [x] Apply blocked before calls; learning and persistence statuses independent.
-- [x] Synthetic fixtures, thirteen untested source seeds and dedicated CI definition.
+- [ ] Exact-head source CI on Linux/Windows Python 3.10/3.13 and repository shape.
+- [ ] Final official pre-commit, planner/materializer and catalogs for clinical 0.1.2.
+- [ ] Final SDK wheel/sdist import, package scan, runtime regression suite and ECS asset-bundle/attestation/parity.
+- [ ] Exact-head Assets hosted full Laravel/Windows/runtime CI after the source is pushed for validation.
+- [ ] Independent delivery/registration/admission of source dependency versions, including UMLS PR #156 and PubMed PR #149.
+- [ ] Seven exact provider/model/reasoning profiles and child-owned grounding/public-reference admission; prompts alone are insufficient.
+- [ ] Signed authorized neutral TEST context plus retained-source handoff, with exact producer/client identities and execution counters.
+- [ ] Server queue/consumer/deadline qualification for the 1,800-second clinical plan; no invented SDK queue override.
+- [ ] Active product Skill partition/readback. Mutation requires a separate retained-analysis/CAS/receipt/history lifecycle and is deliberately not exposed.
+- [ ] Exact JSONL schema/QC/approved-output policy, terminal publication receipt and readback before any publication claim.
+- [ ] Separate ECS deployment and signed run qualification if ECS is a release target.
+- [ ] Domain-adjudicated scientific accuracy across cases/cohorts; thirteen seeds are not a gold set, no predictive probability is claimed.
 
-## Remaining adapter work
-
-- [x] A3 consumer: normalize prepared registry/PubMed evidence; terminology stays separate.
-- [ ] A3 live proof: validate the runtime-owned prepared handoff and admitted HTTP sources.
-- [x] Critic packets preserve complete source/premise closure and isolate malformed verdicts.
-- [ ] Qualify large adjudicator/analyst chunking; current oversize packets defer explicitly.
-- [ ] Decide whether to activate one faithful model-repair call; prompt is currently reserved.
-- [ ] A5: implement admitted mutable initialization/apply after runtime and retention barriers.
-- [ ] A7: receipt-backed restart/resume after a real runtime contract is established.
-- [ ] Full source transcription and domain-adjudicated examples for all thirteen hypotheses.
-- [ ] Reviewed inferential statistics; current p-values and confidence intervals remain null.
-- [ ] Real SDK fixtures, official intake/materializer/Skill validation and signed-worker proof.
-
-## Assets / configuration / release work
-
-- [ ] A1: child-owned Agent and public-reference capability preparation.
-- [ ] A2: actual parent DTO and binding-owned clinical_context handoff.
-- [ ] A3: clinical/PubMed/event source capabilities and safe retrieval projection.
-- [ ] A4: exact Agent/provider/tool admission and product-memory declaration; class role only when enabled.
-- [ ] A5: child mutation, retention-before-apply, CAS, receipt, readback and history.
-- [ ] A6: generic ECS callable parity.
-- [ ] A7: durable stage retention, restart authorization and uncertain-write recovery.
-- [ ] A8: official delivery, deployment and combined live/scientific qualification.
-
-See ASSETS_HANDOFF.md for owners and acceptance criteria. No Core or UI redesign
-is authorized merely because these tasks exist.
-
-## Product-first amendment
-
-- [x] Product selector is product_id; names remain display metadata.
-- [x] Indication/trial/regimen case_scope isolates repeated product events.
-- [x] Strict class boolean defaults to false; no default class-memory calls.
-- [x] Product delta precedes optional class candidate preview.
-- [x] Ranked complete paragraphs; no stored-document reordering or full read.
-- [x] Oversized/unread context is explicit; unread replacements are forbidden.
-- [x] Exact old digest and independent edit review for enrich/correct.
-- [x] Append/new section preserves unrelated cases; whole rewrite forbidden.
-- [x] Legacy product documents defer for explicit index migration.
-- [x] Seven Gemini 3.8-oriented role prompts authored with decision examples.
-- [ ] Real SDK compilation/preview/apply and unchanged sibling-byte proof.
-- [ ] Live Gemini scientific and paragraph-preservation benchmark.
-- [ ] Durable event/source-revision receipt index and concurrent-write recovery.
-- [ ] Full staged paragraph pagination for oversized scoped sections.
-- [ ] Complete optional class synthesis and separately admitted class commit.
+The implementation does not upgrade/restart the installed runtime, mutate Core/UI configuration or credentials, execute providers, write Skills, publish, merge or deploy. Unproven live gates remain explicit rather than being relabeled complete by CI.

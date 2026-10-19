@@ -82,7 +82,11 @@ class ExecutionTests(unittest.TestCase):
         raw = example_inputs(); raw['variables']['enable_refinement'] = True
         def follow(p, _):
             p['followup_requests'] = [{'role': 'literature_researcher', 'question': 'Check measured exposure.', 'affected_item_ids': ['H_SYN']}]; return p
-        fake = FakeInputs(raw, transforms={'evidence_critic': follow}); value = result(fake)
+        def corrected(p,packet):
+            if packet['task_id'].startswith('literature_researcher:1:'):
+                p['items'][0]['statement']='The measured exposure remains uncertain in this supplied record.'
+            return p
+        fake = FakeInputs(raw, transforms={'evidence_critic': follow,'literature_researcher':corrected}); value = result(fake)
         self.assertEqual(1, value['execution']['refinement_rounds']); self.assertEqual(12, len(fake.calls))
         self.assertEqual(1, sum(role == 'trial_researcher' for role, _ in fake.calls))
     def test_refinement_omission_keeps_old_candidate(self):
@@ -93,7 +97,12 @@ class ExecutionTests(unittest.TestCase):
         def follow(p, packet):
             if packet['task_id'].endswith(':0'): p['followup_requests'] = [{'role': 'literature_researcher', 'question': 'Check exposure.', 'affected_item_ids': ['H_SYN']}]
             return p
-        value = result(FakeInputs(raw, transforms={'hypothesis_analyst': analyst, 'evidence_critic': follow}))
+        def corrected(p,packet):
+            if packet['task_id'].startswith('literature_researcher:1:'):
+                p['items'][0]['statement']='The supplied record does not resolve the exposure question.'
+            return p
+        value = result(FakeInputs(raw, transforms={'hypothesis_analyst': analyst, 'evidence_critic': follow,
+                                                 'literature_researcher':corrected}))
         self.assertEqual('H_SYN', value['hypothesis_results'][0]['item_id']); self.assertFalse(value['hypothesis_results'][0]['accepted'])
     def test_invalid_followup_scope_rejected(self):
         raw = example_inputs(); raw['variables']['enable_refinement'] = True
@@ -130,7 +139,8 @@ class ExecutionTests(unittest.TestCase):
             if packet['task_id'] == 'trial_researcher:0:0':
                 payload['coverage'][0]['status'] = 'unresolved'
             return payload
-        value = result(FakeInputs(raw, transforms={'trial_researcher': first_chunk_incomplete}))
+        value = result(FakeInputs(raw, transforms={'trial_researcher': first_chunk_incomplete}),
+                       policy=ExecutionPolicy(max_packet_bytes=32000))
         trial_stages = [stage for stage in value['execution']['stages'] if stage['role'] == 'trial_researcher']
         self.assertGreater(len(trial_stages), 1)
         self.assertEqual('completed', trial_stages[-1]['status'])

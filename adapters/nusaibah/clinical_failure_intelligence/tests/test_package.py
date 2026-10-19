@@ -41,7 +41,7 @@ class PackageTests(unittest.TestCase):
     def test_manifest_identity_and_binding_ownership(self):
         data = json.loads((ASSET_ROOT / 'clinical_failure_intelligence.asset.json').read_text()); meta = declaration()
         self.assertEqual(data['key'], meta['asset_key']); self.assertEqual(data['default'], meta['asset_version'])
-        version = data['versions']['0.1.1']; self.assertEqual('binding', version['inputs']['clinical_context']['source'])
+        version = data['versions']['0.1.2']; self.assertEqual('binding', version['inputs']['clinical_context']['source'])
         self.assertEqual({'profiles': ['reference_read'], 'modes': ['http']}, version['public_web'])
         self.assertEqual({'product_memory'}, set(version['runtime_skills']))
         role = version['runtime_skills']['product_memory']
@@ -70,7 +70,7 @@ class PackageTests(unittest.TestCase):
                    for p in sorted(skill.rglob('*')) if p.is_file()]
         sha = 'sha256:' + hashlib.sha256(canonical_bytes(entries)).hexdigest()
         manifest = json.loads((ASSET_ROOT / 'clinical_failure_intelligence.asset.json').read_text())
-        self.assertEqual(sha, manifest['versions']['0.1.1']['skills'][0]['digest'])
+        self.assertEqual(sha, manifest['versions']['0.1.2']['skills'][0]['digest'])
     def test_source_seed_indices_are_not_gold_verdicts(self):
         seeds = json.loads((ASSET_ROOT / 'tests/reference/source_hypothesis_catalog.json').read_text())
         self.assertEqual(13, len(seeds)); self.assertTrue(all(x['verdict'] == 'untested' for x in seeds))
@@ -100,7 +100,7 @@ b=types.ModuleType('adapters.base');b.Adapter=type('Adapter',(),{})
 sys.modules['adapters']=a;sys.modules['adapters.base']=b
 m=importlib.import_module(sys.argv[2])
 classes=[x for x in vars(m).values() if isinstance(x,type) and getattr(x,'key',None)=='nusaibah.clinical_failure_intelligence']
-assert len(classes)==1 and classes[0].version=='0.1.1'
+assert len(classes)==1 and classes[0].version=='0.1.2'
 print('declared_import_closure_passed')
 """
             for package_mode in (True, False):
@@ -108,6 +108,32 @@ print('declared_import_closure_passed')
                 completed = subprocess.run([sys.executable, '-I', '-c', script, str(root if package_mode else package), name],
                                            capture_output=True, text=True, encoding='utf8', timeout=20)
                 self.assertEqual(0, completed.returncode, completed.stderr)
+    def test_python_closure_imports_without_development_prose(self):
+        meta = declaration()
+        with tempfile.TemporaryDirectory() as temporary:
+            package = Path(temporary) / 'clinical_failure_intelligence'
+            package.mkdir()
+            for name in meta['reviewed_helpers'] + [meta['adapter_module']]:
+                shutil.copyfile(ASSET_ROOT / name, package / name)
+            script = """import sys,types,importlib
+sys.path.insert(0,sys.argv[1])
+a=types.ModuleType('adapters');a.__path__=[]
+b=types.ModuleType('adapters.base');b.Adapter=type('Adapter',(),{})
+sys.modules['adapters']=a;sys.modules['adapters.base']=b
+m=importlib.import_module('clinical_failure_intelligence.clinical_failure_intelligence_adapter')
+assert m.ClinicalFailureIntelligenceAdapter.version=='0.1.2'
+"""
+            completed = subprocess.run([sys.executable, '-I', '-B', '-c', script, temporary],
+                                       capture_output=True, text=True, encoding='utf8', timeout=20)
+            self.assertEqual(0, completed.returncode, completed.stderr)
+    def test_prompt_catalog_is_reproducible(self):
+        completed = subprocess.run([sys.executable, '-I', '-B', str(ASSET_ROOT / 'tests/build_prompt_catalog.py'), '--check'],
+                                   capture_output=True, text=True, encoding='utf8', timeout=20)
+        self.assertEqual(0, completed.returncode, completed.stderr)
+    def test_development_fixtures_are_not_runtime_files(self):
+        self.assertFalse((ASSET_ROOT / 'fixtures').exists())
+        self.assertEqual({'mechanistic_case.json', 'cohort_pattern.json', 'prepared_evidence_preflight.json'},
+                         {p.name for p in (ASSET_ROOT / 'tests/fixtures').glob('*.json')})
     @unittest.skipUnless(Draft202012Validator, 'jsonschema is not installed')
     def test_schemas_validate_fixture_results(self):
         request = json.loads((ASSET_ROOT / 'tests/reference/analysis_request.v1.schema.json').read_text())

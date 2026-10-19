@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from calendar import monthrange
 from copy import deepcopy
-from datetime import date
+from datetime import date, datetime
 import re
 from typing import Any, Iterator
 
@@ -24,9 +24,9 @@ BUNDLE_SCHEMA = "clinical_evidence_bundle.v1"
 SOURCE_CONTRACTS = {
     "nusaibah.clinical_trials_lookup": ("0.1.1", "trial_result", "clinical_trials_lookup.v1"),
     "nusaibah.pubmed_evidence": ("0.1.0", "literature_result", "pubmed_evidence.v1"),
-    "umls_terminology": ("0.1.0", "terminology_result", None),
+    "umls_terminology": ("0.1.1", "terminology_result", None),
 }
-MAX_BUNDLE_BYTES = 1_048_576
+MAX_BUNDLE_BYTES = 4_194_304  # Warning threshold; runtime owns transport ceilings.
 MAX_SOURCE_RESULTS = 24
 MAX_RECORDS = 50
 MAX_WINDOWS = 384  # Bounded complete-window index; never an Agent prompt allowance.
@@ -102,7 +102,6 @@ def validate_bundle(value: Any, request: dict) -> dict:
     bundle = object_fields(value, {"schema_version", "bundle_id", "subject_id", "product_id",
                                   "event_ids", "sources"})
     safe_json(bundle)
-    require(len(canonical_bytes(bundle)) <= MAX_BUNDLE_BYTES, "clinical_source_bundle_too_large")
     require(bundle["schema_version"] == BUNDLE_SCHEMA, "clinical_source_bundle_schema_invalid")
     identifier(bundle["bundle_id"])
     require(bundle["subject_id"] == request["subject_id"] and
@@ -317,8 +316,10 @@ def _trial(entry: dict, collector: _Collector, summary: dict) -> None:
         if policy is not None:
             require(isinstance(policy, dict) and
                     policy.get("action") == "preserved_complete" and
-                    policy.get("threshold_exceeded") is False,
+                    type(policy.get("threshold_exceeded")) is bool,
                     "clinical_trial_source_not_complete")
+            if policy['threshold_exceeded']:
+                summary['size_warning']=deepcopy(policy)
         base_id = "ctgov:" + nct
         identifiers_value = {"nct_id": nct}
         def add(value: Any, pointer: str, use: str) -> None:
@@ -334,8 +335,6 @@ def _trial(entry: dict, collector: _Collector, summary: dict) -> None:
             require(isinstance(identification, dict), "clinical_trial_modules_invalid")
             nested_id = identification.get("nctId")
             require(nested_id is None or nested_id == nct, "clinical_trial_case_identity_mismatch")
-            for name in sorted(protocol):
-                add(protocol[name], "/registry_study/protocolSection/" + _pointer(name), "protocol")
             if op == "results_get" and result.get("results_state") == "posted":
                 require(bool(results), "clinical_trial_posted_results_missing")
             for name in sorted(results):
@@ -343,6 +342,10 @@ def _trial(entry: dict, collector: _Collector, summary: dict) -> None:
                 use = ("safety_results" if name == "adverseEventsModule" else
                        "posted_results" if name == "outcomeMeasuresModule" else "result_context")
                 add(results[name], "/registry_study/resultsSection/" + _pointer(name), use)
+            # Preserve scientific priority even when the canonical window allowance
+            # is reached: contacts/locations must not crowd out outcomes or safety.
+            for name in sorted(protocol, key=lambda key: (key == 'contactsLocationsModule', key)):
+                add(protocol[name], "/registry_study/protocolSection/" + _pointer(name), "protocol")
             # Documents and derived content remain separately identified, not silently discarded.
             for name in sorted(set(study) - {"protocolSection", "resultsSection"}):
                 add(study[name], "/registry_study/" + _pointer(name), "registry_metadata")
@@ -476,6 +479,8 @@ def _terminology(entry: dict, summary: dict) -> list[dict]:
     require(entry["purpose"] == "terminology", "clinical_source_purpose_invalid")
     provenance = result.get("provenance") or {}
     require(isinstance(provenance, dict), "clinical_umls_provenance_invalid")
+    receipt = terminology_attestation(result)
+    summary["runtime_fetch_attestation"] = receipt
     summary["coverage"] = deepcopy(result.get("completeness", {}))
     candidates = []
     for row in result.get("records", []):
@@ -489,9 +494,66 @@ def _terminology(entry: dict, summary: dict) -> list[dict]:
         candidates.append({"cui": cui, "preferred_name": row.get("name"),
             "semantic_types": deepcopy(semantic), "source_vocabulary": row.get("rootSource"),
             "release": provenance.get("release"), "source_result_id": entry["source_result_id"],
+            "query_attested": result.get("query_attested") is True,
+            "fetch_id": receipt["fetch_id"] if receipt is not None else None,
             "mapping_status": "candidate", "clinical_equivalence_verified": False,
             "may_support_outcome": False, "license_status": "not_attested"})
     return candidates
+
+
+def terminology_attestation(result: dict) -> dict | None:
+    """Consume the pinned producer's receipt without claiming to authenticate it.
+
+    UMLS 0.1.1 and its admitted worker validate the *full fetched* record digest
+    before local limiting. A clinical consumer cannot reconstruct that digest
+    from the projected records. Retained-output admission authenticates the
+    producer; this check preserves the closed receipt and selector commitment.
+    Neither the receipt nor its completion time certifies a UMLS release,
+    provider retrieval time, complete results, or clinical equivalence.
+    """
+    if result.get("operation") == "describe":
+        require(not result.get("records"), "clinical_umls_describe_records_invalid")
+        return None
+    require(result.get("query_attested") is True, "clinical_umls_attestation_required")
+    provenance = result.get("provenance")
+    require(isinstance(provenance, dict), "clinical_umls_provenance_invalid")
+    receipt = object_fields(provenance.get("runtime_fetch_evidence"), {
+        "schema_version", "fetch_id", "source_id", "capability_ref", "operation",
+        "effective_selectors_digest", "response_digest", "record_count", "completed_at_utc"})
+    require(receipt["schema_version"] == "runtime_source_fetch_evidence.v1" and
+            receipt["capability_ref"] == "umls.terminology.search" and receipt["operation"] == "search",
+            "clinical_umls_attestation_identity_invalid")
+    require(isinstance(receipt["fetch_id"], str) and
+            re.fullmatch(r"rsf_[0-9a-f]{32}", receipt["fetch_id"]) is not None and
+            isinstance(receipt["source_id"], str) and
+            re.fullmatch(r"[A-Za-z0-9_.:@-]{1,191}", receipt["source_id"]) is not None,
+            "clinical_umls_attestation_identity_invalid")
+    for field in ("effective_selectors_digest", "response_digest"):
+        require(isinstance(receipt[field], str) and
+                re.fullmatch(r"sha256:[0-9a-f]{64}", receipt[field]) is not None,
+                "clinical_umls_attestation_digest_invalid")
+    query = result.get("query")
+    require(isinstance(query, dict) and query.get("operation") == "search" and
+            isinstance(query.get("text"), str) and query.get("search_type") in {"exact", "words", "normalizedString", "normalizedWords", "rightTruncation", "leftTruncation"},
+            "clinical_umls_attestation_query_invalid")
+    selectors = {"string": query["text"], "searchType": query["search_type"]}
+    if "sources" in query:
+        require(isinstance(query["sources"], list) and all(isinstance(s, str) for s in query["sources"]),
+                "clinical_umls_attestation_query_invalid")
+        selectors["sabs"] = ",".join(query["sources"])
+    require(receipt["effective_selectors_digest"] == digest([selectors]),
+            "clinical_umls_attestation_selector_mismatch")
+    require(type(receipt["record_count"]) is int and receipt["record_count"] >= len(result["records"]),
+            "clinical_umls_attestation_count_invalid")
+    completed = receipt["completed_at_utc"]
+    require(isinstance(completed, str) and
+            re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z", completed) is not None,
+            "clinical_umls_attestation_time_invalid")
+    try:
+        datetime.strptime(completed, "%Y-%m-%dT%H:%M:%S.%fZ")
+    except ValueError:
+        raise ContractError("clinical_umls_attestation_time_invalid") from None
+    return deepcopy(receipt)
 
 
 def source_provenance(result: dict) -> list[dict]:
@@ -548,10 +610,13 @@ def prepare_bundle(value: Any, request: dict) -> dict:
     # Shared receipt links have a separate compact index, not a hidden mutation.
     require(collector.byte_count == sum(len(canonical_bytes(row)) for row in collector.windows),
             "clinical_retained_evidence_budget_mismatch")
+    bundle_bytes=len(canonical_bytes(bundle))
+    warnings=([{'code':'clinical_source_bundle_size_warning','size_bytes':bundle_bytes,
+                'warning_threshold_bytes':MAX_BUNDLE_BYTES}] if bundle_bytes>MAX_BUNDLE_BYTES else [])
     return {"status": "partial" if collector.omissions else "normalized",
         "bundle_id": bundle["bundle_id"], "bundle_digest": digest(bundle),
         "evidence": collector.windows, "terminology": terminology, "sources": sources,
-        "issues": [], "omissions": collector.omissions,
+        "issues": warnings, "omissions": collector.omissions,
         "equivalent_source_receipt_groups": shared,
         "coverage_receipt": {
             "retained_windows": len(collector.windows),

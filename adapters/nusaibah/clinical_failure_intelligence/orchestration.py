@@ -5,9 +5,9 @@ from copy import deepcopy
 from typing import Any
 if __package__:
     from .contracts import ASSET_KEY, SCHEMA, VERSION, RESEARCH_ROLES, ContractError, canonical_bytes, digest, identifiers, parse_request, require
-    from .policies import Budget, ExecutionPolicy
+    from .policies import Budget, ExecutionPolicy, DeferredWork
     from .runtime_access import AgentRunner, StageResult
-    from .research_sources import acquire_sources
+    from .research_sources import acquire_sources, inspect_stage_sources
     from .evidence import EvidenceLedger
     from .cohort import compute_statistics
     from .quality import OUTCOMES, enforce_consistency, normalize_items, review_items, validate_dependencies, withhold
@@ -16,11 +16,12 @@ if __package__:
     from .rendering import build_reason_graph, render_report, validate_result
     from .review_packets import critic_batches, scoped_review
     from .decision_outcome import finalize_output, preflight_result, source_request_plan
+    from .analysis_packets import evidence_batches, closed_packet, namespace_candidates, item_evidence
 else:
     from contracts import ASSET_KEY, SCHEMA, VERSION, RESEARCH_ROLES, ContractError, canonical_bytes, digest, identifiers, parse_request, require
-    from policies import Budget, ExecutionPolicy
+    from policies import Budget, ExecutionPolicy, DeferredWork
     from runtime_access import AgentRunner, StageResult
-    from research_sources import acquire_sources
+    from research_sources import acquire_sources, inspect_stage_sources
     from evidence import EvidenceLedger
     from cohort import compute_statistics
     from quality import OUTCOMES, enforce_consistency, normalize_items, review_items, validate_dependencies, withhold
@@ -29,6 +30,7 @@ else:
     from rendering import build_reason_graph, render_report, validate_result
     from review_packets import critic_batches, scoped_review
     from decision_outcome import finalize_output, preflight_result, source_request_plan
+    from analysis_packets import evidence_batches, closed_packet, namespace_candidates, item_evidence
 
 FACETS = {"trial_researcher": "clinical_outcome", "literature_researcher": "mechanism_evidence",
           "event_researcher": "development_timeline"}
@@ -116,16 +118,51 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
               "terminology_candidates": deepcopy(prepared["terminology"]),
               "terminology_is_not_outcome_evidence": True}
 
-    def research(role: str, iteration: int = 0, question: str | None = None) -> list[StageResult]:
+    def analysis_data(role, chunk, *, outcomes=None):
+        value = closed_packet(chunk, ledger.rows(), claims, common, outcomes=outcomes)
+        if role == 'hypothesis_analyst':
+            value['cohort_statistics'] = statistics
+        return value
+
+    def planned_batches(role, *, outcomes=None):
+        obligations = (['outcome:'+key for key in OUTCOMES] if role == 'outcome_adjudicator' else
+                       ['seed:'+seed['assertion_id'] for seed in context['source_assertions']] or ['hypothesis_assessment'])
+        return evidence_batches(ledger.rows(), lambda chunk: runner.packet(role, request,
+            task_id=role+':planning', obligations=obligations, packet_data=analysis_data(role, chunk, outcomes=outcomes)),
+            max_bytes=budget.policy.max_packet_bytes)
+
+    analysis_reserve = 2*len(planned_batches('outcome_adjudicator'))+1+(2 if memory['status']!='not_requested' else 0)
+
+    def research(role: str, iteration: int = 0, question: str | None = None, evidence_ids=None) -> list[StageResult]:
         relevant = [row for row in ledger.rows() if row["source_type"] in SOURCE_FACETS[role]]
+        if evidence_ids is not None:
+            relevant = [row for row in relevant if row['evidence_id'] in evidence_ids]
         tasks = []
-        for index, chunk in enumerate(partition_evidence(relevant)):
+        def research_data(chunk):
+            return {**common, "evidence_packet": chunk,
+                "questions": [question] if question else ["Investigate " + FACETS[role]],
+                "evidence_scope": {"assigned_count": len(chunk), "total_role_sources": len(relevant)},
+                "source_admission_rule": "Use supplied evidence IDs. New sources remain unadmitted leads."}
+        chunks = evidence_batches(relevant, lambda chunk: runner.packet(role, request,
+            task_id=role+':planning', obligations=[FACETS[role]+':planning'], packet_data=research_data(chunk)),
+            max_bytes=budget.policy.max_packet_bytes)
+        for index, chunk in enumerate(chunks):
+            data=research_data(chunk)
+            targeted_search=bool(question and request['supplementary_search'] and
+                                 callable(getattr(inputs,'open_reference',None)))
+            if targeted_search:
+                try:
+                    budget.reserve_search(role)
+                    data['search_queries']=[question]
+                    data['source_admission_rule']+=' Native citations require independent trusted HTTP inspection before use.'
+                except DeferredWork as error:
+                    issues.append({'code':error.code})
+                    targeted_search=False
             tasks.append(runner.call(role, request, task_id=role + ":" + str(iteration) + ":" + str(index),
-                obligations=[FACETS[role] + ":" + str(index)], downstream_reserve=5 if memory["status"] != "not_requested" else 3,
-                packet_data={**common, "evidence_packet": chunk,
-                    "questions": [question] if question else ["Investigate " + FACETS[role]],
-                    "evidence_scope": {"assigned_count": len(chunk), "total_role_sources": len(relevant)},
-                    "source_admission_rule": "Use supplied evidence IDs. New sources remain unadmitted leads."}))
+                obligations=[FACETS[role] + ":" + str(index)], downstream_reserve=analysis_reserve,
+                packet_data=data))
+            if targeted_search and tasks[-1].payload is not None:
+                issues.extend(inspect_stage_sources(inputs,request,budget,ledger,tasks[-1]))
         return tasks
 
     def collect(tasks: list[StageResult]) -> None:
@@ -135,7 +172,20 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
                 issues.append({"stage_id": stage.task_id, "code": stage.code})
                 continue
             try:
-                valid, errors = ledger.validate_claims(stage.payload["items"], stage_id=stage.task_id)
+                candidates = stage.payload["items"]
+                scoped = []
+                for candidate in candidates:
+                    references = ([*candidate.get('supporting_evidence_ids', []),
+                                   *candidate.get('contradicting_evidence_ids', [])]
+                                  if isinstance(candidate, dict) and
+                                  isinstance(candidate.get('supporting_evidence_ids', []), list) and
+                                  isinstance(candidate.get('contradicting_evidence_ids', []), list) else [])
+                    if stage.evidence_ids is not None and any(not isinstance(ref, str) or ref not in stage.evidence_ids
+                                                              for ref in references):
+                        issues.append({'stage_id': stage.task_id, 'code': 'clinical_stage_evidence_not_supplied'})
+                    else:
+                        scoped.append(candidate)
+                valid, errors = ledger.validate_claims(scoped, stage_id=stage.task_id)
             except ContractError as error:
                 if error.code not in {"clinical_claim_batch_invalid", "clinical_claim_id_duplicate"}:
                     raise
@@ -152,8 +202,22 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
 
     def normalize_stage(stage: StageResult, kind: str) -> list[dict]:
         try:
-            items, errors = normalize_items(stage.payload["items"] if stage.payload else [],
+            rows = stage.payload["items"] if stage.payload else []
+            scope_errors = []
+            if stage.evidence_ids is not None and isinstance(rows,list):
+                scoped = []
+                for row in rows:
+                    references = ([*row.get('supporting_evidence_ids',[]),*row.get('contradicting_evidence_ids',[])]
+                                  if isinstance(row,dict) and isinstance(row.get('supporting_evidence_ids',[]),list)
+                                  and isinstance(row.get('contradicting_evidence_ids',[]),list) else [])
+                    if any(not isinstance(ref,str) or ref not in stage.evidence_ids for ref in references):
+                        scope_errors.append({'stage_id':stage.task_id,'code':'clinical_stage_evidence_not_supplied'})
+                    else:
+                        scoped.append(row)
+                rows = scoped
+            items, errors = normalize_items(rows,
                                              kind, request, ledger)
+            errors.extend(scope_errors)
         except ContractError as error:
             if error.code not in {"clinical_candidate_batch_invalid", "clinical_item_duplicate"}:
                 raise
@@ -162,18 +226,28 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
         return items
 
     def evaluate(iteration: int) -> tuple[list[dict], StageResult]:
-        outcome_stage = runner.call("outcome_adjudicator", request,
-            task_id="outcome:" + str(iteration), obligations=["outcome:" + key for key in OUTCOMES],
-            packet_data={**common, "evidence_packet": ledger.rows(), "research_claims": claims})
-        stages.append(outcome_stage)
-        outcomes = normalize_stage(outcome_stage, "outcome")
-        analyst = runner.call("hypothesis_analyst", request,
-            task_id="hypotheses:" + str(iteration), obligations=[
-                "seed:" + seed["assertion_id"] for seed in context["source_assertions"]] or ["hypothesis_assessment"],
-            packet_data={**common, "evidence_packet": ledger.rows(), "research_claims": claims,
-                         "case_assessments": outcomes, "cohort_statistics": statistics})
-        stages.append(analyst)
-        hypotheses = normalize_stage(analyst, "hypothesis")
+        outcomes, hypotheses = [], []
+        outcome_chunks = planned_batches('outcome_adjudicator')
+        for index, chunk in enumerate(outcome_chunks):
+            outcome_stage = runner.call('outcome_adjudicator', request,
+                task_id='outcome:'+str(iteration)+((':'+str(index)) if len(outcome_chunks)>1 else ''),
+                obligations=['outcome:'+key for key in OUTCOMES],
+                downstream_reserve=len(outcome_chunks)+1+(2 if memory['status']!='not_requested' else 0),
+                packet_data=analysis_data('outcome_adjudicator',chunk))
+            namespace_candidates(outcome_stage,'outcome',index,multiple=len(outcome_chunks)>1)
+            stages.append(outcome_stage)
+            outcomes.extend(normalize_stage(outcome_stage,'outcome'))
+        hypothesis_chunks = planned_batches('hypothesis_analyst', outcomes=outcomes)
+        for index, chunk in enumerate(hypothesis_chunks):
+            data = analysis_data('hypothesis_analyst',chunk,outcomes=outcomes)
+            data['cohort_statistics'] = statistics
+            analyst = runner.call('hypothesis_analyst',request,
+                task_id='hypotheses:'+str(iteration)+((':'+str(index)) if len(hypothesis_chunks)>1 else ''),
+                obligations=['seed:'+seed['assertion_id'] for seed in context['source_assertions']] or ['hypothesis_assessment'],
+                downstream_reserve=1+(2 if memory['status']!='not_requested' else 0),packet_data=data)
+            namespace_candidates(analyst,'hypothesis',index,multiple=len(hypothesis_chunks)>1)
+            stages.append(analyst)
+            hypotheses.extend(normalize_stage(analyst,'hypothesis'))
         items = outcomes + hypotheses
         counts: dict[str, int] = {}
         for item in items:
@@ -225,6 +299,10 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
         return reviewed, critic
 
     reviewed, critic = evaluate(0)
+    reflection_requested = critic.payload['followup_requests'] if critic.payload else []
+    if reflection_requested and not request['enable_refinement']:
+        issues.append({'code':'clinical_reflection_not_requested',
+                       'deferred_followup_count':len(reflection_requested)})
     if request["enable_refinement"] and critic.payload:
         followups = critic.payload["followup_requests"]
         for followup in followups:
@@ -235,13 +313,41 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
                     "clinical_followup_contract_invalid")
             affected = identifiers(followup["affected_item_ids"], allow_empty=False)
             require(set(affected) <= {x["item_id"] for x in reviewed}, "clinical_followup_scope_invalid")
+        selected_followup = False
+        re_reviewed = False
         if followups and budget.calls + (6 if memory["status"] != "not_requested" else 4) <= budget.policy.max_agent_calls and budget.refine_once():
             followup = followups[0]
             old = deepcopy(reviewed)
-            collect(research(followup["role"], 1, followup["question"]))
-            revised, critic = evaluate(1)
-            reviewed, errors = merge_refinement(old, revised, followup["affected_item_ids"])
-            issues.extend(errors)
+            selected = [row for row in reviewed if row['item_id'] in followup['affected_item_ids']]
+            evidence_ids = {ref for row in selected for field in ('supporting_evidence_ids','contradicting_evidence_ids')
+                            for ref in row[field]}
+            try:
+                if budget.reflection_task(followup['role'],followup['question'],digest(sorted(evidence_ids))):
+                    selected_followup = True
+                    before_evidence=digest(ledger.rows())
+                    semantic_keys=lambda rows:{digest({k:v for k,v in row.items() if k not in {'claim_id','stage_id'}})
+                                               for row in rows}
+                    before_claims=semantic_keys(claims)
+                    collect(research(followup["role"], 1, followup["question"], evidence_ids=evidence_ids))
+                    if digest(ledger.rows())==before_evidence and not (semantic_keys(claims)-before_claims):
+                        issues.append({'code':'clinical_reflection_no_progress','affected_item_ids':followup['affected_item_ids']})
+                    else:
+                        revised, critic = evaluate(1)
+                        re_reviewed = True
+                        reviewed, errors = merge_refinement(old, revised, followup["affected_item_ids"])
+                        issues.extend(errors)
+            finally:
+                budget.finish_reflection()
+        deferred = followups[1:] if selected_followup else followups
+        if deferred:
+            issues.append({'code':'clinical_reflection_followups_deferred',
+                'reason':'bounded_reflection_target_or_call_allowance',
+                'deferred_followup_count':len(deferred),
+                'requests':[{'role':row['role'],'question_digest':digest(row['question']),
+                             'affected_item_ids':row['affected_item_ids']} for row in deferred]})
+        if re_reviewed and critic.payload and critic.payload['followup_requests']:
+            issues.append({'code':'clinical_reflection_round_limit_reached',
+                           'deferred_followup_count':len(critic.payload['followup_requests'])})
     hypotheses = [x for x in reviewed if x["kind"] == "hypothesis"]
     outcomes = [x for x in reviewed if x["kind"] == "outcome"]
     if not hypotheses:
@@ -271,7 +377,7 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
         editor = runner.call("product_memory_editor", request, task_id="product_memory_edit",
             obligations=["product_memory_delta"], downstream_reserve=1,
             packet_data={"memory_context": memory_projection(memory), "accepted_items": accepted_items,
-                "evidence_packet": ledger.rows(), "event_ids": request["event_ids"],
+                "evidence_packet": item_evidence(accepted_items, ledger.rows()), "event_ids": request["event_ids"],
                 "case_scope": context["case_scope"], "edit_contract": editor_contract()})
         stages.append(editor)
         try:
@@ -281,7 +387,8 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
                 memory_critic = runner.call("evidence_critic", request, task_id="product_memory_review",
                     obligations=["memory_review:" + row["edit_id"] for row in candidates],
                     packet_data={"review_kind": "product_memory_edits", "memory_context": memory_projection(memory),
-                        "candidate_edits": candidates, "accepted_items": accepted_items, "evidence_packet": ledger.rows(),
+                        "candidate_edits": candidates, "accepted_items": accepted_items,
+                        "evidence_packet": item_evidence(accepted_items, ledger.rows()),
                         "memory_review_contract": {"required_fields": ["edit_id", "accepted", "scope_preserved",
                             "evidence_supported", "prior_content_preserved", "rationale"]}})
                 stages.append(memory_critic)

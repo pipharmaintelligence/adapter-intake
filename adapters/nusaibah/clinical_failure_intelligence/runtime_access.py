@@ -25,6 +25,7 @@ class StageResult:
     semantic_metadata: dict
     code: str | None = None
     cache_hit: bool = False
+    evidence_ids: tuple[str, ...] | None = None
 
     def summary(self) -> dict:
         """Return status and the actual safe provider metadata, never invented usage."""
@@ -91,6 +92,16 @@ class AgentRunner:
     def call(self, role: str, request: dict, *, task_id: str, obligations: list[str],
              packet_data: dict, downstream_reserve: int = 0) -> StageResult:
         """Execute once; reserve shared calls before dispatch and keep task identity fixed."""
+        packet = self.packet(role, request, task_id=task_id, obligations=obligations, packet_data=packet_data)
+        key = digest(packet)
+        with self._lock:
+            key_lock = self._key_locks.setdefault(key, threading.Lock())
+        with key_lock:
+            return self._call_once(role, request, task_id, obligations, packet, key, downstream_reserve)
+
+    def packet(self, role: str, request: dict, *, task_id: str, obligations: list[str],
+               packet_data: dict) -> dict:
+        """Build the exact packet before partitioning; this method performs no work."""
         require(role in ROLES, "clinical_agent_role_invalid")
         identifier(task_id)
         identifiers(obligations, allow_empty=False)
@@ -104,12 +115,7 @@ class AgentRunner:
             "assigned_obligation_ids": obligations, "response_contract": response_contract(role),
             "instructions": COMMON_PROMPT + "\n\n" + PROMPTS[role],
             "prompt_version": PROMPT_VERSION, **deepcopy(packet_data)}
-        key = digest(packet)
-        with self._lock:
-            key_lock = self._key_locks.setdefault(key, threading.Lock())
-        # Different tasks may execute concurrently. Identical in-flight work does not.
-        with key_lock:
-            return self._call_once(role, request, task_id, obligations, packet, key, downstream_reserve)
+        return packet
 
     def _call_once(self, role: str, request: dict, task_id: str, obligations: list[str],
                    packet: dict, key: str, downstream_reserve: int) -> StageResult:
@@ -155,7 +161,9 @@ class AgentRunner:
                         "clinical_agent_coverage_invalid")
             require(len(seen) == len(set(seen)) and set(seen) == set(obligations), "clinical_agent_coverage_incomplete")
             status = "completed" if all(x["status"] == "completed" for x in coverage) else "partial"
-            stage = StageResult(task_id, role, status, key, payload, metadata)
+            evidence_ids = tuple(row['evidence_id'] for row in packet.get('evidence_packet', [])
+                                 if isinstance(row, dict) and isinstance(row.get('evidence_id'),str))
+            stage = StageResult(task_id, role, status, key, payload, metadata, evidence_ids=evidence_ids)
         except ContractError as exc:
             if exc.code in {"clinical_agent_identity_mismatch", "clinical_authority_material_forbidden"}:
                 raise

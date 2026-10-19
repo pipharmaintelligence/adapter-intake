@@ -1,0 +1,23 @@
+{
+  "substrate": "local_worker",
+  "assets": {
+    "nusaibah.clinical_failure_intelligence": {
+      "entity_key": "REPLACE_EXISTING_CLINICAL_ENTITY",
+      "input_binding_selection": {
+        "clinical_context": "REPLACE_AUTHORIZED_TEST_BINDING_ID"
+      }
+    },
+    "nusaibah.clinical_trials_lookup": {
+      "entity_key": "REPLACE_EXISTING_LOOKUP_ENTITY",
+      "input_binding_selection": {}
+    },
+    "nusaibah.pubmed_evidence": {
+      "entity_key": "REPLACE_EXISTING_PUBMED_ENTITY",
+      "input_binding_selection": {}
+    },
+    "umls_terminology": {
+      "entity_key": "REPLACE_EXISTING_UMLS_ENTITY",
+      "input_binding_selection": {}
+    }
+  }
+}

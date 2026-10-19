@@ -11,7 +11,7 @@ from typing import Any
 
 JsonObject = dict[str, Any]
 ASSET_KEY = "nusaibah.clinical_failure_intelligence"
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 SCHEMA = "clinical_failure_intelligence.v1"
 REQUEST_SCHEMA = "clinical_analysis_request.v1"
 ROLE_SCHEMA = "clinical_agent_response.v1"
@@ -23,7 +23,7 @@ REASON_CODES = frozenset({"efficacy", "safety_tolerability", "pk_pd_exposure_dos
 ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}\Z")
 DIGEST_RE = re.compile(r"sha256:[a-f0-9]{64}\Z")
 # Detect authority material, not ordinary scientific words or bibliographic identifiers.
-PRIVILEGED_KEYS = frozenset({"authorization", "headers", "access_token", "refresh_token",
+FORBIDDEN_AUTHORITY_KEYS = frozenset({"authorization", "headers", "access_token", "refresh_token",
     "api_key", "password", "credentials", "client_secret", "presigned_url", "provider_state",
     "runtime_location", "raw_provider_response", "raw_dlm_response", "raw_obs_response"})
 
@@ -47,7 +47,7 @@ def safe_json(value: Any, depth: int = 0) -> None:
     if isinstance(value, dict):
         for key, child in value.items():
             require(isinstance(key, str), "clinical_json_key_invalid")
-            require(key.casefold() not in PRIVILEGED_KEYS, "clinical_authority_material_forbidden")
+            require(key.casefold() not in FORBIDDEN_AUTHORITY_KEYS, "clinical_authority_material_forbidden")
             safe_json(child, depth + 1)
     elif isinstance(value, list):
         for child in value:
@@ -148,8 +148,12 @@ def strict_object(text_value: str) -> JsonObject:
 def parse_request(inputs: Any) -> JsonObject:
     """Validate the request and resolved context before spending Agent calls."""
     require(isinstance(inputs, dict), "clinical_inputs_invalid")
+    if __package__:
+        from .retained_sources import SOURCE_ROLES, prepare_retained_bundle
+    else:
+        from retained_sources import SOURCE_ROLES, prepare_retained_bundle
     require({"variables", "clinical_context"} <= set(inputs) <=
-            {"variables", "clinical_context", "clinical_evidence"}, "clinical_input_roles_invalid")
+            {"variables", "clinical_context", "clinical_evidence", *SOURCE_ROLES}, "clinical_input_roles_invalid")
     values = object_fields(inputs["variables"], {"schema_version", "request_id", "analysis_mode",
         "subject_id", "as_of_date", "event_ids"}, {"memory_mode", "enable_refinement", "enable_pharmacological_class", "product_id", "indication_id", "trial_id", "source_object_id", "preflight_only", "supplementary_search", "prepare_result_for_persistence"})
     safe_json(values)
@@ -162,7 +166,7 @@ def parse_request(inputs: Any) -> JsonObject:
     memory_mode = values.get("memory_mode", "preview")
     # Callable mutation and retention-before-apply are not admitted in this release.
     require(isinstance(memory_mode, str) and memory_mode in {"off", "preview"}, "clinical_memory_apply_not_admitted")
-    require(type(values.get("enable_refinement", False)) is bool, "clinical_refinement_flag_invalid")
+    require(type(values.get("enable_refinement", True)) is bool, "clinical_refinement_flag_invalid")
     require(type(values.get("prepare_result_for_persistence", False)) is bool,
             "clinical_persistence_prepare_flag_invalid")
     require(not (values.get("preflight_only", False) and values.get("prepare_result_for_persistence", False)),
@@ -262,7 +266,7 @@ def parse_request(inputs: Any) -> JsonObject:
     require(context["cohort"] is None or isinstance(context["cohort"], dict), "clinical_cohort_invalid")
     require(len(canonical_bytes(context)) <= 256 * 1024, "clinical_context_requires_partitioning")
     request = {**deepcopy(values), "memory_mode": memory_mode,
-            "enable_refinement": values.get("enable_refinement", False),
+            "enable_refinement": values.get("enable_refinement", True),
             "enable_pharmacological_class": class_enabled, "context": deepcopy(context)}
 
     if __package__:
@@ -271,5 +275,6 @@ def parse_request(inputs: Any) -> JsonObject:
         from source_bundle import prepare_bundle
     request["preflight_only"] = values.get("preflight_only", False)
     request["supplementary_search"] = values.get("supplementary_search", True)
-    request["prepared_sources"] = prepare_bundle(inputs.get("clinical_evidence"), request)
+    retained = prepare_retained_bundle(inputs,request)
+    request["prepared_sources"] = prepare_bundle(retained if retained is not None else inputs.get("clinical_evidence"), request)
     return request

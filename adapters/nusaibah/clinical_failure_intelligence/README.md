@@ -1,117 +1,122 @@
-# Clinical Failure Intelligence 0.1.1
+# Clinical Failure Intelligence 0.1.2
 
-PI-2061. Development implementation, not a live-ready or promoted asset.
-The existing pharma evaluation and company-intelligence packages are unchanged.
+PI-2061. Product-first clinical assessment with traceable evidence, scoped
+independent review and a non-writing product-memory proposal. This is a development
+candidate; source CI, package qualification, runtime admission and scientific
+evaluation are separate gates. See tests/reference/EXECUTION_MODEL.md for the full
+requirements/model and CHECKLIST.md for the current evidence boundaries.
 
-## Working chain
+## Execution
 
-One mechanistic_case or cohort_pattern request follows:
+The clinical asset accepts a governed clinical_context and either a governed
+clinical_evidence bundle or exact retained-output references. It validates identity,
+normalizes evidence, then runs trial/literature/event research, outcome adjudication,
+hypothesis analysis and independent criticism. A single targeted reflection round
+may correct gaps. A single product-memory editor and independent edit critic produce
+a preview from accepted findings. Class work is disabled by default.
 
-    governed context validation + Fixed methodology + primary product memory
-    -> trial / literature / event researchers (two concurrent tasks)
-    -> outcome adjudication -> hypothesis analysis -> evidence critic
-    -> at most one focused refinement
-    -> product memory editor -> paragraph edit critic
-    -> canonical JSON + reason graph + readable report + product delta preview
-    -> optional class candidate preview (disabled by default)
+Use preflight_only=true, memory_mode=off, supplementary_search=false for the
+zero-Agent/zero-Skill contract path. A preflight result is not scientific validation.
+mechanistic_case and denominator-aware cohort_pattern remain supported; failure-only
+events cannot provide a cohort denominator.
 
-Seven declared roles call inputs.invoke_agent. Python owns identities, deterministic
-counts, exact-source windows, scope, coverage, dependencies, graph and output.
-Prompt source files are in prompts/. Agent references and their hashes are listed
-in admission_requirements.json. They are not already registered or admitted roles.
-No provider model, shared registry metadata, lake or node is copied from pharma.
+## Invoking the three sources
 
-## Evidence and safety boundary
+tests/operator/run_clinical_workflow.py is an operator workflow using only the
+official SDK. It runs independently admitted source assets before the clinical
+asset. source_workflow.py owns deterministic semantic selectors and bounded source
+coordination; it contains no transport. retained_sources.py assembles the normal
+clinical bundle from Assets-hydrated retained outputs. No source implementation is
+imported, no provider endpoint is constructed, and no child invokes grandchildren.
 
-Research uses existing clinical_context source windows and the optional binding-owned
-clinical_evidence bundle. source_bundle.py consumes normalized ClinicalTrials.gov,
-PubMed and UMLS results without calling or importing their adapters. Missing source
-families may use the existing provider-grounded discovery and trusted HTTP path;
-model-authored URLs are not admitted as evidence. The source adapters, their live
-validation and runtime handoff remain separate work.
-Accepted means automated support assessment inside the supplied snapshot, not
-independently verified clinical truth. A literal passage match is not entailment.
+Pinned producers:
+- nusaibah.clinical_trials_lookup 0.1.1: study_get and results_get for the selected NCT.
+- nusaibah.pubmed_evidence 0.1.0: trial_publications, article_batch, abstract_get,
+  integrity_get using actual discovered PMIDs, at most three publications.
+- umls_terminology 0.1.1: exact bounded search using the governed product name.
 
-The bundled Fixed Skill has an exact digest. product_memory is the primary read-only helper
-use, selected by product_id; its approved node/partition declaration is pending.
-case_scope preserves canonical indication/trial/regimen identities. Missing trials
-remain event-scoped, not invented NCTs. Mixed trial memory work must be split by the
-parent; unresolved multi-product attribution defers product-memory changes. memory_mode=off
-skips it. Only the exact dynamic_skill_not_initialized error permits empty first-run
-memory; missing node or authority fails closed. memory_mode=apply fails before any
-Agent or Skill call. Preview does not initialize or publish anything.
+The operator first obtains a signed clinical preflight subject. The exact NCT must
+already belong to that governed context. Missing/ambiguous identity stops before
+source submission; there is no paid identity planner or invented association.
+The operator currently prepares one exact case. Cohort analysis uses a separately
+governed denominator and prepared cohort evidence, not this one-case acquisition loop.
 
-The manifest requires variables (direct) and clinical_context (binding), with an
-optional clinical_evidence (binding) role. Local
-fixture values are not a bypass for binding-owned live input. It declares only
-local_worker; callable eligibility does not prove child capabilities are installed.
-No nested callable, direct provider HTTP, credentials, queue or publisher is added.
+Only {run_uuid} references enter the final clinical request. Core/Assets owns
+client/producer/version/output-role/checksum/expiry validation and hydration.
+Local envelopes or digest checks alone do not establish live authority.
+Confirmed source unavailability preserves successful independent source runs and
+returns partial preparation. Unknown submission outcomes stop for reconciliation.
 
-## Local verification in DataSpell
+UMLS query attestation and its closed fetch receipt are preserved. The producer and
+trusted worker validate the full fetch before result limiting; clinical checks the
+selector commitment and receipt shape without attempting to authenticate it again.
+Unknown release, provider retrieval time, vocabulary and completeness stay unknown.
+Terminology candidates cannot support an outcome or establish clinical equivalence.
 
-Open this asset folder as the project root. Select your actual project interpreter.
-Create a Unittest configuration targeting tests. Debug one test method at a time.
-Do not add the Assets checkout to PYTHONPATH or modify the installed wheel.
+## Bounds, reflection and public search
 
-    python -m unittest discover -s tests -p "test_*.py" -v
-    python tests/run_fixture.py mechanistic_case
-    python tests/run_fixture.py cohort_pattern
-    python tests/run_fixture.py prepared_evidence_preflight
+At most 32 shared logical Agent calls, two concurrent researchers, 1,800 seconds
+and a 120-second completion reserve. Complete Agent packets are at most 120,000
+bytes. Research, outcome, hypothesis and critic work partition between complete
+windows and assertions; results/safety precede contact/location metadata. Atomic
+oversize work is explicitly deferred. Canonical scientific windows are not sliced.
 
-The fixture runner uses explicitly synthetic doubles, not OBS or a provider. The
-production entrypoint requires the real runtime package. Only import-closure tests
-stub Adapter; no production stub or silent SDK fallback exists.
+Reflection: at most one round, at most two distinct targets and four extra Agent
+calls total. The current coordinator selects one highest-priority follow-up within
+that ceiling. Repeated role/question/evidence work is deduplicated. No new evidence
+or corrected claims stops downstream repetition. Missing revised premises withhold
+affected conclusions while preserving independent valid siblings.
+Unselected follow-ups, exhausted allowances and further-round requests are recorded
+explicitly; a known unaddressed research request cannot be labeled complete.
+Reflexion: at most one product edit proposal and one independent edit review; no
+self-rewriting loop, learning from unaccepted hypotheses or mutation is performed.
 
-## Layout
+Governed public search supplements named gaps and contradictions. Only researcher
+roles may request it. At most six logical search tasks, two per role, and twelve
+trusted reference reads across the whole assessment. Provider-native citations are
+leads until open_reference(..., mode=http) inspects actual text. Generated URLs and
+snippets are not clinical evidence. An accessible excerpt is not full-text access.
+Provider-internal grounding calls must also be bounded by the admitted Agent profile.
 
-contracts.py: closed input and result primitives.
-policies.py / runtime_access.py: budgets, typed results and in-flight task reuse.
-evidence.py / cohort.py: exact source windows and descriptive cohort denominators.
-quality.py: candidate scopes, complete critic obligations and dependency invalidation.
-orchestration.py: bounded role chain and focused refinement.
-product_memory.py: bounded case-paragraph reads, edit review and non-applying SDK compiler.
-memory.py: Fixed methodology, optional class snapshot and guarded commit boundary.
-rendering.py: one deterministic graph/report from canonical assertions.
+Research extraction uses standard reasoning, with deeper interpretation for
+contradictions. Outcome, hypothesis and independent critic roles require high
+reasoning profiles. Product editing uses standard reasoning and deeper correction
+review. Actual model and provider thinking settings are runtime-owned and must be
+admitted; prompts do not set unsupported provider parameters or request private
+chain-of-thought. Exact seven role/prompt digests are in admission_requirements.json.
 
-## Deliberate limits
+## Size and effects
 
-Twelve shared Agent calls, two concurrent researchers, one refinement, an 1800-second
-budget and a 120-second completion reserve. Transport retries and actual request
-cancellation remain runtime-owned. Eight normal calls can become twelve after refinement.
-Oversize downstream packets defer explicitly rather than truncate content.
+Source bundle and canonical result warnings begin at 4 MiB; an oversized warning
+does not discard scientific content or raise an adapter size exception. Optional
+report/provider presentation may be omitted with a receipt. Canonical evidence
+indexing remains bounded and reports every omitted window. Runtime transport,
+retention and callable limits remain authoritative; a warning grants no bypass.
+The callable result contract declares 4 MiB separately from model packet budgets.
 
-response_repair.md is a reserved prompt, not an active Agent. The reference-read
-budget covers the trusted HTTP path; source adapter calls are not made by this child.
-A typed SDK output-limit failure withholds its stage without a paid retry.
-There is no paid planner, inferential statistics, graph database or custom checkpoint.
-Same-run reuse is not restart recovery. Persistence is explicitly not_attested.
-Thirteen source-hypothesis indices are provided; they are not a gold dataset or full
-PDF transcription. CHECKLIST.md distinguishes implementation from remaining work.
+Product Skill access is read-only, selected by product_id. memory_mode=preview is
+the default; off skips it; apply is not admitted and fails before paid work.
+prepare_result_for_persistence optionally emits a records envelope, with dry_run
+output policy only. There is no Skill initialization, CAS write, publication or
+durable clinical-stage recovery in this candidate. Those capabilities require their
+own admission, schema/QC, receipts, readback and history qualification.
 
-## Product-first revision
+## Development and packaging
 
-See PRODUCT_MEMORY_REVISION.md for exact before/after and remaining runtime gates.
-See GEMINI_PROMPT_PROFILE.md for Gemini 3.8 domain prompts and qualifications.
-Class true currently produces candidate references, not cross-product synthesis.
-Product edits remain preview plans, not writes. Legacy unindexed documents defer
-for migration instead of being treated as empty.
+From this folder:
 
-## Prepared evidence and reliability additions (same 0.1.1 draft)
+    python -B -m unittest discover -s tests -p "test_*.py"
+    python -B tests/build_prompt_catalog.py --check
+    python -B tests/run_fixture.py prepared_evidence_preflight
 
-See PREPARED_EVIDENCE_CONTRACT.md for the exact handoff and scientific gates, and
-INTAKE_IMPLEMENTATION_CHECKLIST.md for implementation versus external validation.
-The source adapters, Assets, Core, UI, selected wheel and provider settings are not
-changed by this consumer slice. No new asset version is introduced.
+prompt_*.md files are editable prompt sources. Run tests/build_prompt_catalog.py
+after editing them and update admission hashes. Runtime uses generated Python
+constants because SDK and ECS asset wheels do not package arbitrary Markdown.
+Fixed methodology remains version 1.1.0 at its exact unchanged digest. Clinical
+Agent contracts and prompts are version 1.2.0; prior 0.1.1 source is preserved in
+the preceding intake changes. Development references/fixtures/operator scripts
+stay under tests and are excluded from the promoted runtime file plan.
 
-source_bundle.py normalizes prepared source results and preserves provenance,
-NCT/PMID/CUI roles, date precision, article notices and complete source windows.
-review_packets.py splits focused critics without changing original validators.
-decision_outcome.py adds a scientific/business disposition and independent
-non-writing memory decision. Optional presentation compaction never truncates
-canonical evidence or the reviewed product-memory delta.
-
-Set preflight_only=true for zero-Agent/zero-Skill contract inspection; this does
-not prove a live binding. supplementary_search=false disables the optional HTTP
-fallback when testing the prepared-data path. Source plans describe unexecuted
-needs only. Canonical oversize, live handoff, actual SDK, product writes and durable
-restart recovery remain independently qualified gates.
+The manifest declares local_worker and ecs with independent qualification gates.
+Do not equate a local package import, synthetic transport double or ECS declaration
+with signed execution, deployed image parity or scientific accuracy.

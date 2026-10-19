@@ -217,7 +217,7 @@ def compile_product_changeset(handle: Any, plan: dict) -> Any:
     """
     require(plan["status"] == "preview" and not plan["initialization_required"], "clinical_memory_plan_not_compilable")
     # Detect accidental plan edits after critic review. This is an integrity
-    # check, not a signature or a replacement for runtime write authorization.
+    # check, not a signature or a replacement for runtime permission to write.
     expected = digest({k: plan[k] for k in ("product_id", "section_path", "before_content_digest",
         "before_package_digest", "input_revision_digest", "operations")})
     require(plan.get("proposal_digest") == expected, "clinical_memory_proposal_changed")
