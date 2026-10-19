@@ -1,0 +1,147 @@
+{
+  "document_kind": "admission_requirements_not_runtime_authority",
+  "asset": "nusaibah.clinical_failure_intelligence@0.1.1",
+  "implementation_stage": "provider_free_development",
+  "agent_contracts": [
+    {
+      "role": "trial_researcher",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_trial_researcher",
+      "contract_version": "1.1.0",
+      "prompt_version": "1.1.0",
+      "prompt_digest": "sha256:1d36c809b2d13ab210c7546655d7e27d5f2802e1ec95c422f11f797b3aae8def",
+      "prompt_file": "prompts/trial_researcher.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [
+        "vertex_provider_grounding_intent"
+      ],
+      "recommended_model": "gemini-3.8-flash",
+      "model_admission_status": "not_verified"
+    },
+    {
+      "role": "literature_researcher",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_literature_researcher",
+      "contract_version": "1.1.0",
+      "prompt_version": "1.1.0",
+      "prompt_digest": "sha256:b317ab5e055e9938a705fb38597be61428b4c03acb2ae3d9a4c601e3df246f0d",
+      "prompt_file": "prompts/literature_researcher.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [
+        "vertex_provider_grounding_intent"
+      ],
+      "recommended_model": "gemini-3.8-flash",
+      "model_admission_status": "not_verified"
+    },
+    {
+      "role": "event_researcher",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_event_researcher",
+      "contract_version": "1.1.0",
+      "prompt_version": "1.1.0",
+      "prompt_digest": "sha256:d5e6901af423a1922c127dfd82458a4ef2690c1f9b7db32fbc87eed047f6f3d4",
+      "prompt_file": "prompts/event_researcher.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [
+        "vertex_provider_grounding_intent"
+      ],
+      "recommended_model": "gemini-3.8-flash",
+      "model_admission_status": "not_verified"
+    },
+    {
+      "role": "outcome_adjudicator",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_outcome_adjudicator",
+      "contract_version": "1.1.0",
+      "prompt_version": "1.1.0",
+      "prompt_digest": "sha256:af907d4e89ba7d1bf355a396db11eac7f95e88d9c6adf96b1a6166480515544d",
+      "prompt_file": "prompts/outcome_adjudicator.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [],
+      "recommended_model": "gemini-3.8-flash",
+      "model_admission_status": "not_verified"
+    },
+    {
+      "role": "hypothesis_analyst",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_hypothesis_analyst",
+      "contract_version": "1.1.0",
+      "prompt_version": "1.1.0",
+      "prompt_digest": "sha256:7dff2ff73085cea3e9cc59f4d32b3180c82809d9318cabd1d57448df2dd91508",
+      "prompt_file": "prompts/hypothesis_analyst.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [],
+      "recommended_model": "gemini-3.8-flash",
+      "model_admission_status": "not_verified"
+    },
+    {
+      "role": "evidence_critic",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_evidence_critic",
+      "contract_version": "1.1.0",
+      "prompt_version": "1.1.0",
+      "prompt_digest": "sha256:7e5932e5f7bad8e5f039f42e1c8e36b1d17fb6b69e4a0fe571f4d10f631fe315",
+      "prompt_file": "prompts/evidence_critic.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [],
+      "recommended_model": "gemini-3.8-flash",
+      "model_admission_status": "not_verified"
+    },
+    {
+      "role": "product_memory_editor",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_product_memory_editor",
+      "contract_version": "1.1.0",
+      "prompt_file": "prompts/product_memory_editor.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [],
+      "prompt_version": "1.1.0",
+      "recommended_model": "gemini-3.8-flash",
+      "model_admission_status": "not_verified",
+      "prompt_digest": "sha256:323b12fa578808494b7e15443ea76a752ef80a005b0bcdfa333dc5090f57fd7e"
+    }
+  ],
+  "memory_roles": {
+    "product_memory": "Primary read-only role; selector product_id; binding pending",
+    "product_memory_update": "Primary mutable role; not admitted; apply blocked",
+    "group_memory": "Optional read-only role; never requested by default",
+    "group_memory_update": "Optional separate mutation; not admitted"
+  },
+  "blocked": [
+    "child_owned_agent_session",
+    "exact_agent_admission",
+    "dynamic_product_role_binding",
+    "source_retrieval_integration",
+    "mutable_skill_and_retention_before_apply",
+    "ecs_callable_parity",
+    "durable_resume",
+    "exact_test_database_lake_file_object_binding",
+    "source_event_evidence_retrieval",
+    "signed_child_file_object_composition",
+    "exact_child_public_web_http_admission",
+    "combined_grounded_search_http_evidence_proof"
+  ],
+  "defaults": {
+    "enable_pharmacological_class": false,
+    "memory_mode": "preview"
+  },
+  "governed_source_candidate": {
+    "lake_id": "test_database_lake",
+    "node_key": "clinical_development_events",
+    "format": "jsonl",
+    "source_schema": "clinical_event_source.v1",
+    "role": "clinical_context",
+    "ownership": "binding",
+    "file_object_id": "configure_from_Core_authorized_object_id",
+    "live_binding_status": "unverified"
+  },
+  "prepared_evidence_contract": {
+    "role": "clinical_evidence",
+    "ownership": "binding",
+    "required": false,
+    "schema_version": "clinical_evidence_bundle.v1",
+    "source_adapters_validation": "external_parallel_work_not_performed",
+    "consumer_stage": "synthetic_contract_validation",
+    "live_handoff_status": "not_verified"
+  }
+}
