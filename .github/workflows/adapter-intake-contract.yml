@@ -57,6 +57,12 @@ jobs:
           set -o pipefail
           python -m unittest discover -s tests -p "test_adapter_intake_contract.py" -v
 
+      - name: Verify ClinicalTrials.gov lookup 0.1.0 for local_worker and ECS without providers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p "test_clinical_trials_lookup.py" -v
+
       - name: Verify DLM MCP 0.1.1 read contract without providers
         shell: bash
         run: |
