@@ -152,3 +152,29 @@ wheels are untouched. External work: validate the three source adapters, prepare
 and bind their actual results, qualify the selected SDK/worker, admit models and
 public-reference reads, and prove retained output / mutable Skill receipts
 separately before any live composition or promotion.
+
+
+### Duplicate native-source receipts and evidence byte accounting
+
+Lookup study_get and results_get may include the same native study revision.
+The collector charges the exact canonical JSON byte growth of every proposed
+equivalent_source_results receipt *before* modifying an admitted evidence row.
+The final retained_evidence_bytes count equals the sum of serialized prepared
+evidence window bytes, including any attached duplicate source receipts.
+The 768 KiB evidence budget and 384-window limit remain enforced separately
+from the 120,000-byte Agent packet and 12-call budgets.
+
+When inline provenance would exceed the evidence-byte budget, the scientific
+window remains intact and unchanged. The prepared result is partial, with one
+clinical_source_duplicate_receipt_budget grouped omission for each affected
+source result. The compact equivalent_source_receipt_groups[] contains the
+source_result_id, source_result_digest, and window_index_ranges of the affected
+evidence[] entries. Each range is half-open [first, after_last]. These indexes
+preserve exact lineage to the source receipt without repeating receipt fields
+inside hundreds of windows or emitting an unbounded omission per window.
+This marks deferred *inline* provenance, not missing scientific source text.
+Separate sources[] summaries retain each source result and operation.
+
+The coverage receipt distinguishes retained evidence bytes from counts of
+duplicate native text and deferred inline receipt links. Two operations on the
+same registry snapshot do not become independent corroborating sources.

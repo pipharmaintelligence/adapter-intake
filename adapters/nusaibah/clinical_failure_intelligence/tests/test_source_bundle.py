@@ -3,9 +3,10 @@ from copy import deepcopy
 import unittest
 
 from fakes import FakeInputs, example_inputs
-from clinical_failure_intelligence.contracts import ContractError, digest, parse_request
+from clinical_failure_intelligence.contracts import ContractError, canonical_bytes, digest, parse_request
 from clinical_failure_intelligence.evidence import EvidenceLedger
-from clinical_failure_intelligence.source_bundle import prepare_bundle, source_windows, publication_interval
+from clinical_failure_intelligence.source_bundle import (prepare_bundle, source_windows, publication_interval,
+    MAX_BUNDLE_BYTES, MAX_EVIDENCE_BYTES)
 
 NCT = "NCT00000001"
 OTHER_NCT = "NCT00000002"
@@ -325,6 +326,91 @@ class PreparedEvidenceTests(unittest.TestCase):
         self.assertEqual(384, len(value["evidence"]))
         self.assertEqual(450, len(value["evidence"]) + len(value["omissions"]))
         self.assertTrue(all("text_digest" in row for row in value["omissions"]))
+
+    def test_duplicate_native_windows_charge_all_inline_receipt_bytes(self):
+        first = trial_result(operation="study_get")
+        first["records"][0]["content_digest"] = digest(first["records"][0]["registry_study"])
+        second = deepcopy(first)
+        second["operation"] = "results_get"
+        value = self.normalize(entry(first, key="study"), entry(second, key="results"))
+        self.assertEqual("normalized", value["status"])
+        self.assertEqual([], value["omissions"])
+        self.assertEqual([], value["equivalent_source_receipt_groups"])
+        self.assertEqual(len(value["evidence"]), value["coverage_receipt"]["duplicate_native_windows"])
+        self.assertEqual(sum(len(canonical_bytes(row)) for row in value["evidence"]),
+                         value["coverage_receipt"]["retained_evidence_bytes"])
+        self.assertTrue(all(len(row["source_context"]["equivalent_source_results"]) == 1
+                            for row in value["evidence"]))
+        self.assertLessEqual(value["coverage_receipt"]["retained_evidence_bytes"], MAX_EVIDENCE_BYTES)
+
+    def test_duplicate_receipts_at_exact_budget_use_shared_index(self):
+        first = trial_result()
+        first["records"][0]["content_digest"] = digest(first["records"][0]["registry_study"])
+        second = deepcopy(first)
+        second["operation"] = "results_get"
+        from unittest.mock import patch
+        from clinical_failure_intelligence import source_bundle
+        baseline = self.normalize(entry(first, key="study"))
+        initial_bytes = baseline["coverage_receipt"]["retained_evidence_bytes"]
+        with patch.object(source_bundle, "MAX_EVIDENCE_BYTES", initial_bytes):
+            value = self.normalize(entry(first, key="study"), entry(second, key="results"))
+        self.assertEqual("partial", value["status"])
+        self.assertEqual(initial_bytes, value["coverage_receipt"]["retained_evidence_bytes"])
+        self.assertEqual(sum(len(canonical_bytes(row)) for row in value["evidence"]),
+                         value["coverage_receipt"]["retained_evidence_bytes"])
+        self.assertEqual(1, len(value["equivalent_source_receipt_groups"]))
+        group = value["equivalent_source_receipt_groups"][0]
+        self.assertEqual(len(value["evidence"]), group["deferred_windows"])
+        self.assertEqual([[0, len(value["evidence"])]], group["window_index_ranges"])
+        self.assertEqual(1, len(value["omissions"]))
+        self.assertEqual("clinical_source_duplicate_receipt_budget", value["omissions"][0]["code"])
+
+    def test_many_immutable_duplicate_receipts_do_not_exceed_prepared_budget(self):
+        # All 24 source-result receipts refer to the same synthetic 301-window
+        # study; the bundle itself is smaller than its 1 MiB input allowance.
+        source = trial_result(results=False)
+        study = source["records"][0]["registry_study"]
+        study.pop("hasResults", None)
+        study["protocolSection"] = {"identificationModule": {"nctId": NCT}}
+        study["protocolSection"].update({
+            "module_" + str(i): {"value": "Synthetic registry field " + str(i)}
+            for i in range(300)})
+        source["records"][0]["content_digest"] = digest(study)
+        receipts = [entry(source, key="copy_" + str(i).zfill(2)) for i in range(24)]
+        supplied = bundle(*receipts)
+        self.assertLess(len(canonical_bytes(supplied)), MAX_BUNDLE_BYTES)
+        value = self.normalize(*receipts)
+        self.assertEqual("partial", value["status"])
+        self.assertEqual(301, len(value["evidence"]))
+        self.assertGreater(value["coverage_receipt"]["deferred_duplicate_receipt_windows"], 0)
+        self.assertTrue(value["equivalent_source_receipt_groups"])
+        self.assertTrue(all(x["code"] == "clinical_source_duplicate_receipt_budget"
+                            for x in value["omissions"]))
+        self.assertLessEqual(len(value["omissions"]), len(receipts))
+        self.assertEqual(sum(len(canonical_bytes(row)) for row in value["evidence"]),
+                         value["coverage_receipt"]["retained_evidence_bytes"])
+        self.assertLessEqual(value["coverage_receipt"]["retained_evidence_bytes"], MAX_EVIDENCE_BYTES)
+        self.assertEqual(301 * 23, value["coverage_receipt"]["duplicate_native_windows"])
+        # Deferred receipts remain traceable to exact returned evidence indexes
+        # without claiming the duplicate study is independent corroboration.
+        sources = {x["source_result_id"]: x["result_digest"] for x in value["sources"]}
+        for group in value["equivalent_source_receipt_groups"]:
+            self.assertEqual(sources[group["source_result_id"]], group["source_result_digest"])
+            indexes = [i for low, high in group["window_index_ranges"] for i in range(low, high)]
+            self.assertEqual(len(indexes), group["deferred_windows"])
+            self.assertEqual(len(indexes), len(set(indexes)))
+            self.assertTrue(all(0 <= i < len(value["evidence"]) for i in indexes))
+        # End-to-end provider-free preflight must retain scientific text without
+        # failing only because duplicate receipt metadata expanded after count.
+        from clinical_failure_intelligence.orchestration import run_analysis
+        data = case_inputs()
+        data["clinical_evidence"] = supplied
+        data["variables"]["preflight_only"] = True
+        data["variables"]["memory_mode"] = "off"
+        output = run_analysis(FakeInputs(data))["outputs"]["clinical_intelligence"]
+        self.assertEqual("preflight", output["quality"]["status"])
+        self.assertEqual("partial", output["prepared_sources"]["status"])
+        self.assertFalse(output["memory_update"]["write_attempted"])
 
     def test_malformed_result_status_is_typed_not_unhashable_crash(self):
         for status in ([], {}, None, True):

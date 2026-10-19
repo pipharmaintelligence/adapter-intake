@@ -159,6 +159,9 @@ class _Collector:
         self.byte_count = 0
         self._seen: dict[str, int] = {}
         self.duplicate_windows = 0
+        # Share oversized provenance receipts rather than replicate them per
+        # scientific evidence window. Internal index sets are range-compressed.
+        self._deferred_receipt_groups: dict[tuple[str, str], dict] = {}
 
     def add(self, entry: dict, source_id: str, content: Any, pointer: str, *, source_type: str,
             extent: str, trial_ids: list[str], interval: dict, use: str,
@@ -174,15 +177,26 @@ class _Collector:
             identity = digest([source_id, field_pointer, content_hash, entry["purpose"],
                                revision, interval, use, integrity])
             if identity in self._seen:
-                # Two normalized operations can reference one identical native
-                # registry revision. Preserve both receipts, but do not count the
-                # same study text as independent scientific corroboration.
-                existing = self.windows[self._seen[identity]]["source_context"]
-                equivalent = existing.setdefault("equivalent_source_results", [])
+                # Multiple lookup operations may reference the SAME native
+                # study. Their distinct receipts are not independent evidence.
+                index = self._seen[identity]
+                existing = self.windows[index]
                 receipt = {"source_result_id": entry["source_result_id"],
                            "source_result_digest": entry["result_digest"]}
-                if receipt not in equivalent:
-                    equivalent.append(receipt)
+                context = existing["source_context"]
+                primary = {key: context[key] for key in receipt}
+                if receipt != primary and receipt not in context.get("equivalent_source_results", []):
+                    # Count serialized growth BEFORE mutating a retained row;
+                    # setdefault() on a nested object is itself a byte change.
+                    candidate = deepcopy(existing)
+                    candidate["source_context"].setdefault("equivalent_source_results", []).append(receipt)
+                    delta = len(canonical_bytes(candidate)) - len(canonical_bytes(existing))
+                    require(delta > 0, "clinical_duplicate_receipt_size_invalid")
+                    if self.byte_count + delta <= MAX_EVIDENCE_BYTES:
+                        existing["source_context"] = candidate["source_context"]
+                        self.byte_count += delta
+                    else:
+                        self._defer_duplicate_receipt(entry, index)
                 self.duplicate_windows += 1
                 continue
             earliest, latest = interval["start"], interval["end"]
@@ -221,6 +235,46 @@ class _Collector:
             self._seen[identity] = len(self.windows)
             self.windows.append(window)
             self.byte_count += size
+
+    def _defer_duplicate_receipt(self, entry: dict, index: int) -> None:
+        """Retain exact source lineage in a bounded shared reference index.
+
+        Grouped omissions report inline-receipt deferral, not scientific text
+        loss. Window indexes refer to the deterministic prepared evidence list.
+        """
+        key = (entry["source_result_id"], entry["result_digest"])
+        group = self._deferred_receipt_groups.get(key)
+        if group is None:
+            group = {"source_result_id": key[0], "source_result_digest": key[1],
+                     "window_indexes": set()}
+            self._deferred_receipt_groups[key] = group
+            self.omissions.append({"code": "clinical_source_duplicate_receipt_budget",
+                "source_result_id": key[0], "source_result_digest": key[1],
+                "deferred_windows": 0})
+        if index not in group["window_indexes"]:
+            group["window_indexes"].add(index)
+            for omission in self.omissions:
+                if (omission["code"] == "clinical_source_duplicate_receipt_budget"
+                        and omission["source_result_id"] == key[0]
+                        and omission["source_result_digest"] == key[1]):
+                    omission["deferred_windows"] = len(group["window_indexes"])
+                    break
+
+    def receipt_groups(self) -> list[dict]:
+        """Encode exact window memberships as half-open index ranges."""
+        groups = []
+        for group in self._deferred_receipt_groups.values():
+            ranges: list[list[int]] = []
+            for index in sorted(group["window_indexes"]):
+                if ranges and ranges[-1][1] == index:
+                    ranges[-1][1] = index + 1
+                else:
+                    ranges.append([index, index + 1])
+            groups.append({"source_result_id": group["source_result_id"],
+                           "source_result_digest": group["source_result_digest"],
+                           "window_index_ranges": ranges,
+                           "deferred_windows": len(group["window_indexes"])})
+        return groups
 
 
 def _trial(entry: dict, collector: _Collector, summary: dict) -> None:
@@ -489,14 +543,21 @@ def prepare_bundle(value: Any, request: dict) -> dict:
         else:
             terminology.extend(_terminology(entry, summary))
         sources.append(summary)
+    shared = collector.receipt_groups()
+    # This receipt must exactly represent the final serialized evidence rows.
+    # Shared receipt links have a separate compact index, not a hidden mutation.
+    require(collector.byte_count == sum(len(canonical_bytes(row)) for row in collector.windows),
+            "clinical_retained_evidence_budget_mismatch")
     return {"status": "partial" if collector.omissions else "normalized",
         "bundle_id": bundle["bundle_id"], "bundle_digest": digest(bundle),
         "evidence": collector.windows, "terminology": terminology, "sources": sources,
         "issues": [], "omissions": collector.omissions,
+        "equivalent_source_receipt_groups": shared,
         "coverage_receipt": {
             "retained_windows": len(collector.windows),
             "omitted_windows": len(collector.omissions),
             "duplicate_native_windows": collector.duplicate_windows,
+            "deferred_duplicate_receipt_windows": sum(x["deferred_windows"] for x in shared),
             "retained_evidence_bytes": collector.byte_count,
             "source_result_count": len(bundle["sources"]),
         },
