@@ -66,6 +66,8 @@ calls total. The current coordinator selects one highest-priority follow-up with
 that ceiling. Repeated role/question/evidence work is deduplicated. No new evidence
 or corrected claims stops downstream repetition. Missing revised premises withhold
 affected conclusions while preserving independent valid siblings.
+Unselected follow-ups, exhausted allowances and further-round requests are recorded
+explicitly; a known unaddressed research request cannot be labeled complete.
 Reflexion: at most one product edit proposal and one independent edit review; no
 self-rewriting loop, learning from unaccepted hypotheses or mutation is performed.
 

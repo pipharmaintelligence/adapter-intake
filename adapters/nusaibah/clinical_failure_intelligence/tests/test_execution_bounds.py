@@ -93,3 +93,36 @@ class BoundsTests(unittest.TestCase):
         self.assertLessEqual(len(fake.calls),32)
         self.assertTrue(all(len(canonical_bytes(packet))<=120000 for _,packet in fake.calls))
         self.assertFalse(any(stage.get('code')=='clinical_packet_requires_partitioning' for stage in result['execution']['stages']))
+    def test_unprocessed_critic_followups_are_explicit_when_budget_disallows_reflection(self):
+        raw=example_inputs();raw['variables']['enable_refinement']=True
+        def follow(payload,packet):
+            if packet.get('review_kind')!='product_memory_edits':
+                payload['followup_requests']=[{'role':'literature_researcher','question':'Check exposure.',
+                                               'affected_item_ids':['H_SYN']}]
+            return payload
+        result=run_analysis(FakeInputs(raw,transforms={'evidence_critic':follow}),
+                            policy=ExecutionPolicy(max_reflection_rounds=0))['outputs']['clinical_intelligence']
+        pending=next(x for x in result['quality']['issues'] if x['code']=='clinical_reflection_followups_deferred')
+        self.assertEqual(1,pending['deferred_followup_count'])
+        self.assertEqual(['H_SYN'],pending['requests'][0]['affected_item_ids'])
+        self.assertEqual(0,result['execution']['refinement_rounds'])
+        self.assertEqual('partial',result['quality']['status'])
+    def test_second_target_and_new_round_requests_are_not_silently_dropped(self):
+        raw=example_inputs();raw['variables']['enable_refinement']=True
+        def follow(payload,packet):
+            if packet.get('review_kind')!='product_memory_edits':
+                payload['followup_requests']=[{'role':role,'question':question,'affected_item_ids':['H_SYN']}
+                    for role,question in [('literature_researcher','Check exposure.'),('trial_researcher','Check design.')]]
+            return payload
+        def corrected(payload,packet):
+            if packet['task_id'].startswith('literature_researcher:1:'):
+                payload['items'][0]['statement']='The exposure limitation remains a candidate explanation.'
+            return payload
+        result=run_analysis(FakeInputs(raw,transforms={'evidence_critic':follow,'literature_researcher':corrected}))['outputs']['clinical_intelligence']
+        pending=next(x for x in result['quality']['issues'] if x['code']=='clinical_reflection_followups_deferred')
+        self.assertEqual(1,pending['deferred_followup_count'])
+        self.assertEqual('trial_researcher',pending['requests'][0]['role'])
+        self.assertIn('clinical_reflection_round_limit_reached',{x['code'] for x in result['quality']['issues']})
+        self.assertEqual(1,result['execution']['refinement_rounds'])
+        self.assertEqual(4,result['execution']['reflection_agent_calls'])
+        self.assertEqual('partial',result['quality']['status'])

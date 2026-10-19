@@ -299,6 +299,10 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
         return reviewed, critic
 
     reviewed, critic = evaluate(0)
+    reflection_requested = critic.payload['followup_requests'] if critic.payload else []
+    if reflection_requested and not request['enable_refinement']:
+        issues.append({'code':'clinical_reflection_not_requested',
+                       'deferred_followup_count':len(reflection_requested)})
     if request["enable_refinement"] and critic.payload:
         followups = critic.payload["followup_requests"]
         for followup in followups:
@@ -309,6 +313,8 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
                     "clinical_followup_contract_invalid")
             affected = identifiers(followup["affected_item_ids"], allow_empty=False)
             require(set(affected) <= {x["item_id"] for x in reviewed}, "clinical_followup_scope_invalid")
+        selected_followup = False
+        re_reviewed = False
         if followups and budget.calls + (6 if memory["status"] != "not_requested" else 4) <= budget.policy.max_agent_calls and budget.refine_once():
             followup = followups[0]
             old = deepcopy(reviewed)
@@ -317,6 +323,7 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
                             for ref in row[field]}
             try:
                 if budget.reflection_task(followup['role'],followup['question'],digest(sorted(evidence_ids))):
+                    selected_followup = True
                     before_evidence=digest(ledger.rows())
                     semantic_keys=lambda rows:{digest({k:v for k,v in row.items() if k not in {'claim_id','stage_id'}})
                                                for row in rows}
@@ -326,10 +333,21 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
                         issues.append({'code':'clinical_reflection_no_progress','affected_item_ids':followup['affected_item_ids']})
                     else:
                         revised, critic = evaluate(1)
+                        re_reviewed = True
                         reviewed, errors = merge_refinement(old, revised, followup["affected_item_ids"])
                         issues.extend(errors)
             finally:
                 budget.finish_reflection()
+        deferred = followups[1:] if selected_followup else followups
+        if deferred:
+            issues.append({'code':'clinical_reflection_followups_deferred',
+                'reason':'bounded_reflection_target_or_call_allowance',
+                'deferred_followup_count':len(deferred),
+                'requests':[{'role':row['role'],'question_digest':digest(row['question']),
+                             'affected_item_ids':row['affected_item_ids']} for row in deferred]})
+        if re_reviewed and critic.payload and critic.payload['followup_requests']:
+            issues.append({'code':'clinical_reflection_round_limit_reached',
+                           'deferred_followup_count':len(critic.payload['followup_requests'])})
     hypotheses = [x for x in reviewed if x["kind"] == "hypothesis"]
     outcomes = [x for x in reviewed if x["kind"] == "outcome"]
     if not hypotheses:
