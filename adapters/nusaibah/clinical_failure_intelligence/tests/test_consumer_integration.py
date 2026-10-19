@@ -139,7 +139,7 @@ class ConsumerIntegrationTests(unittest.TestCase):
         outputs = run_analysis(fake)["outputs"]
         self.assertEqual({"clinical_intelligence", "clinical_intelligence_records"}, set(outputs))
         self.assertEqual({"records": [outputs["clinical_intelligence"]]}, outputs["clinical_intelligence_records"])
-        line = json.dumps(outputs["clinical_intelligence_records"]["records"][0], separators=(",", ":")) + "\\n"
+        line = json.dumps(outputs["clinical_intelligence_records"]["records"][0], separators=(",", ":")) + "\n"
         self.assertEqual(1, len(line.splitlines()))
         self.assertEqual(outputs["clinical_intelligence"], json.loads(line))
         self.assertEqual("not_attested", outputs["clinical_intelligence"]["persistence"]["status"])
