@@ -122,7 +122,8 @@
     "combined_grounded_search_http_evidence_proof",
     "approved_clinical_intelligence_jsonl_result_output_policy",
     "clinical_results_schema_equivalence_and_self_inspection",
-    "clinical_product_memory_active_zip_and_readback"
+    "clinical_product_memory_active_zip_and_readback",
+    "ecs_exact_image_catalog_package_skill_agent_binding_proof"
   ],
   "defaults": {
     "enable_pharmacological_class": false,
@@ -169,5 +170,14 @@
     "product_memory_update": {
       "status": "not_declared_callable_child_mutation_not_admitted"
     }
+  },
+  "execution_substrates": {
+    "declared": [
+      "local_worker",
+      "ecs"
+    ],
+    "default": "local_worker",
+    "local_worker_live_proof": "not_performed",
+    "ecs_package_deployment_and_live_proof": "not_performed"
   }
 }
