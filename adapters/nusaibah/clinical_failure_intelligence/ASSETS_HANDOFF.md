@@ -135,12 +135,13 @@ and return an authoritative receipt. The manifest is not a publish policy.
 
 Both staging nodes are reported active but empty, both catalog flags still
 require correction, ZIP schema waiver is absent, and signed runtime read/write
-and persistence remain not proven. The official intake checker also presently
-rejects nested prompt/schema/reference paths under reviewed_support_files;
-that packaging contract is a separate hard gate before promotion.
+and persistence remain not proven. Official package qualification is a separate
+gate from these live integration requirements.
 
 ## Dual substrate and official intake packaging checkpoint
 
 The manifest declares `local_worker` and `ecs` as allowed substrates, with `local_worker` as default. Each requires independent exact package/catalog, client-bound Agent/Fixed/Dynamic Skill, governed-input and terminal composition proof. ECS declaration is not a deployed image or working ECS child Skill proof.
 
-Reviewed runtime prompts live as same-folder `prompt_*.md` optional files, read by the packaged `prompt_catalog.py`. Exact source schemas and hypothesis seeds remain unmodified as `tests/reference/*.json` development snapshots, outside the promoted runtime package. They are not adapter runtime dependencies; `admission_requirements.json` is the only reviewed support JSON object. Fixed methodology remains at the manifest-authorized Skill root. Runtime nested prompt/schema/reference folders are removed, not silently ignored. The official intake validator and package-mode import tests remain mandatory.
+Reviewed prompt text remains in same-folder `prompt_*.md` files. Run `python tests/build_prompt_catalog.py` after editing it: this produces the Python constants used at runtime, because SDK and ECS asset wheels do not include arbitrary optional Markdown. Provider-free tests check exact text/digest parity and import the Python closure without prose files. No prompt text, role identity or provider selection changes as part of packaging.
+
+Exact source schemas, model research links and hypothesis seeds stay under `tests/reference/`; synthetic fixtures stay under `tests/fixtures/`. These development files are excluded from the promoted runtime file plan. `admission_requirements.json` is the only reviewed support JSON object. The Fixed Skill stays at its manifest-authorized root with its unchanged digest. Official intake/materialization, real SDK wheel imports and ECS asset-bundle imports remain mandatory; source import stubs alone do not prove them.

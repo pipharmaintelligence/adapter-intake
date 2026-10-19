@@ -108,6 +108,32 @@ print('declared_import_closure_passed')
                 completed = subprocess.run([sys.executable, '-I', '-c', script, str(root if package_mode else package), name],
                                            capture_output=True, text=True, encoding='utf8', timeout=20)
                 self.assertEqual(0, completed.returncode, completed.stderr)
+    def test_python_closure_imports_without_development_prose(self):
+        meta = declaration()
+        with tempfile.TemporaryDirectory() as temporary:
+            package = Path(temporary) / 'clinical_failure_intelligence'
+            package.mkdir()
+            for name in meta['reviewed_helpers'] + [meta['adapter_module']]:
+                shutil.copyfile(ASSET_ROOT / name, package / name)
+            script = """import sys,types,importlib
+sys.path.insert(0,sys.argv[1])
+a=types.ModuleType('adapters');a.__path__=[]
+b=types.ModuleType('adapters.base');b.Adapter=type('Adapter',(),{})
+sys.modules['adapters']=a;sys.modules['adapters.base']=b
+m=importlib.import_module('clinical_failure_intelligence.clinical_failure_intelligence_adapter')
+assert m.ClinicalFailureIntelligenceAdapter.version=='0.1.1'
+"""
+            completed = subprocess.run([sys.executable, '-I', '-B', '-c', script, temporary],
+                                       capture_output=True, text=True, encoding='utf8', timeout=20)
+            self.assertEqual(0, completed.returncode, completed.stderr)
+    def test_prompt_catalog_is_reproducible(self):
+        completed = subprocess.run([sys.executable, '-I', '-B', str(ASSET_ROOT / 'tests/build_prompt_catalog.py'), '--check'],
+                                   capture_output=True, text=True, encoding='utf8', timeout=20)
+        self.assertEqual(0, completed.returncode, completed.stderr)
+    def test_development_fixtures_are_not_runtime_files(self):
+        self.assertFalse((ASSET_ROOT / 'fixtures').exists())
+        self.assertEqual({'mechanistic_case.json', 'cohort_pattern.json', 'prepared_evidence_preflight.json'},
+                         {p.name for p in (ASSET_ROOT / 'tests/fixtures').glob('*.json')})
     @unittest.skipUnless(Draft202012Validator, 'jsonschema is not installed')
     def test_schemas_validate_fixture_results(self):
         request = json.loads((ASSET_ROOT / 'tests/reference/analysis_request.v1.schema.json').read_text())
