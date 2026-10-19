@@ -138,3 +138,9 @@ require correction, ZIP schema waiver is absent, and signed runtime read/write
 and persistence remain not proven. The official intake checker also presently
 rejects nested prompt/schema/reference paths under reviewed_support_files;
 that packaging contract is a separate hard gate before promotion.
+
+## Dual substrate and official intake packaging checkpoint
+
+The manifest declares `local_worker` and `ecs` as allowed substrates, with `local_worker` as default. Each requires independent exact package/catalog, client-bound Agent/Fixed/Dynamic Skill, governed-input and terminal composition proof. ECS declaration is not a deployed image or working ECS child Skill proof.
+
+Reviewed runtime prompts live as same-folder `prompt_*.md` optional files, read by the packaged `prompt_catalog.py`. Static schemas and hypothesis seeds are same-folder reviewed JSON support files. Fixed methodology remains at the manifest-authorized Skill root. Runtime nested prompt/schema/reference folders are removed, not silently ignored. The official intake validator and package-mode import tests remain mandatory.
