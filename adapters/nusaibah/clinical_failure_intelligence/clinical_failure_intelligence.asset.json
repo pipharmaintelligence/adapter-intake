@@ -9,7 +9,8 @@
   ],
   "execution": {
     "allowed_substrates": [
-      "local_worker"
+      "local_worker",
+      "ecs"
     ],
     "default_substrate": "local_worker",
     "timeout_seconds": 1800
@@ -144,6 +145,14 @@
             }
           }
         }
+      },
+      "execution": {
+        "allowed_substrates": [
+          "local_worker",
+          "ecs"
+        ],
+        "default_substrate": "local_worker",
+        "timeout_seconds": 1800
       }
     }
   }
