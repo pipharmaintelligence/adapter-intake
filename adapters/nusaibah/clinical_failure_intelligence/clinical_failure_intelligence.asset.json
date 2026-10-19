@@ -38,6 +38,10 @@
         "clinical_intelligence": {
           "required": true,
           "shape": "object"
+        },
+        "clinical_intelligence_records": {
+          "required": false,
+          "shape": "object"
         }
       },
       "callable": {
@@ -98,6 +102,48 @@
         "modes": [
           "http"
         ]
+      },
+      "runtime_skills": {
+        "product_memory": {
+          "source": {
+            "lake_ref": "test_database_lake",
+            "node_key": "clinical_product_memory_packages"
+          },
+          "resolution": "current",
+          "mutation": "read_only",
+          "partition": {
+            "product_id": {
+              "from_variable": "product_id"
+            }
+          }
+        }
+      },
+      "output_contracts": {
+        "clinical_intelligence_records": {
+          "target_kind": "dlm_file_artifact_output",
+          "write_mode": "dry_run",
+          "format_policy": {
+            "source": "node_allowlist",
+            "developer_selected_format": null,
+            "server_admission_required": true
+          },
+          "schema": {
+            "source": "explicit",
+            "fields": [
+              {
+                "name": "records",
+                "type": "array",
+                "required": true
+              }
+            ]
+          },
+          "validation": {
+            "self_inspection": {
+              "enforce": true,
+              "on_fail": "fail"
+            }
+          }
+        }
       }
     }
   }

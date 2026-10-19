@@ -114,3 +114,27 @@ A smaller model packet does not imply partial storage retrieval: the document
 view operates after hydration. Investigate server-side bounded reads only if the
 package/hydration boundary is actually the measured blocker. ECS, new-source
 retrieval, exact admission and durable process-loss recovery remain separate gates.
+
+
+## Staging node contract addendum (isolated intake wiring)
+
+The read-only product_memory `runtime_skills` role now names
+`test_database_lake / clinical_product_memory_packages` with `product_id`
+selection; runtime-owned ZIP package resolution and first package upload/readback
+are outstanding. Mutable roles are deliberately omitted because callable child
+Skill composition currently rejects mutation.
+
+For canonical result retention the adapter now provides an opt-in
+`clinical_intelligence_records` records envelope, shaped for one complete
+JSONL record per assessment. The existing callable `clinical_intelligence`
+payload is unchanged when not requested. Output preparation is separate from
+publish: the trusted server must approve a target policy for
+`test_database_lake / clinical_failure_intelligence_results`, select that
+output role, prove schema inspection, complete Core's output-write operation
+and return an authoritative receipt. The manifest is not a publish policy.
+
+Both staging nodes are reported active but empty, both catalog flags still
+require correction, ZIP schema waiver is absent, and signed runtime read/write
+and persistence remain not proven. The official intake checker also presently
+rejects nested prompt/schema/reference paths under reviewed_support_files;
+that packaging contract is a separate hard gate before promotion.

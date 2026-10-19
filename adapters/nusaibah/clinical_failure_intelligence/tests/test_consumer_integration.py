@@ -131,6 +131,40 @@ class ConsumerIntegrationTests(unittest.TestCase):
         self.assertEqual("binding", inputs["clinical_context"]["source"])
         self.assertNotIn("callable_assets", m["versions"]["0.1.1"])
 
+    def test_results_node_jsonl_record_output_is_opt_in_and_no_write(self):
+        fake = SourceAwareInputs()
+        default = run_analysis(fake)["outputs"]
+        self.assertEqual({"clinical_intelligence"}, set(default))
+        fake["variables"]["prepare_result_for_persistence"] = True
+        outputs = run_analysis(fake)["outputs"]
+        self.assertEqual({"clinical_intelligence", "clinical_intelligence_records"}, set(outputs))
+        self.assertEqual({"records": [outputs["clinical_intelligence"]]}, outputs["clinical_intelligence_records"])
+        line = json.dumps(outputs["clinical_intelligence_records"]["records"][0], separators=(",", ":")) + "\\n"
+        self.assertEqual(1, len(line.splitlines()))
+        self.assertEqual(outputs["clinical_intelligence"], json.loads(line))
+        self.assertEqual("not_attested", outputs["clinical_intelligence"]["persistence"]["status"])
+        self.assertFalse(outputs["clinical_intelligence"]["memory_update"]["write_attempted"])
+        root = Path(__file__).resolve().parents[1]
+        from jsonschema import Draft202012Validator
+        schema = json.loads((root / "schemas/clinical_intelligence.v1.schema.json").read_text())
+        Draft202012Validator(schema).validate(json.loads(line))
+
+    def test_persistence_record_intent_rejects_bad_type_and_preflight_without_side_effects(self):
+        for value in ("true", 1, None):
+            fake = SourceAwareInputs()
+            fake["variables"]["prepare_result_for_persistence"] = value
+            with self.assertRaisesRegex(ContractError, "clinical_persistence_prepare_flag_invalid"):
+                self.result(fake)
+            self.assertEqual([], fake.calls)
+            self.assertEqual([], fake.memory_calls)
+        fake = SourceAwareInputs()
+        fake["variables"]["preflight_only"] = True
+        fake["variables"]["prepare_result_for_persistence"] = True
+        with self.assertRaisesRegex(ContractError, "clinical_persistence_preflight_forbidden"):
+            self.result(fake)
+        self.assertEqual([], fake.calls)
+        self.assertEqual([], fake.memory_calls)
+
     def test_no_source_evidence_does_not_invent_failure_or_memory(self):
         fake = SourceAwareInputs(prepared=False)
         result = self.result(fake)

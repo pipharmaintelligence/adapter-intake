@@ -333,5 +333,10 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
         result["source_event_metadata"] = deepcopy(context["source_event_metadata"])
     result = finalize_output(result)
     validate_result(result)
-    return {"response_version": "1", "status": "success", "outputs": {"clinical_intelligence": result},
+    outputs = {"clinical_intelligence": result}
+    if request.get("prepare_result_for_persistence", False):
+        # Trusted output publication consumes the records envelope; Python never writes a node.
+        # Keep the existing callable clinical_intelligence result unchanged by default.
+        outputs["clinical_intelligence_records"] = {"records": [deepcopy(result)]}
+    return {"response_version": "1", "status": "success", "outputs": outputs,
             "metrics": {"logical_agent_calls": budget.calls}, "logs": []}
