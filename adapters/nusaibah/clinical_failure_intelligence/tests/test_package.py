@@ -89,7 +89,7 @@ class PackageTests(unittest.TestCase):
         meta = declaration()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary); package = root / 'clinical_failure_intelligence'; package.mkdir()
-            for name in meta['reviewed_helpers'] + meta['reviewed_support_files'] + [meta['adapter_module']]:
+            for name in meta['reviewed_helpers'] + meta['reviewed_support_files'] + meta['optional_files'] + [meta['adapter_module']]:
                 target = package / name; target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(ASSET_ROOT / name, target)
             # This proves source closure, NOT the official runtime base or worker.
