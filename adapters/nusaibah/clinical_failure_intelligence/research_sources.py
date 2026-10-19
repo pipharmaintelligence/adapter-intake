@@ -37,7 +37,7 @@ def query_plan(request: dict) -> dict[str, str]:
     seed = " ".join(value for value in (name, indication, trial) if value).strip()
     require(bool(seed), "clinical_discovery_identity_missing")
     planned = {
-        "trial_researcher": f"{seed} clinical trial registry endpoint status",
+        "trial_researcher": f"{seed} clinical trial registry primary outcome status",
         "literature_researcher": f"{seed} PubMed clinical results safety pharmacology",
         "event_researcher": f"{seed} {sponsor} sponsor regulator clinical programme announcement",
     }
