@@ -25,22 +25,21 @@ reviewed_helpers:
 
 reviewed_support_files:
   - admission_requirements.json
-  - prompts/common.md
-  - prompts/product_memory_editor.md
-  - prompts/event_researcher.md
-  - prompts/evidence_critic.md
-  - prompts/hypothesis_analyst.md
-  - prompts/literature_researcher.md
-  - prompts/outcome_adjudicator.md
-  - prompts/response_repair.md
-  - prompts/trial_researcher.md
-  - schemas/analysis_request.v1.schema.json
-  - schemas/clinical_intelligence.v1.schema.json
-  - schemas/hypothesis.v1.schema.json
-  - schemas/clinical_evidence_bundle.v1.schema.json
-  - references/source_hypothesis_catalog.json
-
+  - analysis_request.v1.schema.json
+  - clinical_intelligence.v1.schema.json
+  - hypothesis.v1.schema.json
+  - clinical_evidence_bundle.v1.schema.json
+  - source_hypothesis_catalog.json
 optional_files:
+  - prompt_common.md
+  - prompt_product_memory_editor.md
+  - prompt_event_researcher.md
+  - prompt_evidence_critic.md
+  - prompt_hypothesis_analyst.md
+  - prompt_literature_researcher.md
+  - prompt_outcome_adjudicator.md
+  - prompt_response_repair.md
+  - prompt_trial_researcher.md
   - README.md
   - CHECKLIST.md
   - LESSONS_LEARNED.md
