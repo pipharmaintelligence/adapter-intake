@@ -91,7 +91,7 @@ PDF transcription. CHECKLIST.md distinguishes implementation from remaining work
 ## Product-first revision
 
 See PRODUCT_MEMORY_REVISION.md for exact before/after and remaining runtime gates.
-See GEMINI_PROMPT_PROFILE.md for Gemini 3.8 domain prompts and qualifications.
+See tests/reference/GEMINI_PROMPT_PROFILE.md for the model research notes. These development references do not select or admit a provider model.
 Class true currently produces candidate references, not cross-product synthesis.
 Product edits remain preview plans, not writes. Legacy unindexed documents defer
 for migration instead of being treated as empty.

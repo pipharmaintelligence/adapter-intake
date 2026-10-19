@@ -40,7 +40,7 @@ source-role admission and retained-result handoff remain external gates.
 
 ## Bundle contract
 
-See `schemas/clinical_evidence_bundle.v1.schema.json`. One bundle contains:
+See `tests/reference/clinical_evidence_bundle.v1.schema.json`. One bundle contains:
 
 - `schema_version=clinical_evidence_bundle.v1`, `bundle_id`, exact `subject_id`,
   `product_id`, and the exact requested `event_ids` set;
