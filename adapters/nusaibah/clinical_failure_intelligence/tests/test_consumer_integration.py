@@ -146,7 +146,7 @@ class ConsumerIntegrationTests(unittest.TestCase):
         self.assertFalse(outputs["clinical_intelligence"]["memory_update"]["write_attempted"])
         root = Path(__file__).resolve().parents[1]
         from jsonschema import Draft202012Validator
-        schema = json.loads((root / "clinical_intelligence.v1.schema.json").read_text())
+        schema = json.loads((root / "tests/reference/clinical_intelligence.v1.schema.json").read_text())
         Draft202012Validator(schema).validate(json.loads(line))
 
     def test_persistence_record_intent_rejects_bad_type_and_preflight_without_side_effects(self):
@@ -250,8 +250,8 @@ class ConsumerIntegrationTests(unittest.TestCase):
     def test_prepared_and_preflight_results_validate_json_schemas(self):
         from jsonschema import Draft202012Validator
         root = Path(__file__).resolve().parents[1]
-        schema = json.loads((root / "clinical_intelligence.v1.schema.json").read_text())
-        request_schema = json.loads((root / "analysis_request.v1.schema.json").read_text())
+        schema = json.loads((root / "tests/reference/clinical_intelligence.v1.schema.json").read_text())
+        request_schema = json.loads((root / "tests/reference/analysis_request.v1.schema.json").read_text())
         for preflight in (False, True):
             fake = SourceAwareInputs(); fake["variables"]["preflight_only"] = preflight
             Draft202012Validator(request_schema).validate(dict(fake))
