@@ -1,6 +1,7 @@
 """Synthetic contracts for results prepared by independently validated source adapters."""
 from copy import deepcopy
 import unittest
+from unittest.mock import patch
 
 from fakes import FakeInputs, example_inputs
 from clinical_failure_intelligence.contracts import ContractError, canonical_bytes, digest, parse_request
@@ -28,7 +29,7 @@ def entry(result, family="trials", *, purpose="case", key=None):
                   "umls": ("umls_terminology", "terminology_result")}
     asset, output = identities[family]
     return {"source_result_id": key or family + "_" + result["operation"],
-        "asset_key": asset, "asset_version": "0.1.1" if family == "trials" else "0.1.0",
+        "asset_key": asset, "asset_version": "0.1.0" if family == "pubmed" else "0.1.1",
         "output_role": output,
         "purpose": purpose, "result": deepcopy(result), "result_digest": digest(result)}
 
@@ -76,10 +77,18 @@ def abstract(*, pmid="12345", content="Synthetic outcome did not establish a cli
 
 
 def terminology():
-    return {"operation": "search", "status": "ok", "records": [
+    selectors = {"string": "Synthetic product Alpha", "searchType": "exact"}
+    rows = [
         {"ui": "C0000001", "name": "Synthetic term", "rootSource": "SYNTH",
-         "semantic_types": [{"tui": "T121", "name": "Pharmacologic Substance"}]}],
-        "query_attested": False, "provenance": {"release": None, "retrieved_at": None},
+         "semantic_types": [{"tui": "T121", "name": "Pharmacologic Substance"}]}]
+    return {"operation": "search", "status": "ok", "records": rows,
+        "query": {"operation": "search", "text": selectors["string"], "search_type": "exact", "limit": 3},
+        "query_attested": True, "provenance": {"release": None, "retrieved_at": None,
+            "runtime_fetch_evidence": {"schema_version": "runtime_source_fetch_evidence.v1",
+                "fetch_id": "rsf_" + "1" * 32, "source_id": "rt_src_synthetic",
+                "capability_ref": "umls.terminology.search", "operation": "search",
+                "effective_selectors_digest": digest([selectors]), "response_digest": digest(rows),
+                "record_count": 1, "completed_at_utc": "2026-10-19T13:30:03.996Z"}},
         "completeness": {"returned_count": 1, "truncated": None}}
 
 
@@ -108,6 +117,28 @@ class PreparedEvidenceTests(unittest.TestCase):
         value = self.normalize(entry(trial_result()))
         roles = {row["source_context"]["evidence_use"] for row in value["evidence"]}
         self.assertTrue({"protocol", "posted_results", "safety_results"} <= roles)
+
+    def test_source_size_warning_does_not_reject_complete_registry(self):
+        result=trial_result()
+        result['size_policy']={'action':'preserved_complete','threshold_exceeded':True,
+                               'result_bytes':2500000,'warning_threshold_bytes':2097152}
+        value=self.normalize(entry(result))
+        self.assertTrue(value['evidence'])
+        self.assertTrue(value['sources'][0]['size_warning']['threshold_exceeded'])
+    def test_bundle_size_warning_preserves_usable_windows(self):
+        with patch('clinical_failure_intelligence.source_bundle.MAX_BUNDLE_BYTES',100):
+            value=self.normalize(entry(trial_result()))
+        self.assertTrue(value['evidence'])
+        self.assertIn('clinical_source_bundle_size_warning',{x['code'] for x in value['issues']})
+    def test_contacts_do_not_exhaust_canonical_allowance_before_results(self):
+        result=trial_result()
+        result['records'][0]['registry_study']['protocolSection']['contactsLocationsModule']={
+            'locations':[{'facility':'Synthetic facility '+str(i)} for i in range(1000)]}
+        with patch('clinical_failure_intelligence.source_bundle.MAX_WINDOWS',2):
+            value=self.normalize(entry(result))
+        uses={x['source_context']['evidence_use'] for x in value['evidence']}
+        self.assertEqual({'posted_results','safety_results'},uses)
+        self.assertTrue(value['omissions'])
         self.assertEqual("not_inferred", value["sources"][0]["observations"][0]["results_group_join"])
         self.assertEqual("requires_case_review", value["sources"][0]["observations"][0]["product_attribution"])
 

@@ -131,6 +131,11 @@ def acquire_sources(inputs: Any, request: dict, runner: Any, budget: Budget, led
     require(all(role in DISCOVERY_ROLES for role in selected_roles)
             and len(set(selected_roles)) == len(selected_roles), "clinical_discovery_roles_invalid")
     for role in selected_roles:
+        try:
+            budget.reserve_search(role)
+        except DeferredWork as exc:
+            issues.append({'code':exc.code})
+            continue
         stage = runner.call(role, request, task_id="discovery:" + role,
             obligations=["discovery:" + role], downstream_reserve=5,
             packet_data={
@@ -151,38 +156,46 @@ def acquire_sources(inputs: Any, request: dict, runner: Any, budget: Budget, led
         if stage.payload["items"] or stage.payload["followup_requests"]:
             issues.append({"stage_id": stage.task_id,
                            "code": "clinical_discovery_unadmitted_claims_rejected"})
-        citations = _provider_citations(stage.semantic_metadata.get("provider_metadata"))
-        if not citations:
-            issues.append({"stage_id": stage.task_id,
-                           "code": "clinical_discovery_no_provider_citations"})
+        issues.extend(inspect_stage_sources(inputs, request, budget, ledger, stage, seen=seen))
+    return issues
+
+
+def inspect_stage_sources(inputs, request, budget, ledger, stage, *, seen=None):
+    """Inspect native citations from one admitted research task, including reflection."""
+    issues=[]
+    seen=set() if seen is None else seen
+    citations = _provider_citations(stage.semantic_metadata.get("provider_metadata"))
+    if not citations:
+        issues.append({"stage_id": stage.task_id,
+                       "code": "clinical_discovery_no_provider_citations"})
+        return issues
+    for citation in citations[:MAX_REFERENCES_PER_ROLE]:
+        locator = getattr(citation, "locator", None)
+        if not isinstance(locator, str) or locator in seen:
             continue
-        for citation in citations[:MAX_REFERENCES_PER_ROLE]:
-            locator = getattr(citation, "locator", None)
-            if not isinstance(locator, str) or locator in seen:
-                continue
-            seen.add(locator)
-            try:
-                budget.reserve(kind="reference")
-            except DeferredWork as exc:
-                issues.append({"stage_id": stage.task_id, "code": exc.code})
-                return issues
-            try:
-                from devtools.public_reference import ReferenceTarget, PublicReferenceError
-                from devtools.public_web_runtime import PublicWebRuntimeError
-            except ImportError as exc:
-                raise ContractError("clinical_reference_runtime_unavailable") from exc
-            try:
-                result = inputs.open_reference(
-                    ReferenceTarget.from_agent_citation(citation), mode="http"
-                )
-                evidence = _admit_inspected(result, citation, request)
-                ledger.add(evidence)
-            except ContractError as exc:
-                issues.append({"stage_id": stage.task_id, "code": exc.code})
-            except (PublicReferenceError, PublicWebRuntimeError) as exc:
-                issues.append({"stage_id": stage.task_id,
-                               "code": "clinical_reference_inspection_unavailable"})
-            except Exception as exc:
-                # Provider/network transport is runtime-owned, not retried in Python.
-                raise ContractError("clinical_reference_runtime_blocked") from None
+        seen.add(locator)
+        try:
+            budget.reserve(kind="reference")
+        except DeferredWork as exc:
+            issues.append({"stage_id": stage.task_id, "code": exc.code})
+            return issues
+        try:
+            from devtools.public_reference import ReferenceTarget, PublicReferenceError
+            from devtools.public_web_runtime import PublicWebRuntimeError
+        except ImportError as exc:
+            raise ContractError("clinical_reference_runtime_unavailable") from exc
+        try:
+            result = inputs.open_reference(
+                ReferenceTarget.from_agent_citation(citation), mode="http"
+            )
+            evidence = _admit_inspected(result, citation, request)
+            ledger.add(evidence)
+        except ContractError as exc:
+            issues.append({"stage_id": stage.task_id, "code": exc.code})
+        except (PublicReferenceError, PublicWebRuntimeError) as exc:
+            issues.append({"stage_id": stage.task_id,
+                           "code": "clinical_reference_inspection_unavailable"})
+        except Exception as exc:
+            # Provider/network transport is runtime-owned, not retried in Python.
+            raise ContractError("clinical_reference_runtime_blocked") from None
     return issues

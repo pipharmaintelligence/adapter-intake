@@ -59,7 +59,7 @@ provider execution envelope, run context, raw source token or transport header.
 | --- | --- | --- | --- |
 | nusaibah.clinical_trials_lookup | 0.1.1 | trial_result | Exact study/arm/outcome/results module projections; search candidates and page coverage |
 | nusaibah.pubmed_evidence | 0.1.0 | literature_result | Exact-PMID metadata/abstract joins, discovery results, partial dates, integrity notices |
-| umls_terminology | 0.1.0 | terminology_result | `describe`/`search` terminology candidates only; no clinical efficacy/causality authority |
+| umls_terminology | 0.1.1 | terminology_result | `describe`/`search` terminology candidates only; no clinical efficacy/causality authority |
 
 The UMLS key intentionally has no namespace prefix. Its other operations remain
 outside this consumer's qualified contract until their owner validates them.

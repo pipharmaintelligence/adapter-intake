@@ -81,7 +81,7 @@ def memory_decision(result: dict) -> dict:
         "reason": plan.get("reason"), "independent_from_report": True}
 
 
-def finalize_output(result: dict, *, max_bytes: int = 1_048_576) -> dict:
+def finalize_output(result: dict, *, max_bytes: int = 4_194_304) -> dict:
     """Compact optional presentation only; never shrink the canonical evidence/delta."""
     result["decision_summary"] = decision_summary(result)
     result["memory_decision"] = memory_decision(result)
@@ -103,7 +103,13 @@ def finalize_output(result: dict, *, max_bytes: int = 1_048_576) -> dict:
                     "field": "execution.stages." + str(index) + ".semantic_metadata",
                     "bytes": len(canonical_bytes(metadata)), "digest": digest(metadata)})
                 stage["semantic_metadata"] = {}
-    require(len(canonical_bytes(result)) <= max_bytes, "clinical_canonical_result_requires_partitioning")
+    if len(canonical_bytes(result)) > max_bytes:
+        result['quality']['issues'].append({'code':'clinical_canonical_result_size_warning',
+            'warning_threshold_bytes':max_bytes,'canonical_content_preserved':True,
+            'transport_policy_owner':'runtime'})
+        if result['quality']['status']=='completed':
+            result['quality']['status']='partial'
+        result['decision_summary']=decision_summary(result)
     return result
 
 

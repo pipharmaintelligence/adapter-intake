@@ -1,0 +1,118 @@
+{
+  "status": "requires_runtime_profile_selection_not_admitted",
+  "private_chain_of_thought_requested": false,
+  "agents": [
+    {
+      "role": "trial_researcher",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_trial_researcher",
+      "contract_version": "1.2.0",
+      "prompt_digest": "sha256:f338217ea3be80e87452d5e49daa440b788d16398334bd36d3b639f95248b040",
+      "reasoning_policy": {
+        "level": "standard",
+        "authority": "admitted_runtime_profile",
+        "private_reasoning_trace_requested": false
+      },
+      "provider_profile_ref": "SELECT_EXISTING_APPROVED_PROFILE",
+      "grounded_search_policy": {
+        "enabled": true,
+        "source_text_requires_trusted_inspection": true
+      }
+    },
+    {
+      "role": "literature_researcher",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_literature_researcher",
+      "contract_version": "1.2.0",
+      "prompt_digest": "sha256:2746e32c598f2c50ecc0056a26025ce08d8031c7cc7e30d9e93d56a7da60ed55",
+      "reasoning_policy": {
+        "level": "standard",
+        "authority": "admitted_runtime_profile",
+        "private_reasoning_trace_requested": false
+      },
+      "provider_profile_ref": "SELECT_EXISTING_APPROVED_PROFILE",
+      "grounded_search_policy": {
+        "enabled": true,
+        "source_text_requires_trusted_inspection": true
+      }
+    },
+    {
+      "role": "event_researcher",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_event_researcher",
+      "contract_version": "1.2.0",
+      "prompt_digest": "sha256:02bbf59a12a570e83ebafd6e0d7d2d198815e59f4ac3b4f1b9f572ca8add281c",
+      "reasoning_policy": {
+        "level": "standard",
+        "authority": "admitted_runtime_profile",
+        "private_reasoning_trace_requested": false
+      },
+      "provider_profile_ref": "SELECT_EXISTING_APPROVED_PROFILE",
+      "grounded_search_policy": {
+        "enabled": true,
+        "source_text_requires_trusted_inspection": true
+      }
+    },
+    {
+      "role": "outcome_adjudicator",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_outcome_adjudicator",
+      "contract_version": "1.2.0",
+      "prompt_digest": "sha256:8b9d6da98c1a810b7b995de934ce09dee1b8de15190248cefbe0f59a9363dd5f",
+      "reasoning_policy": {
+        "level": "high",
+        "authority": "admitted_runtime_profile",
+        "private_reasoning_trace_requested": false
+      },
+      "provider_profile_ref": "SELECT_EXISTING_APPROVED_PROFILE",
+      "grounded_search_policy": {
+        "enabled": false,
+        "source_text_requires_trusted_inspection": true
+      }
+    },
+    {
+      "role": "hypothesis_analyst",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_hypothesis_analyst",
+      "contract_version": "1.2.0",
+      "prompt_digest": "sha256:c7e22f9079a48fd394b1e7dd96a0df11e7aec5c87e633fa528c55b99139d9a93",
+      "reasoning_policy": {
+        "level": "high",
+        "authority": "admitted_runtime_profile",
+        "private_reasoning_trace_requested": false
+      },
+      "provider_profile_ref": "SELECT_EXISTING_APPROVED_PROFILE",
+      "grounded_search_policy": {
+        "enabled": false,
+        "source_text_requires_trusted_inspection": true
+      }
+    },
+    {
+      "role": "evidence_critic",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_evidence_critic",
+      "contract_version": "1.2.0",
+      "prompt_digest": "sha256:4a0e306d00b66c5971b33816376ac9892086fdd31e556d48b9b43a00caf83659",
+      "reasoning_policy": {
+        "level": "high",
+        "authority": "admitted_runtime_profile",
+        "private_reasoning_trace_requested": false
+      },
+      "provider_profile_ref": "SELECT_EXISTING_APPROVED_PROFILE",
+      "grounded_search_policy": {
+        "enabled": false,
+        "source_text_requires_trusted_inspection": true
+      }
+    },
+    {
+      "role": "product_memory_editor",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_product_memory_editor",
+      "contract_version": "1.2.0",
+      "prompt_digest": "sha256:13e8282255fdf40d70fba3081d5a3a1f58e93671cf84130217b8500cd7f75153",
+      "reasoning_policy": {
+        "level": "standard",
+        "authority": "admitted_runtime_profile",
+        "private_reasoning_trace_requested": false
+      },
+      "provider_profile_ref": "SELECT_EXISTING_APPROVED_PROFILE",
+      "grounded_search_policy": {
+        "enabled": false,
+        "source_text_requires_trusted_inspection": true
+      }
+    }
+  ]
+}

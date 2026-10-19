@@ -124,12 +124,12 @@ class ConsumerIntegrationTests(unittest.TestCase):
     def test_source_contract_declared_binding_only(self):
         root = Path(__file__).resolve().parents[1]
         m = json.loads((root / "clinical_failure_intelligence.asset.json").read_text())
-        self.assertEqual("0.1.1", m["default"])
-        inputs = m["versions"]["0.1.1"]["inputs"]
+        self.assertEqual("0.1.2", m["default"])
+        inputs = m["versions"]["0.1.2"]["inputs"]
         self.assertEqual("binding", inputs["clinical_evidence"]["source"])
         self.assertFalse(inputs["clinical_evidence"]["required"])
         self.assertEqual("binding", inputs["clinical_context"]["source"])
-        self.assertNotIn("callable_assets", m["versions"]["0.1.1"])
+        self.assertNotIn("callable_assets", m["versions"]["0.1.2"])
 
     def test_results_node_jsonl_record_output_is_opt_in_and_no_write(self):
         fake = SourceAwareInputs()
@@ -244,8 +244,10 @@ class ConsumerIntegrationTests(unittest.TestCase):
 
     def test_canonical_oversize_is_not_silently_cut(self):
         result = self.result(SourceAwareInputs())
-        with self.assertRaisesRegex(ContractError, "canonical_result_requires_partitioning"):
-            finalize_output(result, max_bytes=1000)
+        evidence=deepcopy(result['evidence'])
+        result=finalize_output(result,max_bytes=1000)
+        self.assertEqual(evidence,result['evidence'])
+        self.assertIn('clinical_canonical_result_size_warning',{x['code'] for x in result['quality']['issues']})
 
     def test_prepared_and_preflight_results_validate_json_schemas(self):
         from jsonschema import Draft202012Validator
