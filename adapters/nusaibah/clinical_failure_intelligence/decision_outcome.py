@@ -28,8 +28,8 @@ def source_request_plan(request: dict, prepared: dict) -> list[dict]:
             if not trial.startswith("NCT"):
                 continue
             for operation in ("study_get", "results_get"):
-                if ("nusaibah.clinical_trials_lookup@0.1.0", operation, trial) not in supplied:
-                    tasks.append({"source_asset": "nusaibah.clinical_trials_lookup@0.1.0",
+                if ("nusaibah.clinical_trials_lookup@0.1.1", operation, trial) not in supplied:
+                    tasks.append({"source_asset": "nusaibah.clinical_trials_lookup@0.1.1",
                         "operation": operation, "selectors": {"nct_id": trial},
                         "priority": "primary_evidence", "execution": "not_requested"})
             if trial not in publication_trials:
@@ -38,7 +38,7 @@ def source_request_plan(request: dict, prepared: dict) -> list[dict]:
                     "next_after_discovery": ["article_get", "abstract_get"],
                     "priority": "corroboration", "execution": "not_requested"})
     elif subject.get("product_name"):
-        tasks.append({"source_asset": "nusaibah.clinical_trials_lookup@0.1.0",
+        tasks.append({"source_asset": "nusaibah.clinical_trials_lookup@0.1.1",
             "operation": "study_search", "selectors": {"intervention": subject["product_name"],
                 "condition": subject.get("indication")}, "priority": "resolve_trial_identity",
             "execution": "not_requested"})

@@ -57,7 +57,7 @@ provider execution envelope, run context, raw source token or transport header.
 
 | Source key | Version | Output | Consumer use |
 | --- | --- | --- | --- |
-| nusaibah.clinical_trials_lookup | 0.1.0 | trial_result | Exact study/arm/outcome/results module projections; search candidates and page coverage |
+| nusaibah.clinical_trials_lookup | 0.1.1 | trial_result | Exact study/arm/outcome/results module projections; search candidates and page coverage |
 | nusaibah.pubmed_evidence | 0.1.0 | literature_result | Exact-PMID metadata/abstract joins, discovery results, partial dates, integrity notices |
 | umls_terminology | 0.1.0 | terminology_result | `describe`/`search` terminology candidates only; no clinical efficacy/causality authority |
 
@@ -103,7 +103,7 @@ That value cannot authorize a new clinical identity or provider call.
 
 Source modules split at JSON fields/list entries or complete paragraphs; exact
 JSON pointers or paragraph offsets and hashes survive. The collector admits at
-most 64 windows / 256 KiB, with each window <=12,000 characters and <=16,000 UTF-8
+most 384 windows / 768 KiB, with each window <=12,000 characters and <=16,000 UTF-8
 bytes. Oversized scalar paragraphs and omitted windows have explicit digests,
 counts and reasons. This is not full-source retention; the owning runtime must
 retain the original prepared source result. No omitted text is called reviewed.

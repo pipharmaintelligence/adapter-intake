@@ -22,15 +22,15 @@ else:
 
 BUNDLE_SCHEMA = "clinical_evidence_bundle.v1"
 SOURCE_CONTRACTS = {
-    "nusaibah.clinical_trials_lookup": ("0.1.0", "trial_result", "clinical_trials_lookup.v1"),
+    "nusaibah.clinical_trials_lookup": ("0.1.1", "trial_result", "clinical_trials_lookup.v1"),
     "nusaibah.pubmed_evidence": ("0.1.0", "literature_result", "pubmed_evidence.v1"),
     "umls_terminology": ("0.1.0", "terminology_result", None),
 }
 MAX_BUNDLE_BYTES = 1_048_576
 MAX_SOURCE_RESULTS = 24
 MAX_RECORDS = 50
-MAX_WINDOWS = 64
-MAX_EVIDENCE_BYTES = 262_144
+MAX_WINDOWS = 384  # Bounded complete-window index; never an Agent prompt allowance.
+MAX_EVIDENCE_BYTES = 786_432  # Cover verified large registry results; defer if exceeded.
 MAX_WINDOW_BYTES = 16_000
 MAX_WINDOW_CHARS = 12_000
 _NCT = re.compile(r"NCT[0-9]{8}\Z")
@@ -157,22 +157,34 @@ class _Collector:
         self.windows: list[dict] = []
         self.omissions: list[dict] = []
         self.byte_count = 0
-        self._seen: set[str] = set()
+        self._seen: dict[str, int] = {}
+        self.duplicate_windows = 0
 
     def add(self, entry: dict, source_id: str, content: Any, pointer: str, *, source_type: str,
             extent: str, trial_ids: list[str], interval: dict, use: str,
-            identifiers_value: dict, integrity: str = "not_assessed") -> None:
+            identifiers_value: dict, integrity: str = "not_assessed",
+            source_revision: str | None = None) -> None:
         for field_pointer, raw_text, omitted in source_windows(content, pointer):
             if omitted:
                 self.omissions.append({"source_result_id": entry["source_result_id"], **omitted})
                 continue
             assert raw_text is not None
             content_hash = text_digest(raw_text)
+            revision = source_revision or entry["result_digest"]
             identity = digest([source_id, field_pointer, content_hash, entry["purpose"],
-                               entry["result_digest"], interval, use, integrity])
+                               revision, interval, use, integrity])
             if identity in self._seen:
+                # Two normalized operations can reference one identical native
+                # registry revision. Preserve both receipts, but do not count the
+                # same study text as independent scientific corroboration.
+                existing = self.windows[self._seen[identity]]["source_context"]
+                equivalent = existing.setdefault("equivalent_source_results", [])
+                receipt = {"source_result_id": entry["source_result_id"],
+                           "source_result_digest": entry["result_digest"]}
+                if receipt not in equivalent:
+                    equivalent.append(receipt)
+                self.duplicate_windows += 1
                 continue
-            self._seen.add(identity)
             earliest, latest = interval["start"], interval["end"]
             cutoff = self.request["as_of_date"]
             temporal = ("unknown" if latest is None else "eligible_by_source_date" if latest <= cutoff
@@ -186,7 +198,7 @@ class _Collector:
             window = {
                 "evidence_id": "SRC_" + identity.split(":")[1][:28], "source_id": source_id,
                 "subject_id": self.request["subject_id"], "source_type": source_type,
-                "source_version": entry["result_digest"],
+                "source_version": revision,
                 "published_on": earliest if interval["precision"] == "day" else None,
                 "accessible_extent": extent, "text": raw_text, "trial_ids": trial_ids,
                 "source_context": {
@@ -206,6 +218,7 @@ class _Collector:
                     "code": "clinical_source_window_budget", "source_pointer": field_pointer,
                     "text_digest": content_hash, "bytes": size})
                 continue
+            self._seen[identity] = len(self.windows)
             self.windows.append(window)
             self.byte_count += size
 
@@ -236,12 +249,29 @@ def _trial(entry: dict, collector: _Collector, summary: dict) -> None:
         require(isinstance(summary_data, dict), "clinical_trial_summary_invalid")
         study = row.get("registry_study")
         require(study is None or isinstance(study, dict), "clinical_trial_study_invalid")
+        # Lookup 0.1.1 exposes the exact native study digest. Validate it
+        # independently of the prepared result-envelope checksum so that a
+        # modified study cannot be passed off as an unchanged registry revision.
+        native_revision = row.get("content_digest")
+        if native_revision is not None:
+            require(isinstance(native_revision, str) and study is not None and
+                    native_revision == digest(study),
+                    "clinical_trial_native_digest_mismatch")
+        if isinstance(study, dict):
+            native_revision = native_revision or digest(study)
+        policy = result.get("size_policy")
+        if policy is not None:
+            require(isinstance(policy, dict) and
+                    policy.get("action") == "preserved_complete" and
+                    policy.get("threshold_exceeded") is False,
+                    "clinical_trial_source_not_complete")
         base_id = "ctgov:" + nct
         identifiers_value = {"nct_id": nct}
         def add(value: Any, pointer: str, use: str) -> None:
             collector.add(entry, base_id, value, pointer, source_type="trial_registry",
                 extent="registry_record", trial_ids=[nct], interval=interval,
-                use=use, identifiers_value=identifiers_value)
+                use=use, identifiers_value=identifiers_value,
+                source_revision=native_revision)
         if study:
             protocol = study.get("protocolSection", {})
             results = study.get("resultsSection", {})
@@ -252,6 +282,8 @@ def _trial(entry: dict, collector: _Collector, summary: dict) -> None:
             require(nested_id is None or nested_id == nct, "clinical_trial_case_identity_mismatch")
             for name in sorted(protocol):
                 add(protocol[name], "/registry_study/protocolSection/" + _pointer(name), "protocol")
+            if op == "results_get" and result.get("results_state") == "posted":
+                require(bool(results), "clinical_trial_posted_results_missing")
             for name in sorted(results):
                 require(isinstance(results[name], dict), "clinical_trial_results_module_invalid")
                 use = ("safety_results" if name == "adverseEventsModule" else
@@ -441,7 +473,9 @@ def prepare_bundle(value: Any, request: dict) -> dict:
     collector = _Collector(request)
     publication_metadata = _publication_index(bundle["sources"])
     sources, terminology = [], []
-    for entry in bundle["sources"]:
+    # Stable ordering also makes primary/equivalent source receipts reproducible
+    # when a governed orchestrator submits lookup operations in either order.
+    for entry in sorted(bundle["sources"], key=lambda row: row["source_result_id"]):
         summary = {"source_result_id": entry["source_result_id"],
             "source_asset": entry["asset_key"] + "@" + entry["asset_version"],
             "operation": entry["result"]["operation"], "purpose": entry["purpose"],
@@ -459,4 +493,11 @@ def prepare_bundle(value: Any, request: dict) -> dict:
         "bundle_id": bundle["bundle_id"], "bundle_digest": digest(bundle),
         "evidence": collector.windows, "terminology": terminology, "sources": sources,
         "issues": [], "omissions": collector.omissions,
+        "coverage_receipt": {
+            "retained_windows": len(collector.windows),
+            "omitted_windows": len(collector.omissions),
+            "duplicate_native_windows": collector.duplicate_windows,
+            "retained_evidence_bytes": collector.byte_count,
+            "source_result_count": len(bundle["sources"]),
+        },
         "authority": "binding_preparation_required_not_proven_by_digest"}

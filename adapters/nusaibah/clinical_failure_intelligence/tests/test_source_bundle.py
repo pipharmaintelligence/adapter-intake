@@ -27,7 +27,8 @@ def entry(result, family="trials", *, purpose="case", key=None):
                   "umls": ("umls_terminology", "terminology_result")}
     asset, output = identities[family]
     return {"source_result_id": key or family + "_" + result["operation"],
-        "asset_key": asset, "asset_version": "0.1.0", "output_role": output,
+        "asset_key": asset, "asset_version": "0.1.1" if family == "trials" else "0.1.0",
+        "output_role": output,
         "purpose": purpose, "result": deepcopy(result), "result_digest": digest(result)}
 
 
@@ -206,7 +207,7 @@ class PreparedEvidenceTests(unittest.TestCase):
         self.assert_blocked("clinical_umls_operation_not_qualified", bundle(entry(result, "umls", purpose="terminology")))
 
     def test_source_contract_version_and_key_match_exactly(self):
-        value = bundle(entry(trial_result())); value["sources"][0]["asset_version"] = "0.1.1"
+        value = bundle(entry(trial_result())); value["sources"][0]["asset_version"] = "0.1.0"
         self.assert_blocked("clinical_source_contract_mismatch", value)
         value = bundle(entry(terminology(), "umls", purpose="terminology")); value["sources"][0]["asset_key"] = "nusaibah.umls_terminology"
         self.assert_blocked("clinical_source_asset_not_declared", value)
@@ -298,16 +299,32 @@ class PreparedEvidenceTests(unittest.TestCase):
         value = self.normalize(entry(result))
         self.assertEqual("2025-02-01T12:00:00Z", value["sources"][0]["source_provenance"][0]["retrieved_at"])
 
-    def test_window_cap_reports_every_omitted_piece_without_slicing(self):
+    def test_eighty_full_abstract_sections_preserved_without_slicing(self):
         result = abstract()
         result["records"][0]["sections"] = [
             {"section": "RESULTS", "offset": i * 5000, "text": str(i) + ":" + "x" * 4500}
             for i in range(80)]
         value = self.normalize(entry(metadata(), "pubmed"), entry(result, "pubmed"))
-        self.assertEqual("partial", value["status"])
-        self.assertLessEqual(len(value["evidence"]), 64)
-        self.assertEqual(80, len(value["evidence"]) + len(value["omissions"]))
+        self.assertEqual("normalized", value["status"])
+        self.assertEqual(80, len(value["evidence"]))
+        self.assertEqual([], value["omissions"])
         self.assertTrue(all(len(row["text"]) >= 4502 for row in value["evidence"]))
+
+    def test_window_cap_reports_every_omitted_piece_without_slicing(self):
+        entries = []
+        for index in range(5):
+            pmid = str(10000 + index)
+            entries.append(entry(metadata(pmid=pmid), "pubmed", key="meta" + pmid))
+            record = abstract(pmid=pmid)
+            record["records"][0]["sections"] = [
+                {"section": "RESULTS", "offset": i * 150, "text": "Synthetic passage " + str(i) + ("x" * 100)}
+                for i in range(90)]
+            entries.append(entry(record, "pubmed", key="abstract" + pmid))
+        value = self.normalize(*entries)
+        self.assertEqual("partial", value["status"])
+        self.assertEqual(384, len(value["evidence"]))
+        self.assertEqual(450, len(value["evidence"]) + len(value["omissions"]))
+        self.assertTrue(all("text_digest" in row for row in value["omissions"]))
 
     def test_malformed_result_status_is_typed_not_unhashable_crash(self):
         for status in ([], {}, None, True):
