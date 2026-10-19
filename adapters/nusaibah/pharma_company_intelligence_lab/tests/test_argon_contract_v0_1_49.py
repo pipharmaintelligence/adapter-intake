@@ -30,7 +30,8 @@ class ArgonContractTests(unittest.TestCase):
 
     def test_declared_runtime_floor_covers_argon_and_auth_failover(self):
         dependencies = json.loads((ROOT / 'adapter.dependencies.json').read_text())
-        self.assertEqual('0.1.110', dependencies['runtime_package']['minimum_version'])
+        minimum = tuple(map(int, dependencies['runtime_package']['minimum_version'].split('.')))
+        self.assertGreaterEqual(minimum, (0, 1, 110))
 
 
 if __name__ == '__main__':
