@@ -25,11 +25,6 @@ reviewed_helpers:
 
 reviewed_support_files:
   - admission_requirements.json
-  - analysis_request.v1.schema.json
-  - clinical_intelligence.v1.schema.json
-  - hypothesis.v1.schema.json
-  - clinical_evidence_bundle.v1.schema.json
-  - source_hypothesis_catalog.json
 optional_files:
   - prompt_common.md
   - prompt_product_memory_editor.md
