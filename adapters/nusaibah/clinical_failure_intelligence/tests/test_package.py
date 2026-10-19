@@ -72,7 +72,7 @@ class PackageTests(unittest.TestCase):
         manifest = json.loads((ASSET_ROOT / 'clinical_failure_intelligence.asset.json').read_text())
         self.assertEqual(sha, manifest['versions']['0.1.1']['skills'][0]['digest'])
     def test_source_seed_indices_are_not_gold_verdicts(self):
-        seeds = json.loads((ASSET_ROOT / 'source_hypothesis_catalog.json').read_text())
+        seeds = json.loads((ASSET_ROOT / 'tests/reference/source_hypothesis_catalog.json').read_text())
         self.assertEqual(13, len(seeds)); self.assertTrue(all(x['verdict'] == 'untested' for x in seeds))
         self.assertEqual(8, sum(x['analysis_mode'] == 'mechanistic_case' for x in seeds))
     def test_python_310_grammar(self):
@@ -110,15 +110,15 @@ print('declared_import_closure_passed')
                 self.assertEqual(0, completed.returncode, completed.stderr)
     @unittest.skipUnless(Draft202012Validator, 'jsonschema is not installed')
     def test_schemas_validate_fixture_results(self):
-        request = json.loads((ASSET_ROOT / 'analysis_request.v1.schema.json').read_text())
-        output = json.loads((ASSET_ROOT / 'clinical_intelligence.v1.schema.json').read_text())
+        request = json.loads((ASSET_ROOT / 'tests/reference/analysis_request.v1.schema.json').read_text())
+        output = json.loads((ASSET_ROOT / 'tests/reference/clinical_intelligence.v1.schema.json').read_text())
         Draft202012Validator.check_schema(request); Draft202012Validator.check_schema(output)
         for mode in ('mechanistic_case', 'cohort_pattern'):
             data = example_inputs(mode); Draft202012Validator(request).validate(data)
             value = run_analysis(FakeInputs(data))['outputs']['clinical_intelligence']; Draft202012Validator(output).validate(value)
     @unittest.skipUnless(Draft202012Validator, 'jsonschema is not installed')
     def test_schema_rejects_false_verification_and_writes(self):
-        schema = json.loads((ASSET_ROOT / 'clinical_intelligence.v1.schema.json').read_text())
+        schema = json.loads((ASSET_ROOT / 'tests/reference/clinical_intelligence.v1.schema.json').read_text())
         value = run_analysis(FakeInputs())['outputs']['clinical_intelligence']; value['quality']['external_truth_verified'] = True
         self.assertTrue(list(Draft202012Validator(schema).iter_errors(value)))
         value['quality']['external_truth_verified'] = False; value['memory_update']['write_attempted'] = True
