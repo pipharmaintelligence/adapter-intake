@@ -23,7 +23,7 @@ REASON_CODES = frozenset({"efficacy", "safety_tolerability", "pk_pd_exposure_dos
 ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}\Z")
 DIGEST_RE = re.compile(r"sha256:[a-f0-9]{64}\Z")
 # Detect authority material, not ordinary scientific words or bibliographic identifiers.
-PRIVILEGED_KEYS = frozenset({"authorization", "headers", "access_token", "refresh_token",
+FORBIDDEN_AUTHORITY_KEYS = frozenset({"authorization", "headers", "access_token", "refresh_token",
     "api_key", "password", "credentials", "client_secret", "presigned_url", "provider_state",
     "runtime_location", "raw_provider_response", "raw_dlm_response", "raw_obs_response"})
 
@@ -47,7 +47,7 @@ def safe_json(value: Any, depth: int = 0) -> None:
     if isinstance(value, dict):
         for key, child in value.items():
             require(isinstance(key, str), "clinical_json_key_invalid")
-            require(key.casefold() not in PRIVILEGED_KEYS, "clinical_authority_material_forbidden")
+            require(key.casefold() not in FORBIDDEN_AUTHORITY_KEYS, "clinical_authority_material_forbidden")
             safe_json(child, depth + 1)
     elif isinstance(value, list):
         for child in value:
