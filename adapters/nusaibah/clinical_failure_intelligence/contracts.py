@@ -151,7 +151,7 @@ def parse_request(inputs: Any) -> JsonObject:
     require({"variables", "clinical_context"} <= set(inputs) <=
             {"variables", "clinical_context", "clinical_evidence"}, "clinical_input_roles_invalid")
     values = object_fields(inputs["variables"], {"schema_version", "request_id", "analysis_mode",
-        "subject_id", "as_of_date", "event_ids"}, {"memory_mode", "enable_refinement", "enable_pharmacological_class", "product_id", "indication_id", "trial_id", "source_object_id", "preflight_only", "supplementary_search"})
+        "subject_id", "as_of_date", "event_ids"}, {"memory_mode", "enable_refinement", "enable_pharmacological_class", "product_id", "indication_id", "trial_id", "source_object_id", "preflight_only", "supplementary_search", "prepare_result_for_persistence"})
     safe_json(values)
     require(values["schema_version"] == REQUEST_SCHEMA, "clinical_request_schema_invalid")
     require(isinstance(values["analysis_mode"], str) and values["analysis_mode"] in {"mechanistic_case", "cohort_pattern"}, "clinical_mode_invalid")
@@ -163,6 +163,10 @@ def parse_request(inputs: Any) -> JsonObject:
     # Callable mutation and retention-before-apply are not admitted in this release.
     require(isinstance(memory_mode, str) and memory_mode in {"off", "preview"}, "clinical_memory_apply_not_admitted")
     require(type(values.get("enable_refinement", False)) is bool, "clinical_refinement_flag_invalid")
+    require(type(values.get("prepare_result_for_persistence", False)) is bool,
+            "clinical_persistence_prepare_flag_invalid")
+    require(not (values.get("preflight_only", False) and values.get("prepare_result_for_persistence", False)),
+            "clinical_persistence_preflight_forbidden")
     for selector in ("product_id", "indication_id", "trial_id"):
         if values.get(selector) is not None:
             identifier(values[selector])

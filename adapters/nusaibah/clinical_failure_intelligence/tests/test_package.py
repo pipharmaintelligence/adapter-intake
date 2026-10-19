@@ -34,14 +34,29 @@ class PackageTests(unittest.TestCase):
     def test_declared_python_closure_complete(self):
         meta = declaration()
         self.assertEqual(sorted(p.name for p in ASSET_ROOT.glob('*.py')), sorted(meta['reviewed_helpers'] + [meta['adapter_module']]))
+        self.assertTrue(all('/' not in name for key in ('reviewed_helpers', 'reviewed_support_files', 'optional_files') for name in meta[key]))
+        self.assertTrue(all(name.endswith('.json') for name in meta['reviewed_support_files']))
         for key in ('reviewed_helpers', 'reviewed_support_files', 'optional_files'):
             for name in meta[key]: self.assertTrue((ASSET_ROOT / name).is_file(), name)
     def test_manifest_identity_and_binding_ownership(self):
         data = json.loads((ASSET_ROOT / 'clinical_failure_intelligence.asset.json').read_text()); meta = declaration()
         self.assertEqual(data['key'], meta['asset_key']); self.assertEqual(data['default'], meta['asset_version'])
         version = data['versions']['0.1.1']; self.assertEqual('binding', version['inputs']['clinical_context']['source'])
-        self.assertEqual({'profiles': ['reference_read'], 'modes': ['http']}, version['public_web']); self.assertNotIn('runtime_skills', version); self.assertNotIn('callable_assets', version)
-        self.assertEqual(['local_worker'], data['execution']['allowed_substrates'])
+        self.assertEqual({'profiles': ['reference_read'], 'modes': ['http']}, version['public_web'])
+        self.assertEqual({'product_memory'}, set(version['runtime_skills']))
+        role = version['runtime_skills']['product_memory']
+        self.assertEqual({'lake_ref': 'test_database_lake', 'node_key': 'clinical_product_memory_packages'}, role['source'])
+        self.assertEqual('read_only', role['mutation'])
+        self.assertEqual('current', role['resolution'])
+        self.assertEqual({'product_id': {'from_variable': 'product_id'}}, role['partition'])
+        self.assertNotIn('product_memory_update', version['runtime_skills'])
+        self.assertFalse(version['outputs']['clinical_intelligence_records']['required'])
+        self.assertEqual('dlm_file_artifact_output', version['output_contracts']['clinical_intelligence_records']['target_kind'])
+        self.assertEqual('dry_run', version['output_contracts']['clinical_intelligence_records']['write_mode'])
+        self.assertNotIn('callable_assets', version)
+        self.assertEqual(['local_worker', 'ecs'], data['execution']['allowed_substrates'])
+        self.assertEqual(['local_worker', 'ecs'], version['execution']['allowed_substrates'])
+        self.assertEqual('local_worker', version['execution']['default_substrate'])
     def test_role_references_and_prompt_hashes(self):
         data = json.loads((ASSET_ROOT / 'admission_requirements.json').read_text())
         for row in data['agent_contracts']:
@@ -57,7 +72,7 @@ class PackageTests(unittest.TestCase):
         manifest = json.loads((ASSET_ROOT / 'clinical_failure_intelligence.asset.json').read_text())
         self.assertEqual(sha, manifest['versions']['0.1.1']['skills'][0]['digest'])
     def test_source_seed_indices_are_not_gold_verdicts(self):
-        seeds = json.loads((ASSET_ROOT / 'references/source_hypothesis_catalog.json').read_text())
+        seeds = json.loads((ASSET_ROOT / 'tests/reference/source_hypothesis_catalog.json').read_text())
         self.assertEqual(13, len(seeds)); self.assertTrue(all(x['verdict'] == 'untested' for x in seeds))
         self.assertEqual(8, sum(x['analysis_mode'] == 'mechanistic_case' for x in seeds))
     def test_python_310_grammar(self):
@@ -74,7 +89,7 @@ class PackageTests(unittest.TestCase):
         meta = declaration()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary); package = root / 'clinical_failure_intelligence'; package.mkdir()
-            for name in meta['reviewed_helpers'] + meta['reviewed_support_files'] + [meta['adapter_module']]:
+            for name in meta['reviewed_helpers'] + meta['reviewed_support_files'] + meta['optional_files'] + [meta['adapter_module']]:
                 target = package / name; target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(ASSET_ROOT / name, target)
             # This proves source closure, NOT the official runtime base or worker.
@@ -95,15 +110,15 @@ print('declared_import_closure_passed')
                 self.assertEqual(0, completed.returncode, completed.stderr)
     @unittest.skipUnless(Draft202012Validator, 'jsonschema is not installed')
     def test_schemas_validate_fixture_results(self):
-        request = json.loads((ASSET_ROOT / 'schemas/analysis_request.v1.schema.json').read_text())
-        output = json.loads((ASSET_ROOT / 'schemas/clinical_intelligence.v1.schema.json').read_text())
+        request = json.loads((ASSET_ROOT / 'tests/reference/analysis_request.v1.schema.json').read_text())
+        output = json.loads((ASSET_ROOT / 'tests/reference/clinical_intelligence.v1.schema.json').read_text())
         Draft202012Validator.check_schema(request); Draft202012Validator.check_schema(output)
         for mode in ('mechanistic_case', 'cohort_pattern'):
             data = example_inputs(mode); Draft202012Validator(request).validate(data)
             value = run_analysis(FakeInputs(data))['outputs']['clinical_intelligence']; Draft202012Validator(output).validate(value)
     @unittest.skipUnless(Draft202012Validator, 'jsonschema is not installed')
     def test_schema_rejects_false_verification_and_writes(self):
-        schema = json.loads((ASSET_ROOT / 'schemas/clinical_intelligence.v1.schema.json').read_text())
+        schema = json.loads((ASSET_ROOT / 'tests/reference/clinical_intelligence.v1.schema.json').read_text())
         value = run_analysis(FakeInputs())['outputs']['clinical_intelligence']; value['quality']['external_truth_verified'] = True
         self.assertTrue(list(Draft202012Validator(schema).iter_errors(value)))
         value['quality']['external_truth_verified'] = False; value['memory_update']['write_attempted'] = True

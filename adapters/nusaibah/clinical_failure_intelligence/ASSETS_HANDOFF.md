@@ -114,3 +114,33 @@ A smaller model packet does not imply partial storage retrieval: the document
 view operates after hydration. Investigate server-side bounded reads only if the
 package/hydration boundary is actually the measured blocker. ECS, new-source
 retrieval, exact admission and durable process-loss recovery remain separate gates.
+
+
+## Staging node contract addendum (isolated intake wiring)
+
+The read-only product_memory `runtime_skills` role now names
+`test_database_lake / clinical_product_memory_packages` with `product_id`
+selection; runtime-owned ZIP package resolution and first package upload/readback
+are outstanding. Mutable roles are deliberately omitted because callable child
+Skill composition currently rejects mutation.
+
+For canonical result retention the adapter now provides an opt-in
+`clinical_intelligence_records` records envelope, shaped for one complete
+JSONL record per assessment. The existing callable `clinical_intelligence`
+payload is unchanged when not requested. Output preparation is separate from
+publish: the trusted server must approve a target policy for
+`test_database_lake / clinical_failure_intelligence_results`, select that
+output role, prove schema inspection, complete Core's output-write operation
+and return an authoritative receipt. The manifest is not a publish policy.
+
+Both staging nodes are reported active but empty, both catalog flags still
+require correction, ZIP schema waiver is absent, and signed runtime read/write
+and persistence remain not proven. The official intake checker also presently
+rejects nested prompt/schema/reference paths under reviewed_support_files;
+that packaging contract is a separate hard gate before promotion.
+
+## Dual substrate and official intake packaging checkpoint
+
+The manifest declares `local_worker` and `ecs` as allowed substrates, with `local_worker` as default. Each requires independent exact package/catalog, client-bound Agent/Fixed/Dynamic Skill, governed-input and terminal composition proof. ECS declaration is not a deployed image or working ECS child Skill proof.
+
+Reviewed runtime prompts live as same-folder `prompt_*.md` optional files, read by the packaged `prompt_catalog.py`. Exact source schemas and hypothesis seeds remain unmodified as `tests/reference/*.json` development snapshots, outside the promoted runtime package. They are not adapter runtime dependencies; `admission_requirements.json` is the only reviewed support JSON object. Fixed methodology remains at the manifest-authorized Skill root. Runtime nested prompt/schema/reference folders are removed, not silently ignored. The official intake validator and package-mode import tests remain mandatory.

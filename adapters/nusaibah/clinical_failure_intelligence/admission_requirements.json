@@ -9,7 +9,7 @@
       "contract_version": "1.1.0",
       "prompt_version": "1.1.0",
       "prompt_digest": "sha256:1d36c809b2d13ab210c7546655d7e27d5f2802e1ec95c422f11f797b3aae8def",
-      "prompt_file": "prompts/trial_researcher.md",
+      "prompt_file": "prompt_trial_researcher.md",
       "provider_binding_status": "not_selected",
       "role_admission_status": "not_admitted",
       "capabilities_required": [
@@ -24,7 +24,7 @@
       "contract_version": "1.1.0",
       "prompt_version": "1.1.0",
       "prompt_digest": "sha256:b317ab5e055e9938a705fb38597be61428b4c03acb2ae3d9a4c601e3df246f0d",
-      "prompt_file": "prompts/literature_researcher.md",
+      "prompt_file": "prompt_literature_researcher.md",
       "provider_binding_status": "not_selected",
       "role_admission_status": "not_admitted",
       "capabilities_required": [
@@ -39,7 +39,7 @@
       "contract_version": "1.1.0",
       "prompt_version": "1.1.0",
       "prompt_digest": "sha256:d5e6901af423a1922c127dfd82458a4ef2690c1f9b7db32fbc87eed047f6f3d4",
-      "prompt_file": "prompts/event_researcher.md",
+      "prompt_file": "prompt_event_researcher.md",
       "provider_binding_status": "not_selected",
       "role_admission_status": "not_admitted",
       "capabilities_required": [
@@ -54,7 +54,7 @@
       "contract_version": "1.1.0",
       "prompt_version": "1.1.0",
       "prompt_digest": "sha256:af907d4e89ba7d1bf355a396db11eac7f95e88d9c6adf96b1a6166480515544d",
-      "prompt_file": "prompts/outcome_adjudicator.md",
+      "prompt_file": "prompt_outcome_adjudicator.md",
       "provider_binding_status": "not_selected",
       "role_admission_status": "not_admitted",
       "capabilities_required": [],
@@ -67,7 +67,7 @@
       "contract_version": "1.1.0",
       "prompt_version": "1.1.0",
       "prompt_digest": "sha256:7dff2ff73085cea3e9cc59f4d32b3180c82809d9318cabd1d57448df2dd91508",
-      "prompt_file": "prompts/hypothesis_analyst.md",
+      "prompt_file": "prompt_hypothesis_analyst.md",
       "provider_binding_status": "not_selected",
       "role_admission_status": "not_admitted",
       "capabilities_required": [],
@@ -80,7 +80,7 @@
       "contract_version": "1.1.0",
       "prompt_version": "1.1.0",
       "prompt_digest": "sha256:7e5932e5f7bad8e5f039f42e1c8e36b1d17fb6b69e4a0fe571f4d10f631fe315",
-      "prompt_file": "prompts/evidence_critic.md",
+      "prompt_file": "prompt_evidence_critic.md",
       "provider_binding_status": "not_selected",
       "role_admission_status": "not_admitted",
       "capabilities_required": [],
@@ -91,7 +91,7 @@
       "role": "product_memory_editor",
       "contract_key": "agent.nusaibah.clinical_failure_intelligence_product_memory_editor",
       "contract_version": "1.1.0",
-      "prompt_file": "prompts/product_memory_editor.md",
+      "prompt_file": "prompt_product_memory_editor.md",
       "provider_binding_status": "not_selected",
       "role_admission_status": "not_admitted",
       "capabilities_required": [],
@@ -102,8 +102,8 @@
     }
   ],
   "memory_roles": {
-    "product_memory": "Primary read-only role; selector product_id; binding pending",
-    "product_memory_update": "Primary mutable role; not admitted; apply blocked",
+    "product_memory": "Primary read-only role declared in manifest for governed product_id ZIP partition; no active package/read proof",
+    "product_memory_update": "Mutable role not declared in callable child; mutation and retention remain blocked",
     "group_memory": "Optional read-only role; never requested by default",
     "group_memory_update": "Optional separate mutation; not admitted"
   },
@@ -119,7 +119,11 @@
     "source_event_evidence_retrieval",
     "signed_child_file_object_composition",
     "exact_child_public_web_http_admission",
-    "combined_grounded_search_http_evidence_proof"
+    "combined_grounded_search_http_evidence_proof",
+    "approved_clinical_intelligence_jsonl_result_output_policy",
+    "clinical_results_schema_equivalence_and_self_inspection",
+    "clinical_product_memory_active_zip_and_readback",
+    "ecs_exact_image_catalog_package_skill_agent_binding_proof"
   ],
   "defaults": {
     "enable_pharmacological_class": false,
@@ -143,5 +147,37 @@
     "source_adapters_validation": "external_parallel_work_not_performed",
     "consumer_stage": "synthetic_contract_validation",
     "live_handoff_status": "not_verified"
+  },
+  "node_targets": {
+    "results": {
+      "lake_id": "test_database_lake",
+      "node_key": "clinical_failure_intelligence_results",
+      "format": "jsonl",
+      "output_role": "clinical_intelligence_records",
+      "emit_variable": "prepare_result_for_persistence",
+      "status": "manifest_output_contract_only_not_published",
+      "authority": "Assets/Core approved output target policy and terminal publish receipt required"
+    },
+    "product_memory": {
+      "lake_id": "test_database_lake",
+      "node_key": "clinical_product_memory_packages",
+      "partition_field": "product_id",
+      "runtime_skill_role": "product_memory",
+      "mutation": "read_only",
+      "status": "declared_package_resolution_not_proven_zero_registered_objects",
+      "authority": "Core active ZIP partition and trusted runtime resolution required"
+    },
+    "product_memory_update": {
+      "status": "not_declared_callable_child_mutation_not_admitted"
+    }
+  },
+  "execution_substrates": {
+    "declared": [
+      "local_worker",
+      "ecs"
+    ],
+    "default": "local_worker",
+    "local_worker_live_proof": "not_performed",
+    "ecs_package_deployment_and_live_proof": "not_performed"
   }
 }

@@ -49,3 +49,37 @@ Assets V5 callable's earliest implementation emphasized materialized_query. If c
 ## Compatibility proof scope
 
 Provider-free test_source_events plus all prior intake tests. This is not a live DLM binding result, deployed worker, registered Gemini provider, or approved Skill mutation.
+
+
+## Staging output and product-memory node wiring (intake-only)
+
+This draft manifest declares `runtime_skills.product_memory` as a **read-only** current
+ZIP package role sourced from `test_database_lake / clinical_product_memory_packages`,
+with the exact logical `product_id` partition supplied to `inputs.dynamic_skill()`.
+There is **no** `product_memory_update` mutable declaration: current callable child
+composition accepts read-only Dynamic Skills only. There are currently no registered
+ZIP objects in staging; a manifest declaration is not a valid active package or a
+readback receipt. Do not create an empty ZIP, enable mutation, or use a direct envelope.
+
+The existing callable result remains `outputs.clinical_intelligence` and is not
+modified by default. The optional, separately declared output role
+`clinical_intelligence_records` contains `{"records": [<complete clinical_intelligence>]}`
+only when direct semantic variable `prepare_result_for_persistence=true` is
+explicitly requested during a non-preflight run. This is an **in-memory staging
+envelope**, not a write, output-policy selection, retention receipt, or authorization.
+The trusted runtime's JSONL publisher recognizes `records` and serializes one
+assessment object per JSONL line; a bare `clinical_intelligence` dictionary would
+be serialized as JSON, not the configured JSONL node format.
+
+Target: `test_database_lake / clinical_failure_intelligence_results`,
+`file/jsonl`, `dataset/semi_structured`, no partition. This node is *not*
+hardcoded into output publishing logic: an Assets/Core-approved output policy
+must select the target and `clinical_intelligence_records` role. The manifest
+output contract is dry-run intent only. Publication, operation receipt and node
+readback have not been performed. Core must independently prove schema equivalence
+and supported JSONL inspection against the full clinical_intelligence.v1 schema.
+
+`preflight_only=true` intentionally refuses `prepare_result_for_persistence=true`;
+ordinary preflight remains model-free and has no Skill read, write or publication.
+The default remains preview-only, optional class-memory remains undeclared, and
+no staging node config or existing PR #143 branch is modified in this slice.
