@@ -57,6 +57,17 @@ jobs:
           set -o pipefail
           python -m unittest discover -s tests -p "test_adapter_intake_contract.py" -v
 
+      - name: Validate UMLS Runtime Source envelope and terminology fixtures
+        shell: bash
+        env:
+          PYTHONPATH: adapters/nusaibah/pharma_company_intelligence_lab/tests/stubs:adapters/nusaibah/umls_terminology
+        run: |
+          set -euo pipefail
+          python -m pip install pytest
+          # The installed-wheel tests skip visibly on intake CI (no SDK wheel).
+          # They must run separately, without skips, in the E: installed SDK venv.
+          python -m pytest -q -ra adapters/nusaibah/umls_terminology/tests
+
       - name: Verify DLM MCP 0.1.1 read contract without providers
         shell: bash
         run: |
