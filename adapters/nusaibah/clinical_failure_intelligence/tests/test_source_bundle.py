@@ -350,10 +350,11 @@ class PreparedEvidenceTests(unittest.TestCase):
         second["operation"] = "results_get"
         from unittest.mock import patch
         from clinical_failure_intelligence import source_bundle
-        baseline = self.normalize(entry(first, key="study"))
+        baseline = self.normalize(entry(first, key="a_study"))
         initial_bytes = baseline["coverage_receipt"]["retained_evidence_bytes"]
+        # Stable source-result ordering must not change the primary row.
         with patch.object(source_bundle, "MAX_EVIDENCE_BYTES", initial_bytes):
-            value = self.normalize(entry(first, key="study"), entry(second, key="results"))
+            value = self.normalize(entry(first, key="a_study"), entry(second, key="b_results"))
         self.assertEqual("partial", value["status"])
         self.assertEqual(initial_bytes, value["coverage_receipt"]["retained_evidence_bytes"])
         self.assertEqual(sum(len(canonical_bytes(row)) for row in value["evidence"]),
