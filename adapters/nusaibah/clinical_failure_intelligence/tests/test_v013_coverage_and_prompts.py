@@ -1,5 +1,6 @@
 """Version coexistence, evidence retention and real structured variable injection."""
 from copy import deepcopy
+import ast
 import hashlib
 import importlib
 import json
@@ -34,6 +35,13 @@ class Version013Tests(unittest.TestCase):
         self.assertEqual('0.1.3',new_contracts.VERSION)
         self.assertEqual(512,sources.MAX_WINDOWS)
         self.assertEqual(1048576,sources.MAX_EVIDENCE_BYTES)
+
+    def test_new_entry_declares_package_owned_orchestration_without_environment_pin(self):
+        tree=ast.parse((ASSET_ROOT/'clinical_failure_intelligence_v0_1_3_adapter.py').read_text())
+        owners=[node.value.value for node in tree.body if isinstance(node,ast.Assign)
+            and any(isinstance(target,ast.Name) and target.id=='AGENT_ORCHESTRATION_OWNER' for target in node.targets)
+            and isinstance(node.value,ast.Constant)]
+        self.assertEqual(['python_adapter'],owners)
 
     def test_461_complete_windows_fit_with_exact_text_preserved(self):
         request=example_inputs()['variables']

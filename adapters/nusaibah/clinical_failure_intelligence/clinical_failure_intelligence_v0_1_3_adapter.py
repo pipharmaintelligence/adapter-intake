@@ -2,6 +2,9 @@
 from __future__ import annotations
 from typing import Any, ClassVar
 from adapters.base import Adapter
+
+AGENT_ORCHESTRATION_OWNER = "python_adapter"
+
 if __package__:
     from .orchestration_v0_1_3 import run_analysis
 else:
