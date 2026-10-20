@@ -100,11 +100,12 @@ b=types.ModuleType('adapters.base');b.Adapter=type('Adapter',(),{})
 sys.modules['adapters']=a;sys.modules['adapters.base']=b
 m=importlib.import_module(sys.argv[2])
 classes=[x for x in vars(m).values() if isinstance(x,type) and getattr(x,'key',None)=='nusaibah.clinical_failure_intelligence']
-assert len(classes)==1 and classes[0].version=='0.1.2'
+assert len(classes)==1 and classes[0].version=='0.1.3'
 print('declared_import_closure_passed')
 """
             for package_mode in (True, False):
-                name = 'clinical_failure_intelligence.clinical_failure_intelligence_adapter' if package_mode else 'clinical_failure_intelligence_adapter'
+                entry = Path(meta['adapter_module']).stem
+                name = 'clinical_failure_intelligence.' + entry if package_mode else entry
                 completed = subprocess.run([sys.executable, '-I', '-c', script, str(root if package_mode else package), name],
                                            capture_output=True, text=True, encoding='utf8', timeout=20)
                 self.assertEqual(0, completed.returncode, completed.stderr)
@@ -120,8 +121,8 @@ sys.path.insert(0,sys.argv[1])
 a=types.ModuleType('adapters');a.__path__=[]
 b=types.ModuleType('adapters.base');b.Adapter=type('Adapter',(),{})
 sys.modules['adapters']=a;sys.modules['adapters.base']=b
-m=importlib.import_module('clinical_failure_intelligence.clinical_failure_intelligence_adapter')
-assert m.ClinicalFailureIntelligenceAdapter.version=='0.1.2'
+m=importlib.import_module('clinical_failure_intelligence.clinical_failure_intelligence_v0_1_3_adapter')
+assert m.ClinicalFailureIntelligenceAdapter.version=='0.1.3'
 """
             completed = subprocess.run([sys.executable, '-I', '-B', '-c', script, temporary],
                                        capture_output=True, text=True, encoding='utf8', timeout=20)

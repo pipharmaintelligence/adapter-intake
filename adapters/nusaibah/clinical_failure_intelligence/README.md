@@ -120,3 +120,34 @@ stay under tests and are excluded from the promoted runtime file plan.
 The manifest declares local_worker and ecs with independent qualification gates.
 Do not equate a local package import, synthetic transport double or ECS declaration
 with signed execution, deployed image parity or scientific accuracy.
+# Clinical 0.1.3 coverage and Agent prompt profiles
+
+The new default is 0.1.3. Published 0.1.2 files and its manifest contract remain
+unchanged; all changed runtime dependencies use flat `_v0_1_3.py` filenames so
+both versions can coexist under the existing immutable promotion contract.
+
+Source preparation admits up to 512 complete windows and 1 MiB of evidence.
+The previously retained five-source case preserves all 461 windows, including
+the 77 previously omitted windows, without changing original text or evidence
+identities. Larger inputs still report count/byte deferrals explicitly. This
+is not an unlimited-completeness claim. Agent packets remain bounded at 64
+windows / 120,000 bytes by default; call/time and reflection policy remain
+independent and unchanged.
+
+The 1.3.0 Agent contracts carry a reviewed role prompt once in the governed
+profile. The runtime packet carries exact typed task context, an identity-bound
+outer JSON schema and the prompt digest. Evidence is JSON data; source text,
+Unicode, braces and unknown values are not interpolated into instruction
+templates. Each role retains its scientific item contract and evidence checks.
+
+`tests/operator/clinical013-agent-profiles.json` documents the requested
+governed deployment: all seven roles use `gemini-4-argon`, with medium thinking
+for research, high for adjudication/mechanisms/critic and low for the memory
+delta editor. Only research roles may use admitted grounded search. These
+settings do not give the adapter provider authority or activate paid analysis.
+Core/model limits remain authoritative over requested token budgets.
+
+Validation includes the original provider-free suite, 0.1.2 file/contract byte
+pins, complete-window coverage, larger-input deferrals, bounded packets,
+structured variable injection, prompt digests and version coexistence. Signed
+runtime qualification and clinical scientific analysis are separate gates.
