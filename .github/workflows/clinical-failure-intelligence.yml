@@ -30,13 +30,13 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
-      - name: Install schema-test dependency only
-        run: python -m pip install jsonschema==4.25.1
+      - name: Install provider-free test dependencies
+        run: python -m pip install jsonschema==4.25.1 pytest==8.4.2
       - name: Syntax and provider-free suite
         working-directory: adapters/nusaibah/clinical_failure_intelligence
         run: |
           python -m compileall -q .
-          python -m unittest discover -s tests -p "test_*.py" -v
+          python -m pytest tests -q
       - name: Existing repository promotion-shape gate
         run: python -m unittest discover -s tests -p test_adapter_intake_contract.py -v
       - name: Retain scoped source for reproducible clinical qualification
