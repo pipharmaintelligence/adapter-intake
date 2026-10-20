@@ -29,11 +29,10 @@ class Version013Tests(unittest.TestCase):
         self.assertEqual(384,old_sources.MAX_WINDOWS)
         self.assertEqual(786432,old_sources.MAX_EVIDENCE_BYTES)
 
-    def test_new_entry_and_frozen_entry_coexist(self):
-        from clinical_failure_intelligence.clinical_failure_intelligence_adapter import ClinicalFailureIntelligenceAdapter as Old
-        from clinical_failure_intelligence.clinical_failure_intelligence_v0_1_3_adapter import ClinicalFailureIntelligenceAdapter as New
-        self.assertEqual('0.1.2',Old.version)
-        self.assertEqual('0.1.3',New.version)
+    def test_new_and_frozen_business_contracts_coexist_without_sdk_import(self):
+        from clinical_failure_intelligence import contracts_v0_1_3 as new_contracts
+        self.assertEqual('0.1.2',old_contracts.VERSION)
+        self.assertEqual('0.1.3',new_contracts.VERSION)
         self.assertEqual(512,sources.MAX_WINDOWS)
         self.assertEqual(1048576,sources.MAX_EVIDENCE_BYTES)
 
