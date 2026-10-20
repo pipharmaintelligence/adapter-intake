@@ -1,0 +1,55 @@
+{
+  "document_kind": "governed_agent_profile_requirements_not_adapter_authority",
+  "asset_key": "nusaibah.clinical_failure_intelligence",
+  "asset_version": "0.1.5",
+  "contract_version": "1.4.0",
+  "provider_family": "vertex_ai",
+  "model": "gemini-4-argon",
+  "roles": {
+    "trial_researcher": {
+      "thinking_level": "medium",
+      "max_tokens": 32000,
+      "grounded_search": true,
+      "timeout_seconds": 1200
+    },
+    "literature_researcher": {
+      "thinking_level": "medium",
+      "max_tokens": 32000,
+      "grounded_search": true,
+      "timeout_seconds": 1200
+    },
+    "event_researcher": {
+      "thinking_level": "medium",
+      "max_tokens": 32000,
+      "grounded_search": true,
+      "timeout_seconds": 1200
+    },
+    "outcome_adjudicator": {
+      "thinking_level": "high",
+      "max_tokens": 64000,
+      "grounded_search": false,
+      "timeout_seconds": 1200
+    },
+    "hypothesis_analyst": {
+      "thinking_level": "high",
+      "max_tokens": 64000,
+      "grounded_search": false,
+      "timeout_seconds": 1200
+    },
+    "evidence_critic": {
+      "thinking_level": "high",
+      "max_tokens": 64000,
+      "grounded_search": false,
+      "timeout_seconds": 1200
+    },
+    "product_memory_editor": {
+      "thinking_level": "low",
+      "max_tokens": 16000,
+      "grounded_search": false,
+      "timeout_seconds": 1200
+    }
+  },
+  "limits_authority": "model_capability_then_Core_policy_then_adapter_request",
+  "clinical_paid_execution_authorized": false,
+  "clinical_memory_writes_authorized": false
+}
