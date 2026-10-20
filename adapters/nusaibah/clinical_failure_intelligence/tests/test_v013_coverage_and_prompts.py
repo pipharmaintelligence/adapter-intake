@@ -21,8 +21,7 @@ class Version013Tests(unittest.TestCase):
         frozen=json.loads((ASSET_ROOT/'tests/reference/published_012_frozen.json').read_text())
         for name,sha in frozen['files'].items():
             with self.subTest(name=name):
-                # Git canonical bytes are LF on both supported operating systems.
-                self.assertEqual(sha,hashlib.sha256((ASSET_ROOT/name).read_text(encoding='utf-8').encode()).hexdigest())
+                self.assertEqual(sha,hashlib.sha256((ASSET_ROOT/name).read_bytes()).hexdigest())
         manifest=json.loads((ASSET_ROOT/'clinical_failure_intelligence.asset.json').read_text())
         self.assertEqual(frozen['manifest_contract'],manifest['versions']['0.1.2'])
         self.assertEqual('0.1.2',old_contracts.VERSION)

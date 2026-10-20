@@ -9,3 +9,7 @@ adapters/nusaibah/abstract_mcp_dlm/*.py text eol=lf
 adapters/nusaibah/pharma_company_intelligence_lab/*.py text eol=lf
 adapters/nusaibah/pharma_company_intelligence_lab/*.json text eol=lf
 adapters/nusaibah/pharma_company_intelligence_lab/*.md text eol=lf
+# Published clinical helpers must retain identical Git bytes on Windows and Linux.
+adapters/nusaibah/clinical_failure_intelligence/*.py text eol=lf
+adapters/nusaibah/clinical_failure_intelligence/*.json text eol=lf
+adapters/nusaibah/clinical_failure_intelligence/*.md text eol=lf
