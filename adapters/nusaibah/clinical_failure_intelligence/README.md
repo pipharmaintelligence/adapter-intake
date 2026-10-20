@@ -151,3 +151,26 @@ Validation includes the original provider-free suite, 0.1.2 file/contract byte
 pins, complete-window coverage, larger-input deferrals, bounded packets,
 structured variable injection, prompt digests and version coexistence. Signed
 runtime qualification and clinical scientific analysis are separate gates.
+
+## Clinical 0.1.4: execution-scoped input allowance
+
+This immutable version requires the optional `RuntimeInputs.agent_input_budget(role)`
+capability for paid analysis. The SDK subtracts admitted prompts, Skills and runtime
+framing from the Core-authorized input character allowance. The adapter compares its
+complete compact JSON packet against both that allowance and its existing 120,000-byte
+business-packet bound. Whole evidence windows and assertion/evidence closures are
+preserved; text is never truncated to fit.
+
+All declared allowances and known initial research/analysis packets are checked before
+the first model call, including optional discovery. A known infeasible initial call
+plan spends no model calls. Missing budgets and indivisible oversized closures are
+retained as deferred work, with the complete evidence ledger in the result. Later
+model-dependent packets are checked again before dispatch. Existing 32-call and
+completion reserves remain authoritative; the adapter never raises Core policy.
+
+The input allowance covers a single provider step's initial request. It does not
+promise capacity for unknown generated continuations. Ordered/mixed roles do not
+receive a static allowance. Policy changes remain subject to normal runtime guards.
+Publication, memory scope, evidence admission, quality rules, Gemini model selection,
+thinking levels and output-token limits are unchanged. Versions 0.1.2 and 0.1.3 retain
+their exact prior helpers, prompts and manifest contracts.
