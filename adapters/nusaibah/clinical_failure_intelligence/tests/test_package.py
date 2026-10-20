@@ -100,7 +100,7 @@ b=types.ModuleType('adapters.base');b.Adapter=type('Adapter',(),{})
 sys.modules['adapters']=a;sys.modules['adapters.base']=b
 m=importlib.import_module(sys.argv[2])
 classes=[x for x in vars(m).values() if isinstance(x,type) and getattr(x,'key',None)=='nusaibah.clinical_failure_intelligence']
-assert len(classes)==1 and classes[0].version=='0.1.3'
+assert len(classes)==1 and classes[0].version=='0.1.4'
 print('declared_import_closure_passed')
 """
             for package_mode in (True, False):

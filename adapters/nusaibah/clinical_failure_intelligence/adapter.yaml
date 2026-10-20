@@ -1,10 +1,30 @@
 asset_key: nusaibah.clinical_failure_intelligence
-asset_version: 0.1.3
+asset_version: 0.1.4
 package_target: python_runtime/adapters/intake/nusaibah/clinical_failure_intelligence
 manifest: clinical_failure_intelligence.asset.json
-adapter_module: clinical_failure_intelligence_v0_1_3_adapter.py
+adapter_module: clinical_failure_intelligence_v0_1_4_adapter.py
 
 reviewed_helpers:
+  - analysis_packets_v0_1_4.py
+  - clinical_failure_intelligence_v0_1_3_adapter.py
+  - cohort_v0_1_4.py
+  - contracts_v0_1_4.py
+  - decision_outcome_v0_1_4.py
+  - evidence_v0_1_4.py
+  - memory_v0_1_4.py
+  - orchestration_v0_1_4.py
+  - policies_v0_1_4.py
+  - product_memory_v0_1_4.py
+  - prompt_catalog_v0_1_4.py
+  - quality_v0_1_4.py
+  - rendering_v0_1_4.py
+  - research_sources_v0_1_4.py
+  - retained_sources_v0_1_4.py
+  - review_packets_v0_1_4.py
+  - runtime_access_v0_1_4.py
+  - source_bundle_v0_1_4.py
+  - source_events_v0_1_4.py
+  - source_workflow_v0_1_4.py
   - clinical_failure_intelligence_adapter.py
   - analysis_packets_v0_1_3.py
   - cohort_v0_1_3.py
@@ -47,9 +67,18 @@ reviewed_helpers:
   - source_events.py
 
 reviewed_support_files:
+  - admission_requirements_v0_1_4.json
   - admission_requirements_v0_1_3.json
   - admission_requirements.json
 optional_files:
+  - prompt_common_v0_1_4.md
+  - prompt_event_researcher_v0_1_4.md
+  - prompt_evidence_critic_v0_1_4.md
+  - prompt_hypothesis_analyst_v0_1_4.md
+  - prompt_literature_researcher_v0_1_4.md
+  - prompt_outcome_adjudicator_v0_1_4.md
+  - prompt_product_memory_editor_v0_1_4.md
+  - prompt_trial_researcher_v0_1_4.md
   - prompt_common_v0_1_3.md
   - prompt_trial_researcher_v0_1_3.md
   - prompt_literature_researcher_v0_1_3.md
