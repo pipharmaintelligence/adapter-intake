@@ -32,6 +32,11 @@ class HostTests(unittest.TestCase):
         self.stack=ExitStack();self.addCleanup(self.stack.close)
         try:
             import devtools.obs_api_client
+            # SDK 0.1.135 uses lazy exports. Earlier temporary-module fixtures
+            # may have restored sys.modules without parent attributes.
+            import devtools,importlib
+            for name in ('connection_check','asset_preflight','obs_api_client','preview_result_inspect'):
+                setattr(devtools,name,importlib.import_module('devtools.'+name))
         except ImportError:
             # Source-only CI deliberately installs no runtime SDK. These are
             # explicit transport doubles, not package or real-SDK qualification.
