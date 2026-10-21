@@ -222,6 +222,23 @@ def test_all_previous_published_bytes_contracts_and_model_policies_stay_exact():
     for a,b in zip(before['agent_contracts'],after['agent_contracts']):assert a['request_policy']==b['request_policy']
 
 
+def test_all_admitted_prompt_digests_match_generated_text_and_structured_variables():
+    from clinical_failure_intelligence.prompt_catalog_v0_1_7 import COMMON_PROMPT,PROMPTS,PROMPT_VERSION
+    assert PROMPT_VERSION=='1.5.0'
+    assert COMMON_PROMPT==(ASSET_ROOT/'prompt_common_v0_1_7.md').read_text(encoding='utf-8')
+    requirements=json.loads((ASSET_ROOT/'admission_requirements_v0_1_7.json').read_text())
+    for row in requirements['agent_contracts']:
+        role=row['role']
+        assert PROMPTS[role]==(ASSET_ROOT/row['prompt_file']).read_text(encoding='utf-8')
+        expected='sha256:'+hashlib.sha256((COMMON_PROMPT+'\n\n'+PROMPTS[role]).encode('utf-8')).hexdigest()
+        assert row['prompt_digest']==expected and row['contract_version']==PROMPT_VERSION
+    runner=AgentRunner(Inputs(),Budget())
+    packet=runner.packet('hypothesis_analyst',parse_request(example_inputs()),task_id='SAFE_ID',obligations=['seed:SEED_SYN'],packet_data={'evidence_packet':[{'text':'Untrusted {braces} and "quotes" stay data.'}]})
+    assert packet['task_context']['product_id']=='PRODUCT_SYN'
+    assert packet['response_contract']['json_schema']['properties']['task_id']=={'const':'SAFE_ID'}
+    assert packet['evidence_packet'][0]['text']=='Untrusted {braces} and "quotes" stay data.'
+
+
 def test_two_complete_v017_product_adapters_keep_subjects_memory_and_outputs_separate():
     admission = threading.BoundedSemaphore(2)
     arrivals = threading.Barrier(2)
