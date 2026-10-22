@@ -62,10 +62,10 @@ class IsolatedChunkTests(unittest.TestCase):
         try:from devtools.isolated_adapter_runner import _materialized_adapter,_sha256
         except ImportError:self.skipTest('real SDK isolation mechanism unavailable in stubs')
         module=ROOT/'nusaibah_pharma_company_intelligence_lab_v0_1_36_adapter.py'
-        from devtools.adapter_catalog import _local_support_files
+        from isolation_support import fixture_support_files
         config={'module_hash':_sha256(module),
             'support_files':[{'path':str(p),'sha256':_sha256(p)}
-                for p in _local_support_files(module)]}
+                for p in fixture_support_files(module, 'test_automatic_enrichment_v0_1_27')]}
         with _materialized_adapter(module,config) as isolated:
             shutil.copytree(ROOT/'tests',isolated.parent/'tests',ignore=shutil.ignore_patterns('__pycache__','stubs'))
             tool=isolated.parent/'tests/_fixture_toolkit';tool.mkdir()
