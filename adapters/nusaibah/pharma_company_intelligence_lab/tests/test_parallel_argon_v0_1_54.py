@@ -103,6 +103,37 @@ class ParallelAllowanceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             PreviousCoordinator(parallelism=4)
 
+    def test_first_review_fault_is_injected_even_if_a_later_batch_finishes_first(self):
+        from test_durable_batched_v0_1_51 import BatchedInputs
+        entered = Event()
+        release = Event()
+        class ControlledInputs(BatchedInputs):
+            def _single_invoke(self, role, *, input, on_error='raise'):
+                if input['fixture_marker'] == 'first':
+                    entered.set()
+                    if not release.wait(timeout=10):
+                        raise AssertionError('fixture release timed out')
+                return {'result': {'content': [{'type': 'json', 'value': {'company_id': 13}}]}}
+        source = ControlledInputs()
+        source.review_fault = 'duplicate'
+        def payload(marker):
+            return {'company_id': 13, 'review_batch': {
+                'shared_review_fields': {'fixture_marker': marker},
+                'review_packets': [{'packet_id': marker, 'fields': {}}]}}
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            first = executor.submit(source.invoke_agent, legacy.CRITIC_ROLE, input=payload('first'))
+            try:
+                self.assertTrue(entered.wait(timeout=10))
+                second = executor.submit(source.invoke_agent, legacy.CRITIC_ROLE, input=payload('second'))
+                second_result = second.result(timeout=10)
+                self.assertEqual(1, len(second_result['result']['content'][0]['value']['reviews']))
+            finally:
+                release.set()
+            first_result = first.result(timeout=10)
+        reviews = first_result['result']['content'][0]['value']['reviews']
+        self.assertEqual(2, len(reviews))
+        self.assertEqual(['first', 'first'], [row['packet_id'] for row in reviews])
+
 
 class AllRoleArgonContractTests(unittest.TestCase):
     def test_model_migration_changes_only_models_and_affected_contract_versions(self):
