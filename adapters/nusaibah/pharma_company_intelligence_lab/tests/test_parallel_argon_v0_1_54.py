@@ -163,7 +163,7 @@ class AllRoleArgonContractTests(unittest.TestCase):
                 self.assertEqual(old['contract_version'], agent['contract_version'])
         self.assertEqual(7, len(migrated))
         self.assertEqual(previous, current)
-        self.assertEqual('0.1.54', manifest['default'])
+        self.assertEqual('0.1.55', manifest['default'])
         dependencies = json.loads((ROOT / 'adapter.dependencies.json').read_text())
         self.assertEqual('0.1.137', dependencies['runtime_package']['minimum_version'])
 
