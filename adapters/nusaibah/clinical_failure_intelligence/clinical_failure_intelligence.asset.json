@@ -1621,6 +1621,11 @@
           "contract_key": "agent.nusaibah.clinical_failure_intelligence_product_memory_editor",
           "contract_version": "1.6.0",
           "reference": "agent://contracts/nusaibah.clinical-failure-intelligence-product-memory-editor"
+        },
+        "input_reconciler": {
+          "contract_key": "agent.nusaibah.clinical_failure_intelligence_input_reconciler",
+          "contract_version": "1.6.0",
+          "reference": "agent://contracts/nusaibah.clinical-failure-intelligence-input-reconciler"
         }
       },
       "public_web": {

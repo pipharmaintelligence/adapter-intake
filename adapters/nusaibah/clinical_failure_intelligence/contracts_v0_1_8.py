@@ -16,7 +16,7 @@ SCHEMA = "clinical_failure_intelligence.v1"
 REQUEST_SCHEMA = "clinical_analysis_request.v1"
 ROLE_SCHEMA = "clinical_agent_response.v1"
 RESEARCH_ROLES = ("trial_researcher", "literature_researcher", "event_researcher")
-ROLES = (*RESEARCH_ROLES, "outcome_adjudicator", "hypothesis_analyst", "evidence_critic", "product_memory_editor")
+ROLES = (*RESEARCH_ROLES, "outcome_adjudicator", "hypothesis_analyst", "evidence_critic", "product_memory_editor", "input_reconciler")
 REASON_CODES = frozenset({"efficacy", "safety_tolerability", "pk_pd_exposure_dose",
     "target_moa_biology", "design_statistics_endpoint", "recruitment_execution",
     "manufacturing_quality", "regulatory_benefit_risk", "strategic_commercial", "undetermined"})

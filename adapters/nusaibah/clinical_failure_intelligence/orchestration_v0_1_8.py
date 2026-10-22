@@ -133,7 +133,7 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
             "deferred": sum(row is not None for row in prepared),
             "concurrency_limit": budget.policy.research_concurrency})
         with ThreadPoolExecutor(max_workers=min(budget.policy.research_concurrency, len(specifications))) as pool:
-            pending = [pool.submit(runner.call, request=request, **spec) if row is None else row
+            pending = [pool.submit(runner.call, request=request, **spec) if row is None or row.code=='clinical_packet_requires_partitioning' else row
                        for spec, row in zip(specifications, prepared)]
             return [row.result() if not isinstance(row, StageResult) else row for row in pending]
 
@@ -318,6 +318,32 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
             if error.code not in {"clinical_candidate_batch_invalid", "clinical_item_duplicate"}:
                 raise
             items, errors = [], [{"stage_id": stage.task_id, "code": error.code}]
+        original_errors=deepcopy(errors)
+        repairable={'clinical_fields_invalid','clinical_text_invalid','clinical_outcome_value_invalid','clinical_hypothesis_plan_invalid'}
+        rejected=[rows[row['item_index']] for row in errors if row.get('code') in repairable and
+            isinstance(row.get('item_index'),int) and isinstance(rows[row['item_index']],dict) and
+            isinstance(rows[row['item_index']].get('item_id'),str)] if isinstance(rows,list) else []
+        if rejected:
+            selected_refs={ref for row in rejected for field in ('supporting_evidence_ids','contradicting_evidence_ids')
+                for ref in (row.get(field,[]) if isinstance(row.get(field,[]),list) else []) if isinstance(ref,str)}
+            fixed=correct_business(runner,request,stage,
+                packet_data={**common,'evidence_packet':agent_evidence_view([row for row in ledger.rows() if row['evidence_id'] in selected_refs])},
+                obligations=['correct_item:'+row['item_id'] for row in rejected],rejected_items=rejected,
+                errors=[row for row in errors if row.get('code') in repairable],downstream_reserve=3)
+            if fixed is not None:
+                stages.append(fixed)
+                allowed={row['item_id'] for row in rejected}
+                revised=fixed.payload['items'] if fixed.payload else []
+                valid_scope=all(isinstance(row,dict) and row.get('item_id') in allowed and
+                    all(isinstance(row.get(field),list) and all(isinstance(ref,str) and ref in selected_refs for ref in row[field])
+                        for field in ('supporting_evidence_ids','contradicting_evidence_ids')) for row in revised)
+                repaired,remaining=normalize_items(revised,kind,request,ledger) if valid_scope else ([],[{'code':'clinical_business_correction_scope_invalid'}])
+                repaired_ids={row['item_id'] for row in repaired};items.extend(repaired)
+                errors=[row for row in errors if not isinstance(row.get('item_index'),int) or
+                    not isinstance(rows[row['item_index']],dict) or rows[row['item_index']].get('item_id') not in repaired_ids]
+                errors.extend(remaining)
+                fixed.semantic_metadata['business_correction_receipt']={'original_task_id':stage.task_id,
+                    'original_errors':original_errors,'repaired_item_ids':sorted(repaired_ids)}
         issues.extend(errors)
         return items
 
@@ -534,7 +560,9 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
                             "Model-assessed semantic review requires domain quality evaluation"],
             "required_roles_completed": {role: any(stage.role == role for stage in stages) and all(stage.status == "completed" for stage in stages if stage.role == role)
                                          for role in (*RESEARCH_ROLES, "outcome_adjudicator", "hypothesis_analyst", "evidence_critic")}},
-        "execution": {"stages": [stage.summary() for stage in stages], "phase_plans": phase_plans, **budget.proof(),
+        "execution": {"stages": [stage.summary() for stage in stages], "phase_plans": phase_plans,
+            "input_reconciliation": {'stages':[stage.summary() for stage in runner.reconciliation_stages],
+                'receipts':deepcopy(runner.reconciliation_receipts),'source_text_changed':False}, **budget.proof(),
             "resume": {"available": False, "reason": "durable_stage_retention_not_qualified"}},
         "memory_update": product_plan,
         "persistence": {"status": "not_attested", "receipt": None},

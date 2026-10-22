@@ -7,6 +7,7 @@ adapter_module: clinical_failure_intelligence_v0_1_8_adapter.py
 reviewed_helpers:
   - analysis_packets_v0_1_8.py
   - business_recovery_v0_1_8.py
+  - input_reconciliation_v0_1_8.py
   - case_context_v0_1_8.py
   - clinical_failure_intelligence_v0_1_7_adapter.py
   - cohort_v0_1_8.py
@@ -162,6 +163,7 @@ reviewed_support_files:
   - admission_requirements.json
 optional_files:
   - prompt_common_v0_1_8.md
+  - prompt_input_reconciler_v0_1_8.md
   - prompt_event_researcher_v0_1_8.md
   - prompt_evidence_critic_v0_1_8.md
   - prompt_hypothesis_analyst_v0_1_8.md

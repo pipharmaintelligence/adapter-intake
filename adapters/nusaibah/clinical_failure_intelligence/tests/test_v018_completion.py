@@ -16,6 +16,16 @@ from clinical_failure_intelligence.evidence_v0_1_8 import EvidenceLedger
 
 
 class Inputs(FakeInputs):
+    def role_payload(self,role,packet):
+        value=super().role_payload(role,packet)
+        if role=='input_reconciler':
+            context=packet['input_reconciliation'];ids=context['affected_item_ids']
+            partition=context['mode']=='partition_input'
+            value['items']=[{'original_task_id':context['original_task_id'],'target_role':context['target_role'],
+                'action':'partition_input' if partition else 'prepare_retry','affected_item_ids':ids,
+                'evidence_ids':[],'groups':[[key] for key in ids] if partition else [],'prepared_items':[],
+                'rationale':'Use the exact supplied source digest and literal text; preserve original support polarity.'}]
+        return value
     def agent_input_budget(self,role):
         return {'schema_version':'agent_input_budget.v1','scope':'single_step_initial_request',
                 'max_input_json_chars':160000,'max_input_json_bytes':262144}

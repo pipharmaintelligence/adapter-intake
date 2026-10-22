@@ -16,6 +16,8 @@ class ExecutionPolicy:
     """Reviewed local work bounds, not a replacement for runtime I/O deadlines."""
     max_agent_calls: int = 64
     max_business_repairs: int = 4
+    max_reconciliation_agent_calls: int = 8
+    max_reconciliation_partitions: int = 2
     research_concurrency: int = 20
     deadline_seconds: float = 48300.0
     completion_reserve_seconds: float = 300.0
@@ -57,7 +59,8 @@ class Budget:
         require(type(p.research_concurrency) is int and 1 <= p.research_concurrency <= 20,
                 "clinical_concurrency_invalid")
         for value, minimum, maximum in ((p.max_agent_calls, 1, 64),
-                (p.max_reference_reads, 0, 16), (p.max_packet_bytes, 1024, 262144),
+                (p.max_reference_reads, 0, 16), (p.max_business_repairs, 0, 4),
+                (p.max_reconciliation_agent_calls, 0, 8), (p.max_reconciliation_partitions, 1, 2), (p.max_packet_bytes, 1024, 262144),
                 (p.max_task_items, 1, 32), (p.max_reflection_rounds, 0, 1),
                 (p.max_reflection_tasks, 0, 2), (p.max_reflection_agent_calls, 0, 4),
                 (p.max_search_queries, 0, 6), (p.max_search_queries_per_role, 0, 2)):
@@ -81,11 +84,12 @@ class Budget:
         self._reflection_tasks = set()
         self.search_queries = {}
         self.business_repairs = 0
+        self.reconciliation_calls = 0
         self._business_repair_keys = set()
 
     def reserve(self, *, kind: str = "agent", minimum_calls_remaining: int = 0) -> None:
         """Reserve before dispatch; every research chunk shares these counters."""
-        require(kind in {"agent", "reference"} and type(minimum_calls_remaining) is int
+        require(kind in {"agent", "reference", "reconciliation"} and type(minimum_calls_remaining) is int
                 and minimum_calls_remaining >= 0, "clinical_reservation_invalid")
         with self.lock:
             p = self.policy
@@ -101,6 +105,10 @@ class Budget:
                     raise DeferredWork('clinical_reflection_call_budget_exhausted')
                 if self.calls + 1 + minimum_calls_remaining > p.max_agent_calls:
                     raise DeferredWork("clinical_agent_budget_reserved")
+                if kind == 'reconciliation':
+                    if self.reconciliation_calls >= p.max_reconciliation_agent_calls:
+                        raise DeferredWork('clinical_reconciliation_call_budget_exhausted')
+                    self.reconciliation_calls += 1
                 self.calls += 1
                 if self._reflection_active:
                     self.reflection_calls += 1
@@ -158,10 +166,13 @@ class Budget:
                     "refinement_rounds": self.refinements, "model_repair_calls": self.repairs,
                     "reflection_agent_calls": self.reflection_calls,
                     "business_correction_tasks": self.business_repairs,
+                    "reconciliation_agent_calls": self.reconciliation_calls,
                     "reflection_tasks": len(self._reflection_tasks),
                     "grounded_search_tasks": sum(self.search_queries.values()),
                     "execution_limits": {"agent_calls": self.policy.max_agent_calls,
                         "business_correction_tasks": self.policy.max_business_repairs,
+                        "reconciliation_agent_calls": self.policy.max_reconciliation_agent_calls,
+                        "reconciliation_partitions": self.policy.max_reconciliation_partitions,
                         "research_concurrency": self.policy.research_concurrency,
                         "agent_concurrency": self.policy.research_concurrency,
                         "reflection_rounds": self.policy.max_reflection_rounds,

@@ -8,7 +8,7 @@
       "contract_key": "agent.nusaibah.clinical_failure_intelligence_trial_researcher",
       "contract_version": "1.6.0",
       "prompt_version": "1.6.0",
-      "prompt_digest": "sha256:df23374b2c24072a6bcbafec9673b61def4b1eab4ddbce7df574291893d27b0b",
+      "prompt_digest": "sha256:18edd77b2828ad27c2195116e52d8741dc0cb079a591ff6441d3ab2d1036e6b6",
       "prompt_file": "prompt_trial_researcher_v0_1_8.md",
       "provider_binding_status": "not_selected",
       "role_admission_status": "not_admitted",
@@ -38,7 +38,7 @@
       "contract_key": "agent.nusaibah.clinical_failure_intelligence_literature_researcher",
       "contract_version": "1.6.0",
       "prompt_version": "1.6.0",
-      "prompt_digest": "sha256:162613732f5a654841ff186abe4bdcc388120a5f4886285b2699977140af52e6",
+      "prompt_digest": "sha256:2858ea009c8f41c590689156ad0482d7ab53b02544b8d53626512be62ae46785",
       "prompt_file": "prompt_literature_researcher_v0_1_8.md",
       "provider_binding_status": "not_selected",
       "role_admission_status": "not_admitted",
@@ -68,7 +68,7 @@
       "contract_key": "agent.nusaibah.clinical_failure_intelligence_event_researcher",
       "contract_version": "1.6.0",
       "prompt_version": "1.6.0",
-      "prompt_digest": "sha256:0782f0698bbae2f2fd1f7b0285aa37ee1d8524f5af67627cd6cac2502c947bcb",
+      "prompt_digest": "sha256:690284e1e3e2e2cf24c6b407925e1be19ee58a228f0299b84915df6a4428f4a6",
       "prompt_file": "prompt_event_researcher_v0_1_8.md",
       "provider_binding_status": "not_selected",
       "role_admission_status": "not_admitted",
@@ -98,7 +98,7 @@
       "contract_key": "agent.nusaibah.clinical_failure_intelligence_outcome_adjudicator",
       "contract_version": "1.6.0",
       "prompt_version": "1.6.0",
-      "prompt_digest": "sha256:811b81372e99e8f417491063989966128e33360689a8cf967acc0a27106b673f",
+      "prompt_digest": "sha256:2cd7613c593b3899d7cfd71f224afec5514fb708f5bc348adb8a07603511b969",
       "prompt_file": "prompt_outcome_adjudicator_v0_1_8.md",
       "provider_binding_status": "not_selected",
       "role_admission_status": "not_admitted",
@@ -126,7 +126,7 @@
       "contract_key": "agent.nusaibah.clinical_failure_intelligence_hypothesis_analyst",
       "contract_version": "1.6.0",
       "prompt_version": "1.6.0",
-      "prompt_digest": "sha256:8dca62cef49a0c170f7aac6501f9f52355937c8339bf6c59c2ddcaf9fc472368",
+      "prompt_digest": "sha256:61ec60afd2ab489f3ff1a940577c85a001eaaa7ccc05ca954861debfb529f806",
       "prompt_file": "prompt_hypothesis_analyst_v0_1_8.md",
       "provider_binding_status": "not_selected",
       "role_admission_status": "not_admitted",
@@ -154,7 +154,7 @@
       "contract_key": "agent.nusaibah.clinical_failure_intelligence_evidence_critic",
       "contract_version": "1.6.0",
       "prompt_version": "1.6.0",
-      "prompt_digest": "sha256:bbbf3cb83886e2c16044bdd94d0c65ae02ada82b41c29741418b8b8eb7938c48",
+      "prompt_digest": "sha256:1eab328aefa27851c41707fea176ad9487ce30b6dfe0a1a42573a970fb566dc7",
       "prompt_file": "prompt_evidence_critic_v0_1_8.md",
       "provider_binding_status": "not_selected",
       "role_admission_status": "not_admitted",
@@ -187,7 +187,7 @@
       "capabilities_required": [],
       "prompt_version": "1.6.0",
       "model_admission_status": "not_verified",
-      "prompt_digest": "sha256:3f1c5ab62917bc0ff68fbeee748219dc00b1a3e07dcb66b86ad38b1963b8e515",
+      "prompt_digest": "sha256:003d94a35ed6dd47810fb33c029713453bf16bd9f1bd4dcedb7aff5fdf138c80",
       "reasoning_policy": {
         "level": "low",
         "authority": "admitted_runtime_profile",
@@ -202,6 +202,34 @@
         "timeout_seconds": 1200,
         "max_tokens": 16000,
         "thinking_level": "low",
+        "authority": "admitted_runtime_profile"
+      }
+    },
+    {
+      "role": "input_reconciler",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_input_reconciler",
+      "contract_version": "1.6.0",
+      "prompt_version": "1.6.0",
+      "prompt_digest": "sha256:e6f562620ec2479d820e939c1d1e778fcfafaf79510d1dc5c1b89a66d4178bfa",
+      "prompt_file": "prompt_input_reconciler_v0_1_8.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [],
+      "model_admission_status": "not_verified",
+      "reasoning_policy": {
+        "level": "high",
+        "authority": "admitted_runtime_profile",
+        "private_reasoning_trace_requested": false
+      },
+      "grounded_search_policy": {
+        "enabled": false,
+        "source_text_requires_trusted_inspection": true
+      },
+      "request_policy": {
+        "model": "gemini-4-argon",
+        "timeout_seconds": 1200,
+        "max_tokens": 16000,
+        "thinking_level": "high",
         "authority": "admitted_runtime_profile"
       }
     }
@@ -324,7 +352,10 @@
     "max_reflection_tasks": 2,
     "max_reflection_agent_calls": 4,
     "max_search_queries": 6,
-    "max_search_queries_per_role": 2
+    "max_search_queries_per_role": 2,
+    "max_business_repairs": 4,
+    "max_reconciliation_agent_calls": 8,
+    "max_reconciliation_partitions": 2
   },
   "parallel_execution_requirements": {
     "agent_parallelism": {
@@ -337,5 +368,14 @@
     "shared_capacity_required": true,
     "capacity_owner": "DLM_Core",
     "live_qualification": "not_performed"
+  },
+  "input_reconciliation": {
+    "role": "input_reconciler",
+    "optional_at_runtime": true,
+    "trigger": "eligible_input_errors_or_packet_size_deferral",
+    "scope": "one_affected_fragment",
+    "passes_per_original_task": 1,
+    "source_mutation": false,
+    "scientific_acceptance_authority": false
   }
 }

@@ -17,7 +17,7 @@ Before returning, check the assigned obligations, identity, provided evidence, c
 
 The coordinator permits at most one critic-directed reflection round, at most two targeted gap tasks and four extra Agent calls in total. Ask only a specific question that could change an identified conclusion. Do not repeat an unchanged query or restart all research. Keep useful findings when a sibling is unresolved. Exhausted time, calls or evidence means an explicit partial result, not an invented answer.
 
-Product-memory learning permits one scoped delta proposal and one independent edit review per assessment. It is a proposal until the separately authorized runtime confirms a commit and readback. Never perform recursive self-rewriting or promote an unreviewed hypothesis into learned fact.
+Product-memory learning permits one aggregate scoped delta preview per assessment, partitioned into complete editorial batches with an independent review for each proposed edit. Repeated input preparation is not permission for an extra aggregate memory update. It is a proposal until the separately authorized runtime confirms a commit and readback. Never perform recursive self-rewriting or promote an unreviewed hypothesis into learned fact.
 
 Grounded search is restricted to research roles and specific missing evidence or contradictions. Provider-native citations are discovery leads until trusted reference inspection returns actual text. Prefer registry, original indexed study, regulator and dated sponsor evidence. Search snippets, broad domain reputation and terminology matches are insufficient. Return concise evidence-linked rationale, not private reasoning traces. Model thinking parameters and provider permissions belong to the admitted runtime profile.
 
@@ -39,3 +39,34 @@ Each independent packet is one contribution to a complete case. Preserve every s
 
 ## JSON serialization
 Return one complete JSON object. Escape quotation marks, backslashes and literal control characters inside JSON strings. Keep Unicode symbols, units and exact scientific quotations unchanged as string values. Do not emit trailing separators, prose, Markdown fences, truncated objects or duplicate object keys. The response_contract is data describing the exact task, not a response to echo.
+
+
+## Fragment-only input reconciliation and retry
+input_reconciler is a separate optional Gemini-4 input-preparation role. It sees one
+affected fragment or an immutable unit inventory, never the full clinical workflow.
+Its proposal does not approve evidence, decide scientific acceptance, change the
+subject, or authorize additional source access. Inventory IDs identify complete
+input units; they are not read scientific source text or citable support.
+
+When input_reconciliation_retry and business_correction are supplied to your
+original role, process only the listed rejected claim/item/edit identities. Recheck
+the proposed preparation against the supplied original fragment, complete source
+windows and your original role contract. Preserve valid siblings by not returning
+them. Echo the assigned task and obligations exactly. Candidate input may contain
+an invalid enum, malformed field or citation: correct it only from supplied support;
+do not reinterpret its scientific statement to force success. prepared_fragment and
+guidance are unapproved suggestions, not authority to introduce facts or citations.
+If a valid correction is unavailable, return an unresolved obligation rather than
+inventing a quote, result, identity, scope or certainty.
+
+For an input_reconciliation_retry partition, work only on the assigned complete
+units and provided closure. Do not claim to have reviewed other partitions. The
+coordinator validates and joins every part; no unit can be dropped, text-sliced or
+rewritten to fit. The source record remains immutable. The ordinary independent
+scientific or edit critic is still required after successful preparation.
+
+At most one reconciliation pass is allowed per original task, four affected tasks
+and eight total reconciliation/retry invocations per run, within the existing
+64-call budget and deadline. There is no recursive correction loop. Authentication,
+policy/security rejection, missing admission, exhausted resources and unknown
+dispatch outcomes cannot be fixed by this role and do not authorize a provider retry.

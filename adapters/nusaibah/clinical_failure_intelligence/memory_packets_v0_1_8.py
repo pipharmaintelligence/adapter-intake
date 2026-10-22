@@ -7,9 +7,13 @@ claims or re-certify unseen raw windows. Full sources remain in the result ledge
 from copy import deepcopy
 if __package__:
     from .contracts_v0_1_8 import ContractError,digest,require
+    from .business_recovery_v0_1_8 import correct_business
+    from .input_reconciliation_v0_1_8 import ELIGIBLE_ERRORS
     from .product_memory_v0_1_8 import memory_projection,editor_contract,validate_edit_candidates,review_edit_plan
 else:
     from contracts_v0_1_8 import ContractError,digest,require
+    from business_recovery_v0_1_8 import correct_business
+    from input_reconciliation_v0_1_8 import ELIGIBLE_ERRORS
     from product_memory_v0_1_8 import memory_projection,editor_contract,validate_edit_candidates,review_edit_plan
 
 
@@ -54,6 +58,29 @@ def preview_memory(runner,request,memory,items,evidence,stages,issues):
             stages.append(editor)
             complete=complete and editor.status=='completed'
             raw=deepcopy(editor.payload['items']) if editor.payload else []
+            try:
+                validate_edit_candidates(raw,memory,batch)
+            except ContractError as original_error:
+                if original_error.code not in ELIGIBLE_ERRORS:raise
+                rejected,errors,good=[],[],[]
+                for row in raw:
+                    try:validate_edit_candidates([row],memory,batch)
+                    except ContractError as error:
+                        if error.code not in ELIGIBLE_ERRORS or not isinstance(row,dict) or not isinstance(row.get('edit_id'),str):raise
+                        rejected.append(row);errors.append({'code':error.code,'edit_id':row['edit_id']})
+                    else:good.append(row)
+                fixed=correct_business(runner,request,editor,packet_data=data,
+                    obligations=['correct_edit:'+row['edit_id'] for row in rejected],
+                    rejected_items=rejected,errors=errors,downstream_reserve=1+2*(len(batches)-index-1))
+                if fixed is None:raise original_error
+                stages.append(fixed);complete=complete and fixed.status=='completed'
+                revised=fixed.payload['items'] if fixed.payload else []
+                allowed={row['edit_id'] for row in rejected}
+                require(all(isinstance(row,dict) and row.get('edit_id') in allowed for row in revised),
+                    'clinical_business_correction_scope_invalid')
+                require({row['edit_id'] for row in revised}==allowed,'clinical_memory_correction_incomplete')
+                raw=good+deepcopy(revised)
+                validate_edit_candidates(raw,memory,batch)
             for row in raw:
                 row['edit_id']='edit:'+str(index)+':'+digest(row['edit_id']).split(':')[1][:24]
             selected=validate_edit_candidates(raw,memory,batch)
