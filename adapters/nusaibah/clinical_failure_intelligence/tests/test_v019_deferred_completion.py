@@ -181,3 +181,45 @@ def test_exact_jsonl_self_inspection_checks_core_schema_hash_and_nested_rules(tm
     assert inspect_staged_payload(path,corrupt)['status']=='failed'
     path.write_text('',encoding='utf-8')
     assert inspect_staged_payload(path,contract)['status']=='failed'
+
+
+@pytest.mark.parametrize('reserved,downstream,expected',[(2,4,2),(0,2,2)])
+def test_critic_recovery_consumes_only_its_own_reserved_calls(monkeypatch,reserved,downstream,expected):
+    from clinical_failure_intelligence import input_reconciliation_v0_1_9 as recovery
+    observed=[]
+    def recover(runner,request,stage,**kwargs):
+        observed.append(kwargs['downstream_reserve']);return stage
+    monkeypatch.setattr(recovery,'recover_partition',recover)
+    runner=AgentRunner(Inputs(),Budget());runner.prepare_input_budgets()
+    data={'candidate_items':[{'item_id':'C1','depends_on':[],'supporting_evidence_ids':['E1'],'contradicting_evidence_ids':[]}],
+        'evidence_packet':[{'evidence_id':'E1','text':'Whole source. '*20000}],
+        'review_recovery_reserved_calls':reserved}
+    stage=runner.call('evidence_critic',parse_request(example_inputs()),task_id='OVERSIZE',obligations=['review:C1'],packet_data=data,downstream_reserve=downstream)
+    assert stage.code=='clinical_packet_requires_partitioning' and observed==[expected]
+
+
+def test_461_window_pipeline_retains_all_sources_and_runs_bounded_019_review():
+    from test_source_bundle import case_inputs,bundle,entry,trial_result
+    class Large(Inputs):
+        def role_payload(self,role,packet):
+            value=super().role_payload(role,packet)
+            if role.endswith('researcher'):value['items']=[]
+            elif role=='outcome_adjudicator':
+                for item in value['items']:
+                    item['supporting_evidence_ids']=[packet['evidence_packet'][0]['evidence_id']]
+                    item['trial_ids']=['NCT00000001']
+            elif role=='hypothesis_analyst':
+                value['items'][0]['supporting_evidence_ids']=[packet['evidence_packet'][0]['evidence_id']]
+                value['items'][0]['depends_on']=[packet['case_assessments'][0]['item_id']]
+            return value
+    data=case_inputs();data['clinical_context']['evidence']=[]
+    trial=trial_result();trial['records'][0]['registry_study']['resultsSection']['outcomeMeasuresModule']['outcomeMeasures']=[
+        {'sequence':index,'observation':'Whole synthetic source window. '*25} for index in range(455)]
+    data['clinical_evidence']=bundle(entry(trial));inputs=Large(data)
+    value=run_analysis(inputs)['outputs']['clinical_intelligence']
+    assert value['asset'].endswith('@0.1.9') and len(value['evidence'])==461
+    assert value['execution']['logical_agent_calls']<=64
+    assert all(value['quality']['required_roles_completed'].values())
+    assert not any(row.get('code')=='clinical_packet_requires_partitioning' for row in value['execution']['stages'])
+    assert value['memory_update']['write_attempted'] is False
+    assert all(len(canonical_bytes(packet))<=262144 and len(canonical_bytes(packet).decode())<=160000 for role,packet in inputs.calls)

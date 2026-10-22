@@ -180,7 +180,7 @@ class AgentRunner:
             stage = self._call_once(role, request, task_id, obligations, packet, key, downstream_reserve)
             if role == 'input_reconciler' or packet_data.get('input_reconciliation_retry'):
                 return stage  # One reconciliation pass, never recursive JSON or input repair.
-            recovery_floor = max(0,downstream_reserve-2) if role=='evidence_critic' and packet.get('reference_aliases') else downstream_reserve
+            recovery_floor = max(0,downstream_reserve-packet_data.get('review_recovery_reserved_calls',0)) if role=='evidence_critic' and packet.get('reference_aliases') else downstream_reserve
             if stage.code == 'clinical_packet_requires_partitioning':
                 if __package__:
                     from .input_reconciliation_v0_1_9 import recover_partition

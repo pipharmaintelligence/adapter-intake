@@ -401,11 +401,12 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
                 packet_data=data))) if items else [{
                 **common, "candidate_items": [], "evidence_packet": [], "cohort_statistics": statistics}]
         verdicts, followups, critic_stages = [], [], []
+        recovery_reserved = 2 if budget.policy.max_reconciliation_agent_calls-budget.reconciliation_calls>=2 else 0
         critic_specs = [{"role": "evidence_critic",
             "task_id": "review:"+str(iteration)+((":"+str(index)) if len(packets)>1 else ""),
             "obligations": ["review:"+x["item_id"] for x in packet["candidate_items"]] or ["no_candidate_review"],
-            "downstream_reserve": (2 if memory["status"]!="not_requested" else 0) + (2 if budget.policy.max_reconciliation_agent_calls-budget.reconciliation_calls>=2 else 0),
-            "packet_data": packet} for index, packet in enumerate(packets)]
+            "downstream_reserve": (2 if memory["status"]!="not_requested" else 0) + recovery_reserved,
+            "packet_data": {**packet,"review_recovery_reserved_calls":recovery_reserved}} for index, packet in enumerate(packets)]
         for spec,stage in zip(critic_specs,parallel_calls(critic_specs)):
             stages.append(stage)
             critic_stages.append(stage)
@@ -423,7 +424,7 @@ def run_analysis(inputs: Any, *, policy: ExecutionPolicy | None = None) -> dict:
                     packet_data={**spec['packet_data'],'candidate_items':bad_candidates},
                     obligations=['review:'+row['item_id'] for row in bad_candidates],rejected_items=rejected,
                     errors=[{'code':'clinical_critic_evidence_mismatch','item_id':row['item_id']} for row in rejected],
-                    downstream_reserve=max(0,spec['downstream_reserve']-2))
+                    downstream_reserve=max(0,spec['downstream_reserve']-spec['packet_data']['review_recovery_reserved_calls']))
                 if fixed is not None:
                     stages.append(fixed)
                     if fixed.payload:
