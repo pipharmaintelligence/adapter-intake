@@ -6,6 +6,7 @@ from hashlib import sha256
 from pathlib import Path
 import socket
 import sys
+from threading import Lock
 import unittest
 from unittest.mock import patch
 
@@ -26,6 +27,7 @@ class BatchedInputs(DraftInputs):
     def __init__(self):
         super().__init__()
         self.batch_calls=[]
+        self.batch_call_lock=Lock()
     def dynamic_skill(self,role,*,variables):
         handle=super().dynamic_skill(role,variables=variables)
         original=handle.apply
@@ -43,17 +45,19 @@ class BatchedInputs(DraftInputs):
     def invoke_agent(self,role,*,input,on_error='raise'):
         if role!=legacy.CRITIC_ROLE or 'review_batch' not in input:
             return self._single_invoke(role,input=input,on_error=on_error)
-        self.batch_calls.append(deepcopy(input))
+        with self.batch_call_lock:
+            self.batch_calls.append(deepcopy(input))
+            batch_ordinal=len(self.batch_calls)
         batch=input['review_batch'];reviews=[];envelope=None
         for index,piece in enumerate(batch['review_packets']):
             original=expand(batch['shared_review_fields'],piece['fields'])
             response=self._single_invoke(role,input=original,on_error=on_error)
             envelope=envelope or deepcopy(response)
             review=deepcopy(response['result']['content'][0]['value'])
-            if self.corrupt_piece and len(self.batch_calls)==1 and index==0:
+            if self.corrupt_piece and batch_ordinal==1 and index==0:
                 review['company_id']=999999
             reviews.append({'packet_id':piece['packet_id'],'review':review})
-        if self.review_fault and len(self.batch_calls)==1:
+        if self.review_fault and batch_ordinal==1:
             if self.review_fault=='missing':reviews.pop(0)
             elif self.review_fault=='duplicate':reviews.append(deepcopy(reviews[0]))
             elif self.review_fault=='unknown':reviews[0]['packet_id']='unknown_piece'
