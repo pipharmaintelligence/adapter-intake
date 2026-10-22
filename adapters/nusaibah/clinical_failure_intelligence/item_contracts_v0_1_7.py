@@ -1,4 +1,10 @@
 """Role-specific business JSON schemas, not provider settings or authority."""
+if __package__:
+    from .quality_v0_1_7 import OUTCOMES
+    from .contracts_v0_1_7 import REASON_CODES
+else:
+    from quality_v0_1_7 import OUTCOMES
+    from contracts_v0_1_7 import REASON_CODES
 
 
 def item_contract(role,subject_id,obligations):
@@ -7,10 +13,10 @@ def item_contract(role,subject_id,obligations):
     base={'item_id':string,'subject_id':{'const':subject_id},'statement':string,
         'supporting_evidence_ids':refs,'contradicting_evidence_ids':refs,'depends_on':refs}
     if role=='outcome_adjudicator' and all(x.startswith('outcome:') for x in obligations):
-        base.update(dimension={'enum':['study_disposition','primary_endpoint_result','safety_assessment','programme_decision','regulatory_decision']},
+        base.update(dimension={'enum':list(OUTCOMES)},
             value=string,trial_ids=refs)
     elif role=='hypothesis_analyst' and all(x.startswith('seed:') or x=='hypothesis_assessment' for x in obligations):
-        base.update(source_assertion_id={'type':['string','null']},reason_code={'enum':['efficacy','safety_tolerability','pk_pd_exposure_dose','target_moa_biology','design_statistics_endpoint','recruitment_execution','manufacturing_quality','regulatory_benefit_risk','strategic_commercial','undetermined']},
+        base.update(source_assertion_id={'type':['string','null']},reason_code={'enum':sorted(REASON_CODES)},
             scope={'type':'string','maxLength':2000},proposed_verdict={'enum':['untested','supported','refuted','inconclusive']},
             alternative_explanations={'type':'array','minItems':1,'maxItems':8,'items':{'type':'string','maxLength':2000}},
             validation_indicators={'type':'array','minItems':1,'maxItems':8,'items':{'type':'string','maxLength':2000}},

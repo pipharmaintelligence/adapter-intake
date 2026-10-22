@@ -239,6 +239,16 @@ def test_all_admitted_prompt_digests_match_generated_text_and_structured_variabl
     assert packet['evidence_packet'][0]['text']=='Untrusted {braces} and "quotes" stay data.'
 
 
+def test_item_schemas_use_authoritative_clinical_domains_without_duplicate_constants():
+    from clinical_failure_intelligence.item_contracts_v0_1_7 import item_contract
+    from clinical_failure_intelligence.quality_v0_1_7 import OUTCOMES
+    from clinical_failure_intelligence.contracts_v0_1_7 import REASON_CODES
+    outcome=item_contract('outcome_adjudicator','CASE_SYN',['outcome:primary_endpoint_result'])
+    hypothesis=item_contract('hypothesis_analyst','CASE_SYN',['hypothesis_assessment'])
+    assert set(outcome['items']['properties']['dimension']['enum'])==set(OUTCOMES)
+    assert set(hypothesis['items']['properties']['reason_code']['enum'])==REASON_CODES
+
+
 def test_two_complete_v017_product_adapters_keep_subjects_memory_and_outputs_separate():
     admission = threading.BoundedSemaphore(2)
     arrivals = threading.Barrier(2)
