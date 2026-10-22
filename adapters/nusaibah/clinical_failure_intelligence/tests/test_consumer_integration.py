@@ -124,7 +124,7 @@ class ConsumerIntegrationTests(unittest.TestCase):
     def test_source_contract_declared_binding_only(self):
         root = Path(__file__).resolve().parents[1]
         m = json.loads((root / "clinical_failure_intelligence.asset.json").read_text())
-        self.assertEqual("0.1.7", m["default"])
+        self.assertEqual("0.1.8", m["default"])
         inputs = m["versions"]["0.1.2"]["inputs"]
         self.assertEqual("binding", inputs["clinical_evidence"]["source"])
         self.assertFalse(inputs["clinical_evidence"]["required"])
