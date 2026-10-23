@@ -7,10 +7,10 @@ import sys
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT.parent))
 sys.path.insert(0,str(Path(__file__).resolve().parent))
-from clinical_failure_intelligence.contracts_v0_1_10 import ContractError, require
-from clinical_failure_intelligence.product_range_v0_1_10 import bounds
-from clinical_failure_intelligence.range_workflow_v0_1_10 import ProductRangeWorkflow
-from clinical_failure_intelligence.source_workflow_v0_1_10 import SourceReadUnavailable
+from clinical_failure_intelligence.contracts_v0_1_11 import ContractError, require
+from clinical_failure_intelligence.product_range_v0_1_11 import bounds
+from clinical_failure_intelligence.range_workflow_v0_1_11 import ProductRangeWorkflow
+from clinical_failure_intelligence.source_workflow_v0_1_11 import SourceReadUnavailable
 import run_clinical_workflow as sdk
 
 
@@ -30,12 +30,20 @@ def main(argv=None):
     variables=sdk.read(args.variables_file)
     variables['product_index_range']=args.product_index_range
     if not args.live:
-        print(json.dumps({'status':'plan_only','asset':'nusaibah.clinical_failure_intelligence:0.1.10',
+        print(json.dumps({'status':'plan_only','asset':'nusaibah.clinical_failure_intelligence:0.1.11',
             'product_index_range':args.product_index_range,'index_base':0,'end_inclusive':True,
             'workflow_concurrency':2,'provider_calls':0,'workflows_submitted':0}))
         return 0
     require(bool(args.env_file),'clinical_env_file_required')
     config=sdk.read(args.config)
+    if config.get('substrate','local_worker')=='local_worker':
+        import re
+        from clinical_failure_intelligence.retained_sources_v0_1_11 import SOURCE_ROLES
+        required={'nusaibah.clinical_failure_intelligence'} | {row[0] for row in SOURCE_ROLES.values()}
+        for key in required:
+            queue=config.get('assets',{}).get(key,{}).get('queue_name')
+            require(isinstance(queue,str) and re.fullmatch(r'[A-Za-z0-9_-]{1,120}',queue) is not None,
+                    'clinical_execution_queue_required')
     directory=Path(args.checkpoint_directory).resolve()
     directory.mkdir(parents=True,exist_ok=True)
     with sdk.checkpoint_lock(directory/'range.lock'):

@@ -96,6 +96,12 @@ class SdkWorkflowHost:
         payload=build_asset_execute_payload(entity_key=selection['entity_key'],asset_key=asset,asset_version=version,
             inputs=inputs,route='agent',mode='balanced',execution_substrate=self.config.get('substrate','local_worker'),
             input_binding_selection=selection.get('input_binding_selection'),retain_preview_result=True)
+        queue=selection.get('queue_name')
+        if queue is not None:
+            import re
+            require(isinstance(queue,str) and re.fullmatch(r'[A-Za-z0-9_-]{1,120}',queue) is not None,
+                    'clinical_execution_queue_invalid')
+            payload['queue_name']=queue
         key=digest({'asset':asset,'version':version,'inputs':inputs})
         entry=self.state['operations'].get(key)
         if entry is None:
@@ -124,11 +130,11 @@ class SdkWorkflowHost:
             polled=poll_run(**self.api,run_uuid=entry['run_uuid'],interval_seconds=3,timeout_seconds=2100)
             status=polled.get('final_status')
             require(polled.get('terminal') is True,'clinical_run_not_terminal_resume_same_checkpoint')
-            require(status in {'completed','success','succeeded','failed','cancelled','canceled'},
+            require(status in {'completed','completed_with_warnings','success','succeeded','failed','cancelled','canceled'},
                     'clinical_run_not_terminal_resume_same_checkpoint')
             entry['terminal_status']=status
             save(self.path,self.state)
-            if status not in {'completed','success','succeeded'}:
+            if status not in {'completed','completed_with_warnings','success','succeeded'}:
                 if asset==CLINICAL:
                     require(False,'clinical_execution_failed_inspect_saved_run')
                 raise SourceReadUnavailable('source_output_unavailable')

@@ -5,19 +5,23 @@
       "entity_key": "REPLACE_EXISTING_CLINICAL_ENTITY",
       "input_binding_selection": {
         "clinical_context": "REPLACE_AUTHORIZED_TEST_BINDING_ID"
-      }
+      },
+      "queue_name": "REPLACE_QUALIFIED_WORKER_QUEUE"
     },
     "nusaibah.clinical_trials_lookup": {
       "entity_key": "REPLACE_EXISTING_LOOKUP_ENTITY",
-      "input_binding_selection": {}
+      "input_binding_selection": {},
+      "queue_name": "REPLACE_QUALIFIED_WORKER_QUEUE"
     },
     "nusaibah.pubmed_evidence": {
       "entity_key": "REPLACE_EXISTING_PUBMED_ENTITY",
-      "input_binding_selection": {}
+      "input_binding_selection": {},
+      "queue_name": "REPLACE_QUALIFIED_WORKER_QUEUE"
     },
     "umls_terminology": {
       "entity_key": "REPLACE_EXISTING_UMLS_ENTITY",
-      "input_binding_selection": {}
+      "input_binding_selection": {},
+      "queue_name": "REPLACE_QUALIFIED_WORKER_QUEUE"
     }
   }
 }

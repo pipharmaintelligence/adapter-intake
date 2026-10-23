@@ -10,5 +10,6 @@
   "prepare_result_for_persistence": true,
   "agent_parallelism": 20,
   "max_agent_calls": 64,
-  "max_product_seconds": 3600
+  "max_product_seconds": 3600,
+  "source_object_id": 148
 }
