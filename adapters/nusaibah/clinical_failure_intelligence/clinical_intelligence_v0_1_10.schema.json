@@ -1,0 +1,678 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "analysis_mode": {
+      "enum": [
+        "mechanistic_case",
+        "cohort_pattern"
+      ]
+    },
+    "as_of_date": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "type": "string"
+    },
+    "assessment_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "asset": {
+      "const": "nusaibah.clinical_failure_intelligence@0.1.10"
+    },
+    "case_assessments": {
+      "items": {
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "cohort_statistics": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "evidence": {
+      "items": {
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "execution": {
+      "type": "object"
+    },
+    "hypothesis_results": {
+      "items": {
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "verdict": {
+                  "enum": [
+                    "supported",
+                    "refuted"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "accepted": {
+                  "const": true
+                },
+                "review_status": {
+                  "const": "automated_reviewed"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "verdict": {
+                  "const": "supported"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "supporting_evidence_ids": {
+                  "minItems": 1
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "verdict": {
+                  "const": "refuted"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "contradicting_evidence_ids": {
+                  "minItems": 1
+                }
+              }
+            }
+          }
+        ],
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "alternative_explanations": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "type": "array"
+          },
+          "causal_status": {
+            "const": "hypothesis"
+          },
+          "contradicting_evidence_ids": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "depends_on": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "external_truth_verified": {
+            "const": false
+          },
+          "falsification_condition": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "item_id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "kind": {
+            "const": "hypothesis"
+          },
+          "lesson": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "memory_eligibility": {
+            "type": "boolean"
+          },
+          "proposed_verdict": {
+            "enum": [
+              "untested",
+              "supported",
+              "refuted",
+              "inconclusive"
+            ]
+          },
+          "reason_code": {
+            "enum": [
+              "efficacy",
+              "safety_tolerability",
+              "pk_pd_exposure_dose",
+              "target_moa_biology",
+              "design_statistics_endpoint",
+              "recruitment_execution",
+              "manufacturing_quality",
+              "regulatory_benefit_risk",
+              "strategic_commercial",
+              "undetermined"
+            ]
+          },
+          "review_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "review_status": {
+            "enum": [
+              "unreviewed",
+              "automated_reviewed"
+            ]
+          },
+          "scope": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "source_assertion": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "assertion_id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "example_drugs": {
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "general_research_observation": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "indicators_to_measure_and_validate": {
+                    "items": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "source_ref": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "statement": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "assertion_id",
+                  "statement",
+                  "source_ref"
+                ],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_assertion_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "statement": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "subject_id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "supporting_evidence_ids": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "test_result": {
+            "type": "null"
+          },
+          "unresolved_dependency_ids": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "validation_indicators": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "type": "array"
+          },
+          "verdict": {
+            "enum": [
+              "untested",
+              "supported",
+              "refuted",
+              "inconclusive"
+            ]
+          }
+        },
+        "required": [
+          "item_id",
+          "subject_id",
+          "statement",
+          "scope",
+          "falsification_condition",
+          "supporting_evidence_ids",
+          "contradicting_evidence_ids",
+          "depends_on",
+          "source_assertion_id",
+          "source_assertion",
+          "reason_code",
+          "proposed_verdict",
+          "verdict",
+          "alternative_explanations",
+          "validation_indicators",
+          "lesson",
+          "kind",
+          "review_status",
+          "review_reason",
+          "accepted",
+          "causal_status",
+          "memory_eligibility",
+          "test_result",
+          "external_truth_verified"
+        ],
+        "title": "Clinical hypothesis v1; evidence closure also requires quality.py",
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "memory_update": {
+      "properties": {
+        "write_attempted": {
+          "const": false
+        }
+      },
+      "required": [
+        "status",
+        "write_attempted"
+      ],
+      "type": "object"
+    },
+    "persistence": {
+      "additionalProperties": false,
+      "properties": {
+        "receipt": {
+          "type": "null"
+        },
+        "status": {
+          "const": "not_attested"
+        }
+      },
+      "required": [
+        "status",
+        "receipt"
+      ],
+      "type": "object"
+    },
+    "quality": {
+      "properties": {
+        "automated_review_only": {
+          "const": true
+        },
+        "external_truth_verified": {
+          "const": false
+        },
+        "scientific_accuracy_certified": {
+          "const": false
+        },
+        "status": {
+          "enum": [
+            "completed",
+            "partial",
+            "preflight"
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "automated_review_only",
+        "scientific_accuracy_certified",
+        "external_truth_verified"
+      ],
+      "type": "object"
+    },
+    "reason_graph": {
+      "additionalProperties": false,
+      "properties": {
+        "edges": {
+          "type": "array"
+        },
+        "nodes": {
+          "type": "array"
+        },
+        "schema_version": {
+          "const": "clinical_reason_graph.v1"
+        }
+      },
+      "required": [
+        "schema_version",
+        "nodes",
+        "edges"
+      ],
+      "type": "object"
+    },
+    "report_markdown": {
+      "type": "string"
+    },
+    "request_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "research_claims": {
+      "items": {
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "clinical_failure_intelligence.v1"
+    },
+    "source_assertions": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "assertion_id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "example_drugs": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "general_research_observation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "indicators_to_measure_and_validate": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "source_ref": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "statement": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "assertion_id",
+          "statement",
+          "source_ref"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "subject": {
+      "additionalProperties": false,
+      "properties": {
+        "indication": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pharmacological_group_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "product_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "product_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "regimen": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "subject_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "trial_ids": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "subject_id",
+        "product_id",
+        "product_name",
+        "pharmacological_group_id",
+        "indication",
+        "regimen",
+        "trial_ids"
+      ],
+      "type": "object"
+    },
+    "source_event_metadata": {
+      "type": "object"
+    },
+    "prepared_sources": {
+      "type": "object"
+    },
+    "decision_summary": {
+      "type": "object",
+      "required": [
+        "disposition",
+        "clinical_dimensions",
+        "next_action"
+      ],
+      "properties": {
+        "disposition": {
+          "enum": [
+            "not_assessed",
+            "needs_evidence",
+            "partial_review",
+            "assessed"
+          ]
+        },
+        "predictive_success_probability": {
+          "type": "null"
+        },
+        "commercial_recommendation": {
+          "const": "not_assessed"
+        }
+      }
+    },
+    "memory_decision": {
+      "type": "object",
+      "required": [
+        "status",
+        "candidate_present",
+        "write_attempted",
+        "commit_observed",
+        "journal_status"
+      ],
+      "properties": {
+        "write_attempted": {
+          "const": false
+        },
+        "commit_observed": {
+          "const": false
+        },
+        "readback_verified": {
+          "const": false
+        },
+        "history_verified": {
+          "const": false
+        },
+        "journal_status": {
+          "const": "not_attested"
+        }
+      }
+    },
+    "presentation": {
+      "type": "object"
+    },
+    "source_request_plan": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "deferred_work": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "assessment_id",
+        "source_ledger_digest",
+        "tasks",
+        "objects",
+        "automatic_replay"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "clinical_deferred_work.v1"
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "work_id",
+              "kind",
+              "role",
+              "reason",
+              "retry_authorized"
+            ],
+            "properties": {
+              "retry_authorized": {
+                "const": false
+              }
+            }
+          }
+        },
+        "objects": {
+          "type": "object"
+        },
+        "automatic_replay": {
+          "const": false
+        }
+      }
+    },
+    "publication_readiness": {
+      "type": "object",
+      "required": [
+        "artifact_quality",
+        "unreviewed_candidates_are_not_conclusions",
+        "policy_and_runtime_receipt_required",
+        "publication_confirmed"
+      ],
+      "properties": {
+        "artifact_quality": {
+          "enum": [
+            "completed",
+            "partial"
+          ]
+        },
+        "unreviewed_candidates_are_not_conclusions": {
+          "const": true
+        },
+        "policy_and_runtime_receipt_required": {
+          "const": true
+        },
+        "publication_confirmed": {
+          "const": false
+        }
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "asset",
+    "assessment_id",
+    "request_id",
+    "analysis_mode",
+    "as_of_date",
+    "subject",
+    "source_assertions",
+    "research_claims",
+    "case_assessments",
+    "evidence",
+    "hypothesis_results",
+    "cohort_statistics",
+    "reason_graph",
+    "quality",
+    "execution",
+    "memory_update",
+    "persistence",
+    "report_markdown",
+    "deferred_work",
+    "publication_readiness"
+  ],
+  "title": "Clinical intelligence preview; validate_result enforces reference integrity",
+  "type": "object"
+}

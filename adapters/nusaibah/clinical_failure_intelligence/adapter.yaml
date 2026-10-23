@@ -1,10 +1,41 @@
 asset_key: nusaibah.clinical_failure_intelligence
-asset_version: 0.1.9
+asset_version: 0.1.10
 package_target: python_runtime/adapters/intake/nusaibah/clinical_failure_intelligence
 manifest: clinical_failure_intelligence.asset.json
-adapter_module: clinical_failure_intelligence_v0_1_9_adapter.py
+adapter_module: clinical_failure_intelligence_v0_1_10_adapter.py
 
 reviewed_helpers:
+  - continuation_v0_1_10.py
+  - analysis_packets_v0_1_10.py
+  - business_recovery_v0_1_10.py
+  - case_context_v0_1_10.py
+  - cohort_v0_1_10.py
+  - contracts_v0_1_10.py
+  - decision_outcome_v0_1_10.py
+  - deferred_work_v0_1_10.py
+  - evidence_v0_1_10.py
+  - input_reconciliation_v0_1_10.py
+  - item_contracts_v0_1_10.py
+  - memory_packets_v0_1_10.py
+  - memory_v0_1_10.py
+  - orchestration_v0_1_10.py
+  - output_inspection_v0_1_10.py
+  - policies_v0_1_10.py
+  - product_memory_v0_1_10.py
+  - product_range_v0_1_10.py
+  - prompt_catalog_v0_1_10.py
+  - quality_v0_1_10.py
+  - range_workflow_v0_1_10.py
+  - rendering_v0_1_10.py
+  - research_sources_v0_1_10.py
+  - retained_sources_v0_1_10.py
+  - review_packets_v0_1_10.py
+  - review_references_v0_1_10.py
+  - runtime_access_v0_1_10.py
+  - source_bundle_v0_1_10.py
+  - source_events_v0_1_10.py
+  - source_workflow_v0_1_10.py
+  - clinical_failure_intelligence_v0_1_9_adapter.py
   - output_inspection_v0_1_9.py
   - clinical_failure_intelligence_v0_1_8_adapter.py
   - analysis_packets_v0_1_9.py
@@ -182,6 +213,8 @@ reviewed_helpers:
   - source_events.py
 
 reviewed_support_files:
+  - clinical_intelligence_v0_1_10.schema.json
+  - admission_requirements_v0_1_10.json
   - core_node_schema_v1_1_0.json
   - clinical_intelligence_v0_1_9.schema.json
   - admission_requirements_v0_1_9.json
@@ -193,6 +226,16 @@ reviewed_support_files:
   - admission_requirements_v0_1_3.json
   - admission_requirements.json
 optional_files:
+  - COMPLETION_V010.md
+  - prompt_common_v0_1_10.md
+  - prompt_event_researcher_v0_1_10.md
+  - prompt_evidence_critic_v0_1_10.md
+  - prompt_hypothesis_analyst_v0_1_10.md
+  - prompt_input_reconciler_v0_1_10.md
+  - prompt_literature_researcher_v0_1_10.md
+  - prompt_outcome_adjudicator_v0_1_10.md
+  - prompt_product_memory_editor_v0_1_10.md
+  - prompt_trial_researcher_v0_1_10.md
   - CLINICAL019_BOUNDED_REVIEW.md
   - prompt_common_v0_1_9.md
   - prompt_common_v0_1_8.md

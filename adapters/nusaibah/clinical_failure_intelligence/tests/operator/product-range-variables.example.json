@@ -1,0 +1,14 @@
+{
+  "schema_version": "clinical_analysis_request.v1",
+  "request_id": "CLINICAL_RANGE_001",
+  "analysis_mode": "mechanistic_case",
+  "as_of_date": "2026-10-23",
+  "memory_mode": "preview",
+  "enable_refinement": true,
+  "enable_pharmacological_class": false,
+  "supplementary_search": true,
+  "prepare_result_for_persistence": true,
+  "agent_parallelism": 20,
+  "max_agent_calls": 64,
+  "max_product_seconds": 3600
+}
