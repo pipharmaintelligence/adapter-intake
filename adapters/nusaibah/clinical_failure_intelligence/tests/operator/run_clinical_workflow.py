@@ -117,7 +117,7 @@ class SdkWorkflowHost:
             # Save the attempt before transport: unknown acknowledgements are never replayed.
             launched=execute_asset(**self.api,payload=payload)
             data=launched.get('data',{})
-            run=data.get('run_uuid') or data.get('run',{}).get('run_uuid')
+            run=launched.get('run_uuid') or data.get('run_uuid') or data.get('run',{}).get('run_uuid')
             require(isinstance(run,str),'clinical_submission_acknowledgement_unconfirmed')
             entry['run_uuid']=str(uuid.UUID(run))
             save(self.path,self.state)

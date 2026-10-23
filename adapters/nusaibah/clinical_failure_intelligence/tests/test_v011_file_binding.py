@@ -83,14 +83,17 @@ def operator(name):
     return module
 
 
-def test_sdk_host_preserves_explicit_queue_and_collects_warning_completion(tmp_path,monkeypatch):
+@pytest.mark.parametrize('normalized_ack',[True,False])
+def test_sdk_host_preserves_explicit_queue_and_collects_warning_completion(tmp_path,monkeypatch,normalized_ack):
     from devtools import obs_api_client,asset_preflight,preview_result_inspect
     host_module=operator('run_clinical_workflow');captured=[]
     asset='nusaibah.clinical_failure_intelligence';run=str(uuid.uuid4())
     env=tmp_path/'test.env';env.write_text('OBS_BASE_URL=http://127.0.0.1:1\nOBS_API_KEY_HEADER=X-Test\nOBS_API_KEY=test-only\nOBS_CLIENT_ID=1\n')
     config={'substrate':'local_worker','assets':{asset:{'entity_key':'TEST_ENTITY','queue_name':'clinical011-qualified'}}}
     monkeypatch.setattr(asset_preflight,'_request_asset_preflight',lambda *a,**k:{'http_status':200,'decoded':{'data':{'status':'ready'}}})
-    def execute(**kwargs):captured.append(kwargs['payload']);return {'data':{'run_uuid':run}}
+    def execute(**kwargs):
+        captured.append(kwargs['payload'])
+        return {'run_uuid':run,'initial_status':'pending'} if normalized_ack else {'data':{'run_uuid':run}}
     monkeypatch.setattr(obs_api_client,'execute_asset',execute)
     monkeypatch.setattr(obs_api_client,'poll_run',lambda **k:{'terminal':True,'final_status':'completed_with_warnings'})
     def download(connection,run_uuid,destination,source_app):
