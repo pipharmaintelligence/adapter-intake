@@ -60,6 +60,7 @@ class HostTests(unittest.TestCase):
         self.launch=self.stack.enter_context(patch('devtools.obs_api_client.execute_asset',return_value={'data':{'run_uuid':RUN}}))
         self.poll=self.stack.enter_context(patch('devtools.obs_api_client.poll_run',return_value={'terminal':True,'final_status':'completed'}))
         self.download=self.stack.enter_context(patch('devtools.preview_result_inspect.download_preview_result',side_effect=self.artifact))
+        self.failure_detail=self.stack.enter_context(patch.object(operator,'source_failure_detail',side_effect=lambda api,run_uuid:{'run_uuid':run_uuid,'failure_code':'synthetic_failure'}))
     def artifact(self,config,run,destination,app):
         content=json.dumps({'schema_version':'test','run_uuid':run,'asset_identity':ASSET+':0.1.1',
                            'outputs':{'trial_result':{'operation':'study_get','records':[]}}}).encode()

@@ -79,6 +79,30 @@ def runtime_source_inputs(selection, substrate, references):
     return sources
 
 
+class ConfirmedSourceFailure(SourceReadUnavailable):
+    """Known terminal source failure with optional safe SDK status diagnostics."""
+    def __init__(self, code, detail):
+        super().__init__(code)
+        self.detail=detail
+
+
+def source_failure_detail(api, run_uuid):
+    detail={'run_uuid':run_uuid}
+    try:
+        from devtools.obs_api_client import get_run_status
+        response=get_run_status(**api,run_uuid=run_uuid)
+        data=response.get('data',{})
+        import re
+        for field in ('failure_code','failure_cause_code','proof_stage'):
+            value=data.get(field)
+            if isinstance(value,str) and re.fullmatch(r'[a-z0-9_:-]{1,120}',value):detail[field]=value
+    except Exception:
+        # Diagnostics are read-only and may be unavailable. Preserve the known
+        # failed run identity; never invent a cause or resubmit the execution.
+        pass
+    return detail
+
+
 class SdkWorkflowHost:
     """Bounded, checkpointed official SDK submissions and retained-result reads."""
     def __init__(self,config,variables,env_file,checkpoint,*,resume=False):
@@ -153,7 +177,7 @@ class SdkWorkflowHost:
         if entry.get('terminal_status') in {'failed','cancelled','canceled'}:
             if asset==CLINICAL:
                 require(False,'clinical_execution_failed_inspect_saved_run')
-            raise SourceReadUnavailable('source_output_unavailable')
+            raise ConfirmedSourceFailure('source_output_unavailable',entry.get('failure_detail',{'run_uuid':entry['run_uuid']}))
         if not entry.get('completed'):
             polled=poll_run(**self.api,run_uuid=entry['run_uuid'],interval_seconds=3,timeout_seconds=2100)
             status=polled.get('final_status')
@@ -161,11 +185,13 @@ class SdkWorkflowHost:
             require(status in {'completed','completed_with_warnings','success','succeeded','failed','cancelled','canceled'},
                     'clinical_run_not_terminal_resume_same_checkpoint')
             entry['terminal_status']=status
+            if asset!=CLINICAL and status in {'failed','cancelled','canceled'}:
+                entry['failure_detail']=source_failure_detail(self.api,entry['run_uuid'])
             save(self.path,self.state)
             if status not in {'completed','completed_with_warnings','success','succeeded'}:
                 if asset==CLINICAL:
                     require(False,'clinical_execution_failed_inspect_saved_run')
-                raise SourceReadUnavailable('source_output_unavailable')
+                raise ConfirmedSourceFailure('source_output_unavailable',entry.get('failure_detail',{'run_uuid':entry['run_uuid']}))
             destination=self.artifacts/(entry['run_uuid']+'.json')
             if not destination.exists():
                 proof=download_preview_result({'obs_base_url':self.api['base_url'],
