@@ -54,6 +54,31 @@ def save(path,value):
     os.replace(temporary,path)
 
 
+def runtime_source_inputs(selection, substrate, references):
+    """Forward safe selectors only; Assets/Core remains the admission authority."""
+    import re
+    sources=selection.get('runtime_source_inputs',{})
+    require(isinstance(sources,dict),'clinical_source_configuration_invalid')
+    require(not sources or substrate in {'local_worker','ecs'},'clinical_source_substrate_invalid')
+    require(not set(sources)&({'variables'}|set(references or {})),'clinical_source_role_collision')
+    allowed={'runtime_source_id','operation','capability_ref','input','resolve'}
+    for role,value in sources.items():
+        require(isinstance(role,str) and re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,119}',role)
+            and isinstance(value,dict) and set(value)<=allowed,'clinical_source_configuration_invalid')
+        require(isinstance(value.get('runtime_source_id'),str) and
+            re.fullmatch(r'rt_src_[a-f0-9]{32}',value['runtime_source_id']),
+            'clinical_source_configuration_invalid')
+        for field in ('operation','capability_ref'):
+            require(isinstance(value.get(field),str) and
+                re.fullmatch(r'[A-Za-z0-9_.:-]{1,120}',value[field]),'clinical_source_configuration_invalid')
+        require(value.get('resolve','eager') in {'eager','lazy'},'clinical_source_configuration_invalid')
+        parameters=value.get('input',{})
+        require(isinstance(parameters,dict) and not set(parameters)&{'records','metadata','provenance'},
+            'clinical_source_configuration_invalid')
+        safe_json(parameters)
+    return sources
+
+
 class SdkWorkflowHost:
     """Bounded, checkpointed official SDK submissions and retained-result reads."""
     def __init__(self,config,variables,env_file,checkpoint,*,resume=False):
@@ -92,10 +117,13 @@ class SdkWorkflowHost:
         selection=self.config.get('assets',{}).get(asset)
         require(isinstance(selection,dict) and isinstance(selection.get('entity_key'),str),
                 'clinical_registered_entity_configuration_missing')
-        inputs={'variables':variables,**(references or {})}
+        substrate=self.config.get('substrate','local_worker')
+        sources=runtime_source_inputs(selection,substrate,references)
+        inputs={'variables':variables,**sources,**(references or {})}
         payload=build_asset_execute_payload(entity_key=selection['entity_key'],asset_key=asset,asset_version=version,
             inputs=inputs,route='agent',mode='balanced',execution_substrate=self.config.get('substrate','local_worker'),
             input_binding_selection=selection.get('input_binding_selection'),retain_preview_result=True)
+        if sources:payload['runtime_source_resolution']='worker'
         queue=selection.get('queue_name')
         if queue is not None:
             import re

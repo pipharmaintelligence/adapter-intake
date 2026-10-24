@@ -67,6 +67,40 @@ class HostTests(unittest.TestCase):
         return {'checksum_sha256':hashlib.sha256(content).hexdigest()}
     def host(self,**kwargs):return operator.SdkWorkflowHost(self.config,{},'protected.env',self.path,**kwargs)
     def execute(self,host):return host.execute(ASSET,'0.1.1','trial_result',{'operation':'study_get','nct_id':'NCT00000001'})
+    def source(self):
+        return {'trials_detail_runtime':{'runtime_source_id':'rt_src_'+'a'*32,
+            'operation':'study_get','capability_ref':'clinical_trials.study.get','resolve':'lazy','input':{}}}
+    def test_governed_source_selectors_and_lazy_worker_mode_reach_sdk(self):
+        sources=self.source();self.config['assets'][ASSET]['runtime_source_inputs']=sources
+        self.execute(self.host())
+        payload=self.launch.call_args.kwargs['payload']
+        self.assertEqual('worker',payload['runtime_source_resolution'])
+        self.assertEqual(sources['trials_detail_runtime'],payload['inputs']['trials_detail_runtime'])
+        self.assertEqual({'operation':'study_get','nct_id':'NCT00000001'},payload['inputs']['variables'])
+        self.assertEqual(payload,self.preflight.call_args.kwargs['payload'])
+    def test_unconfigured_sources_keep_existing_eager_request_behavior(self):
+        self.execute(self.host())
+        self.assertNotIn('runtime_source_resolution',self.launch.call_args.kwargs['payload'])
+    def test_forged_source_configuration_fails_before_transport(self):
+        for mutation in ({'records':[]},{'runtime_source_id':'forged'},
+                         {'resolve':'invalid'},{'input':{'records':[]}},
+                         {'capability_ref':'https://forged.example'}):
+            with self.subTest(mutation=mutation):
+                sources=self.source();sources['trials_detail_runtime'].update(mutation)
+                self.config['assets'][ASSET]['runtime_source_inputs']=sources
+                with self.assertRaisesRegex(ContractError,'source_configuration_invalid'):
+                    self.execute(self.host(resume=self.path.exists()))
+                self.launch.assert_not_called();self.preflight.assert_not_called()
+                # A new configuration needs a new checkpoint even before submission.
+                self.path.unlink()
+    def test_source_roles_cannot_replace_variables_or_retained_evidence(self):
+        for role in ('variables','trial_study_result'):
+            with self.subTest(role=role):
+                sources={role:next(iter(self.source().values()))}
+                self.config['assets'][ASSET]['runtime_source_inputs']=sources
+                with self.assertRaisesRegex(ContractError,'source_role_collision'):
+                    self.host().execute(ASSET,'0.1.1','trial_result',{},references={'trial_study_result':{'run_uuid':RUN}})
+                self.launch.assert_not_called();self.preflight.assert_not_called();self.path.unlink()
     def test_completed_run_resume_uses_saved_result_without_resubmitting(self):
         self.execute(self.host())
         result=self.execute(self.host(resume=True))
