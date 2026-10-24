@@ -7,10 +7,10 @@ import sys
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT.parent))
 sys.path.insert(0,str(Path(__file__).resolve().parent))
-from clinical_failure_intelligence.contracts_v0_1_11 import ContractError, require
-from clinical_failure_intelligence.product_range_v0_1_11 import bounds
-from clinical_failure_intelligence.range_workflow_v0_1_11 import ProductRangeWorkflow
-from clinical_failure_intelligence.source_workflow_v0_1_11 import SourceReadUnavailable
+from clinical_failure_intelligence.contracts_v0_1_12 import ContractError, require
+from clinical_failure_intelligence.product_range_v0_1_12 import bounds
+from clinical_failure_intelligence.range_workflow_v0_1_12 import ProductRangeWorkflow
+from clinical_failure_intelligence.source_workflow_v0_1_12 import SourceReadUnavailable
 import run_clinical_workflow as sdk
 
 
@@ -23,14 +23,17 @@ def main(argv=None):
     parser.add_argument('--env-file')
     parser.add_argument('--live',action='store_true',help='Submit model-free governed selection and case preflights.')
     parser.add_argument('--analyze',action='store_true',help='Authorize bounded source and Agent calls for selected cases.')
+    parser.add_argument('--prepare-sources-only',action='store_true',help='Qualify governed source reads without scientific Agent execution.')
     parser.add_argument('--resume',action='store_true')
     args=parser.parse_args(argv)
     bounds(args.product_index_range)
     require(not args.analyze or args.live,'clinical_analysis_requires_live')
+    require(not args.prepare_sources_only or args.live,'clinical_source_preparation_requires_live')
+    require(not (args.analyze and args.prepare_sources_only),'clinical_range_execution_mode_conflict')
     variables=sdk.read(args.variables_file)
     variables['product_index_range']=args.product_index_range
     if not args.live:
-        print(json.dumps({'status':'plan_only','asset':'nusaibah.clinical_failure_intelligence:0.1.11',
+        print(json.dumps({'status':'plan_only','asset':'nusaibah.clinical_failure_intelligence:0.1.12',
             'product_index_range':args.product_index_range,'index_base':0,'end_inclusive':True,
             'workflow_concurrency':2,'provider_calls':0,'workflows_submitted':0}))
         return 0
@@ -38,7 +41,7 @@ def main(argv=None):
     config=sdk.read(args.config)
     if config.get('substrate','local_worker')=='local_worker':
         import re
-        from clinical_failure_intelligence.retained_sources_v0_1_11 import SOURCE_ROLES
+        from clinical_failure_intelligence.retained_sources_v0_1_12 import SOURCE_ROLES
         required={'nusaibah.clinical_failure_intelligence'} | {row[0] for row in SOURCE_ROLES.values()}
         for key in required:
             queue=config.get('assets',{}).get(key,{}).get('queue_name')
@@ -54,12 +57,12 @@ def main(argv=None):
                 resume=args.resume and checkpoint.exists())
             def execute(*positional,**named):
                 try:return host.execute(*positional,**named)
-                except sdk.SourceReadUnavailable as error:raise SourceReadUnavailable(error.code) from None
+                except sdk.SourceReadUnavailable as error:raise SourceReadUnavailable(error.code,detail=getattr(error,'detail',None)) from None
             return execute
-        result=ProductRangeWorkflow(factory).run(variables,analyze=args.analyze)
+        result=ProductRangeWorkflow(factory).run(variables,analyze=args.analyze,prepare_sources=args.prepare_sources_only)
         sdk.save(directory/'range-result.safe.json',result)
         print(json.dumps(result))
-        return 0 if result['status'] in {'completed','preflight_completed'} else 2
+        return 0 if result['status'] in {'completed','preflight_completed','source_prepared'} else 2
 
 
 if __name__=='__main__':

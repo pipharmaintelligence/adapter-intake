@@ -1,0 +1,406 @@
+{
+  "document_kind": "admission_requirements_not_runtime_authority",
+  "asset": "nusaibah.clinical_failure_intelligence@0.1.12",
+  "implementation_stage": "provider_free_development",
+  "agent_contracts": [
+    {
+      "role": "trial_researcher",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_trial_researcher",
+      "contract_version": "1.7.0",
+      "prompt_version": "1.7.0",
+      "prompt_digest": "sha256:ee233122fec9cad49828a07d10f4afbda8b388496eecb1ca55b814605f9b1c31",
+      "prompt_file": "prompt_trial_researcher_v0_1_12.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [
+        "vertex_provider_grounding_intent"
+      ],
+      "model_admission_status": "not_verified",
+      "reasoning_policy": {
+        "level": "medium",
+        "authority": "admitted_runtime_profile",
+        "private_reasoning_trace_requested": false
+      },
+      "grounded_search_policy": {
+        "enabled": true,
+        "source_text_requires_trusted_inspection": true
+      },
+      "request_policy": {
+        "model": "gemini-4-argon",
+        "timeout_seconds": 1200,
+        "max_tokens": 32000,
+        "thinking_level": "medium",
+        "authority": "admitted_runtime_profile"
+      }
+    },
+    {
+      "role": "literature_researcher",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_literature_researcher",
+      "contract_version": "1.7.0",
+      "prompt_version": "1.7.0",
+      "prompt_digest": "sha256:70f22d8a5c679616f3e14e6d809ba9956078bc0707da3c42f648713753917629",
+      "prompt_file": "prompt_literature_researcher_v0_1_12.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [
+        "vertex_provider_grounding_intent"
+      ],
+      "model_admission_status": "not_verified",
+      "reasoning_policy": {
+        "level": "medium",
+        "authority": "admitted_runtime_profile",
+        "private_reasoning_trace_requested": false
+      },
+      "grounded_search_policy": {
+        "enabled": true,
+        "source_text_requires_trusted_inspection": true
+      },
+      "request_policy": {
+        "model": "gemini-4-argon",
+        "timeout_seconds": 1200,
+        "max_tokens": 32000,
+        "thinking_level": "medium",
+        "authority": "admitted_runtime_profile"
+      }
+    },
+    {
+      "role": "event_researcher",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_event_researcher",
+      "contract_version": "1.7.0",
+      "prompt_version": "1.7.0",
+      "prompt_digest": "sha256:a7b4ac9739ee344c782955e55ce68152c251239452c8161e64fd2449a6a19f3e",
+      "prompt_file": "prompt_event_researcher_v0_1_12.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [
+        "vertex_provider_grounding_intent"
+      ],
+      "model_admission_status": "not_verified",
+      "reasoning_policy": {
+        "level": "medium",
+        "authority": "admitted_runtime_profile",
+        "private_reasoning_trace_requested": false
+      },
+      "grounded_search_policy": {
+        "enabled": true,
+        "source_text_requires_trusted_inspection": true
+      },
+      "request_policy": {
+        "model": "gemini-4-argon",
+        "timeout_seconds": 1200,
+        "max_tokens": 32000,
+        "thinking_level": "medium",
+        "authority": "admitted_runtime_profile"
+      }
+    },
+    {
+      "role": "outcome_adjudicator",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_outcome_adjudicator",
+      "contract_version": "1.7.0",
+      "prompt_version": "1.7.0",
+      "prompt_digest": "sha256:cb44a3cf7b271516983ea6dc8c78241936727d8c63dc52ecad669d512ee0820b",
+      "prompt_file": "prompt_outcome_adjudicator_v0_1_12.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [],
+      "model_admission_status": "not_verified",
+      "reasoning_policy": {
+        "level": "high",
+        "authority": "admitted_runtime_profile",
+        "private_reasoning_trace_requested": false
+      },
+      "grounded_search_policy": {
+        "enabled": false,
+        "source_text_requires_trusted_inspection": true
+      },
+      "request_policy": {
+        "model": "gemini-4-argon",
+        "timeout_seconds": 1200,
+        "max_tokens": 64000,
+        "thinking_level": "high",
+        "authority": "admitted_runtime_profile"
+      }
+    },
+    {
+      "role": "hypothesis_analyst",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_hypothesis_analyst",
+      "contract_version": "1.7.0",
+      "prompt_version": "1.7.0",
+      "prompt_digest": "sha256:d817098fc37b2a402fac0eccfa24a55950233cf6e4163dff35a7429acd886890",
+      "prompt_file": "prompt_hypothesis_analyst_v0_1_12.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [],
+      "model_admission_status": "not_verified",
+      "reasoning_policy": {
+        "level": "high",
+        "authority": "admitted_runtime_profile",
+        "private_reasoning_trace_requested": false
+      },
+      "grounded_search_policy": {
+        "enabled": false,
+        "source_text_requires_trusted_inspection": true
+      },
+      "request_policy": {
+        "model": "gemini-4-argon",
+        "timeout_seconds": 1200,
+        "max_tokens": 64000,
+        "thinking_level": "high",
+        "authority": "admitted_runtime_profile"
+      }
+    },
+    {
+      "role": "evidence_critic",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_evidence_critic",
+      "contract_version": "1.7.0",
+      "prompt_version": "1.7.0",
+      "prompt_digest": "sha256:26a0d6b604a0ba0204be583eb1f3697837081a56bf2343ff0f650836992191f4",
+      "prompt_file": "prompt_evidence_critic_v0_1_12.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [],
+      "model_admission_status": "not_verified",
+      "reasoning_policy": {
+        "level": "high",
+        "authority": "admitted_runtime_profile",
+        "private_reasoning_trace_requested": false
+      },
+      "grounded_search_policy": {
+        "enabled": false,
+        "source_text_requires_trusted_inspection": true
+      },
+      "request_policy": {
+        "model": "gemini-4-argon",
+        "timeout_seconds": 1200,
+        "max_tokens": 64000,
+        "thinking_level": "high",
+        "authority": "admitted_runtime_profile"
+      }
+    },
+    {
+      "role": "product_memory_editor",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_product_memory_editor",
+      "contract_version": "1.7.0",
+      "prompt_file": "prompt_product_memory_editor_v0_1_12.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [],
+      "prompt_version": "1.7.0",
+      "model_admission_status": "not_verified",
+      "prompt_digest": "sha256:7596d59901c8ce5e1fade0cc427decad7f189c6c4767fc7b0213caf89ca796be",
+      "reasoning_policy": {
+        "level": "low",
+        "authority": "admitted_runtime_profile",
+        "private_reasoning_trace_requested": false
+      },
+      "grounded_search_policy": {
+        "enabled": false,
+        "source_text_requires_trusted_inspection": true
+      },
+      "request_policy": {
+        "model": "gemini-4-argon",
+        "timeout_seconds": 1200,
+        "max_tokens": 16000,
+        "thinking_level": "low",
+        "authority": "admitted_runtime_profile"
+      }
+    },
+    {
+      "role": "input_reconciler",
+      "contract_key": "agent.nusaibah.clinical_failure_intelligence_input_reconciler",
+      "contract_version": "1.7.0",
+      "prompt_version": "1.7.0",
+      "prompt_digest": "sha256:868ea2bc12da3953253e049615880acbb366a2bed50a141c1b12783d6e12f1c2",
+      "prompt_file": "prompt_input_reconciler_v0_1_12.md",
+      "provider_binding_status": "not_selected",
+      "role_admission_status": "not_admitted",
+      "capabilities_required": [],
+      "model_admission_status": "not_verified",
+      "reasoning_policy": {
+        "level": "high",
+        "authority": "admitted_runtime_profile",
+        "private_reasoning_trace_requested": false
+      },
+      "grounded_search_policy": {
+        "enabled": false,
+        "source_text_requires_trusted_inspection": true
+      },
+      "request_policy": {
+        "model": "gemini-4-argon",
+        "timeout_seconds": 1200,
+        "max_tokens": 16000,
+        "thinking_level": "high",
+        "authority": "admitted_runtime_profile"
+      }
+    }
+  ],
+  "memory_roles": {
+    "product_memory": "Primary read-only role declared in manifest for governed product_id ZIP partition; no active package/read proof",
+    "product_memory_update": "Mutable role not declared in callable child; mutation and retention remain blocked",
+    "group_memory": "Optional read-only role; never requested by default",
+    "group_memory_update": "Optional separate mutation; not admitted"
+  },
+  "blocked": [
+    "child_owned_agent_session",
+    "exact_agent_admission",
+    "dynamic_product_role_binding",
+    "source_retrieval_integration",
+    "mutable_skill_and_retention_before_apply",
+    "ecs_callable_parity",
+    "durable_resume",
+    "exact_test_database_lake_file_object_binding",
+    "source_event_evidence_retrieval",
+    "signed_child_file_object_composition",
+    "exact_child_public_web_http_admission",
+    "combined_grounded_search_http_evidence_proof",
+    "approved_clinical_intelligence_jsonl_result_output_policy",
+    "clinical_results_schema_equivalence_and_self_inspection",
+    "clinical_product_memory_active_zip_and_readback",
+    "ecs_exact_image_catalog_package_skill_agent_binding_proof"
+  ],
+  "defaults": {
+    "enable_pharmacological_class": false,
+    "memory_mode": "preview",
+    "enable_refinement": true
+  },
+  "governed_source_candidate": {
+    "lake_id": "test_database_lake",
+    "node_key": "clinical_development_events",
+    "format": "jsonl",
+    "source_schema": "clinical_event_source.v1",
+    "role": "clinical_context",
+    "ownership": "binding",
+    "file_object_id": "configure_from_Core_authorized_object_id",
+    "live_binding_status": "unverified"
+  },
+  "prepared_evidence_contract": {
+    "role": "clinical_evidence",
+    "ownership": "binding",
+    "required": false,
+    "schema_version": "clinical_evidence_bundle.v1",
+    "source_adapters_validation": "external_parallel_work_not_performed",
+    "consumer_stage": "provider_free_source_orchestration_and_retained_contract_validation",
+    "live_handoff_status": "not_verified"
+  },
+  "node_targets": {
+    "results": {
+      "lake_id": "test_database_lake",
+      "node_key": "clinical_failure_intelligence_results",
+      "format": "jsonl",
+      "output_role": "clinical_intelligence_records",
+      "emit_variable": "prepare_result_for_persistence",
+      "status": "manifest_output_contract_only_not_published",
+      "authority": "Assets/Core approved output target policy and terminal publish receipt required"
+    },
+    "product_memory": {
+      "lake_id": "test_database_lake",
+      "node_key": "clinical_product_memory_packages",
+      "partition_field": "product_id",
+      "runtime_skill_role": "product_memory",
+      "mutation": "read_only",
+      "status": "declared_package_resolution_not_proven_zero_registered_objects",
+      "authority": "Core active ZIP partition and trusted runtime resolution required"
+    },
+    "product_memory_update": {
+      "status": "not_declared_callable_child_mutation_not_admitted"
+    }
+  },
+  "execution_substrates": {
+    "declared": [
+      "local_worker",
+      "ecs"
+    ],
+    "default": "local_worker",
+    "local_worker_live_proof": "not_performed",
+    "ecs_package_deployment_and_live_proof": "not_performed"
+  },
+  "source_invocation_model": {
+    "owner": "top_level_official_SDK_workflow",
+    "mode": "independent_registered_asset_runs",
+    "handoff": "Assets_Core_verified_retained_output_references",
+    "nested_callable_required": false,
+    "source_roles": [
+      "literature_abstract_1_result",
+      "literature_abstract_2_result",
+      "literature_abstract_3_result",
+      "literature_context_search_result",
+      "literature_integrity_1_result",
+      "literature_integrity_2_result",
+      "literature_integrity_3_result",
+      "literature_metadata_result",
+      "literature_search_result",
+      "terminology_source_result",
+      "trial_results_result",
+      "trial_study_result"
+    ],
+    "live_combined_execution": "not_performed",
+    "producer_versions": {
+      "nusaibah.clinical_trials_lookup": "0.1.1",
+      "nusaibah.pubmed_evidence": "0.1.0",
+      "umls_terminology": "0.1.1"
+    }
+  },
+  "execution_policy": {
+    "max_agent_calls": 64,
+    "research_concurrency": 20,
+    "deadline_seconds": 48300.0,
+    "completion_reserve_seconds": 300.0,
+    "stage_allowance_seconds": 1200.0,
+    "max_reference_reads": 12,
+    "max_packet_bytes": 262144,
+    "max_task_items": 32,
+    "max_reflection_rounds": 1,
+    "max_reflection_tasks": 2,
+    "max_reflection_agent_calls": 4,
+    "max_search_queries": 6,
+    "max_search_queries_per_role": 2,
+    "max_business_repairs": 4,
+    "max_reconciliation_agent_calls": 8,
+    "max_reconciliation_partitions": 2
+  },
+  "parallel_execution_requirements": {
+    "agent_parallelism": {
+      "default": 20,
+      "minimum": 1,
+      "maximum": 20
+    },
+    "max_concurrent_product_runs": 2,
+    "runtime_agent_max_inflight": 20,
+    "shared_capacity_required": true,
+    "capacity_owner": "DLM_Core",
+    "live_qualification": "not_performed"
+  },
+  "input_reconciliation": {
+    "role": "input_reconciler",
+    "optional_at_runtime": true,
+    "trigger": "eligible_input_errors_or_packet_size_deferral",
+    "scope": "one_affected_fragment",
+    "passes_per_original_task": 1,
+    "source_mutation": false,
+    "scientific_acceptance_authority": false
+  },
+  "product_selection": {
+    "variable": "product_index_range",
+    "index_base": 0,
+    "end_inclusive": true,
+    "order": "first_appearance_in_governed_snapshot",
+    "max_concurrent_product_runs": 2,
+    "same_snapshot_revalidation_required": true,
+    "operator_entrypoint": "tests/operator/run_product_range.py",
+    "new_live_qualification": "not_performed"
+  },
+  "retained_continuation": {
+    "producer_roles": {
+      "previous_assessment": "nusaibah.clinical_failure_intelligence:0.1.9",
+      "previous_continuation": "nusaibah.clinical_failure_intelligence:0.1.12"
+    },
+    "output_role": "clinical_intelligence",
+    "selector": "run_uuid",
+    "scope": "exact_same_case_and_source_snapshot",
+    "explicit_work_selection_required": true,
+    "max_agent_calls": 8,
+    "automatic_replay": false,
+    "finalize_only_agent_calls": 0,
+    "publication_confirmation_owner": "Core_descriptor_QC_write_receipt_readback"
+  }
+}
