@@ -83,14 +83,36 @@ def operator(name):
     return module
 
 
-def test_sdk_host_preserves_explicit_queue_and_collects_warning_completion(tmp_path,monkeypatch):
-    from devtools import obs_api_client,asset_preflight,preview_result_inspect
+@pytest.mark.parametrize('normalized_ack',[True,False])
+def test_sdk_host_preserves_explicit_queue_and_collects_warning_completion(tmp_path,monkeypatch,normalized_ack):
+    # Source-only CI does not install the runtime SDK. These explicit transport
+    # doubles exercise the host protocol and cannot make provider requests.
+    from types import ModuleType
+    modules={name:ModuleType(name) for name in ('devtools','devtools.connection_check',
+        'devtools.obs_api_client','devtools.asset_preflight','devtools.preview_result_inspect')}
+    modules['devtools'].__path__=[]
+    for name,module in modules.items():
+        monkeypatch.setitem(sys.modules,name,module)
+        if '.' in name:setattr(modules['devtools'],name.split('.')[1],module)
+    connection=modules['devtools.connection_check']
+    connection.load_env_file=lambda path:{'OBS_BASE_URL':'http://127.0.0.1:1',
+        'OBS_API_KEY_HEADER':'X-Test','OBS_API_KEY':'test-only','OBS_CLIENT_ID':'1'}
+    obs_api_client=modules['devtools.obs_api_client']
+    asset_preflight=modules['devtools.asset_preflight']
+    preview_result_inspect=modules['devtools.preview_result_inspect']
+    def unexpected(*args,**kwargs):raise AssertionError('unpatched SDK transport double')
+    obs_api_client.build_asset_execute_payload=lambda **kwargs:kwargs
+    obs_api_client.execute_asset=obs_api_client.poll_run=unexpected
+    asset_preflight._request_asset_preflight=unexpected
+    preview_result_inspect.download_preview_result=unexpected
     host_module=operator('run_clinical_workflow');captured=[]
     asset='nusaibah.clinical_failure_intelligence';run=str(uuid.uuid4())
     env=tmp_path/'test.env';env.write_text('OBS_BASE_URL=http://127.0.0.1:1\nOBS_API_KEY_HEADER=X-Test\nOBS_API_KEY=test-only\nOBS_CLIENT_ID=1\n')
     config={'substrate':'local_worker','assets':{asset:{'entity_key':'TEST_ENTITY','queue_name':'clinical011-qualified'}}}
     monkeypatch.setattr(asset_preflight,'_request_asset_preflight',lambda *a,**k:{'http_status':200,'decoded':{'data':{'status':'ready'}}})
-    def execute(**kwargs):captured.append(kwargs['payload']);return {'data':{'run_uuid':run}}
+    def execute(**kwargs):
+        captured.append(kwargs['payload'])
+        return {'run_uuid':run,'initial_status':'pending'} if normalized_ack else {'data':{'run_uuid':run}}
     monkeypatch.setattr(obs_api_client,'execute_asset',execute)
     monkeypatch.setattr(obs_api_client,'poll_run',lambda **k:{'terminal':True,'final_status':'completed_with_warnings'})
     def download(connection,run_uuid,destination,source_app):
