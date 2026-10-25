@@ -337,6 +337,8 @@ reviewed_helpers:
   - source_events.py
 
 reviewed_support_files:
+  - admission_requirements_v0_1_14.json
+  - clinical_intelligence_v0_1_14.schema.json
   - admission_requirements_v0_1_13.json
   - admission_requirements_v0_1_12.json
   - clinical_intelligence_v0_1_13.schema.json
@@ -356,6 +358,7 @@ reviewed_support_files:
   - admission_requirements_v0_1_3.json
   - admission_requirements.json
 optional_files:
+  - PRODUCTION_READINESS_0_1_14.md
   - SOURCE_RECOVERY_V012.md
   - prompt_common_v0_1_13.md
   - prompt_common_v0_1_12.md

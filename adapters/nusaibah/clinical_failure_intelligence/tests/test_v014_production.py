@@ -270,3 +270,11 @@ def test_production_deadline_cannot_outlive_the_new_case_execution_manifest():
     data["variables"]["max_product_seconds"] = 3600
     assert parse_request(data)["max_product_seconds"] == 3600
     assert ExecutionPolicy().deadline_seconds == 3600
+
+
+def test_new_version_review_metadata_and_schema_are_explicitly_declared_for_promotion():
+    handoff = (ASSET_ROOT / 'adapter.yaml').read_text()
+    for filename in ['admission_requirements_v0_1_14.json', 'clinical_intelligence_v0_1_14.schema.json',
+                     'PRODUCTION_READINESS_0_1_14.md']:
+        assert handoff.count('  - ' + filename + '\n') == 1
+        assert (ASSET_ROOT / filename).is_file()
