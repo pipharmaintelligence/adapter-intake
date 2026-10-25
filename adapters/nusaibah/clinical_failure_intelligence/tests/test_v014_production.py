@@ -273,17 +273,111 @@ def test_production_deadline_cannot_outlive_the_new_case_execution_manifest():
 
 
 def test_new_version_review_metadata_and_schema_are_explicitly_declared_for_promotion():
-    handoff = (ASSET_ROOT / 'adapter.yaml').read_text()
-    for filename in ['admission_requirements_v0_1_14.json', 'clinical_intelligence_v0_1_14.schema.json',
-                     'PRODUCTION_READINESS_0_1_14.md']:
-        assert handoff.count('  - ' + filename + '\n') == 1
+    handoff = (ASSET_ROOT / "adapter.yaml").read_text()
+    for filename in [
+        "admission_requirements_v0_1_14.json",
+        "clinical_intelligence_v0_1_14.schema.json",
+        "PRODUCTION_READINESS_0_1_14.md",
+    ]:
+        assert handoff.count("  - " + filename + "\n") == 1
         assert (ASSET_ROOT / filename).is_file()
 
 
 def test_unchanged_agent_contracts_keep_real_reviewed_prompt_files():
-    current = json.loads((ASSET_ROOT / 'admission_requirements_v0_1_14.json').read_text())
-    old = json.loads((ASSET_ROOT / 'admission_requirements_v0_1_13.json').read_text())
-    assert len(current['agent_contracts']) == 8
-    for before, after in zip(old['agent_contracts'], current['agent_contracts']):
+    current = json.loads(
+        (ASSET_ROOT / "admission_requirements_v0_1_14.json").read_text()
+    )
+    old = json.loads((ASSET_ROOT / "admission_requirements_v0_1_13.json").read_text())
+    assert len(current["agent_contracts"]) == 8
+    for before, after in zip(old["agent_contracts"], current["agent_contracts"]):
         assert before == after
-        assert (ASSET_ROOT / after['prompt_file']).is_file()
+        assert (ASSET_ROOT / after["prompt_file"]).is_file()
+
+
+def snapshot():
+    return {
+        "source_ref": "aib_" + "1" * 32,
+        "file_sha256": "b" * 64,
+        "record_count": 508,
+        "access_mode": "file_object",
+        "complete": True,
+    }
+
+
+def test_same_file_new_core_binding_is_recorded_without_saved_authority():
+    from clinical_failure_intelligence.continuation_v0_1_14 import (
+        _source_snapshot_transition,
+    )
+
+    old = snapshot()
+    new = deepcopy(old)
+    new.update(source_ref="aib_" + "2" * 32, file_sha256="sha256:" + old["file_sha256"])
+    receipt = _source_snapshot_transition(old, new)
+    assert (
+        receipt["canonical_file_unchanged"]
+        and receipt["current_core_binding_authority_required"]
+    )
+    assert not receipt["saved_result_grants_authority"] and old == snapshot()
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("file_sha256", "c" * 64),
+        ("record_count", 507),
+        ("access_mode", "partition_file"),
+        ("complete", False),
+        ("source_ref", "caller_invented"),
+    ],
+)
+def test_binding_handoff_cannot_hide_a_changed_or_incomplete_snapshot(field, value):
+    from clinical_failure_intelligence.continuation_v0_1_14 import (
+        _source_snapshot_transition,
+    )
+
+    old = snapshot()
+    new = {**old, "source_ref": "aib_" + "2" * 32, field: value}
+    with pytest.raises(
+        ContractError, match="clinical_continuation_input_snapshot_changed"
+    ):
+        _source_snapshot_transition(old, new)
+
+
+def test_signed_qualification_can_use_zero_agent_finalization_record_path():
+    from jsonschema import Draft202012Validator
+
+    data = pending_013()
+    old_proof = snapshot()
+    new_proof = {**old_proof, "source_ref": "aib_" + "2" * 32}
+    prior = data["previous_assessment_013"]["value"]
+    prior["source_event_metadata"] = {"provenance": old_proof}
+    data["clinical_context"]["source_event_metadata"] = {"provenance": new_proof}
+    data["variables"].update(
+        finalize_only=True,
+        resume_work_ids=[],
+        preflight_only=False,
+        memory_mode="off",
+        enable_refinement=False,
+        supplementary_search=False,
+        enable_pharmacological_class=False,
+        prepare_result_for_persistence=True,
+    )
+    before = deepcopy(prior)
+    host = Inputs(data)
+    output = continue_analysis(host)["outputs"]
+    dto = output["clinical_intelligence"]
+    assert not host.calls and output["clinical_intelligence_records"]["records"] == [
+        dto
+    ]
+    assert dto["evidence"] == before["evidence"] and dto["quality"] == before["quality"]
+    assert not dto["execution"]["retained_finalization"][
+        "scientific_processing_repeated"
+    ]
+    assert dto["execution"]["retained_finalization"]["source_binding_transition"][
+        "canonical_file_unchanged"
+    ]
+    assert not dto["publication_readiness"]["publication_confirmed"]
+    schema = json.loads(
+        (ASSET_ROOT / "clinical_intelligence_v0_1_14.schema.json").read_text()
+    )
+    Draft202012Validator(schema).validate(dto)

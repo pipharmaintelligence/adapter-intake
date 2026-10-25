@@ -20,3 +20,10 @@ The eight Agent 1.7.0 role contracts and methodology Skill stay unchanged. The n
 - ECS requires a real digest-pinned image, reviewed task resources/network/roles/secrets, migration and configuration-cache readiness, controlled signed smoke, graceful drain and a recorded rollback revision. No cloud deployment or additional paid call is claimed by this change.
 
 Partial scientific results remain partial even when safely retained and published. Source gaps and the remaining unselected reviews must be addressed through explicitly selected, newly admitted follow-up work.
+
+
+## Cross-version source snapshots and exact record qualification
+
+A newly approved asset-version binding has a different `aib_` ID. Continuation may record that ID transition only when the complete file checksum, row count, access mode, case and evidence remain identical. Current Core binding authority is still required; the saved result grants none. Missing/incomplete/changed snapshots and arbitrary source references are rejected. The old evidence/provenance remains preserved with an explicit transition receipt.
+
+Ordinary `preflight_only=true` returns a semantic preflight report, not a publication record. The exact model-free record proof uses the existing governed retained-finalization path: `finalize_only=true`, `resume_work_ids=[]`, `preflight_only=false`, `prepare_result_for_persistence=true`, `memory_mode=off`, and refinement/search/classification disabled. It produces `clinical_intelligence_records` with zero Agent calls and explicit `scientific_processing_repeated=false`. It preserves the source result's partial quality and cannot authorize publication or paid work. Signed serving qualification must receive `previous_assessment_013` through Core, never a caller-created envelope.

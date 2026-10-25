@@ -82,6 +82,55 @@ def restored_ledger(prior):
     return ledger
 
 
+def _source_snapshot_transition(old, new):
+    """Binding identity may change; complete canonical file evidence may not."""
+    if old is None:
+        return None
+    fields = {"source_ref", "file_sha256", "record_count", "access_mode", "complete"}
+    require(
+        isinstance(old, dict)
+        and isinstance(new, dict)
+        and set(old) == fields
+        and set(new) == fields,
+        "clinical_continuation_input_snapshot_changed",
+    )
+    for proof in (old, new):
+        require(
+            proof["complete"] is True
+            and type(proof["record_count"]) is int
+            and proof["record_count"] >= 0
+            and isinstance(proof["file_sha256"], str)
+            and re.fullmatch(r"(?:sha256:)?[a-f0-9]{64}", proof["file_sha256"])
+            is not None,
+            "clinical_continuation_input_snapshot_changed",
+        )
+    old_snapshot = {key: value for key, value in old.items() if key != "source_ref"}
+    new_snapshot = {key: value for key, value in new.items() if key != "source_ref"}
+    old_snapshot["file_sha256"] = old_snapshot["file_sha256"].removeprefix("sha256:")
+    new_snapshot["file_sha256"] = new_snapshot["file_sha256"].removeprefix("sha256:")
+    require(
+        old_snapshot == new_snapshot, "clinical_continuation_input_snapshot_changed"
+    )
+    if old["source_ref"] == new["source_ref"]:
+        return None
+    require(
+        all(
+            isinstance(proof["source_ref"], str)
+            and re.fullmatch(r"aib_[a-f0-9]{32}", proof["source_ref"])
+            for proof in (old, new)
+        ),
+        "clinical_continuation_input_snapshot_changed",
+    )
+    return {
+        "previous_source_ref": old["source_ref"],
+        "current_source_ref": new["source_ref"],
+        "file_snapshot_digest": digest(new_snapshot),
+        "canonical_file_unchanged": True,
+        "current_core_binding_authority_required": True,
+        "saved_result_grants_authority": False,
+    }
+
+
 def preparation(inputs):
     require(isinstance(inputs, dict), "clinical_continuation_retained_input_required")
     roles = set(inputs) & {
@@ -175,8 +224,7 @@ def preparation(inputs):
     )
     old_proof = prior.get("source_event_metadata", {}).get("provenance")
     new_proof = request["context"].get("source_event_metadata", {}).get("provenance")
-    if old_proof is not None:
-        require(old_proof == new_proof, "clinical_continuation_input_snapshot_changed")
+    source_transition = _source_snapshot_transition(old_proof, new_proof)
     restored_ledger(prior)
     old_sources = {row["evidence_id"]: digest(row) for row in prior["evidence"]}
     supplied = EvidenceLedger(
@@ -261,6 +309,7 @@ def preparation(inputs):
         "source_artifact_checksum_sha256": proof["checksum_sha256"],
         "source_assessment_digest": digest(prior),
         "source_evidence_digest": digest(prior["evidence"]),
+        "source_binding_transition": source_transition,
         "selected_work_ids": selected,
         "tasks": planned,
         "finalize_only": finalizing,
