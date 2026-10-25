@@ -278,3 +278,12 @@ def test_new_version_review_metadata_and_schema_are_explicitly_declared_for_prom
                      'PRODUCTION_READINESS_0_1_14.md']:
         assert handoff.count('  - ' + filename + '\n') == 1
         assert (ASSET_ROOT / filename).is_file()
+
+
+def test_unchanged_agent_contracts_keep_real_reviewed_prompt_files():
+    current = json.loads((ASSET_ROOT / 'admission_requirements_v0_1_14.json').read_text())
+    old = json.loads((ASSET_ROOT / 'admission_requirements_v0_1_13.json').read_text())
+    assert len(current['agent_contracts']) == 8
+    for before, after in zip(old['agent_contracts'], current['agent_contracts']):
+        assert before == after
+        assert (ASSET_ROOT / after['prompt_file']).is_file()
