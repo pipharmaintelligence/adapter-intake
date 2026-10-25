@@ -1,6 +1,6 @@
 {
   "key": "nusaibah.clinical_failure_intelligence",
-  "default": "0.1.12",
+  "default": "0.1.14",
   "allowed_surfaces": [
     "v1_asset_execute"
   ],
@@ -2756,6 +2756,579 @@
         ],
         "default_substrate": "local_worker",
         "timeout_seconds": 48300
+      }
+    },
+    "0.1.13": {
+      "state": "active",
+      "inputs": {
+        "variables": {
+          "required": true,
+          "source": "direct",
+          "shape": "object"
+        },
+        "clinical_context": {
+          "required": true,
+          "source": "binding",
+          "shape": "object"
+        },
+        "clinical_evidence": {
+          "required": false,
+          "source": "binding",
+          "shape": "object"
+        },
+        "trial_study_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.clinical_trials_lookup:0.1.1",
+            "output_role": "trial_result"
+          }
+        },
+        "trial_results_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.clinical_trials_lookup:0.1.1",
+            "output_role": "trial_result"
+          }
+        },
+        "literature_search_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.pubmed_evidence:0.1.0",
+            "output_role": "literature_result"
+          }
+        },
+        "literature_metadata_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.pubmed_evidence:0.1.0",
+            "output_role": "literature_result"
+          }
+        },
+        "terminology_source_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "umls_terminology:0.1.1",
+            "output_role": "terminology_result"
+          }
+        },
+        "literature_abstract_1_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.pubmed_evidence:0.1.0",
+            "output_role": "literature_result"
+          }
+        },
+        "literature_integrity_1_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.pubmed_evidence:0.1.0",
+            "output_role": "literature_result"
+          }
+        },
+        "literature_abstract_2_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.pubmed_evidence:0.1.0",
+            "output_role": "literature_result"
+          }
+        },
+        "literature_integrity_2_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.pubmed_evidence:0.1.0",
+            "output_role": "literature_result"
+          }
+        },
+        "literature_abstract_3_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.pubmed_evidence:0.1.0",
+            "output_role": "literature_result"
+          }
+        },
+        "literature_integrity_3_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.pubmed_evidence:0.1.0",
+            "output_role": "literature_result"
+          }
+        },
+        "previous_assessment": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.clinical_failure_intelligence:0.1.9",
+            "output_role": "clinical_intelligence"
+          }
+        },
+        "previous_continuation": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.clinical_failure_intelligence:0.1.13",
+            "output_role": "clinical_intelligence"
+          }
+        },
+        "literature_context_search_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.pubmed_evidence:0.1.0",
+            "output_role": "literature_result"
+          }
+        }
+      },
+      "outputs": {
+        "clinical_intelligence": {
+          "required": false,
+          "shape": "object"
+        },
+        "clinical_intelligence_records": {
+          "required": false,
+          "shape": "object"
+        },
+        "product_selection": {
+          "required": false,
+          "shape": "object"
+        },
+        "continuation_plan": {
+          "shape": "object",
+          "required": false
+        },
+        "continuation_receipt": {
+          "shape": "object",
+          "required": false
+        }
+      },
+      "callable": {
+        "enabled": true,
+        "result_key": "clinical_intelligence",
+        "result_shape": "object",
+        "max_result_bytes": 4194304,
+        "timeout_seconds": 3600
+      },
+      "skills": [
+        {
+          "skill_ref": "nusaibah.clinical-failure-methodology",
+          "version": "1.1.0",
+          "digest": "sha256:9821240824bbd5b637e928d730745d5c9409f833707e48a277197bd9d6cc9ec9"
+        }
+      ],
+      "agents": {
+        "trial_researcher": {
+          "contract_key": "agent.nusaibah.clinical_failure_intelligence_trial_researcher",
+          "contract_version": "1.7.0",
+          "reference": "agent://contracts/nusaibah.clinical-failure-intelligence-trial-researcher"
+        },
+        "literature_researcher": {
+          "contract_key": "agent.nusaibah.clinical_failure_intelligence_literature_researcher",
+          "contract_version": "1.7.0",
+          "reference": "agent://contracts/nusaibah.clinical-failure-intelligence-literature-researcher"
+        },
+        "event_researcher": {
+          "contract_key": "agent.nusaibah.clinical_failure_intelligence_event_researcher",
+          "contract_version": "1.7.0",
+          "reference": "agent://contracts/nusaibah.clinical-failure-intelligence-event-researcher"
+        },
+        "outcome_adjudicator": {
+          "contract_key": "agent.nusaibah.clinical_failure_intelligence_outcome_adjudicator",
+          "contract_version": "1.7.0",
+          "reference": "agent://contracts/nusaibah.clinical-failure-intelligence-outcome-adjudicator"
+        },
+        "hypothesis_analyst": {
+          "contract_key": "agent.nusaibah.clinical_failure_intelligence_hypothesis_analyst",
+          "contract_version": "1.7.0",
+          "reference": "agent://contracts/nusaibah.clinical-failure-intelligence-hypothesis-analyst"
+        },
+        "evidence_critic": {
+          "contract_key": "agent.nusaibah.clinical_failure_intelligence_evidence_critic",
+          "contract_version": "1.7.0",
+          "reference": "agent://contracts/nusaibah.clinical-failure-intelligence-evidence-critic"
+        },
+        "product_memory_editor": {
+          "contract_key": "agent.nusaibah.clinical_failure_intelligence_product_memory_editor",
+          "contract_version": "1.7.0",
+          "reference": "agent://contracts/nusaibah.clinical-failure-intelligence-product-memory-editor"
+        },
+        "input_reconciler": {
+          "contract_key": "agent.nusaibah.clinical_failure_intelligence_input_reconciler",
+          "contract_version": "1.7.0",
+          "reference": "agent://contracts/nusaibah.clinical-failure-intelligence-input-reconciler"
+        }
+      },
+      "public_web": {
+        "profiles": [
+          "reference_read"
+        ],
+        "modes": [
+          "http"
+        ]
+      },
+      "runtime_skills": {
+        "product_memory": {
+          "source": {
+            "lake_ref": "test_database_lake",
+            "node_key": "clinical_product_memory_packages"
+          },
+          "resolution": "current",
+          "mutation": "read_only",
+          "partition": {
+            "product_id": {
+              "from_variable": "product_id"
+            }
+          }
+        }
+      },
+      "output_contracts": {
+        "clinical_intelligence_records": {
+          "target_kind": "dlm_file_artifact_output",
+          "write_mode": "dry_run",
+          "format_policy": {
+            "source": "node_allowlist",
+            "developer_selected_format": null,
+            "server_admission_required": true
+          },
+          "schema": {
+            "source": "explicit",
+            "fields": [
+              {
+                "name": "records",
+                "type": "array",
+                "required": true
+              }
+            ]
+          },
+          "validation": {
+            "self_inspection": {
+              "enforce": true,
+              "on_fail": "fail"
+            }
+          }
+        }
+      },
+      "execution": {
+        "allowed_substrates": [
+          "local_worker",
+          "ecs"
+        ],
+        "default_substrate": "local_worker",
+        "timeout_seconds": 48300
+      }
+    },
+    "0.1.14": {
+      "state": "active",
+      "inputs": {
+        "variables": {
+          "required": true,
+          "source": "direct",
+          "shape": "object"
+        },
+        "clinical_context": {
+          "required": true,
+          "source": "binding",
+          "shape": "object"
+        },
+        "clinical_evidence": {
+          "required": false,
+          "source": "binding",
+          "shape": "object"
+        },
+        "trial_study_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.clinical_trials_lookup:0.1.1",
+            "output_role": "trial_result"
+          }
+        },
+        "trial_results_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.clinical_trials_lookup:0.1.1",
+            "output_role": "trial_result"
+          }
+        },
+        "literature_search_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.pubmed_evidence:0.1.0",
+            "output_role": "literature_result"
+          }
+        },
+        "literature_metadata_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.pubmed_evidence:0.1.0",
+            "output_role": "literature_result"
+          }
+        },
+        "terminology_source_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "umls_terminology:0.1.1",
+            "output_role": "terminology_result"
+          }
+        },
+        "literature_abstract_1_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.pubmed_evidence:0.1.0",
+            "output_role": "literature_result"
+          }
+        },
+        "literature_integrity_1_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.pubmed_evidence:0.1.0",
+            "output_role": "literature_result"
+          }
+        },
+        "literature_abstract_2_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.pubmed_evidence:0.1.0",
+            "output_role": "literature_result"
+          }
+        },
+        "literature_integrity_2_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.pubmed_evidence:0.1.0",
+            "output_role": "literature_result"
+          }
+        },
+        "literature_abstract_3_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.pubmed_evidence:0.1.0",
+            "output_role": "literature_result"
+          }
+        },
+        "literature_integrity_3_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.pubmed_evidence:0.1.0",
+            "output_role": "literature_result"
+          }
+        },
+        "previous_assessment": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.clinical_failure_intelligence:0.1.9",
+            "output_role": "clinical_intelligence"
+          }
+        },
+        "previous_continuation": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.clinical_failure_intelligence:0.1.14",
+            "output_role": "clinical_intelligence"
+          }
+        },
+        "literature_context_search_result": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.pubmed_evidence:0.1.0",
+            "output_role": "literature_result"
+          }
+        },
+        "previous_assessment_013": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "retained_output": {
+            "asset_identity": "nusaibah.clinical_failure_intelligence:0.1.13",
+            "output_role": "clinical_intelligence"
+          }
+        }
+      },
+      "outputs": {
+        "clinical_intelligence": {
+          "required": false,
+          "shape": "object"
+        },
+        "clinical_intelligence_records": {
+          "required": false,
+          "shape": "object"
+        },
+        "product_selection": {
+          "required": false,
+          "shape": "object"
+        },
+        "continuation_plan": {
+          "shape": "object",
+          "required": false
+        },
+        "continuation_receipt": {
+          "shape": "object",
+          "required": false
+        }
+      },
+      "callable": {
+        "enabled": true,
+        "result_key": "clinical_intelligence",
+        "result_shape": "object",
+        "max_result_bytes": 4194304,
+        "timeout_seconds": 3600
+      },
+      "skills": [
+        {
+          "skill_ref": "nusaibah.clinical-failure-methodology",
+          "version": "1.1.0",
+          "digest": "sha256:9821240824bbd5b637e928d730745d5c9409f833707e48a277197bd9d6cc9ec9"
+        }
+      ],
+      "agents": {
+        "trial_researcher": {
+          "contract_key": "agent.nusaibah.clinical_failure_intelligence_trial_researcher",
+          "contract_version": "1.7.0",
+          "reference": "agent://contracts/nusaibah.clinical-failure-intelligence-trial-researcher"
+        },
+        "literature_researcher": {
+          "contract_key": "agent.nusaibah.clinical_failure_intelligence_literature_researcher",
+          "contract_version": "1.7.0",
+          "reference": "agent://contracts/nusaibah.clinical-failure-intelligence-literature-researcher"
+        },
+        "event_researcher": {
+          "contract_key": "agent.nusaibah.clinical_failure_intelligence_event_researcher",
+          "contract_version": "1.7.0",
+          "reference": "agent://contracts/nusaibah.clinical-failure-intelligence-event-researcher"
+        },
+        "outcome_adjudicator": {
+          "contract_key": "agent.nusaibah.clinical_failure_intelligence_outcome_adjudicator",
+          "contract_version": "1.7.0",
+          "reference": "agent://contracts/nusaibah.clinical-failure-intelligence-outcome-adjudicator"
+        },
+        "hypothesis_analyst": {
+          "contract_key": "agent.nusaibah.clinical_failure_intelligence_hypothesis_analyst",
+          "contract_version": "1.7.0",
+          "reference": "agent://contracts/nusaibah.clinical-failure-intelligence-hypothesis-analyst"
+        },
+        "evidence_critic": {
+          "contract_key": "agent.nusaibah.clinical_failure_intelligence_evidence_critic",
+          "contract_version": "1.7.0",
+          "reference": "agent://contracts/nusaibah.clinical-failure-intelligence-evidence-critic"
+        },
+        "product_memory_editor": {
+          "contract_key": "agent.nusaibah.clinical_failure_intelligence_product_memory_editor",
+          "contract_version": "1.7.0",
+          "reference": "agent://contracts/nusaibah.clinical-failure-intelligence-product-memory-editor"
+        },
+        "input_reconciler": {
+          "contract_key": "agent.nusaibah.clinical_failure_intelligence_input_reconciler",
+          "contract_version": "1.7.0",
+          "reference": "agent://contracts/nusaibah.clinical-failure-intelligence-input-reconciler"
+        }
+      },
+      "public_web": {
+        "profiles": [
+          "reference_read"
+        ],
+        "modes": [
+          "http"
+        ]
+      },
+      "runtime_skills": {
+        "product_memory": {
+          "source": {
+            "lake_ref": "test_database_lake",
+            "node_key": "clinical_product_memory_packages"
+          },
+          "resolution": "current",
+          "mutation": "read_only",
+          "partition": {
+            "product_id": {
+              "from_variable": "product_id"
+            }
+          }
+        }
+      },
+      "output_contracts": {
+        "clinical_intelligence_records": {
+          "target_kind": "dlm_file_artifact_output",
+          "write_mode": "dry_run",
+          "format_policy": {
+            "source": "node_allowlist",
+            "developer_selected_format": null,
+            "server_admission_required": true
+          },
+          "schema": {
+            "source": "explicit",
+            "fields": [
+              {
+                "name": "records",
+                "type": "array",
+                "required": true
+              }
+            ]
+          },
+          "validation": {
+            "self_inspection": {
+              "enforce": true,
+              "on_fail": "fail"
+            }
+          }
+        }
+      },
+      "execution": {
+        "allowed_substrates": [
+          "local_worker",
+          "ecs"
+        ],
+        "default_substrate": "local_worker",
+        "timeout_seconds": 4200
       }
     }
   }
