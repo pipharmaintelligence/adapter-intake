@@ -220,7 +220,7 @@ def test_all_published_runtime_bytes_and_manifest_versions_are_preserved():
     manifest=json.loads((ASSET_ROOT/'clinical_failure_intelligence.asset.json').read_text())
     for version,checksum in frozen['versions'].items():
         assert hashlib.sha256(json.dumps(manifest['versions'][version],sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()==checksum,version
-    assert manifest['default']=='0.1.14'
+    assert manifest['default']=='0.1.15'
     assert '0.1.12' in manifest['versions']
     assert manifest['versions']['0.1.12']['inputs']['literature_context_search_result']['retained_output']=={
         'asset_identity':'nusaibah.pubmed_evidence:0.1.0','output_role':'literature_result'}

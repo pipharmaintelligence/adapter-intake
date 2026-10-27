@@ -1,10 +1,41 @@
 asset_key: nusaibah.clinical_failure_intelligence
-asset_version: 0.1.14
+asset_version: 0.1.15
 package_target: python_runtime/adapters/intake/nusaibah/clinical_failure_intelligence
 manifest: clinical_failure_intelligence.asset.json
-adapter_module: clinical_failure_intelligence_v0_1_14_adapter.py
+adapter_module: clinical_failure_intelligence_v0_1_15_adapter.py
 
 reviewed_helpers:
+  - analysis_packets_v0_1_15.py
+  - business_recovery_v0_1_15.py
+  - case_context_v0_1_15.py
+  - clinical_failure_intelligence_v0_1_14_adapter.py
+  - cohort_v0_1_15.py
+  - continuation_v0_1_15.py
+  - contracts_v0_1_15.py
+  - decision_outcome_v0_1_15.py
+  - deferred_work_v0_1_15.py
+  - evidence_v0_1_15.py
+  - input_reconciliation_v0_1_15.py
+  - item_contracts_v0_1_15.py
+  - memory_packets_v0_1_15.py
+  - memory_v0_1_15.py
+  - orchestration_v0_1_15.py
+  - output_inspection_v0_1_15.py
+  - policies_v0_1_15.py
+  - product_memory_v0_1_15.py
+  - product_range_v0_1_15.py
+  - prompt_catalog_v0_1_15.py
+  - quality_v0_1_15.py
+  - range_workflow_v0_1_15.py
+  - rendering_v0_1_15.py
+  - research_sources_v0_1_15.py
+  - retained_sources_v0_1_15.py
+  - review_packets_v0_1_15.py
+  - review_references_v0_1_15.py
+  - runtime_access_v0_1_15.py
+  - source_bundle_v0_1_15.py
+  - source_events_v0_1_15.py
+  - source_workflow_v0_1_15.py
   - analysis_packets_v0_1_14.py
   - business_recovery_v0_1_14.py
   - case_context_v0_1_14.py
@@ -337,6 +368,8 @@ reviewed_helpers:
   - source_events.py
 
 reviewed_support_files:
+  - admission_requirements_v0_1_15.json
+  - clinical_intelligence_v0_1_15.schema.json
   - admission_requirements_v0_1_14.json
   - clinical_intelligence_v0_1_14.schema.json
   - admission_requirements_v0_1_13.json
@@ -358,6 +391,7 @@ reviewed_support_files:
   - admission_requirements_v0_1_3.json
   - admission_requirements.json
 optional_files:
+  - CANDIDATE_SCOPE_RECOVERY_0_1_15.md
   - PRODUCTION_READINESS_0_1_14.md
   - SOURCE_RECOVERY_V012.md
   - prompt_common_v0_1_13.md
