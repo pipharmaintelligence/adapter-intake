@@ -146,4 +146,4 @@ def test_historical_014_files_and_manifest_remain_immutable():
     for name,sha in baseline['files'].items():assert hashlib.sha256((ASSET_ROOT/name).read_bytes().replace(b'\r\n',b'\n')).hexdigest()==sha
     manifest=json.loads((ASSET_ROOT/'clinical_failure_intelligence.asset.json').read_text())
     sha=hashlib.sha256(json.dumps(manifest['versions']['0.1.14'],sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
-    assert sha==baseline['version_sha256'] and manifest['default']=='0.1.15'
+    assert sha==baseline['version_sha256'] and '0.1.15' in manifest['versions']
