@@ -15,8 +15,8 @@ outside `adapters/` and is absent from every helper/support-file allowlist.
 
 | Gate | Owner / reuse | Required proof before advancing | Current state |
 | --- | --- | --- | --- |
-| P0 Draft contracts | adapter-intake | Optional identity, explicit coverage, retained handoff and class review reviewed; offline positive/negative fixtures | Prepared here; not runtime-admitted |
-| P1 Retained source authority | Core + Assets operator verification | One exact governed retained assessment; producer/run/output role; digest; child-owned input binding; dry-run distinguished from persistence | Unproven |
+| P0 Draft contracts | adapter-intake | Optional identity, explicit coverage, retained handoff and class review reviewed; offline positive/negative fixtures | Two review refinements addressed; contract sign-off outstanding; not runtime-admitted |
+| P1 Retained source authority | Core + Assets operator verification | One exact governed retained assessment; producer/run/output role; digest; child-owned input binding; dry-run distinguished from persistence | Started; configured database read unavailable; no real source verified |
 | P2 Read-only inspection candidate | Future `clinical_reasoning_review@0.1.0` | No Agent/provider/write initially; wrong identity, missing graph, tampered digest, partial/deferred and unavailable inputs fail safely | Not implemented |
 | P3 Independent review | Existing trusted Agent and fixed Skill roles | Exact child-owned provider/input/Skill version; contradictory/wrong-trial/wrong-indication/withdrawn evidence; original immutable | Not implemented |
 | P4 Neutral missing-assessment path | PI-1751 | Generic admitted ruleset, source compliance, bounded scan/continuation; no failure/success inference; explicit retention handoff preserving no-publish engine | Dependency |
@@ -36,6 +36,9 @@ registered handler map or FIFO dispatch switch during preparation.
 The dedicated test suite validates every draft schema, synthetic examples and
 negative mutations for unauthorized fields, subset completeness, incomplete
 coverage, unreviewed generalization, lost retained provenance and write flags.
+Overflow is explicitly blocked before launch; no truncation or pagination is
+admitted. Handoff acceptance is structural/read eligibility only, with original
+scientific flags preserved and deferred/unknown counters retained.
 The existing repository intake guard also runs to check unrelated admission
 contracts remain intact. These checks prove shape and conservative structural
 gates only. They do not certify live authority, scientific quality or a runtime.

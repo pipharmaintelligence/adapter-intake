@@ -211,6 +211,65 @@
       "maxItems": 128,
       "uniqueItems": true
     },
+    "extent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "policy": {
+          "const": "block_overflow_no_pagination"
+        },
+        "eligible_product_count": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "selected_product_count": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "selected_case_count": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "truncated": {
+          "const": false
+        },
+        "pagination_applied": {
+          "const": false
+        }
+      },
+      "required": [
+        "policy",
+        "eligible_product_count",
+        "selected_product_count",
+        "selected_case_count",
+        "truncated",
+        "pagination_applied"
+      ]
+    },
     "case_inventory_complete": {
       "enum": [
         true,
@@ -275,6 +334,7 @@
     "membership",
     "selected_products",
     "selected_cases",
+    "extent",
     "case_inventory_complete",
     "assessment_policy"
   ]

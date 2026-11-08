@@ -78,6 +78,16 @@
       "minimum": 0,
       "maximum": 100000
     },
+    "deferred_product_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "unknown_product_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
     "assessment_case_count": {
       "type": "integer",
       "minimum": 0,
@@ -113,6 +123,11 @@
       "minimum": 0,
       "maximum": 100000
     },
+    "unknown_case_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
     "inventory_member_count": {
       "oneOf": [
         {
@@ -141,7 +156,9 @@
               "partial",
               "missing",
               "blocked",
-              "outdated"
+              "outdated",
+              "deferred",
+              "unknown"
             ]
           }
         },
@@ -171,7 +188,8 @@
               "deferred",
               "missing",
               "blocked",
-              "outdated"
+              "outdated",
+              "unknown"
             ]
           }
         },
@@ -235,6 +253,8 @@
     "missing_product_count",
     "blocked_product_count",
     "outdated_product_count",
+    "deferred_product_count",
+    "unknown_product_count",
     "assessment_case_count",
     "completed_case_count",
     "partial_case_count",
@@ -242,6 +262,7 @@
     "missing_case_count",
     "blocked_case_count",
     "outdated_case_count",
+    "unknown_case_count",
     "inventory_member_count",
     "product_dispositions",
     "case_dispositions",

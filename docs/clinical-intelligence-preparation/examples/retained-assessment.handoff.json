@@ -25,6 +25,19 @@
     "content_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
   },
   "quality": "partial",
+  "producer_quality": {
+    "status": "partial",
+    "scientific_accuracy_certified": false,
+    "external_truth_verified": false,
+    "automated_review_only": true
+  },
+  "verification": {
+    "retained_integrity": "verified",
+    "identity": "matched",
+    "structure": "valid",
+    "freshness": "current",
+    "structural_issue_codes": []
+  },
   "evidence_sources": [
     {
       "source_ref": "SYNTH_TRIAL_SOURCE_A",

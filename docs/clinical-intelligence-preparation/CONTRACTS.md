@@ -58,6 +58,11 @@ Product coverage and product–indication–trial case coverage are separate. A
 complete list of products does not prove that every clinical case is covered.
 Unknown inventory size prevents a claim of complete class evidence.
 
+The draft fixes all three scope arrays at 128 and chooses pre-launch blocking
+for any larger governed extent. `extent` preserves known totals and prohibits
+truncation or unqualified pagination; overflow returns an explicit blocked
+gateway response instead of a shortened scope. See [review refinements](REVIEW_REFINEMENTS.md).
+
 ## Existing versus missing assessment
 
 For each frozen case, the inventory distinguishes `existing_verified`,
@@ -72,6 +77,13 @@ evidence-as-of and source snapshot, reason graph, methodology digest, model
 revision and quality state. The host must verify all fields against retained
 readback and Core-owned input authority; none is a ChatGPT argument or trusted
 merely because its JSON validates. A digest alone is not authority.
+
+Normalized `quality: accepted` means verified retained/structural eligibility,
+never scientific validation. Preserve `producer_quality` separately and retain
+the source's uncertified-science flags. The ordered crosswalk maps completed,
+partial, preflight/deferred, verification failure, staleness and unknown states
+without upgrading scientific truth. Structural issues and unresolved scientific
+questions remain distinct. See the exact [crosswalk](REVIEW_REFINEMENTS.md).
 
 Preserve the original snapshot and graph. Corrections are new artifacts with
 parent review/assessment references. Never rewrite the prior result in place.

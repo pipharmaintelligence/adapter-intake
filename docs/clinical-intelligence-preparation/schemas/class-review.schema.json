@@ -54,7 +54,8 @@
               "partial",
               "deferred",
               "blocked",
-              "outdated"
+              "outdated",
+              "unknown"
             ]
           }
         },

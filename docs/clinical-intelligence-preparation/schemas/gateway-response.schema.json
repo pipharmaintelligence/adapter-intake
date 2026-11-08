@@ -127,6 +127,26 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 100000
+            },
+            "unknown_case_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "deferred_case_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "unknown_product_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "deferred_product_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
             }
           },
           "required": [
@@ -140,7 +160,11 @@
             "product_with_accepted_assessment_count",
             "missing_product_count",
             "partial_case_count",
-            "blocked_case_count"
+            "blocked_case_count",
+            "unknown_case_count",
+            "deferred_case_count",
+            "unknown_product_count",
+            "deferred_product_count"
           ]
         },
         {
@@ -217,6 +241,65 @@
         "operator_review",
         "none"
       ]
+    },
+    "scope_limit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "policy": {
+          "const": "block_overflow_no_pagination"
+        },
+        "product_limit": {
+          "const": 128
+        },
+        "case_limit": {
+          "const": 128
+        },
+        "observed_eligible_product_count": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observed_selected_product_count": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observed_selected_case_count": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "policy",
+        "product_limit",
+        "case_limit",
+        "observed_eligible_product_count",
+        "observed_selected_product_count",
+        "observed_selected_case_count"
+      ]
     }
   },
   "required": [
@@ -233,6 +316,43 @@
     "next_action"
   ],
   "allOf": [
+    {
+      "if": {
+        "required": [
+          "scope_limit"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": "blocked"
+          },
+          "stage": {
+            "const": "inventory"
+          },
+          "run_ref": {
+            "type": "null"
+          },
+          "coverage": {
+            "type": "null"
+          },
+          "reports": {
+            "maxItems": 0
+          },
+          "citations": {
+            "maxItems": 0
+          },
+          "next_action": {
+            "const": "revise_scope"
+          },
+          "reason_codes": {
+            "contains": {
+              "const": "class_scope_limit_exceeded"
+            }
+          }
+        }
+      }
+    },
     {
       "if": {
         "properties": {

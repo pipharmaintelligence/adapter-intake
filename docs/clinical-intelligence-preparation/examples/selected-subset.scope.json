@@ -89,6 +89,14 @@
     }
   ],
   "case_inventory_complete": true,
+  "extent": {
+    "policy": "block_overflow_no_pagination",
+    "eligible_product_count": 6,
+    "selected_product_count": 3,
+    "selected_case_count": 3,
+    "truncated": false,
+    "pagination_applied": false
+  },
   "assessment_policy": {
     "review_existing": true,
     "assess_missing": true,

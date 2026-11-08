@@ -125,7 +125,97 @@
         "partial",
         "deferred",
         "blocked",
-        "outdated"
+        "outdated",
+        "unknown"
+      ]
+    },
+    "producer_quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "scientific_accuracy_certified": {
+          "enum": [
+            true,
+            false,
+            null
+          ]
+        },
+        "external_truth_verified": {
+          "enum": [
+            true,
+            false,
+            null
+          ]
+        },
+        "automated_review_only": {
+          "enum": [
+            true,
+            false,
+            null
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "scientific_accuracy_certified",
+        "external_truth_verified",
+        "automated_review_only"
+      ]
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "retained_integrity": {
+          "enum": [
+            "verified",
+            "unverified",
+            "unavailable",
+            "failed"
+          ]
+        },
+        "identity": {
+          "enum": [
+            "matched",
+            "unresolved",
+            "conflict"
+          ]
+        },
+        "structure": {
+          "enum": [
+            "valid",
+            "unverified",
+            "invalid"
+          ]
+        },
+        "freshness": {
+          "enum": [
+            "current",
+            "outdated",
+            "unknown"
+          ]
+        },
+        "structural_issue_codes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "minItems": 0,
+          "maxItems": 128,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "retained_integrity",
+        "identity",
+        "structure",
+        "freshness",
+        "structural_issue_codes"
       ]
     },
     "evidence_sources": {
@@ -222,11 +312,87 @@
     "producer",
     "retained_result",
     "quality",
+    "producer_quality",
+    "verification",
     "evidence_sources",
     "evidence_as_of_date",
     "reason_graph_ref",
     "methodology",
     "model_revision",
     "unresolved_reason_codes"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "quality": {
+            "const": "accepted"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "producer_quality": {
+            "properties": {
+              "status": {
+                "const": "completed"
+              }
+            }
+          },
+          "verification": {
+            "properties": {
+              "retained_integrity": {
+                "const": "verified"
+              },
+              "identity": {
+                "const": "matched"
+              },
+              "structure": {
+                "const": "valid"
+              },
+              "freshness": {
+                "const": "current"
+              },
+              "structural_issue_codes": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "producer": {
+            "properties": {
+              "asset_key": {
+                "const": "nusaibah.clinical_failure_intelligence"
+              },
+              "asset_version": {
+                "const": "0.1.16"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "producer_quality": {
+            "properties": {
+              "scientific_accuracy_certified": {
+                "const": false
+              },
+              "external_truth_verified": {
+                "const": false
+              },
+              "automated_review_only": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    }
   ]
 }

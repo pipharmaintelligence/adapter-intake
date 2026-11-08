@@ -16,7 +16,11 @@
     "product_with_accepted_assessment_count": 1,
     "missing_product_count": 1,
     "partial_case_count": 1,
-    "blocked_case_count": 0
+    "blocked_case_count": 0,
+    "unknown_case_count": 0,
+    "deferred_case_count": 0,
+    "unknown_product_count": 0,
+    "deferred_product_count": 0
   },
   "reports": [
     {

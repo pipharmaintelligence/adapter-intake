@@ -24,7 +24,10 @@ PRODUCT_COUNTS = {
     "missing": "missing_product_count",
     "blocked": "blocked_product_count",
     "outdated": "outdated_product_count",
+    "deferred": "deferred_product_count",
+    "unknown": "unknown_product_count",
 }
+CASE_STATES = ("completed", "partial", "deferred", "missing", "blocked", "outdated", "unknown")
 COMPLETENESS = ("membership_complete", "selection_complete", "execution_complete",
                 "evidence_complete", "scientific_review_complete")
 
@@ -44,6 +47,23 @@ def keyed(rows: list[dict], key: str) -> dict:
     return result
 
 
+def normalized_handoff_quality(producer_quality: dict, verification: dict) -> str:
+    """Structural/read eligibility only; never derives scientific certification."""
+    if (verification["retained_integrity"] in {"unavailable", "failed"}
+            or verification["identity"] == "conflict" or verification["structure"] == "invalid"
+            or verification["structural_issue_codes"]):
+        return "blocked"
+    if (verification["retained_integrity"] != "verified" or verification["identity"] != "matched"
+            or verification["structure"] != "valid"):
+        return "unknown"
+    if verification["freshness"] == "outdated":
+        return "outdated"
+    if verification["freshness"] != "current":
+        return "unknown"
+    return {"completed": "accepted", "partial": "partial", "preflight": "deferred", "deferred": "deferred"}.get(
+        producer_quality["status"], "unknown")
+
+
 def check_scope(data: dict) -> None:
     membership = data["membership"]
     members = keyed(membership["eligible_products"], "product_id")
@@ -60,6 +80,16 @@ def check_scope(data: dict) -> None:
     require(all(row["product_id"] in selected for row in cases.values()), "case_product_outside_selection")
     if "legacy_class_mapping" in data:
         require(data["legacy_class_mapping"]["pharmacological_class_id"] == class_id, "legacy_mapping_class_mismatch")
+    extent = data["extent"]
+    for field, rows, complete in (
+        ("eligible_product_count", members, membership["complete"]),
+        ("selected_product_count", selected, False),
+        ("selected_case_count", cases, data["case_inventory_complete"] is True),
+    ):
+        count = extent[field]
+        require(count is None or count <= 128, "class_scope_limit_exceeded")
+        require(count is None or count == len(rows), "scope_extent_count_mismatch")
+        require(not complete or count is not None, "complete_scope_extent_unknown")
 
 
 def check_coverage(data: dict) -> None:
@@ -71,7 +101,7 @@ def check_coverage(data: dict) -> None:
     ccounts = Counter(row["state"] for row in cases.values())
     require(all(data[field] == pcounts[state] for state, field in PRODUCT_COUNTS.items()), "product_denominator_mismatch")
     require(all(data[state + "_case_count"] == ccounts[state]
-                for state in ("completed", "partial", "deferred", "missing", "blocked", "outdated")), "case_denominator_mismatch")
+                for state in CASE_STATES), "case_denominator_mismatch")
     require(data["selected_product_count"] <= data["eligible_product_count"], "selection_exceeds_eligible")
     total = data["inventory_member_count"]
     require(total is None or total >= data["eligible_product_count"], "inventory_denominator_mismatch")
@@ -98,6 +128,8 @@ def check_review(data: dict) -> None:
     require(set(dispositions) == set(cases), "case_coverage_scope_mismatch")
     require(coverage["eligible_product_count"] == len(scope["membership"]["eligible_products"]), "eligible_count_mismatch")
     require(coverage["membership_complete"] == scope["membership"]["complete"], "membership_completeness_mismatch")
+    require(coverage["selection_complete"] is not True or scope["extent"]["selected_product_count"] is not None,
+            "selection_extent_unknown")
     for row in coverage["product_dispositions"]:
         if row["state"] == "accepted":
             case_refs = [key for key, case in cases.items() if case["product_id"] == row["product_id"]]
@@ -140,7 +172,14 @@ def validate(kind: str, data: dict) -> None:
         check_review(data)
     elif kind == "assessment-handoff":
         require(data["subject"]["product_id"] == data["case"]["product_id"], "assessment_case_identity_mismatch")
-        require(data["quality"] != "accepted" or not data["unresolved_reason_codes"], "accepted_assessment_has_unresolved_gaps")
+        require(data["quality"] == normalized_handoff_quality(data["producer_quality"], data["verification"]),
+                "handoff_quality_crosswalk_mismatch")
+        if (data["producer"]["asset_key"] == "nusaibah.clinical_failure_intelligence"
+                and data["producer"]["asset_version"] == "0.1.16"):
+            require(data["producer_quality"]["scientific_accuracy_certified"] is False
+                    and data["producer_quality"]["external_truth_verified"] is False
+                    and data["producer_quality"]["automated_review_only"] is True,
+                    "producer_scientific_quality_flags_changed")
     elif kind == "gateway-request" and data["operation"] == "request_assessment":
         classes = data.get("pharmacological_class_ids", [])
         if classes:
@@ -150,6 +189,11 @@ def validate(kind: str, data: dict) -> None:
                     "legacy_mapping_class_mismatch")
     elif kind == "gateway-response":
         require(len(json.dumps(data, ensure_ascii=False).encode("utf-8")) <= 32768, "public_projection_too_large")
+        if "scope_limit" in data:
+            limit = data["scope_limit"]
+            require(any(limit[field] is not None and limit[field] > 128 for field in (
+                "observed_eligible_product_count", "observed_selected_product_count", "observed_selected_case_count")),
+                "scope_limit_overflow_not_observed")
         coverage = data["coverage"]
         if coverage is not None and coverage["class_generalization_supported"]:
             require(data["scope_mode"] == "all_known_in_snapshot" and all(coverage[key] is True for key in COMPLETENESS)

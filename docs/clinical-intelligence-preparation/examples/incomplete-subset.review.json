@@ -93,6 +93,14 @@
       }
     ],
     "case_inventory_complete": true,
+    "extent": {
+      "policy": "block_overflow_no_pagination",
+      "eligible_product_count": 6,
+      "selected_product_count": 3,
+      "selected_case_count": 3,
+      "truncated": false,
+      "pagination_applied": false
+    },
     "assessment_policy": {
       "review_existing": true,
       "assess_missing": true,
@@ -114,6 +122,8 @@
     "missing_product_count": 1,
     "blocked_product_count": 0,
     "outdated_product_count": 0,
+    "deferred_product_count": 0,
+    "unknown_product_count": 0,
     "assessment_case_count": 3,
     "completed_case_count": 1,
     "partial_case_count": 1,
@@ -121,6 +131,7 @@
     "missing_case_count": 1,
     "blocked_case_count": 0,
     "outdated_case_count": 0,
+    "unknown_case_count": 0,
     "inventory_member_count": 6,
     "product_dispositions": [
       {

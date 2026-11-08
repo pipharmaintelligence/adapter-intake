@@ -10,6 +10,7 @@ Project source: accessible
 | --- | --- | --- |
 | User attachment | Clinical Intelligence MCP — Full Orchestration and Pharmacological-Class Review | Requested architecture; preparation authorized, promotion explicitly excluded |
 | Second user attachment | Clinical Intelligence MCP — Class Membership & Coverage Design | Both exact scope modes, six completeness dimensions and gateway request/response preparation |
+| Follow-up user attachment | PR #174 — Clinical Intelligence Gateway Review & Next Steps, received 9 November | Address 128-item overflow and quality crosswalk; keep draft/unpromoted; begin P1 read-only proof |
 | [PI-2086](https://linear.app/pipharma/issue/PI-2086) | Description and 5 November planning refinement comment `c0059bb5-fe49-4026-8d6f-82df2b47f5a8` | Review-only first; one future public gateway; full class path unproven |
 | PI-2086 membership decision | 8 November comment `c37b31c7-8f75-4665-8ceb-31463c5df07d` | Both exact scope modes, product × indication × trial/regimen cases and independent coverage dimensions |
 | [PI-1751](https://linear.app/pipharma/issue/PI-1751) | Backlog; generic engine/ruleset contract proposal | Dependency, not an existing neutral assessment implementation |

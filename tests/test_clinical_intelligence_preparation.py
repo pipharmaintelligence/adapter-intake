@@ -1,5 +1,6 @@
 """Adversarial pure fixtures for the proposed clinical preparation contracts."""
 import importlib.util
+import copy
 import json
 import unittest
 from pathlib import Path
@@ -35,6 +36,7 @@ class ClinicalPreparationContractTests(unittest.TestCase):
             "status.request": "gateway-request", "readback.request": "gateway-request", "blocked.gateway-response": "gateway-response",
             "complete-snapshot.review": "class-review", "incomplete-subset.review": "class-review",
             "accepted.gateway-response": "gateway-response", "partial.gateway-response": "gateway-response",
+            "oversized-snapshot.gateway-response": "gateway-response",
         }
         for name, kind in cases.items():
             with self.subTest(name=name):
@@ -133,7 +135,129 @@ class ClinicalPreparationContractTests(unittest.TestCase):
     def test_partial_assessment_is_not_relabeled_accepted(self):
         handoff = fixture("retained-assessment.handoff")
         handoff["quality"] = "accepted"
-        self.rejected("assessment-handoff", handoff, "accepted_assessment_has_unresolved_gaps")
+        self.rejected("assessment-handoff", handoff)
+
+    def test_producer_quality_crosswalk_preserves_original_status(self):
+        for source_status, normalized in (("completed", "accepted"), ("partial", "partial"),
+                                           ("preflight", "deferred"), ("deferred", "deferred"), ("future_status", "unknown")):
+            with self.subTest(source_status=source_status):
+                handoff = fixture("retained-assessment.handoff")
+                handoff["producer_quality"]["status"] = source_status
+                handoff["quality"] = normalized
+                before = copy.deepcopy(handoff)
+                CHECK.validate("assessment-handoff", handoff)
+                self.assertEqual(handoff, before)
+                self.assertFalse(handoff["producer_quality"]["scientific_accuracy_certified"])
+
+    def test_accepted_handoff_can_preserve_unresolved_scientific_questions(self):
+        handoff = fixture("retained-assessment.handoff")
+        handoff["producer_quality"]["status"] = "completed"
+        handoff["quality"] = "accepted"
+        CHECK.validate("assessment-handoff", handoff)
+        self.assertTrue(handoff["unresolved_reason_codes"])
+        self.assertFalse(handoff["producer_quality"]["external_truth_verified"])
+
+    def test_source_scientific_flags_cannot_be_upgraded(self):
+        for field, value in (("scientific_accuracy_certified", True), ("external_truth_verified", True),
+                             ("automated_review_only", False)):
+            handoff = fixture("retained-assessment.handoff")
+            handoff["producer_quality"][field] = value
+            self.rejected("assessment-handoff", handoff)
+
+    def test_verification_failure_unknown_and_staleness_preserve_distinct_states(self):
+        for field, value, expected in (("retained_integrity", "failed", "blocked"),
+                                       ("retained_integrity", "unavailable", "blocked"),
+                                       ("retained_integrity", "unverified", "unknown"),
+                                       ("identity", "conflict", "blocked"), ("identity", "unresolved", "unknown"),
+                                       ("structure", "invalid", "blocked"), ("structure", "unverified", "unknown"),
+                                       ("freshness", "outdated", "outdated"), ("freshness", "unknown", "unknown")):
+            with self.subTest(field=field, value=value):
+                handoff = fixture("retained-assessment.handoff")
+                handoff["producer_quality"]["status"] = "completed"
+                handoff["verification"][field] = value
+                handoff["quality"] = expected
+                CHECK.validate("assessment-handoff", handoff)
+                handoff["quality"] = "accepted"
+                self.rejected("assessment-handoff", handoff)
+
+    def test_unknown_source_cannot_be_reclassified_as_completed(self):
+        handoff = fixture("retained-assessment.handoff")
+        handoff["producer_quality"]["status"] = "future_status"
+        handoff["quality"] = "partial"
+        self.rejected("assessment-handoff", handoff, "handoff_quality_crosswalk_mismatch")
+
+    def bounded_scope(self):
+        scope = fixture("complete-snapshot.scope")
+        rows = [{"product_id": "SYNTH_PRODUCT_" + str(i), "molecule_id": "SYNTH_MOLECULE_" + str(i),
+                 "pharmacological_class_id": "SYNTH_CLASS_X"} for i in range(128)]
+        scope["membership"]["eligible_products"] = copy.deepcopy(rows)
+        scope["selected_products"] = rows
+        scope["selected_cases"] = [{"case_ref": "SYNTH_CASE_" + str(i), "product_id": row["product_id"],
+            "indication_ref": "SYNTH_INDICATION", "trial_refs": ["SYNTH_TRIAL_" + str(i)]} for i, row in enumerate(rows)]
+        for key in ("eligible_product_count", "selected_product_count", "selected_case_count"):
+            scope["extent"][key] = 128
+        return scope
+
+    def test_exact_128_member_and_case_boundary_is_representable(self):
+        CHECK.validate("class-scope", self.bounded_scope())
+
+    def test_each_129_item_array_exceeds_the_draft_contract(self):
+        for path in (("membership", "eligible_products"), ("selected_products",), ("selected_cases",)):
+            scope = self.bounded_scope()
+            rows = scope
+            for key in path:
+                rows = rows[key]
+            rows.append(copy.deepcopy(rows[-1]))
+            self.rejected("class-scope", scope)
+            validator = CHECK.Draft202012Validator(CHECK.SCHEMAS["class-scope"], registry=CHECK.REGISTRY)
+            self.assertTrue(any(error.validator == "maxItems" and tuple(error.absolute_path) == path
+                                for error in validator.iter_errors(scope)))
+
+    def test_truncated_128_item_prefix_cannot_hide_129_known_entities(self):
+        for field in ("eligible_product_count", "selected_product_count", "selected_case_count"):
+            scope = self.bounded_scope()
+            scope["extent"][field] = 129
+            self.rejected("class-scope", scope)
+
+    def test_truncation_and_unqualified_pagination_flags_rejected(self):
+        for field in ("truncated", "pagination_applied"):
+            scope = self.bounded_scope()
+            scope["extent"][field] = True
+            self.rejected("class-scope", scope)
+
+    def test_unknown_extent_cannot_be_complete_inventory(self):
+        for field in ("eligible_product_count", "selected_case_count"):
+            scope = fixture("complete-snapshot.scope")
+            scope["extent"][field] = None
+            self.rejected("class-scope", scope, "complete_scope_extent_unknown")
+        scope["case_inventory_complete"] = False
+        CHECK.validate("class-scope", scope)
+
+    def test_overflow_response_is_blocked_before_launch(self):
+        response = fixture("oversized-snapshot.gateway-response")
+        CHECK.validate("gateway-response", response)
+        for field, value in (("status", "completed"), ("run_ref", "SYNTH_RUN"), ("next_action", "poll")):
+            mutated = copy.deepcopy(response)
+            mutated[field] = value
+            self.rejected("gateway-response", mutated)
+
+    def test_overflow_response_requires_observed_overflow(self):
+        response = fixture("oversized-snapshot.gateway-response")
+        response["scope_limit"]["observed_eligible_product_count"] = 128
+        response["scope_limit"]["observed_selected_product_count"] = 128
+        self.rejected("gateway-response", response, "scope_limit_overflow_not_observed")
+
+    def test_deferred_and_unknown_coverage_counts_are_not_accepted_counts(self):
+        for state, product_field in (("deferred", "deferred_product_count"), ("unknown", "unknown_product_count")):
+            coverage = fixture("complete-snapshot.review")["coverage"]
+            coverage["product_dispositions"][2]["state"] = state
+            coverage["product_with_partial_assessment_count"] = 0
+            coverage[product_field] = 1
+            coverage["case_dispositions"][2]["state"] = state
+            coverage["partial_case_count"] = 0
+            coverage[state + "_case_count"] = 1
+            CHECK.validate("coverage", coverage)
+            self.assertEqual(2, coverage["product_with_accepted_assessment_count"])
 
     def test_subset_generalization_is_rejected(self):
         report = fixture("incomplete-subset.review")

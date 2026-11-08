@@ -22,6 +22,10 @@ review, neutral trial assessment, and pharmacological-class synthesis.
   normalization and bounded result/status boundaries.
 - [Delivery gates](DELIVERY_GATES.md) records dependencies, acceptance cases and
   the boundary before promotion.
+- [Review refinements](REVIEW_REFINEMENTS.md) defines explicit overflow blocking
+  and the producer-quality/structural-eligibility crosswalk.
+- [P1 read proof](P1_READ_PROOF.md) records the attempted operator inventory,
+  unavailable database read and exact remaining evidence; P1 has not passed.
 - `schemas/` contains six proposed JSON Schema Draft 2020-12 contracts: gateway
   request, class scope, retained handoff, coverage, class review and gateway response.
 - `examples/` contains wholly synthetic examples, with no patient or incident data.
