@@ -1,0 +1,98 @@
+{
+  "schema_version": "clinical_class_scope.draft.v1",
+  "pharmacological_class_id": "SYNTH_CLASS_X",
+  "classification_system_ref": "SYNTH_CLASSIFICATION",
+  "scope_mode": "selected_subset",
+  "as_of_date": "2026-11-08",
+  "membership": {
+    "source_ref": "SYNTH_MEMBERSHIP",
+    "snapshot_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "as_of_date": "2026-11-08",
+    "eligibility_policy_ref": "SYNTH_POLICY",
+    "complete": true,
+    "eligible_products": [
+      {
+        "product_id": "SYNTH_PRODUCT_A",
+        "molecule_id": "SYNTH_MOLECULE_A",
+        "pharmacological_class_id": "SYNTH_CLASS_X"
+      },
+      {
+        "product_id": "SYNTH_PRODUCT_B",
+        "molecule_id": "SYNTH_MOLECULE_B",
+        "pharmacological_class_id": "SYNTH_CLASS_X"
+      },
+      {
+        "product_id": "SYNTH_PRODUCT_C",
+        "molecule_id": "SYNTH_MOLECULE_C",
+        "pharmacological_class_id": "SYNTH_CLASS_X"
+      },
+      {
+        "product_id": "SYNTH_PRODUCT_D",
+        "molecule_id": "SYNTH_MOLECULE_D",
+        "pharmacological_class_id": "SYNTH_CLASS_X"
+      },
+      {
+        "product_id": "SYNTH_PRODUCT_E",
+        "molecule_id": "SYNTH_MOLECULE_E",
+        "pharmacological_class_id": "SYNTH_CLASS_X"
+      },
+      {
+        "product_id": "SYNTH_PRODUCT_F",
+        "molecule_id": "SYNTH_MOLECULE_F",
+        "pharmacological_class_id": "SYNTH_CLASS_X"
+      }
+    ],
+    "excluded": [],
+    "unresolved": []
+  },
+  "selected_products": [
+    {
+      "product_id": "SYNTH_PRODUCT_A",
+      "molecule_id": "SYNTH_MOLECULE_A",
+      "pharmacological_class_id": "SYNTH_CLASS_X"
+    },
+    {
+      "product_id": "SYNTH_PRODUCT_B",
+      "molecule_id": "SYNTH_MOLECULE_B",
+      "pharmacological_class_id": "SYNTH_CLASS_X"
+    },
+    {
+      "product_id": "SYNTH_PRODUCT_C",
+      "molecule_id": "SYNTH_MOLECULE_C",
+      "pharmacological_class_id": "SYNTH_CLASS_X"
+    }
+  ],
+  "selected_cases": [
+    {
+      "case_ref": "SYNTH_CASE_A",
+      "product_id": "SYNTH_PRODUCT_A",
+      "indication_ref": "SYNTH_INDICATION",
+      "trial_refs": [
+        "SYNTH_TRIAL_A"
+      ]
+    },
+    {
+      "case_ref": "SYNTH_CASE_B",
+      "product_id": "SYNTH_PRODUCT_B",
+      "indication_ref": "SYNTH_INDICATION",
+      "trial_refs": [
+        "SYNTH_TRIAL_B"
+      ]
+    },
+    {
+      "case_ref": "SYNTH_CASE_C",
+      "product_id": "SYNTH_PRODUCT_C",
+      "indication_ref": "SYNTH_INDICATION",
+      "trial_refs": [
+        "SYNTH_TRIAL_C"
+      ]
+    }
+  ],
+  "case_inventory_complete": true,
+  "assessment_policy": {
+    "review_existing": true,
+    "assess_missing": true,
+    "include_partial_results": true,
+    "skill_updates": "preview_only"
+  }
+}

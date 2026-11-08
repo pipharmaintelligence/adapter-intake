@@ -1,0 +1,286 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dms-ai:clinical-preparation:gateway-request",
+  "$comment": "Draft design only. No runtime admission, authority grant, promotion or scientific certification.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "clinical_gateway_request.draft.v1"
+        },
+        "operation": {
+          "const": "request_assessment"
+        },
+        "assessment_mode": {
+          "enum": [
+            "existing_review",
+            "neutral_assessment",
+            "class_review"
+          ]
+        },
+        "research_objective": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "scope_mode": {
+          "enum": [
+            "all_known_in_snapshot",
+            "selected_subset"
+          ]
+        },
+        "product_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "minItems": 1,
+          "maxItems": 128,
+          "uniqueItems": true
+        },
+        "molecule_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "minItems": 1,
+          "maxItems": 128,
+          "uniqueItems": true
+        },
+        "molecule_names": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "minItems": 1,
+          "maxItems": 128,
+          "uniqueItems": true
+        },
+        "pharmacological_class_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "minItems": 1,
+          "maxItems": 1,
+          "uniqueItems": true
+        },
+        "assessment_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "selected_cases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "case_ref": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              },
+              "product_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              },
+              "indication_ref": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              },
+              "trial_refs": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                },
+                "minItems": 0,
+                "maxItems": 128,
+                "uniqueItems": true
+              },
+              "regimen_ref": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              }
+            },
+            "required": [
+              "case_ref",
+              "product_id",
+              "indication_ref",
+              "trial_refs"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 128,
+          "uniqueItems": true
+        },
+        "supplied_identity_context": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "product_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              },
+              "molecule_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              },
+              "pharmacological_class_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              },
+              "source_ref": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              },
+              "aliases": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "minItems": 0,
+                "maxItems": 128,
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "product_id",
+              "molecule_id",
+              "pharmacological_class_id"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 128,
+          "uniqueItems": true
+        },
+        "legacy_class_mappings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "pharmacological_class_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              },
+              "pharmacological_group_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              },
+              "source_ref": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              }
+            },
+            "required": [
+              "pharmacological_class_id",
+              "pharmacological_group_id",
+              "source_ref"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 128,
+          "uniqueItems": true
+        },
+        "as_of_date": {
+          "type": "string",
+          "format": "date"
+        }
+      },
+      "required": [
+        "schema_version",
+        "operation",
+        "assessment_mode",
+        "research_objective",
+        "as_of_date"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "assessment_mode": {
+                "const": "class_review"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "scope_mode"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "scope_mode"
+            ],
+            "properties": {
+              "scope_mode": {
+                "const": "selected_subset"
+              }
+            }
+          },
+          "then": {
+            "anyOf": [
+              {
+                "required": [
+                  "product_ids"
+                ]
+              },
+              {
+                "required": [
+                  "molecule_ids"
+                ]
+              },
+              {
+                "required": [
+                  "molecule_names"
+                ]
+              },
+              {
+                "required": [
+                  "selected_cases"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "clinical_gateway_request.draft.v1"
+        },
+        "operation": {
+          "enum": [
+            "get_status",
+            "get_result"
+          ]
+        },
+        "run_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        }
+      },
+      "required": [
+        "schema_version",
+        "operation",
+        "run_ref"
+      ]
+    }
+  ]
+}
