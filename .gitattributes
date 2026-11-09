@@ -13,3 +13,8 @@ adapters/nusaibah/pharma_company_intelligence_lab/*.md text eol=lf
 skill-packages/** -text
 tools/package_clinical_gateway_usage_skill.py text eol=lf
 tests/test_clinical_gateway_usage_package.py text eol=lf
+contracts/clinical_intelligence_gateway/*.json text eol=lf
+tools/check_clinical_gateway_dependency.py text eol=lf
+tools/check_clinical_gateway_descriptor.php text eol=lf
+tests/test_clinical_gateway_dependency*.py text eol=lf
+docs/clinical-gateway-dependency/* text eol=lf

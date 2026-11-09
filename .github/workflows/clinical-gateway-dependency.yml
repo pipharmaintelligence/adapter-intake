@@ -1,0 +1,39 @@
+name: Clinical gateway F3 dependency contract
+
+on:
+  pull_request:
+    paths:
+      - 'contracts/clinical_intelligence_gateway/**'
+      - 'tools/check_clinical_gateway_dependency.py'
+      - 'tools/check_clinical_gateway_descriptor.php'
+      - 'tests/test_clinical_gateway_dependency*.py'
+      - 'docs/clinical-gateway-dependency/**'
+      - 'skill-packages/nusaibah/clinical-intelligence-gateway-usage/**'
+      - 'tools/package_clinical_gateway_usage_skill.py'
+      - '.gitattributes'
+      - '.github/workflows/clinical-gateway-dependency.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-contract:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.10', '3.13']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Check public contract and sealed package (no private validators)
+        run: |
+          python tools/check_clinical_gateway_dependency.py --integrity-only
+          python -m unittest discover -s tests -p test_clinical_gateway_dependency.py -v
+          python -m unittest discover -s tests -p test_adapter_intake_contract.py -v

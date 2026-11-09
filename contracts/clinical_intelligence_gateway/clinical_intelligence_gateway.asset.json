@@ -1,0 +1,29 @@
+{
+  "key": "nusaibah.clinical_intelligence_gateway",
+  "versions": {
+    "0.1.0": {
+      "state": "draft",
+      "allow_resume": false,
+      "inputs": {
+        "variables": {
+          "required": true,
+          "source": "direct",
+          "shape": "object"
+        }
+      },
+      "outputs": {
+        "result": {
+          "required": true,
+          "shape": "object"
+        }
+      },
+      "skills": [
+        {
+          "skill_ref": "nusaibah.clinical-intelligence-gateway-usage",
+          "version": "1.0.0",
+          "digest": "sha256:873f0860e01664ec0459b408f9614818f4409142d3239df740b65cae5c5d43cc"
+        }
+      ]
+    }
+  }
+}
