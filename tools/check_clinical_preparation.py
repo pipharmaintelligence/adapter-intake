@@ -30,6 +30,7 @@ PRODUCT_COUNTS = {
 CASE_STATES = ("completed", "partial", "deferred", "missing", "blocked", "outdated", "unknown")
 COMPLETENESS = ("membership_complete", "selection_complete", "execution_complete",
                 "evidence_complete", "scientific_review_complete")
+GUIDANCE_SECTIONS = {"overview", "existing_review", "neutral_assessment", "class_review", "get_status", "get_result", "result_states"}
 
 
 class DraftContractError(ValueError):
@@ -159,11 +160,39 @@ def check_review(data: dict) -> None:
         require(set(stratum["product_ids"]).issubset(selected), "stratum_outside_scope")
 
 
+def check_guidance(data: dict) -> None:
+    """Draft public projection limits; does not approve or resolve a real Skill."""
+    if data["schema_version"] == "clinical_gateway_usage_contract.draft.v1":
+        sections = keyed(data["sections"], "section_id")
+        require(set(sections) == GUIDANCE_SECTIONS, "usage_section_inventory_mismatch")
+        require(all(len(row["instructions"].encode("utf-8")) <= 8192 for row in sections.values()),
+                "guidance_section_byte_limit")
+        return
+    require(len(json.dumps(data, ensure_ascii=False).encode("utf-8")) <= 16384, "guidance_response_byte_limit")
+    if data["operation"] == "read_guidance":
+        actual = len(data["text"].encode("utf-8")) if data["text"] is not None else 0
+        require(actual <= 8192, "guidance_section_byte_limit")
+        require(actual == data["utf8_bytes"], "guidance_byte_count_mismatch")
+    else:
+        capabilities = keyed(data["capabilities"], "capability_id")
+        for name, row in capabilities.items():
+            assessment = name in {"existing_review", "neutral_assessment", "class_review"}
+            require(row["operation"] == ("request_assessment" if assessment else name)
+                    and row["assessment_mode"] == (name if assessment else None), "guidance_operation_route_mismatch")
+            require(row["read_only"] is (not assessment), "guidance_side_effect_hint_mismatch")
+            require(row["guidance_section"] in data["guidance_sections"], "guidance_section_not_listed")
+            if row["availability"] == "available":
+                require(data["usage_skill"]["digest"] is not None and not row["reason_codes"], "available_guidance_unsealed_or_blocked")
+
+
 def validate(kind: str, data: dict) -> None:
     """Shape and selected cross-field invariants only; establishes no authority."""
     schema = SCHEMAS[kind]
     validator = Draft202012Validator(schema, registry=REGISTRY, format_checker=FormatChecker())
     require(not any(validator.iter_errors(data)), "draft_schema_invalid")
+    if data.get("schema_version") in {"clinical_gateway_guidance.draft.v1", "clinical_gateway_usage_contract.draft.v1"}:
+        check_guidance(data)
+        return
     if kind == "class-scope":
         check_scope(data)
     elif kind == "coverage":

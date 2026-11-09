@@ -165,3 +165,16 @@ review, status/readback requests and accepted/partial/blocked responses. The
 design limits, not current publication settings or scientific budget approval.
 Exact authenticated ref types and publication limits must be reconciled at
 admission; the draft's bounded semantic strings do not create a new authority.
+
+## Fixed usage Skill and guidance operations
+
+`describe_capabilities` and `read_guidance` are additional proposed read
+operations on the same gateway. The shared request/response schemas reference
+the design-only `gateway-guidance.schema.json`; this is not runtime admission.
+`gateway-usage.contract.json` pins proposed usage identity/version 1.0.0 with an
+unsealed null digest and draft-only sections. No active Skill package is created.
+
+The [usage Skill contract](USAGE_SKILL_CONTRACT.md) specifies both future host
+installation and approved gateway section reads, per-operation prerequisites,
+bounded safe projections and separate scientific methodology. Usage guidance
+does not grant execution authority; all existing clinical gates remain in force.

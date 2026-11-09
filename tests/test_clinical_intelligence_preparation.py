@@ -23,7 +23,7 @@ class ClinicalPreparationContractTests(unittest.TestCase):
             self.assertEqual(str(caught.exception), code)
 
     def test_all_draft_schemas_are_valid_and_references_are_offline(self):
-        self.assertEqual(6, len(CHECK.SCHEMAS))
+        self.assertEqual(7, len(CHECK.SCHEMAS))
         for schema in CHECK.SCHEMAS.values():
             CHECK.Draft202012Validator.check_schema(schema)
             self.assertTrue(schema["$id"].startswith("urn:dms-ai:clinical-preparation:"))
@@ -37,6 +37,8 @@ class ClinicalPreparationContractTests(unittest.TestCase):
             "complete-snapshot.review": "class-review", "incomplete-subset.review": "class-review",
             "accepted.gateway-response": "gateway-response", "partial.gateway-response": "gateway-response",
             "oversized-snapshot.gateway-response": "gateway-response",
+            "describe-capabilities.request": "gateway-request", "read-guidance.request": "gateway-request",
+            "capabilities.guidance-response": "gateway-response", "unavailable.guidance-response": "gateway-response",
         }
         for name, kind in cases.items():
             with self.subTest(name=name):

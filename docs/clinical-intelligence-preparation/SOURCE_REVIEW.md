@@ -11,6 +11,7 @@ Project source: accessible
 | User attachment | Clinical Intelligence MCP — Full Orchestration and Pharmacological-Class Review | Requested architecture; preparation authorized, promotion explicitly excluded |
 | Second user attachment | Clinical Intelligence MCP — Class Membership & Coverage Design | Both exact scope modes, six completeness dimensions and gateway request/response preparation |
 | Follow-up user attachment | PR #174 — Clinical Intelligence Gateway Review & Next Steps, received 9 November | Address 128-item overflow and quality crosswalk; keep draft/unpromoted; begin P1 read-only proof |
+| User usage-Skill direction | 9 November: define a ChatGPT-facing Fixed usage contract alongside PR #174 | Design only; distinct internal methodology; one future public gateway; no installation/publication |
 | [PI-2086](https://linear.app/pipharma/issue/PI-2086) | Description and 5 November planning refinement comment `c0059bb5-fe49-4026-8d6f-82df2b47f5a8` | Review-only first; one future public gateway; full class path unproven |
 | PI-2086 membership decision | 8 November comment `c37b31c7-8f75-4665-8ceb-31463c5df07d` | Both exact scope modes, product × indication × trial/regimen cases and independent coverage dimensions |
 | [PI-1751](https://linear.app/pipharma/issue/PI-1751) | Backlog; generic engine/ruleset contract proposal | Dependency, not an existing neutral assessment implementation |
@@ -40,6 +41,7 @@ comment; it does not authorize implementation of the complete system.
 | Registered admission | `config/obs_execution_registered_admission.php` | `handlers = []`, `fifo_dispatch_enabled = false` |
 | MCP lifecycle | `app/Services/Observability/McpRemote/RemoteMcpRegisteredAssetExecutionService.php`, `RemoteMcpWorkflowTerminalWaiter.php` | Exact run launch followed by bounded terminal wait; no proven arbitrary-duration start/status/readback |
 | Neutral assessment | PI-1751 | Proposed generic deterministic engine, `no_publish`; not a substitute failure classifier |
+| Usage guidance | Generic Skill Reader development proof, packaged reader 0.1.1 and current clinical manifest | Fixed reads/development reuse exist; Clinical methodology 1.1.0 is internal; gateway usage contract/public ChatGPT consumption remains unqualified |
 | Retained review / class synthesis | PI-2086 | Proposed; exact producer/input/critic/output chain unqualified |
 
 No live assessment, source, worker, paid provider, DLM write or Skill mutation

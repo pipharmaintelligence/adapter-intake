@@ -43,6 +43,12 @@ The existing repository intake guard also runs to check unrelated admission
 contracts remain intact. These checks prove shape and conservative structural
 gates only. They do not certify live authority, scientific quality or a runtime.
 
+The independent Fixed usage Skill design adds approved-section discovery/read
+contracts while P1 remains blocked. It creates no runnable Skill, manifest or
+publication. Its text/audience sign-off, sealed digest, exact runtime declaration,
+optional host installation and actual ChatGPT compatibility are separate later
+gates; none is inferred from the generic Skill Reader development proof.
+
 ## Later behavioral acceptance matrix
 
 | Scenario | Required outcome |

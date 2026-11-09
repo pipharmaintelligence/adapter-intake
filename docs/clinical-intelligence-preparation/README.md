@@ -26,8 +26,12 @@ review, neutral trial assessment, and pharmacological-class synthesis.
   and the producer-quality/structural-eligibility crosswalk.
 - [P1 read proof](P1_READ_PROOF.md) records the attempted operator inventory,
   unavailable database read and exact remaining evidence; P1 has not passed.
-- `schemas/` contains six proposed JSON Schema Draft 2020-12 contracts: gateway
-  request, class scope, retained handoff, coverage, class review and gateway response.
+- [Usage Skill contract](USAGE_SKILL_CONTRACT.md) separates future ChatGPT usage
+  guidance from internal methodology, with exact proposed version, approved
+  section reads and capability discovery. No Skill is installed or published.
+- `schemas/` contains seven proposed JSON Schema Draft 2020-12 contracts: gateway
+  request, class scope, retained handoff, coverage, class review, gateway response
+  and guidance/usage contract.
 - `examples/` contains wholly synthetic examples, with no patient or incident data.
 
 The schema names end in `.draft.v1`. They are design artifacts, not admitted
@@ -62,6 +66,7 @@ From the adapter-intake checkout, using a Python environment with `jsonschema`
 
 ```powershell
 python -m unittest discover -s tests -p test_clinical_intelligence_preparation.py -v
+python -m unittest discover -s tests -p test_clinical_gateway_guidance.py -v
 python -m unittest discover -s tests -p test_adapter_intake_contract.py -v
 python tools/check_clinical_preparation.py class-review docs/clinical-intelligence-preparation/examples/incomplete-subset.review.json
 git diff --check

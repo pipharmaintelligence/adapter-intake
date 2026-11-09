@@ -6,6 +6,7 @@ on:
       - 'docs/clinical-intelligence-preparation/**'
       - 'tools/check_clinical_preparation.py'
       - 'tests/test_clinical_intelligence_preparation.py'
+      - 'tests/test_clinical_gateway_guidance.py'
       - '.github/workflows/clinical-intelligence-preparation.yml'
   workflow_dispatch:
 
@@ -29,4 +30,5 @@ jobs:
       - name: Validate synthetic design contracts and existing intake guard
         run: |
           python -m unittest discover -s tests -p test_clinical_intelligence_preparation.py -v
+          python -m unittest discover -s tests -p test_clinical_gateway_guidance.py -v
           python -m unittest discover -s tests -p test_adapter_intake_contract.py -v

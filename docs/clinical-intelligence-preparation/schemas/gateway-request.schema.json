@@ -281,6 +281,9 @@
         "operation",
         "run_ref"
       ]
+    },
+    {
+      "$ref": "urn:dms-ai:clinical-preparation:gateway-guidance#/$defs/request"
     }
   ]
 }

@@ -9,9 +9,10 @@ installed or upgraded by this preparation.
 | Check | Result |
 | --- | --- |
 | `python -m unittest discover -s tests -p test_clinical_intelligence_preparation.py -v` | 51 passed |
+| `python -m unittest discover -s tests -p test_clinical_gateway_guidance.py -v` | 13 passed |
 | `python -m unittest discover -s tests -p test_adapter_intake_contract.py -v` | 2 passed |
-| Draft 2020-12 schema validation | All 6 schemas valid; references resolved from the local registry only |
-| Synthetic example validation | All 14 examples valid |
+| Draft 2020-12 schema validation | All 7 schemas valid; references resolved from the local registry only |
+| Synthetic example validation | All 18 examples valid; separate draft usage contract also validates |
 | CLI check of incomplete-subset review | Passed; authority/science/readiness explicitly unestablished |
 | `git diff --check` | Passed |
 
@@ -26,6 +27,12 @@ The review follow-up adds exact 128/129-item boundary cases, known oversized
 counts hidden behind bounded prefixes, unknown extent/completeness, explicit
 blocked overflow responses, producer-status normalization, unchanged scientific
 flags, structural-versus-scientific issues, and deferred/unknown counters.
+
+The usage-guidance checks additionally cover exact version/identity, unsealed
+draft status, approved section IDs, blocked/no-text behavior, no arbitrary
+Skill/authority selectors, UTF-8 section and whole-response budgets, capability
+route/side-effect metadata and rejection of internal methodology payload fields.
+No stored guidance example claims an actual sealed digest or successful read.
 
 All persisted examples withhold class generalization. A constructed synthetic
 test proves the structural eligible state is representable, then rejects each
@@ -44,6 +51,8 @@ No source or paid provider call, clinical assessment, DLM publication, Skill
 write, database change, worker reconfiguration or deployment was performed.
 Repository/Linear connector reads and authorized Linear progress updates are
 distinct from clinical source/provider execution.
+The new usage artifact is a design contract, not a runnable Skill; no `SKILL.md`
+or host/plugin installation is created. Existing Skill packages are unchanged.
 
 P1 was started with a source inspection and attempted read-only operator
 inventory. The configured database read was unavailable after retrying with the

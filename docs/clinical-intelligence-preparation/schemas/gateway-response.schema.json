@@ -2,460 +2,467 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:dms-ai:clinical-preparation:gateway-response",
   "$comment": "Draft design only. No runtime admission, authority grant, promotion or scientific certification.",
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "schema_version": {
-      "const": "clinical_gateway_response.draft.v1"
-    },
-    "run_ref": {
-      "oneOf": [
-        {
-          "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "status": {
-      "enum": [
-        "accepted",
-        "running",
-        "partial",
-        "completed",
-        "failed",
-        "blocked"
-      ]
-    },
-    "stage": {
-      "enum": [
-        "admission",
-        "identity",
-        "inventory",
-        "product_review",
-        "normalization",
-        "class_synthesis",
-        "critic",
-        "readback"
-      ]
-    },
-    "summary": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 2000
-    },
-    "scope_mode": {
-      "oneOf": [
-        {
-          "enum": [
-            "all_known_in_snapshot",
-            "selected_subset"
-          ]
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "coverage": {
-      "oneOf": [
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "membership_complete": {
-              "enum": [
-                true,
-                false,
-                null
-              ]
-            },
-            "selection_complete": {
-              "enum": [
-                true,
-                false,
-                null
-              ]
-            },
-            "execution_complete": {
-              "enum": [
-                true,
-                false,
-                null
-              ]
-            },
-            "evidence_complete": {
-              "enum": [
-                true,
-                false,
-                null
-              ]
-            },
-            "scientific_review_complete": {
-              "enum": [
-                true,
-                false,
-                null
-              ]
-            },
-            "class_generalization_supported": {
-              "type": "boolean"
-            },
-            "selected_product_count": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100000
-            },
-            "product_with_accepted_assessment_count": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100000
-            },
-            "missing_product_count": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100000
-            },
-            "partial_case_count": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100000
-            },
-            "blocked_case_count": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100000
-            },
-            "unknown_case_count": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100000
-            },
-            "deferred_case_count": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100000
-            },
-            "unknown_product_count": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100000
-            },
-            "deferred_product_count": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100000
-            }
-          },
-          "required": [
-            "membership_complete",
-            "selection_complete",
-            "execution_complete",
-            "evidence_complete",
-            "scientific_review_complete",
-            "class_generalization_supported",
-            "selected_product_count",
-            "product_with_accepted_assessment_count",
-            "missing_product_count",
-            "partial_case_count",
-            "blocked_case_count",
-            "unknown_case_count",
-            "deferred_case_count",
-            "unknown_product_count",
-            "deferred_product_count"
-          ]
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "reports": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "report_ref": {
-            "type": "string",
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
-          },
-          "report_version": {
-            "type": "string",
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
-          }
-        },
-        "required": [
-          "report_ref",
-          "report_version"
-        ]
-      },
-      "minItems": 0,
-      "maxItems": 4,
-      "uniqueItems": true
-    },
-    "citations": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "source_kind": {
-            "enum": [
-              "clinicaltrials",
-              "pubmed",
-              "umls"
-            ]
-          },
-          "citation_ref": {
-            "type": "string",
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
-          }
-        },
-        "required": [
-          "source_kind",
-          "citation_ref"
-        ]
-      },
-      "minItems": 0,
-      "maxItems": 20,
-      "uniqueItems": true
-    },
-    "reason_codes": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
-      },
-      "minItems": 0,
-      "maxItems": 20,
-      "uniqueItems": true
-    },
-    "next_action": {
-      "enum": [
-        "poll",
-        "read_result",
-        "revise_scope",
-        "operator_review",
-        "none"
-      ]
-    },
-    "scope_limit": {
+  "oneOf": [
+    {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "policy": {
-          "const": "block_overflow_no_pagination"
+        "schema_version": {
+          "const": "clinical_gateway_response.draft.v1"
         },
-        "product_limit": {
-          "const": 128
-        },
-        "case_limit": {
-          "const": 128
-        },
-        "observed_eligible_product_count": {
+        "run_ref": {
           "oneOf": [
             {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100000
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
             },
             {
               "type": "null"
             }
           ]
         },
-        "observed_selected_product_count": {
+        "status": {
+          "enum": [
+            "accepted",
+            "running",
+            "partial",
+            "completed",
+            "failed",
+            "blocked"
+          ]
+        },
+        "stage": {
+          "enum": [
+            "admission",
+            "identity",
+            "inventory",
+            "product_review",
+            "normalization",
+            "class_synthesis",
+            "critic",
+            "readback"
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "scope_mode": {
           "oneOf": [
             {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100000
+              "enum": [
+                "all_known_in_snapshot",
+                "selected_subset"
+              ]
             },
             {
               "type": "null"
             }
           ]
         },
-        "observed_selected_case_count": {
+        "coverage": {
           "oneOf": [
             {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 100000
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "membership_complete": {
+                  "enum": [
+                    true,
+                    false,
+                    null
+                  ]
+                },
+                "selection_complete": {
+                  "enum": [
+                    true,
+                    false,
+                    null
+                  ]
+                },
+                "execution_complete": {
+                  "enum": [
+                    true,
+                    false,
+                    null
+                  ]
+                },
+                "evidence_complete": {
+                  "enum": [
+                    true,
+                    false,
+                    null
+                  ]
+                },
+                "scientific_review_complete": {
+                  "enum": [
+                    true,
+                    false,
+                    null
+                  ]
+                },
+                "class_generalization_supported": {
+                  "type": "boolean"
+                },
+                "selected_product_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "product_with_accepted_assessment_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "missing_product_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "partial_case_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "blocked_case_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "unknown_case_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "deferred_case_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "unknown_product_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                "deferred_product_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                }
+              },
+              "required": [
+                "membership_complete",
+                "selection_complete",
+                "execution_complete",
+                "evidence_complete",
+                "scientific_review_complete",
+                "class_generalization_supported",
+                "selected_product_count",
+                "product_with_accepted_assessment_count",
+                "missing_product_count",
+                "partial_case_count",
+                "blocked_case_count",
+                "unknown_case_count",
+                "deferred_case_count",
+                "unknown_product_count",
+                "deferred_product_count"
+              ]
             },
             {
               "type": "null"
             }
+          ]
+        },
+        "reports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "report_ref": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              },
+              "report_version": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              }
+            },
+            "required": [
+              "report_ref",
+              "report_version"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 4,
+          "uniqueItems": true
+        },
+        "citations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "source_kind": {
+                "enum": [
+                  "clinicaltrials",
+                  "pubmed",
+                  "umls"
+                ]
+              },
+              "citation_ref": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              }
+            },
+            "required": [
+              "source_kind",
+              "citation_ref"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "reason_codes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "minItems": 0,
+          "maxItems": 20,
+          "uniqueItems": true
+        },
+        "next_action": {
+          "enum": [
+            "poll",
+            "read_result",
+            "revise_scope",
+            "operator_review",
+            "none"
+          ]
+        },
+        "scope_limit": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "policy": {
+              "const": "block_overflow_no_pagination"
+            },
+            "product_limit": {
+              "const": 128
+            },
+            "case_limit": {
+              "const": 128
+            },
+            "observed_eligible_product_count": {
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "observed_selected_product_count": {
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "observed_selected_case_count": {
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "policy",
+            "product_limit",
+            "case_limit",
+            "observed_eligible_product_count",
+            "observed_selected_product_count",
+            "observed_selected_case_count"
           ]
         }
       },
       "required": [
-        "policy",
-        "product_limit",
-        "case_limit",
-        "observed_eligible_product_count",
-        "observed_selected_product_count",
-        "observed_selected_case_count"
-      ]
-    }
-  },
-  "required": [
-    "schema_version",
-    "run_ref",
-    "status",
-    "stage",
-    "summary",
-    "scope_mode",
-    "coverage",
-    "reports",
-    "citations",
-    "reason_codes",
-    "next_action"
-  ],
-  "allOf": [
-    {
-      "if": {
-        "required": [
-          "scope_limit"
-        ]
-      },
-      "then": {
-        "properties": {
-          "status": {
-            "const": "blocked"
+        "schema_version",
+        "run_ref",
+        "status",
+        "stage",
+        "summary",
+        "scope_mode",
+        "coverage",
+        "reports",
+        "citations",
+        "reason_codes",
+        "next_action"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "scope_limit"
+            ]
           },
-          "stage": {
-            "const": "inventory"
+          "then": {
+            "properties": {
+              "status": {
+                "const": "blocked"
+              },
+              "stage": {
+                "const": "inventory"
+              },
+              "run_ref": {
+                "type": "null"
+              },
+              "coverage": {
+                "type": "null"
+              },
+              "reports": {
+                "maxItems": 0
+              },
+              "citations": {
+                "maxItems": 0
+              },
+              "next_action": {
+                "const": "revise_scope"
+              },
+              "reason_codes": {
+                "contains": {
+                  "const": "class_scope_limit_exceeded"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "accepted",
+                  "running",
+                  "partial",
+                  "completed"
+                ]
+              }
+            }
           },
-          "run_ref": {
-            "type": "null"
+          "then": {
+            "properties": {
+              "run_ref": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "completed"
+              }
+            }
           },
-          "coverage": {
-            "type": "null"
+          "then": {
+            "properties": {
+              "reports": {
+                "minItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "accepted",
+                  "running"
+                ]
+              }
+            }
           },
-          "reports": {
-            "maxItems": 0
+          "then": {
+            "properties": {
+              "reports": {
+                "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "accepted",
+                  "running"
+                ]
+              }
+            }
           },
-          "citations": {
-            "maxItems": 0
+          "then": {
+            "properties": {
+              "next_action": {
+                "const": "poll"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "scope_mode": {
+                "const": "selected_subset"
+              }
+            }
           },
-          "next_action": {
-            "const": "revise_scope"
-          },
-          "reason_codes": {
-            "contains": {
-              "const": "class_scope_limit_exceeded"
+          "then": {
+            "properties": {
+              "coverage": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "class_generalization_supported": {
+                        "const": false
+                      }
+                    }
+                  }
+                ]
+              }
             }
           }
         }
-      }
+      ]
     },
     {
-      "if": {
-        "properties": {
-          "status": {
-            "enum": [
-              "accepted",
-              "running",
-              "partial",
-              "completed"
-            ]
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "run_ref": {
-            "type": "string",
-            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "status": {
-            "const": "completed"
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "reports": {
-            "minItems": 1
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "status": {
-            "enum": [
-              "accepted",
-              "running"
-            ]
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "reports": {
-            "maxItems": 0
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "status": {
-            "enum": [
-              "accepted",
-              "running"
-            ]
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "next_action": {
-            "const": "poll"
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "scope_mode": {
-            "const": "selected_subset"
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "coverage": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "class_generalization_supported": {
-                    "const": false
-                  }
-                }
-              }
-            ]
-          }
-        }
-      }
+      "$ref": "urn:dms-ai:clinical-preparation:gateway-guidance#/$defs/response"
     }
   ]
 }

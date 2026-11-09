@@ -71,10 +71,12 @@ No synthetic value may fill an unverified proof field.
    and which exact clinical producer run/reference should be checked? The local
    configured database could not be read. Provide environment/run references,
    not credentials or scientific payloads.
-2. Is an existing unexpired, governed Core retained preview artifact acceptable
-   for this first bounded proof, or is a committed long-lived DLM assessment
-   record required? In either case, identify the authorized consumer input
-   policy and required read horizon.
+2. **Policy resolved by the user:** an existing unexpired Core preview is
+   sufficient for the first bounded P1 read proof. It does not establish
+   permanent clinical assessment storage. Verify exact consumer authority and
+   the remaining readable lifetime; the existing command's initial default
+   horizon is 3600 seconds unless the selected environment's policy requires
+   otherwise. Do not extend retention to pass the check.
 
 Continue offline P0 review while those inputs remain unresolved. Do not claim
 P1 passed, implement scientific Agent reasoning, launch a producer, create a
