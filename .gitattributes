@@ -9,3 +9,7 @@ adapters/nusaibah/abstract_mcp_dlm/*.py text eol=lf
 adapters/nusaibah/pharma_company_intelligence_lab/*.py text eol=lf
 adapters/nusaibah/pharma_company_intelligence_lab/*.json text eol=lf
 adapters/nusaibah/pharma_company_intelligence_lab/*.md text eol=lf
+# Portable Skill identities hash exact bytes; never rewrite them on checkout.
+skill-packages/** -text
+tools/package_clinical_gateway_usage_skill.py text eol=lf
+tests/test_clinical_gateway_usage_package.py text eol=lf
