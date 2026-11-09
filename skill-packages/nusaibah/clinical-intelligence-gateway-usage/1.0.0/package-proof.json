@@ -1,0 +1,93 @@
+{
+  "schema_version": "clinical_gateway_usage_package_proof.v1",
+  "status": "package_valid_exact_bytes_verified",
+  "identity": {
+    "skill_ref": "nusaibah.clinical-intelligence-gateway-usage",
+    "version": "1.0.0",
+    "digest": "sha256:873f0860e01664ec0459b408f9614818f4409142d3239df740b65cae5c5d43cc"
+  },
+  "approval": {
+    "repository": "pipharmaintelligence/adapter-intake",
+    "commit": "1de3239621031d46656aafffe67d3e91f152e7c1",
+    "path": "docs/clinical-intelligence-preparation/gateway-usage.contract.json",
+    "git_blob_sha": "f61a119c6e908683747f72e1cfb2163324b78343",
+    "sections": [
+      {
+        "section_id": "overview",
+        "utf8_bytes": 418,
+        "sha256": "ef6d8156c64b6980beb95b7f7385041b97ee481870f182d4ff3451e9a3dd4591"
+      },
+      {
+        "section_id": "existing_review",
+        "utf8_bytes": 536,
+        "sha256": "cbfbf3a6c9f1d97c5910370d6aa4652cd68e336a204fdbab2e4d5395bc326bb6"
+      },
+      {
+        "section_id": "neutral_assessment",
+        "utf8_bytes": 474,
+        "sha256": "f40d75d159e657d67c15c94fbc8474b0bf4b99fd986e0b4e1e9c60a70f89d669"
+      },
+      {
+        "section_id": "class_review",
+        "utf8_bytes": 653,
+        "sha256": "f9eb0ee0922918890eb14f1b0c30c440aa8339f64d5bed8042782690ab725948"
+      },
+      {
+        "section_id": "get_status",
+        "utf8_bytes": 449,
+        "sha256": "c19b982d320e1bd3bbd0993f6758fa6fe8efdfc3b3dc93b5cb9dbd114d3b0b63"
+      },
+      {
+        "section_id": "get_result",
+        "utf8_bytes": 490,
+        "sha256": "f94f52650fd86c679c217714f04e16ee14748d3a42912129641197b95b07f449"
+      },
+      {
+        "section_id": "result_states",
+        "utf8_bytes": 645,
+        "sha256": "1210d75d207867511af38588f38f33a8547e036d901fccc0d05183f687553e78"
+      }
+    ]
+  },
+  "package": {
+    "path": "skill-packages/nusaibah/clinical-intelligence-gateway-usage/1.0.0/clinical-intelligence-gateway-usage",
+    "file_count": 1,
+    "total_bytes": 4122,
+    "encoding": "utf-8",
+    "line_endings": "LF",
+    "files": [
+      {
+        "path": "SKILL.md",
+        "size_bytes": 4122,
+        "sha256": "d99e0faa95f148c9f1f677489f775b8787fdfed7ccfa99edfb55f18d22765c3e"
+      }
+    ],
+    "approved_instructions_preserved": true
+  },
+  "validator": {
+    "repository": "piusaibah/assets",
+    "commit": "ec70070eb3cd1111f00c8cb7e855a95e9d60e219",
+    "path": "python_runtime/devtools/skill_package.py",
+    "git_blob_sha": "38b97bd0602013378b775b3f344cd24992a02414",
+    "sha256": "55642ead57017fc2469e2a3d9542842d8cadf4c58b174fbbb71b1a0b369ed1e9",
+    "entrypoint": "validate_skill_package",
+    "limits": {
+      "max_files": 64,
+      "max_file_bytes": 1048576,
+      "max_package_bytes": 4194304
+    }
+  },
+  "archive": {
+    "path": "skill-packages/nusaibah/clinical-intelligence-gateway-usage/1.0.0/clinical-intelligence-gateway-usage-1.0.0.zip",
+    "format": "ZIP_STORED",
+    "size_bytes": 4236,
+    "sha256": "c19aaf710ebd6f8b7ec1f291a5614823b927ae279919d814673456119c95c648",
+    "roundtrip_canonical_digest": "sha256:873f0860e01664ec0459b408f9614818f4409142d3239df740b65cae5c5d43cc"
+  },
+  "release_authorized": false,
+  "published": false,
+  "runtime_admitted": false,
+  "installed": false,
+  "gateway_consumed": false,
+  "p1_qualified": false
+}

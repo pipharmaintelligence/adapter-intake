@@ -1,0 +1,35 @@
+name: Clinical gateway usage package proof
+
+on:
+  pull_request:
+    paths:
+      - 'skill-packages/nusaibah/clinical-intelligence-gateway-usage/**'
+      - 'tools/package_clinical_gateway_usage_skill.py'
+      - 'tests/test_clinical_gateway_usage_package.py'
+      - 'docs/clinical-gateway-usage-package/**'
+      - '.gitattributes'
+      - '.github/workflows/clinical-gateway-usage-package.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-package:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.10', '3.13']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Reproduce exact bytes without private runtime access
+        run: |
+          python tools/package_clinical_gateway_usage_skill.py --integrity-only
+          python -m unittest discover -s tests -p test_adapter_intake_contract.py -v
