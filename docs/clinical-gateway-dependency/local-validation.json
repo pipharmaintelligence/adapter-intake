@@ -1,0 +1,51 @@
+{
+  "status": "f3_contract_verified",
+  "asset_key": "nusaibah.clinical_intelligence_gateway",
+  "asset_version": "0.1.0",
+  "identity": {
+    "skill_ref": "nusaibah.clinical-intelligence-gateway-usage",
+    "version": "1.0.0",
+    "digest": "sha256:873f0860e01664ec0459b408f9614818f4409142d3239df740b65cae5c5d43cc"
+  },
+  "descriptor_sha256": "7f6398a975b276485b7800cb632e3699197832af3ab42abdbb867853cac06e3c",
+  "portable_validator_executed": true,
+  "assets_descriptor_normalizer_executed": true,
+  "runtime_admitted": false,
+  "gateway_consumed": false,
+  "release_authorized": false,
+  "assets_source_commit": "ec70070eb3cd1111f00c8cb7e855a95e9d60e219",
+  "verified_source_sha256": {
+    "app/Observability/InnovationLab/Services/AssetIdentityResolver.php": "9e4f83a946531576cc60a53b3209041bfc4d6a167ed400842413e845f49c78d8",
+    "app/Observability/InnovationLab/Services/AssetManifestRegistry.php": "83fd62092858058798f4ac8dae5dc76fed2ed66c0bb74bbfe058b7833bb691d3",
+    "python_runtime/devtools/skill_package.py": "55642ead57017fc2469e2a3d9542842d8cadf4c58b174fbbb71b1a0b369ed1e9"
+  },
+  "skill_dependency_report": {
+    "status": "ready",
+    "category": "skill_dependencies_ready",
+    "declared_count": 1,
+    "validated_count": 1,
+    "blocked_count": 0,
+    "items": [
+      {
+        "skill_ref": "nusaibah.clinical-intelligence-gateway-usage",
+        "version": "1.0.0",
+        "status": "ready"
+      }
+    ],
+    "safe": true,
+    "values_included": false,
+    "network_calls_made": false
+  },
+  "descriptor_normalization": {
+    "status": "normalized_draft",
+    "skills": [
+      {
+        "skill_ref": "nusaibah.clinical-intelligence-gateway-usage",
+        "version": "1.0.0",
+        "digest": "sha256:873f0860e01664ec0459b408f9614818f4409142d3239df740b65cae5c5d43cc"
+      }
+    ],
+    "launch_rejected": true,
+    "resume_rejected": true
+  }
+}
