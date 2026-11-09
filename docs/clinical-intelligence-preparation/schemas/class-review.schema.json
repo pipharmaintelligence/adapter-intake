@@ -1,0 +1,414 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dms-ai:clinical-preparation:class-review",
+  "$comment": "Draft design only. No runtime admission, authority grant, promotion or scientific certification.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "clinical_class_review.draft.v1"
+    },
+    "report_ref": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "report_version": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "class_scope": {
+      "$ref": "urn:dms-ai:clinical-preparation:class-scope"
+    },
+    "coverage": {
+      "$ref": "urn:dms-ai:clinical-preparation:coverage"
+    },
+    "assessment_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "assessment_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "handoff_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "product_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "case_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "content_digest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "quality": {
+            "enum": [
+              "accepted",
+              "partial",
+              "deferred",
+              "blocked",
+              "outdated",
+              "unknown"
+            ]
+          }
+        },
+        "required": [
+          "assessment_ref",
+          "handoff_ref",
+          "product_id",
+          "case_ref",
+          "content_digest",
+          "quality"
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 128,
+      "uniqueItems": true
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "finding_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "scope": {
+            "enum": [
+              "class",
+              "subclass",
+              "molecule",
+              "product_indication"
+            ]
+          },
+          "interpretation": {
+            "enum": [
+              "supported",
+              "contradicted",
+              "plausible",
+              "unknown"
+            ]
+          },
+          "product_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            },
+            "minItems": 1,
+            "maxItems": 128,
+            "uniqueItems": true
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            },
+            "minItems": 1,
+            "maxItems": 128,
+            "uniqueItems": true
+          },
+          "reason_graph_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            },
+            "minItems": 1,
+            "maxItems": 128,
+            "uniqueItems": true
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "finding_ref",
+          "scope",
+          "interpretation",
+          "product_ids",
+          "evidence_refs",
+          "reason_graph_refs",
+          "summary"
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 128,
+      "uniqueItems": true
+    },
+    "strata": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "stratum_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "product_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            },
+            "minItems": 1,
+            "maxItems": 128,
+            "uniqueItems": true
+          },
+          "indication_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "trial_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            },
+            "minItems": 1,
+            "maxItems": 128,
+            "uniqueItems": true
+          },
+          "regimen_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "comparator_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "endpoint_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "population_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "phase_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "mechanism_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "evidence_as_of_date": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "stratum_ref",
+          "product_ids",
+          "indication_ref",
+          "trial_refs",
+          "regimen_ref",
+          "comparator_ref",
+          "endpoint_ref",
+          "population_ref",
+          "phase_ref",
+          "mechanism_ref",
+          "evidence_as_of_date"
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 128,
+      "uniqueItems": true
+    },
+    "comparability": {
+      "enum": [
+        "unestablished",
+        "heterogeneous",
+        "established"
+      ]
+    },
+    "independent_critic": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "pending",
+            "passed",
+            "challenged"
+          ]
+        },
+        "review_ref": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unresolved_finding_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "minItems": 0,
+          "maxItems": 128,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "status",
+        "review_ref",
+        "unresolved_finding_refs"
+      ]
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2000
+      },
+      "minItems": 1,
+      "maxItems": 128,
+      "uniqueItems": true
+    },
+    "skill_improvement": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "not_requested",
+            "preview_only"
+          ]
+        },
+        "apply_authorized": {
+          "const": false
+        },
+        "write_attempted": {
+          "const": false
+        }
+      },
+      "required": [
+        "status",
+        "apply_authorized",
+        "write_attempted"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "report_ref",
+    "report_version",
+    "class_scope",
+    "coverage",
+    "assessment_refs",
+    "findings",
+    "strata",
+    "comparability",
+    "independent_critic",
+    "limitations",
+    "skill_improvement"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "coverage": {
+            "properties": {
+              "class_generalization_supported": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "class_scope": {
+            "properties": {
+              "scope_mode": {
+                "const": "all_known_in_snapshot"
+              },
+              "membership": {
+                "properties": {
+                  "complete": {
+                    "const": true
+                  }
+                }
+              },
+              "case_inventory_complete": {
+                "const": true
+              }
+            }
+          },
+          "coverage": {
+            "properties": {
+              "membership_complete": {
+                "const": true
+              },
+              "selection_complete": {
+                "const": true
+              },
+              "execution_complete": {
+                "const": true
+              },
+              "evidence_complete": {
+                "const": true
+              },
+              "scientific_review_complete": {
+                "const": true
+              },
+              "selected_product_count": {
+                "minimum": 1
+              },
+              "completed_case_count": {
+                "minimum": 1
+              }
+            }
+          },
+          "comparability": {
+            "const": "established"
+          },
+          "assessment_refs": {
+            "minItems": 1
+          },
+          "findings": {
+            "minItems": 1
+          },
+          "strata": {
+            "minItems": 1
+          },
+          "independent_critic": {
+            "properties": {
+              "status": {
+                "const": "passed"
+              },
+              "review_ref": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              },
+              "unresolved_finding_refs": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

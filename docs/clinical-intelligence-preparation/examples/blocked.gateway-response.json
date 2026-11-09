@@ -1,0 +1,15 @@
+{
+  "schema_version": "clinical_gateway_response.draft.v1",
+  "run_ref": null,
+  "status": "blocked",
+  "stage": "identity",
+  "summary": "Synthetic fixture: conflicting class identity must be resolved before admission.",
+  "scope_mode": "selected_subset",
+  "coverage": null,
+  "reports": [],
+  "citations": [],
+  "reason_codes": [
+    "class_identity_conflict"
+  ],
+  "next_action": "revise_scope"
+}

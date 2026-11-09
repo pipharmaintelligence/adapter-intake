@@ -1,0 +1,59 @@
+{
+  "schema_version": "clinical_assessment_handoff.draft.v1",
+  "subject": {
+    "product_id": "SYNTH_PRODUCT_A",
+    "molecule_id": "SYNTH_MOLECULE_A",
+    "pharmacological_class_id": "SYNTH_CLASS_X"
+  },
+  "case": {
+    "case_ref": "SYNTH_CASE_A",
+    "product_id": "SYNTH_PRODUCT_A",
+    "indication_ref": "SYNTH_INDICATION",
+    "trial_refs": [
+      "SYNTH_TRIAL_A"
+    ]
+  },
+  "assessment_ref": "SYNTH_ASSESSMENT_A",
+  "producer": {
+    "asset_key": "nusaibah.clinical_failure_intelligence",
+    "asset_version": "0.1.16",
+    "run_ref": "SYNTH_PRODUCER_RUN_A",
+    "output_role": "clinical_intelligence"
+  },
+  "retained_result": {
+    "result_ref": "SYNTH_RETAINED_A",
+    "content_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "quality": "partial",
+  "producer_quality": {
+    "status": "partial",
+    "scientific_accuracy_certified": false,
+    "external_truth_verified": false,
+    "automated_review_only": true
+  },
+  "verification": {
+    "retained_integrity": "verified",
+    "identity": "matched",
+    "structure": "valid",
+    "freshness": "current",
+    "structural_issue_codes": []
+  },
+  "evidence_sources": [
+    {
+      "source_ref": "SYNTH_TRIAL_SOURCE_A",
+      "snapshot_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "as_of_date": "2026-11-08"
+    }
+  ],
+  "evidence_as_of_date": "2026-11-08",
+  "reason_graph_ref": "SYNTH_GRAPH_A",
+  "methodology": {
+    "skill_ref": "SYNTH_METHODOLOGY",
+    "version": "1.0.0",
+    "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "model_revision": "SYNTH_MODEL_REVISION",
+  "unresolved_reason_codes": [
+    "literature_coverage_incomplete"
+  ]
+}

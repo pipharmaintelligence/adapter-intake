@@ -1,0 +1,13 @@
+{
+  "schema_version": "clinical_gateway_response.draft.v1",
+  "run_ref": "SYNTH_RUN",
+  "status": "accepted",
+  "stage": "admission",
+  "summary": "Synthetic example of a proposed accepted-run response.",
+  "scope_mode": "all_known_in_snapshot",
+  "coverage": null,
+  "reports": [],
+  "citations": [],
+  "reason_codes": [],
+  "next_action": "poll"
+}

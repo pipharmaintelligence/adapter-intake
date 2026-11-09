@@ -1,0 +1,10 @@
+{
+  "schema_version": "clinical_gateway_request.draft.v1",
+  "operation": "request_assessment",
+  "assessment_mode": "neutral_assessment",
+  "research_objective": "Synthetic fixture: no prior assessment; request a neutral review without inferring success.",
+  "product_ids": [
+    "SYNTH_PRODUCT_D"
+  ],
+  "as_of_date": "2026-11-08"
+}
