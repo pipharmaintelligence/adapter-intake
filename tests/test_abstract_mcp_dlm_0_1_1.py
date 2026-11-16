@@ -12,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ASSET = ROOT / "adapters" / "nusaibah" / "abstract_mcp_dlm"
 MODULE = ASSET / "abstract_mcp_dlm_v0_1_1_adapter.py"
+INTAKE_VERSION = "0.1.2"
 
 
 def _subject():
@@ -136,21 +137,25 @@ class ReadOnlyMcpContractTest(unittest.TestCase):
     def test_current_version_intake_and_preserved_shared_manifest_contract(self):
         manifest = json.loads((ASSET / "abstract_mcp_dlm.asset.json").read_text())
         yaml = (ASSET / "adapter.yaml").read_text(encoding="utf-8")
-        self.assertEqual("0.1.1", manifest["default"])
-        self.assertEqual(["0.1.1"], list(manifest["versions"]))
-        self.assertIn("adapter_module: abstract_mcp_dlm_v0_1_1_adapter.py", yaml)
+        self.assertEqual(INTAKE_VERSION, manifest["default"])
+        self.assertEqual([INTAKE_VERSION], list(manifest["versions"]))
+        self.assertIn("adapter_module: abstract_mcp_dlm_v0_1_2_adapter.py", yaml)
+        self.assertIn("  - abstract_mcp_dlm_v0_1_1_adapter.py", yaml)
         self.assertIn("  - abstract_mcp_capabilities.py", yaml)
-        self.assertEqual({"tool_request", "variables"}, set(manifest["versions"]["0.1.1"]["inputs"]))
-        self.assertTrue(manifest["versions"]["0.1.1"]["inputs"]["tool_request"]["required"])
-        self.assertFalse(manifest["versions"]["0.1.1"]["inputs"]["variables"]["required"])
+        self.assertEqual({"tool_request", "variables"}, set(manifest["versions"][INTAKE_VERSION]["inputs"]))
+        self.assertTrue(manifest["versions"][INTAKE_VERSION]["inputs"]["tool_request"]["required"])
+        self.assertFalse(manifest["versions"][INTAKE_VERSION]["inputs"]["variables"]["required"])
         self.assertEqual(
             {"dlm_lakes_list", "dlm_nodes_list", "dlm_nodes_schema"},
-            set(manifest["versions"]["0.1.1"]["runtime_tools"]),
+            set(manifest["versions"][INTAKE_VERSION]["runtime_tools"]),
         )
         self.assertEqual(
             {"local_worker", "ecs"},
             set(manifest["execution"]["allowed_substrates"]),
         )
+        self.assertEqual({"default_substrate": "ecs", "allowed_substrates": ["ecs"],
+                          "timeout_seconds": 120, "tool_execution": "core"},
+                         manifest["versions"][INTAKE_VERSION]["execution"])
 
     def test_lakes_positive_allowlist_and_true_zero_records(self):
         adapter, _ = _subject()
@@ -469,6 +474,8 @@ class ReadOnlyMcpContractTest(unittest.TestCase):
             (package / MODULE.name).write_bytes(MODULE.read_bytes())
             helper = ASSET / "mcp_read_resolution_v0_1_1.py"
             (package / helper.name).write_bytes(helper.read_bytes())
+            incoming = ASSET / "abstract_mcp_dlm_v0_1_2_adapter.py"
+            (package / incoming.name).write_bytes(incoming.read_bytes())
             code = (
                 "import sys\n"
                 f"sys.path.insert(0, {str(root)!r})\n"
@@ -476,9 +483,16 @@ class ReadOnlyMcpContractTest(unittest.TestCase):
                 "abstract_mcp_dlm_v0_1_1_adapter import AbstractMcpDlmReadAdapter\n"
                 "assert AbstractMcpDlmReadAdapter.key == 'nusaibah.abstract_mcp_dlm'\n"
                 "assert AbstractMcpDlmReadAdapter.version == '0.1.1'\n"
+                "from adapters.intake.nusaibah.abstract_mcp_dlm."
+                "abstract_mcp_dlm_v0_1_2_adapter import AbstractMcpDlmCoreReadAdapter\n"
+                "assert AbstractMcpDlmCoreReadAdapter.version == '0.1.2'\n"
+                "assert AbstractMcpDlmCoreReadAdapter.invoke is AbstractMcpDlmReadAdapter.invoke\n"
                 f"sys.path.insert(0, {str(package)!r})\n"
                 "from abstract_mcp_dlm_v0_1_1_adapter import AbstractMcpDlmReadAdapter as FlatAdapter\n"
                 "assert FlatAdapter.key == AbstractMcpDlmReadAdapter.key\n"
+                "from abstract_mcp_dlm_v0_1_2_adapter import AbstractMcpDlmCoreReadAdapter as FlatCoreAdapter\n"
+                "assert FlatCoreAdapter.version == '0.1.2'\n"
+                "assert FlatCoreAdapter.invoke is FlatAdapter.invoke\n"
             )
             result = subprocess.run(
                 [sys.executable, "-I", "-c", code],
@@ -663,7 +677,7 @@ class ReusableReadResolutionTest(unittest.TestCase):
 
     def test_reuse_contract_keeps_prepared_request_required_and_public_schema_stable(self):
         manifest = json.loads((ASSET / "abstract_mcp_dlm.asset.json").read_text())
-        contract = manifest["versions"]["0.1.1"]["callable"]
+        contract = manifest["versions"][INTAKE_VERSION]["callable"]
         self.assertEqual({"enabled": True, "result_key": "tool_results", "result_shape": "object",
                           "max_result_bytes": 65536, "timeout_seconds": 120}, contract)
         metadata = json.loads((ASSET / "capabilities.v0.1.1.json").read_text())
@@ -678,20 +692,21 @@ class DiscoveryOrchestrationPackageTest(unittest.TestCase):
 
     def metadata(self):
         return json.loads(
-            (ASSET / "capabilities.v0.1.1.json").read_text(
+            (ASSET / f"capabilities.v{INTAKE_VERSION}.json").read_text(
                 encoding="utf-8",
             )
         )
 
     def test_adapter_execution_has_no_chatgpt_skill_dependency(self):
         manifest = json.loads((ASSET / "abstract_mcp_dlm.asset.json").read_text())
-        version = manifest["versions"]["0.1.1"]
+        version = manifest["versions"][INTAKE_VERSION]
         self.assertNotIn("skills", version)
         self.assertNotIn("published_skills", version)
         self.assertFalse((ASSET / "skills" / "dlm-discovery-orchestration").exists())
         yaml = (ASSET / "adapter.yaml").read_text(encoding="utf-8")
         self.assertIn("  - capabilities.v0.1.1.json", yaml)
         self.assertIn("reviewed_support_files:\n  - capabilities.v0.1.1.json", yaml)
+        self.assertIn("  - capabilities.v0.1.2.json", yaml)
         self.assertNotIn("optional_files:\n  - README.md\n  - capabilities.v0.1.1.json", yaml)
         metadata = self.metadata()
         self.assertNotIn("skill_ref", metadata)
@@ -726,10 +741,10 @@ class DiscoveryOrchestrationPackageTest(unittest.TestCase):
 
     def test_metadata_has_exact_capability_and_role_parity(self):
         manifest = json.loads((ASSET / "abstract_mcp_dlm.asset.json").read_text())
-        roles = manifest["versions"]["0.1.1"]["runtime_tools"]
+        roles = manifest["versions"][INTAKE_VERSION]["runtime_tools"]
         metadata = self.metadata()
         self.assertEqual("nusaibah.abstract_mcp_dlm", metadata["asset_key"])
-        self.assertEqual("0.1.1", metadata["asset_version"])
+        self.assertEqual(INTAKE_VERSION, metadata["asset_version"])
         self.assertEqual("templates_only", metadata["publication_status"])
         self.assertEqual(
             {"dlm.lakes.list", "dlm.nodes.list", "dlm.nodes.schema"},
@@ -743,6 +758,16 @@ class DiscoveryOrchestrationPackageTest(unittest.TestCase):
             {definition["remote_mcp"]["tool_name"]
              for definition in metadata["capabilities"].values()},
         )
+
+    def test_incoming_metadata_preserves_reviewed_schemas_and_adds_read_hints(self):
+        previous = json.loads((ASSET / "capabilities.v0.1.1.json").read_text())
+        for capability, declaration in self.metadata()["capabilities"].items():
+            descriptor = declaration["remote_mcp"]
+            self.assertTrue(0 < len(descriptor.pop("title")) <= 120)
+            self.assertEqual({"readOnlyHint": True, "destructiveHint": False,
+                              "idempotentHint": True, "openWorldHint": False},
+                             descriptor.pop("annotations"))
+            self.assertEqual(previous["capabilities"][capability], declaration)
 
     def test_descriptors_respect_the_current_assets_projection_budget(self):
         def depth(value):

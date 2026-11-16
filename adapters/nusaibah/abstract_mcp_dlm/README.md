@@ -1,17 +1,39 @@
-# abstract_mcp_dlm — 0.1.1 discovery and orchestration (PI-2047)
+# abstract_mcp_dlm — 0.1.2 ECS intake handoff (PI-2047 / PI-2001)
 
-This folder declares one **read-only, local-first** DLM MCP adapter version. It
+This folder submits one **read-only, ECS-only** DLM MCP adapter version. It
 does not call DLM Core, Assets, providers, MCP servers, or storage from Python.
 It packages the existing three read capabilities and their publication metadata.
 The conversation skill is distributed separately as a ChatGPT plugin.
 The existing governed runtime must prove the selected read and caller scope
 before this version is published through Remote MCP.
 
+The incoming `0.1.2` class inherits the unchanged `0.1.1` implementation. Its
+version-specific execution contract selects `default_substrate=ecs`,
+`allowed_substrates=[ecs]` and `tool_execution=core`, matching the reviewed Assets
+trusted tool handoff. It adds no business logic, credentials or transport.
+Existing `0.1.1` capability metadata and reviewed helpers remain unchanged.
+
+All three declared roles must resolve through existing Core authorization
+discovery for the server-resolved client, actor and owner: `dlm_lakes_list`,
+`dlm_nodes_list` and `dlm_nodes_schema`, under `@tool.abstract_mcp_dlm` /
+`mcp.abstract_dlm`. The first publication remains only `dlm_list_lakes`; the
+other roles do not become public tools automatically. Titles and read-only
+annotations describe behavior, not grants or readiness.
+
+This is an intake submission, not Assets promotion or deployment. The incoming
+manifest contains only `0.1.2` and uses intake default `0.1.2`, as required by the
+existing checker. Future Assets materialization must preserve installed prior
+versions and explicitly review its default-version diff. The current Assets
+installed manifest and catalog remain unchanged. Core binding, signed worker
+artifact, admission, bounded terminal response and real ChatGPT certification
+remain separate release evidence.
+
 ## Version and promotion rules
 
-- `adapter.yaml` selects `abstract_mcp_dlm_v0_1_1_adapter.py`.
-- The manifest contains only `0.1.1`. Assets materialization preserves the
-  previously published `0.1.0` adapter and merges its manifest entry.
+- `adapter.yaml` selects `abstract_mcp_dlm_v0_1_2_adapter.py` and declares its
+  unchanged inherited `0.1.1` module as a reviewed helper.
+- The manifest contains only incoming `0.1.2`. Assets materialization must
+  preserve previously published versions and merge their manifest entries.
 - `abstract_mcp_capabilities.py` is intentionally byte-identical to the
   shared helper already packaged for `0.1.0`. Do not modify it: changes can
   fail the promotion with `shared_runtime_file_conflict`.
