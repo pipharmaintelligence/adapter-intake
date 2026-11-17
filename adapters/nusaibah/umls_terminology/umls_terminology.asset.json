@@ -1,0 +1,76 @@
+{
+  "key": "umls_terminology",
+  "default": "0.1.1",
+  "allowed_surfaces": [
+    "v1_asset_execute"
+  ],
+  "allowed_modes": [
+    "balanced"
+  ],
+  "execution": {
+    "allowed_substrates": [
+      "local_worker",
+      "ecs"
+    ],
+    "default_substrate": "local_worker",
+    "timeout_seconds": 120
+  },
+  "versions": {
+    "0.1.1": {
+      "state": "active",
+      "allow_resume": false,
+      "inputs": {
+        "variables": {
+          "required": false,
+          "source": "direct",
+          "shape": "object"
+        },
+        "umls_response": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "contract": {
+            "source": {
+              "type": "api",
+              "authority": "dlm_core",
+              "reference": {
+                "service": "umls_terminology_search"
+              }
+            },
+            "schema": {
+              "source": "governed"
+            },
+            "partitioning": {
+              "mode": "none",
+              "source": "none",
+              "dimensions": []
+            },
+            "access": {
+              "mode": "service"
+            },
+            "execution": {
+              "strategy": "single_call",
+              "developer_hint": "Worker-declared lazy Runtime Source. Adapter invokes only the approved search role through RuntimeInputs."
+            },
+            "explainability": {
+              "summary": "Governed UMLS terminology search records.",
+              "logic": "DLM Core owns search authority and the worker attaches a lazy RuntimeInputs bridge; Python receives only bounded records."
+            },
+            "capabilities": {
+              "preview": {
+                "supported": false,
+                "default_in_developer_env": false
+              }
+            }
+          }
+        }
+      },
+      "outputs": {
+        "terminology_result": {
+          "required": true,
+          "shape": "object"
+        }
+      }
+    }
+  }
+}
