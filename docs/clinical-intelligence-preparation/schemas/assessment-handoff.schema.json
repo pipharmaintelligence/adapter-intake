@@ -1,0 +1,398 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dms-ai:clinical-preparation:assessment-handoff",
+  "$comment": "Draft design only. No runtime admission, authority grant, promotion or scientific certification.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "clinical_assessment_handoff.draft.v1"
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "product_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "molecule_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "pharmacological_class_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        }
+      },
+      "required": [
+        "product_id",
+        "molecule_id",
+        "pharmacological_class_id"
+      ]
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "case_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "product_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "indication_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "trial_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "minItems": 0,
+          "maxItems": 128,
+          "uniqueItems": true
+        },
+        "regimen_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        }
+      },
+      "required": [
+        "case_ref",
+        "product_id",
+        "indication_ref",
+        "trial_refs"
+      ]
+    },
+    "assessment_ref": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "asset_key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "asset_version": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "run_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "output_role": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        }
+      },
+      "required": [
+        "asset_key",
+        "asset_version",
+        "run_ref",
+        "output_role"
+      ]
+    },
+    "retained_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "result_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "content_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "result_ref",
+        "content_digest"
+      ]
+    },
+    "quality": {
+      "enum": [
+        "accepted",
+        "partial",
+        "deferred",
+        "blocked",
+        "outdated",
+        "unknown"
+      ]
+    },
+    "producer_quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "scientific_accuracy_certified": {
+          "enum": [
+            true,
+            false,
+            null
+          ]
+        },
+        "external_truth_verified": {
+          "enum": [
+            true,
+            false,
+            null
+          ]
+        },
+        "automated_review_only": {
+          "enum": [
+            true,
+            false,
+            null
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "scientific_accuracy_certified",
+        "external_truth_verified",
+        "automated_review_only"
+      ]
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "retained_integrity": {
+          "enum": [
+            "verified",
+            "unverified",
+            "unavailable",
+            "failed"
+          ]
+        },
+        "identity": {
+          "enum": [
+            "matched",
+            "unresolved",
+            "conflict"
+          ]
+        },
+        "structure": {
+          "enum": [
+            "valid",
+            "unverified",
+            "invalid"
+          ]
+        },
+        "freshness": {
+          "enum": [
+            "current",
+            "outdated",
+            "unknown"
+          ]
+        },
+        "structural_issue_codes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "minItems": 0,
+          "maxItems": 128,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "retained_integrity",
+        "identity",
+        "structure",
+        "freshness",
+        "structural_issue_codes"
+      ]
+    },
+    "evidence_sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "snapshot_digest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "as_of_date": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "source_ref",
+          "snapshot_digest",
+          "as_of_date"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 128,
+      "uniqueItems": true
+    },
+    "evidence_as_of_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "reason_graph_ref": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    },
+    "methodology": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "skill_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "skill_ref",
+        "version",
+        "digest"
+      ]
+    },
+    "model_revision": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "unresolved_reason_codes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+      },
+      "minItems": 0,
+      "maxItems": 128,
+      "uniqueItems": true
+    },
+    "parent_assessment_ref": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+    }
+  },
+  "required": [
+    "schema_version",
+    "subject",
+    "case",
+    "assessment_ref",
+    "producer",
+    "retained_result",
+    "quality",
+    "producer_quality",
+    "verification",
+    "evidence_sources",
+    "evidence_as_of_date",
+    "reason_graph_ref",
+    "methodology",
+    "model_revision",
+    "unresolved_reason_codes"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "quality": {
+            "const": "accepted"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "producer_quality": {
+            "properties": {
+              "status": {
+                "const": "completed"
+              }
+            }
+          },
+          "verification": {
+            "properties": {
+              "retained_integrity": {
+                "const": "verified"
+              },
+              "identity": {
+                "const": "matched"
+              },
+              "structure": {
+                "const": "valid"
+              },
+              "freshness": {
+                "const": "current"
+              },
+              "structural_issue_codes": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "producer": {
+            "properties": {
+              "asset_key": {
+                "const": "nusaibah.clinical_failure_intelligence"
+              },
+              "asset_version": {
+                "const": "0.1.16"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "producer_quality": {
+            "properties": {
+              "scientific_accuracy_certified": {
+                "const": false
+              },
+              "external_truth_verified": {
+                "const": false
+              },
+              "automated_review_only": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

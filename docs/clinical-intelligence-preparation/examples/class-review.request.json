@@ -1,0 +1,33 @@
+{
+  "schema_version": "clinical_gateway_request.draft.v1",
+  "operation": "request_assessment",
+  "assessment_mode": "class_review",
+  "research_objective": "Synthetic fixture: review selected molecules in Class X.",
+  "scope_mode": "selected_subset",
+  "molecule_ids": [
+    "SYNTH_MOLECULE_A",
+    "SYNTH_MOLECULE_B",
+    "SYNTH_MOLECULE_C"
+  ],
+  "pharmacological_class_ids": [
+    "SYNTH_CLASS_X"
+  ],
+  "supplied_identity_context": [
+    {
+      "product_id": "SYNTH_PRODUCT_A",
+      "molecule_id": "SYNTH_MOLECULE_A",
+      "pharmacological_class_id": "SYNTH_CLASS_X"
+    },
+    {
+      "product_id": "SYNTH_PRODUCT_B",
+      "molecule_id": "SYNTH_MOLECULE_B",
+      "pharmacological_class_id": "SYNTH_CLASS_X"
+    },
+    {
+      "product_id": "SYNTH_PRODUCT_C",
+      "molecule_id": "SYNTH_MOLECULE_C",
+      "pharmacological_class_id": "SYNTH_CLASS_X"
+    }
+  ],
+  "as_of_date": "2026-11-08"
+}

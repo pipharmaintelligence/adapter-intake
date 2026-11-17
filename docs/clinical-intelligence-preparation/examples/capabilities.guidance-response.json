@@ -1,0 +1,178 @@
+{
+  "schema_version": "clinical_gateway_guidance.draft.v1",
+  "operation": "describe_capabilities",
+  "gateway_asset": "nusaibah.clinical_intelligence_gateway",
+  "usage_skill": {
+    "skill_ref": "nusaibah.clinical-intelligence-gateway-usage",
+    "version": "1.0.0",
+    "kind": "fixed",
+    "digest": null
+  },
+  "capabilities": [
+    {
+      "capability_id": "describe_capabilities",
+      "operation": "describe_capabilities",
+      "assessment_mode": null,
+      "availability": "not_admitted",
+      "prerequisite_codes": [
+        "caller_surface_scope_verified"
+      ],
+      "required_arguments": [
+        "schema_version",
+        "operation"
+      ],
+      "guidance_section": "overview",
+      "read_only": true,
+      "reason_codes": [
+        "gateway_not_admitted"
+      ]
+    },
+    {
+      "capability_id": "read_guidance",
+      "operation": "read_guidance",
+      "assessment_mode": null,
+      "availability": "not_admitted",
+      "prerequisite_codes": [
+        "caller_surface_scope_verified",
+        "usage_skill_digest_sealed",
+        "usage_audience_approved"
+      ],
+      "required_arguments": [
+        "schema_version",
+        "operation",
+        "section_id"
+      ],
+      "guidance_section": "overview",
+      "read_only": true,
+      "reason_codes": [
+        "gateway_not_admitted"
+      ]
+    },
+    {
+      "capability_id": "existing_review",
+      "operation": "request_assessment",
+      "assessment_mode": "existing_review",
+      "availability": "not_admitted",
+      "prerequisite_codes": [
+        "retained_assessment_verified",
+        "consumer_input_authority_verified"
+      ],
+      "required_arguments": [
+        "schema_version",
+        "operation",
+        "assessment_mode",
+        "research_objective",
+        "as_of_date"
+      ],
+      "guidance_section": "existing_review",
+      "read_only": false,
+      "reason_codes": [
+        "gateway_not_admitted"
+      ]
+    },
+    {
+      "capability_id": "neutral_assessment",
+      "operation": "request_assessment",
+      "assessment_mode": "neutral_assessment",
+      "availability": "not_admitted",
+      "prerequisite_codes": [
+        "neutral_engine_ruleset_admitted",
+        "source_roles_admitted"
+      ],
+      "required_arguments": [
+        "schema_version",
+        "operation",
+        "assessment_mode",
+        "research_objective",
+        "as_of_date"
+      ],
+      "guidance_section": "neutral_assessment",
+      "read_only": false,
+      "reason_codes": [
+        "gateway_not_admitted"
+      ]
+    },
+    {
+      "capability_id": "class_review",
+      "operation": "request_assessment",
+      "assessment_mode": "class_review",
+      "availability": "not_admitted",
+      "prerequisite_codes": [
+        "governed_membership_verified",
+        "bounded_case_inventory_verified",
+        "product_join_synthesis_critic_admitted"
+      ],
+      "required_arguments": [
+        "schema_version",
+        "operation",
+        "assessment_mode",
+        "research_objective",
+        "as_of_date",
+        "scope_mode"
+      ],
+      "guidance_section": "class_review",
+      "read_only": false,
+      "reason_codes": [
+        "gateway_not_admitted"
+      ]
+    },
+    {
+      "capability_id": "get_status",
+      "operation": "get_status",
+      "assessment_mode": null,
+      "availability": "not_admitted",
+      "prerequisite_codes": [
+        "durable_status_projection_admitted",
+        "run_caller_scope_verified"
+      ],
+      "required_arguments": [
+        "schema_version",
+        "operation",
+        "run_ref"
+      ],
+      "guidance_section": "get_status",
+      "read_only": true,
+      "reason_codes": [
+        "gateway_not_admitted"
+      ]
+    },
+    {
+      "capability_id": "get_result",
+      "operation": "get_result",
+      "assessment_mode": null,
+      "availability": "not_admitted",
+      "prerequisite_codes": [
+        "retained_readback_admitted",
+        "run_caller_scope_verified",
+        "retention_horizon_verified"
+      ],
+      "required_arguments": [
+        "schema_version",
+        "operation",
+        "run_ref"
+      ],
+      "guidance_section": "get_result",
+      "read_only": true,
+      "reason_codes": [
+        "gateway_not_admitted"
+      ]
+    }
+  ],
+  "guidance_sections": [
+    "overview",
+    "existing_review",
+    "neutral_assessment",
+    "class_review",
+    "get_status",
+    "get_result",
+    "result_states"
+  ],
+  "scope_modes": [
+    "all_known_in_snapshot",
+    "selected_subset"
+  ],
+  "reason_codes": [
+    "gateway_not_admitted",
+    "usage_skill_digest_unsealed"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": "clinical_gateway_request.draft.v1",
+  "operation": "request_assessment",
+  "assessment_mode": "existing_review",
+  "research_objective": "Synthetic fixture: independently inspect this exact prior assessment.",
+  "assessment_ref": "SYNTH_ASSESSMENT_A",
+  "product_ids": [
+    "SYNTH_PRODUCT_A"
+  ],
+  "as_of_date": "2026-11-08"
+}

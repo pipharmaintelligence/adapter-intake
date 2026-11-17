@@ -1,0 +1,23 @@
+{
+  "schema_version": "clinical_gateway_response.draft.v1",
+  "run_ref": null,
+  "status": "blocked",
+  "stage": "inventory",
+  "summary": "Synthetic inventory has 129 eligible products, exceeding the 128-product draft bound. No truncation or execution occurred.",
+  "scope_mode": "all_known_in_snapshot",
+  "coverage": null,
+  "reports": [],
+  "citations": [],
+  "reason_codes": [
+    "class_scope_limit_exceeded"
+  ],
+  "next_action": "revise_scope",
+  "scope_limit": {
+    "policy": "block_overflow_no_pagination",
+    "product_limit": 128,
+    "case_limit": 128,
+    "observed_eligible_product_count": 129,
+    "observed_selected_product_count": 129,
+    "observed_selected_case_count": null
+  }
+}

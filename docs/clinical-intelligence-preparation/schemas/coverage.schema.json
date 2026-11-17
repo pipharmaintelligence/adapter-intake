@@ -1,0 +1,271 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dms-ai:clinical-preparation:coverage",
+  "$comment": "Draft design only. No runtime admission, authority grant, promotion or scientific certification.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "membership_complete": {
+      "enum": [
+        true,
+        false,
+        null
+      ]
+    },
+    "selection_complete": {
+      "enum": [
+        true,
+        false,
+        null
+      ]
+    },
+    "execution_complete": {
+      "enum": [
+        true,
+        false,
+        null
+      ]
+    },
+    "evidence_complete": {
+      "enum": [
+        true,
+        false,
+        null
+      ]
+    },
+    "scientific_review_complete": {
+      "enum": [
+        true,
+        false,
+        null
+      ]
+    },
+    "class_generalization_supported": {
+      "type": "boolean"
+    },
+    "eligible_product_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "selected_product_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "product_with_accepted_assessment_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "product_with_partial_assessment_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "missing_product_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "blocked_product_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "outdated_product_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "deferred_product_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "unknown_product_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "assessment_case_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "completed_case_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "partial_case_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "deferred_case_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "missing_case_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "blocked_case_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "outdated_case_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "unknown_case_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "inventory_member_count": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "product_dispositions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "state": {
+            "enum": [
+              "accepted",
+              "partial",
+              "missing",
+              "blocked",
+              "outdated",
+              "deferred",
+              "unknown"
+            ]
+          }
+        },
+        "required": [
+          "product_id",
+          "state"
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 128,
+      "uniqueItems": true
+    },
+    "case_dispositions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "case_ref": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+          },
+          "state": {
+            "enum": [
+              "completed",
+              "partial",
+              "deferred",
+              "missing",
+              "blocked",
+              "outdated",
+              "unknown"
+            ]
+          }
+        },
+        "required": [
+          "case_ref",
+          "state"
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 128,
+      "uniqueItems": true
+    },
+    "evidence_coverage_by_source": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source_kind": {
+            "enum": [
+              "clinicaltrials",
+              "pubmed",
+              "umls"
+            ]
+          },
+          "complete": {
+            "enum": [
+              true,
+              false,
+              null
+            ]
+          },
+          "evidence_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          }
+        },
+        "required": [
+          "source_kind",
+          "complete",
+          "evidence_count"
+        ]
+      },
+      "minItems": 0,
+      "maxItems": 3,
+      "uniqueItems": true
+    }
+  },
+  "required": [
+    "membership_complete",
+    "selection_complete",
+    "execution_complete",
+    "evidence_complete",
+    "scientific_review_complete",
+    "class_generalization_supported",
+    "eligible_product_count",
+    "selected_product_count",
+    "product_with_accepted_assessment_count",
+    "product_with_partial_assessment_count",
+    "missing_product_count",
+    "blocked_product_count",
+    "outdated_product_count",
+    "deferred_product_count",
+    "unknown_product_count",
+    "assessment_case_count",
+    "completed_case_count",
+    "partial_case_count",
+    "deferred_case_count",
+    "missing_case_count",
+    "blocked_case_count",
+    "outdated_case_count",
+    "unknown_case_count",
+    "inventory_member_count",
+    "product_dispositions",
+    "case_dispositions",
+    "evidence_coverage_by_source"
+  ]
+}

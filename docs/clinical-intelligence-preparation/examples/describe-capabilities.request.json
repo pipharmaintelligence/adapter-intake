@@ -1,0 +1,4 @@
+{
+  "schema_version": "clinical_gateway_request.draft.v1",
+  "operation": "describe_capabilities"
+}

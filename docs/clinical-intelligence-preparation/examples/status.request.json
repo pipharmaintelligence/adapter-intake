@@ -1,0 +1,5 @@
+{
+  "schema_version": "clinical_gateway_request.draft.v1",
+  "operation": "get_status",
+  "run_ref": "SYNTH_RUN"
+}

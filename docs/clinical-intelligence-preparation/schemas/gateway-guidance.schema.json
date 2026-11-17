@@ -1,0 +1,599 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dms-ai:clinical-preparation:gateway-guidance",
+  "$comment": "Design-only Fixed usage Skill consumption; no installation, publication or gateway implementation.",
+  "$defs": {
+    "request": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "clinical_gateway_request.draft.v1"
+            },
+            "operation": {
+              "const": "describe_capabilities"
+            }
+          },
+          "required": [
+            "schema_version",
+            "operation"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "clinical_gateway_request.draft.v1"
+            },
+            "operation": {
+              "const": "read_guidance"
+            },
+            "section_id": {
+              "enum": [
+                "overview",
+                "existing_review",
+                "neutral_assessment",
+                "class_review",
+                "get_status",
+                "get_result",
+                "result_states"
+              ]
+            }
+          },
+          "required": [
+            "schema_version",
+            "operation",
+            "section_id"
+          ]
+        }
+      ]
+    },
+    "response": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "clinical_gateway_guidance.draft.v1"
+            },
+            "operation": {
+              "const": "describe_capabilities"
+            },
+            "gateway_asset": {
+              "const": "nusaibah.clinical_intelligence_gateway"
+            },
+            "usage_skill": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "skill_ref": {
+                  "const": "nusaibah.clinical-intelligence-gateway-usage"
+                },
+                "version": {
+                  "const": "1.0.0"
+                },
+                "kind": {
+                  "const": "fixed"
+                },
+                "digest": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^sha256:[0-9a-f]{64}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "skill_ref",
+                "version",
+                "kind",
+                "digest"
+              ]
+            },
+            "capabilities": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "capability_id": {
+                    "enum": [
+                      "describe_capabilities",
+                      "read_guidance",
+                      "existing_review",
+                      "neutral_assessment",
+                      "class_review",
+                      "get_status",
+                      "get_result"
+                    ]
+                  },
+                  "operation": {
+                    "enum": [
+                      "describe_capabilities",
+                      "read_guidance",
+                      "request_assessment",
+                      "get_status",
+                      "get_result"
+                    ]
+                  },
+                  "assessment_mode": {
+                    "oneOf": [
+                      {
+                        "enum": [
+                          "existing_review",
+                          "neutral_assessment",
+                          "class_review"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "availability": {
+                    "enum": [
+                      "not_admitted",
+                      "available",
+                      "blocked"
+                    ]
+                  },
+                  "prerequisite_codes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                    },
+                    "minItems": 0,
+                    "maxItems": 16,
+                    "uniqueItems": true
+                  },
+                  "required_arguments": {
+                    "type": "array",
+                    "items": {
+                      "enum": [
+                        "schema_version",
+                        "operation",
+                        "section_id",
+                        "assessment_mode",
+                        "research_objective",
+                        "as_of_date",
+                        "scope_mode",
+                        "run_ref"
+                      ]
+                    },
+                    "minItems": 0,
+                    "maxItems": 16,
+                    "uniqueItems": true
+                  },
+                  "guidance_section": {
+                    "enum": [
+                      "overview",
+                      "existing_review",
+                      "neutral_assessment",
+                      "class_review",
+                      "get_status",
+                      "get_result",
+                      "result_states"
+                    ]
+                  },
+                  "read_only": {
+                    "type": "boolean"
+                  },
+                  "reason_codes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+                    },
+                    "minItems": 0,
+                    "maxItems": 16,
+                    "uniqueItems": true
+                  }
+                },
+                "required": [
+                  "capability_id",
+                  "operation",
+                  "assessment_mode",
+                  "availability",
+                  "prerequisite_codes",
+                  "required_arguments",
+                  "guidance_section",
+                  "read_only",
+                  "reason_codes"
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 7,
+              "uniqueItems": true
+            },
+            "guidance_sections": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "overview",
+                  "existing_review",
+                  "neutral_assessment",
+                  "class_review",
+                  "get_status",
+                  "get_result",
+                  "result_states"
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 7,
+              "uniqueItems": true
+            },
+            "scope_modes": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "all_known_in_snapshot",
+                  "selected_subset"
+                ]
+              },
+              "minItems": 2,
+              "maxItems": 2,
+              "uniqueItems": true
+            },
+            "reason_codes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              },
+              "minItems": 0,
+              "maxItems": 16,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "schema_version",
+            "operation",
+            "gateway_asset",
+            "usage_skill",
+            "capabilities",
+            "guidance_sections",
+            "scope_modes",
+            "reason_codes"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": "clinical_gateway_guidance.draft.v1"
+            },
+            "operation": {
+              "const": "read_guidance"
+            },
+            "status": {
+              "enum": [
+                "ready",
+                "blocked"
+              ]
+            },
+            "usage_skill": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "skill_ref": {
+                  "const": "nusaibah.clinical-intelligence-gateway-usage"
+                },
+                "version": {
+                  "const": "1.0.0"
+                },
+                "kind": {
+                  "const": "fixed"
+                },
+                "digest": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^sha256:[0-9a-f]{64}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "skill_ref",
+                "version",
+                "kind",
+                "digest"
+              ]
+            },
+            "section_id": {
+              "enum": [
+                "overview",
+                "existing_review",
+                "neutral_assessment",
+                "class_review",
+                "get_status",
+                "get_result",
+                "result_states"
+              ]
+            },
+            "text": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 8192
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "utf8_bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 8192
+            },
+            "complete": {
+              "type": "boolean"
+            },
+            "reason_codes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"
+              },
+              "minItems": 0,
+              "maxItems": 16,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "schema_version",
+            "operation",
+            "status",
+            "usage_skill",
+            "section_id",
+            "text",
+            "utf8_bytes",
+            "complete",
+            "reason_codes"
+          ],
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "ready"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "usage_skill": {
+                    "properties": {
+                      "digest": {
+                        "type": "string",
+                        "pattern": "^sha256:[0-9a-f]{64}$"
+                      }
+                    }
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 8192
+                  },
+                  "utf8_bytes": {
+                    "minimum": 1
+                  },
+                  "complete": {
+                    "const": true
+                  },
+                  "reason_codes": {
+                    "maxItems": 0
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "status": {
+                    "const": "blocked"
+                  }
+                }
+              },
+              "then": {
+                "properties": {
+                  "text": {
+                    "type": "null"
+                  },
+                  "utf8_bytes": {
+                    "const": 0
+                  },
+                  "complete": {
+                    "const": false
+                  },
+                  "reason_codes": {
+                    "minItems": 1
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "clinical_gateway_usage_contract.draft.v1"
+        },
+        "state": {
+          "const": "design_only"
+        },
+        "proposed_skill": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "skill_ref": {
+              "const": "nusaibah.clinical-intelligence-gateway-usage"
+            },
+            "version": {
+              "const": "1.0.0"
+            },
+            "kind": {
+              "const": "fixed"
+            },
+            "digest": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^sha256:[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "skill_ref",
+            "version",
+            "kind",
+            "digest"
+          ]
+        },
+        "content_digest_sealed": {
+          "const": false
+        },
+        "runtime_admitted": {
+          "const": false
+        },
+        "published": {
+          "const": false
+        },
+        "installed": {
+          "const": false
+        },
+        "audience": {
+          "const": "chatgpt_usage"
+        },
+        "delivery_modes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "gateway_approved_sections",
+              "separate_host_skill_package"
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "section_utf8_bytes": {
+              "const": 8192
+            },
+            "response_utf8_bytes": {
+              "const": 16384
+            },
+            "section_count": {
+              "const": 7
+            }
+          },
+          "required": [
+            "section_utf8_bytes",
+            "response_utf8_bytes",
+            "section_count"
+          ]
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "section_id": {
+                "enum": [
+                  "overview",
+                  "existing_review",
+                  "neutral_assessment",
+                  "class_review",
+                  "get_status",
+                  "get_result",
+                  "result_states"
+                ]
+              },
+              "approval_state": {
+                "const": "draft"
+              },
+              "instructions": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8192
+              }
+            },
+            "required": [
+              "section_id",
+              "approval_state",
+              "instructions"
+            ]
+          },
+          "minItems": 7,
+          "maxItems": 7,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "schema_version",
+        "state",
+        "proposed_skill",
+        "content_digest_sealed",
+        "runtime_admitted",
+        "published",
+        "installed",
+        "audience",
+        "delivery_modes",
+        "limits",
+        "sections"
+      ],
+      "allOf": [
+        {
+          "properties": {
+            "proposed_skill": {
+              "properties": {
+                "digest": {
+                  "type": "null"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/request"
+    },
+    {
+      "$ref": "#/$defs/response"
+    },
+    {
+      "$ref": "#/$defs/contract"
+    }
+  ]
+}

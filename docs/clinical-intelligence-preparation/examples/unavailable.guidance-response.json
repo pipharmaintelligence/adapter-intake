@@ -1,0 +1,19 @@
+{
+  "schema_version": "clinical_gateway_guidance.draft.v1",
+  "operation": "read_guidance",
+  "status": "blocked",
+  "usage_skill": {
+    "skill_ref": "nusaibah.clinical-intelligence-gateway-usage",
+    "version": "1.0.0",
+    "kind": "fixed",
+    "digest": null
+  },
+  "section_id": "class_review",
+  "text": null,
+  "utf8_bytes": 0,
+  "complete": false,
+  "reason_codes": [
+    "usage_skill_not_admitted",
+    "usage_skill_digest_unsealed"
+  ]
+}

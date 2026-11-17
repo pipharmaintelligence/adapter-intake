@@ -1,0 +1,37 @@
+{
+  "schema_version": "clinical_gateway_response.draft.v1",
+  "run_ref": "SYNTH_RUN",
+  "status": "partial",
+  "stage": "readback",
+  "summary": "Synthetic subset: one accepted, one partial and one missing assessment.",
+  "scope_mode": "selected_subset",
+  "coverage": {
+    "membership_complete": true,
+    "selection_complete": true,
+    "execution_complete": true,
+    "evidence_complete": false,
+    "scientific_review_complete": false,
+    "class_generalization_supported": false,
+    "selected_product_count": 3,
+    "product_with_accepted_assessment_count": 1,
+    "missing_product_count": 1,
+    "partial_case_count": 1,
+    "blocked_case_count": 0,
+    "unknown_case_count": 0,
+    "deferred_case_count": 0,
+    "unknown_product_count": 0,
+    "deferred_product_count": 0
+  },
+  "reports": [
+    {
+      "report_ref": "SYNTH_REPORT",
+      "report_version": "0.0.1"
+    }
+  ],
+  "citations": [],
+  "reason_codes": [
+    "literature_coverage_incomplete",
+    "neutral_assessment_dependency_missing"
+  ],
+  "next_action": "operator_review"
+}
