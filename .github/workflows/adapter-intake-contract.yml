@@ -12,6 +12,7 @@ on:
       - "tests/test_mcp_discovery_agent_smoke.py"
       - "tests/test_mcp_discovery_smoke_bedrock_text.py"
       - "tests/test_structured_review_toolkit.py"
+      - "tests/test_structured_review_toolkit_substrates.py"
       - "tests/test_review_exact_spans.py"
       - "tests/prove_exact_span_worker.py"
       - "tests/prove_review_toolkit_worker.py"
@@ -28,6 +29,7 @@ on:
       - "tests/test_mcp_discovery_agent_smoke.py"
       - "tests/test_mcp_discovery_smoke_bedrock_text.py"
       - "tests/test_structured_review_toolkit.py"
+      - "tests/test_structured_review_toolkit_substrates.py"
       - "tests/test_review_exact_spans.py"
       - "tests/prove_exact_span_worker.py"
       - "tests/prove_review_toolkit_worker.py"
@@ -166,6 +168,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m unittest discover -s tests -p "test_structured_review_toolkit.py" -v
+          python -m unittest discover -s tests -p "test_structured_review_toolkit_substrates.py" -v
           python -m unittest discover -s tests -p "test_review_exact_spans.py" -v
           python -m unittest discover -s tests -p "test_exact_spans_v0_1_2.py" -v
 

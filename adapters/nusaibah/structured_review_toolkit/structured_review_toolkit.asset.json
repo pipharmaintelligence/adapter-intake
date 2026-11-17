@@ -61,6 +61,14 @@
         "result_shape": "object",
         "max_result_bytes": 262144,
         "timeout_seconds": 30
+      },
+      "execution": {
+        "allowed_substrates": [
+          "local_worker",
+          "ecs"
+        ],
+        "default_substrate": "local_worker",
+        "timeout_seconds": 60
       }
     },
     "0.1.2": {
@@ -85,6 +93,14 @@
         "result_shape": "object",
         "max_result_bytes": 262144,
         "timeout_seconds": 30
+      },
+      "execution": {
+        "allowed_substrates": [
+          "local_worker",
+          "ecs"
+        ],
+        "default_substrate": "local_worker",
+        "timeout_seconds": 60
       }
     }
   }
