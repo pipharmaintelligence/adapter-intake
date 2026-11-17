@@ -1,0 +1,268 @@
+{
+  "variables": {
+    "schema_version": "clinical_analysis_request.v1",
+    "request_id": "REQUEST_SYN",
+    "analysis_mode": "mechanistic_case",
+    "subject_id": "CASE_SYN",
+    "as_of_date": "2025-02-01",
+    "event_ids": [
+      "EVENT_SYN"
+    ],
+    "memory_mode": "preview",
+    "enable_refinement": false,
+    "enable_pharmacological_class": false,
+    "preflight_only": true,
+    "supplementary_search": false
+  },
+  "clinical_context": {
+    "schema_version": "clinical_context.v1",
+    "context_id": "CONTEXT_SYN",
+    "subject": {
+      "subject_id": "CASE_SYN",
+      "product_id": "PRODUCT_SYN",
+      "product_name": "Synthetic product Alpha",
+      "pharmacological_group_id": "GROUP_SYN",
+      "indication": "Synthetic indication",
+      "regimen": "Synthetic regimen",
+      "trial_ids": [
+        "NCT00000001"
+      ]
+    },
+    "event_ids": [
+      "EVENT_SYN"
+    ],
+    "source_assertions": [
+      {
+        "assertion_id": "SEED_SYN",
+        "source_ref": "synthetic_fixture",
+        "statement": "An exposure limitation may contribute to a negative endpoint result.",
+        "general_research_observation": "This is a synthetic candidate hypothesis, not clinical evidence.",
+        "example_drugs": [
+          "Synthetic product Alpha"
+        ],
+        "indicators_to_measure_and_validate": [
+          "Exposure",
+          "Endpoint result"
+        ]
+      }
+    ],
+    "case_scope": {
+      "indication_id": "IND_SYN",
+      "trial_id": "NCT00000001",
+      "regimen_id": "REG_SYN"
+    },
+    "evidence": [],
+    "cohort": null
+  },
+  "clinical_evidence": {
+    "schema_version": "clinical_evidence_bundle.v1",
+    "bundle_id": "BUNDLE_SYN",
+    "subject_id": "CASE_SYN",
+    "product_id": "PRODUCT_SYN",
+    "event_ids": [
+      "EVENT_SYN"
+    ],
+    "sources": [
+      {
+        "source_result_id": "trials_study_get",
+        "asset_key": "nusaibah.clinical_trials_lookup",
+        "asset_version": "0.1.0",
+        "output_role": "trial_result",
+        "purpose": "case",
+        "result": {
+          "schema_version": "clinical_trials_lookup.v1",
+          "operation": "study_get",
+          "status": "completed",
+          "records": [
+            {
+              "nct_id": "NCT00000001",
+              "summary": {
+                "arm_groups": [
+                  {
+                    "label": "COMBINATION"
+                  }
+                ],
+                "overall_status": "COMPLETED"
+              },
+              "registry_study": {
+                "protocolSection": {
+                  "identificationModule": {
+                    "nctId": "NCT00000001"
+                  },
+                  "armsInterventionsModule": {
+                    "armGroups": [
+                      {
+                        "label": "COMBINATION",
+                        "type": "EXPERIMENTAL"
+                      }
+                    ],
+                    "interventions": [
+                      {
+                        "name": "Synthetic product Alpha",
+                        "armGroupLabels": [
+                          "COMBINATION"
+                        ]
+                      }
+                    ]
+                  },
+                  "outcomesModule": {
+                    "primaryOutcomes": [
+                      {
+                        "measure": "Synthetic functional score",
+                        "timeFrame": "Week 8"
+                      }
+                    ]
+                  },
+                  "statusModule": {
+                    "overallStatus": "COMPLETED"
+                  }
+                },
+                "hasResults": true,
+                "resultsSection": {
+                  "outcomeMeasuresModule": {
+                    "outcomeMeasures": [
+                      {
+                        "title": "Synthetic functional score",
+                        "groups": [
+                          {
+                            "id": "AG1",
+                            "title": "Analysis group"
+                          }
+                        ],
+                        "analyses": [
+                          {
+                            "paramType": "MEAN_DIFFERENCE",
+                            "paramValue": "0.1"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "adverseEventsModule": {
+                    "eventGroups": [
+                      {
+                        "id": "AE1",
+                        "title": "Safety population"
+                      }
+                    ]
+                  }
+                }
+              },
+              "registry_update_date": "2025-01-01"
+            }
+          ],
+          "record_count": 1,
+          "pagination": {
+            "has_more": false,
+            "coverage": "exact_id"
+          },
+          "provenance": {
+            "source": "clinicaltrials_gov_api_v2",
+            "retrieved_at": null
+          },
+          "results_state": "posted"
+        },
+        "result_digest": "sha256:8b543b046d24311cd3341f85faa2319479bbe382b74f34b66d476cbc1862cfdf"
+      },
+      {
+        "source_result_id": "pubmed_article_get",
+        "asset_key": "nusaibah.pubmed_evidence",
+        "asset_version": "0.1.0",
+        "output_role": "literature_result",
+        "purpose": "case",
+        "result": {
+          "schema_version": "pubmed_evidence.v1",
+          "operation": "article_get",
+          "status": "completed",
+          "record_count": 1,
+          "records": [
+            {
+              "pmid": "12345",
+              "title": "Synthetic study report",
+              "doi": null,
+              "pmcid": null,
+              "publication_types": [
+                "Randomized Controlled Trial"
+              ],
+              "publication_dates": {
+                "pubdate": {
+                  "iso": "2025-01-02",
+                  "precision": "day"
+                }
+              },
+              "nct_ids_in_record": [
+                "NCT00000001"
+              ],
+              "integrity_signals": [],
+              "integrity_state": "unknown_from_summary_only"
+            }
+          ]
+        },
+        "result_digest": "sha256:117bb740893abdb50a23f2d1e61ba39b1791de6a828817f25905741e7d8af5e4"
+      },
+      {
+        "source_result_id": "pubmed_abstract_get",
+        "asset_key": "nusaibah.pubmed_evidence",
+        "asset_version": "0.1.0",
+        "output_role": "literature_result",
+        "purpose": "case",
+        "result": {
+          "schema_version": "pubmed_evidence.v1",
+          "operation": "abstract_get",
+          "status": "completed",
+          "record_count": 1,
+          "records": [
+            {
+              "pmid": "12345",
+              "accessible_extent": "abstract",
+              "published_on": null,
+              "sections": [
+                {
+                  "section": "RESULTS",
+                  "offset": 100,
+                  "text": "Synthetic outcome did not establish a clinically meaningful benefit."
+                }
+              ],
+              "temporal_status": "unqualified_without_publication_date"
+            }
+          ]
+        },
+        "result_digest": "sha256:c71857c08a6981349d89f85f5f9759c0e415a5db59421acacb45a8f0fc825c10"
+      },
+      {
+        "source_result_id": "umls_search",
+        "asset_key": "umls_terminology",
+        "asset_version": "0.1.0",
+        "output_role": "terminology_result",
+        "purpose": "terminology",
+        "result": {
+          "operation": "search",
+          "status": "ok",
+          "records": [
+            {
+              "ui": "C0000001",
+              "name": "Synthetic term",
+              "rootSource": "SYNTH",
+              "semantic_types": [
+                {
+                  "tui": "T121",
+                  "name": "Pharmacologic Substance"
+                }
+              ]
+            }
+          ],
+          "query_attested": false,
+          "provenance": {
+            "release": null,
+            "retrieved_at": null
+          },
+          "completeness": {
+            "returned_count": 1,
+            "truncated": null
+          }
+        },
+        "result_digest": "sha256:4148a79a005b85b188cbf22d41a5b34ddecdb3df08ea2dddd17c8e3cf81e6851"
+      }
+    ]
+  }
+}
