@@ -1,0 +1,1097 @@
+{
+  "metadata_version": "clinical_trials_lookup_publication.v1",
+  "asset_key": "nusaibah.clinical_trials_lookup",
+  "asset_version": "0.1.0",
+  "publication_status": "templates_only",
+  "capabilities": {
+    "clinical_trials.describe": {
+      "operation": "describe",
+      "runtime_input_roles": [],
+      "remote_mcp": {
+        "tool_name": "clinical_trials_describe",
+        "description": "Describe ClinicalTrials.gov lookup capabilities without source retrieval",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "describe"
+                  ]
+                }
+              },
+              "required": [
+                "operation"
+              ]
+            }
+          }
+        },
+        "output_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "trial_result"
+          ],
+          "properties": {
+            "trial_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "clinical_trials_lookup.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "describe"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "pagination": {
+                  "type": "object"
+                },
+                "provenance": {
+                  "type": "object"
+                },
+                "interpretation": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array"
+                },
+                "search_keys": {
+                  "type": "array"
+                },
+                "source_execution": {
+                  "type": "string"
+                },
+                "evidence_scope": {
+                  "type": "string"
+                },
+                "requested_ids": {
+                  "type": "array"
+                },
+                "returned_ids": {
+                  "type": "array"
+                },
+                "missing_ids": {
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                },
+                "results_state": {
+                  "type": "string",
+                  "description": "posted, not_posted or not_present_in_record; no clinical interpretation"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      }
+    },
+    "clinical_trials.study_search": {
+      "operation": "study_search",
+      "runtime_input_roles": [
+        "trials_search_runtime",
+        "trials_phase3_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "clinical_trials_search",
+        "description": "Search one bounded ClinicalTrials.gov study page with text, intervention aliases, status, design, dates, sponsor and other filters",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "study_search"
+                  ]
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "description": "General free text/Essie query.term search"
+                },
+                "condition": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "description": "Condition or disease search"
+                },
+                "intervention": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "description": "Intervention, medicine or product term"
+                },
+                "intervention_terms": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 8,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "description": "Literal intervention alias"
+                  },
+                  "description": "Caller-supplied intervention aliases; may be used alongside intervention, combined with literal Essie OR. Requires runtime query-compiler admission for complex expressions."
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "description": "Study title or acronym"
+                },
+                "outcome": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "description": "Outcome measure text"
+                },
+                "sponsor": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "description": "Sponsor or collaborator name"
+                },
+                "lead_sponsor": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "description": "Lead sponsor name"
+                },
+                "location": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "description": "Location name, site, city, or country"
+                },
+                "study_identifier": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "description": "NCT/organisation/secondary study identifier"
+                },
+                "patient_text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "description": "Patient-oriented registry search text; no personal patient data"
+                },
+                "phase": {
+                  "type": "string",
+                  "description": "Phase enum code, validated by the registry (e.g. PHASE3); exact code list can evolve.",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_]{0,49}$"
+                },
+                "status": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9_]{0,49}$"
+                    },
+                    {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 8,
+                      "uniqueItems": true,
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[A-Z][A-Z0-9_]{0,49}$"
+                      }
+                    }
+                  ]
+                },
+                "study_type": {
+                  "type": "string",
+                  "description": "Registry study design type",
+                  "pattern": "^[A-Za-z][A-Za-z0-9_]{0,49}$"
+                },
+                "sponsor_class": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50,
+                  "description": "Registry sponsor classification enum"
+                },
+                "country": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "description": "Site country search"
+                },
+                "updated_from": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "Posted registry update on or after this date"
+                },
+                "updated_to": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "Posted registry update on or before this date"
+                },
+                "advanced_filter": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 600,
+                  "description": "Operator-reviewed bounded Essie advanced filter"
+                },
+                "page_size": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 50,
+                  "default": 10
+                },
+                "page_token": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2048,
+                  "description": "Opaque token returned by the immediately preceding page for the same query. Worker admission for some tokens requires independent proof."
+                },
+                "sort": {
+                  "type": "string",
+                  "description": "Registry-supported date or numeric sort field (optional :asc or :desc), up to two fields separated by comma, or @relevance; unknown fields are rejected by the registry.",
+                  "maxLength": 120
+                },
+                "count_total": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "view": {
+                  "type": "string",
+                  "enum": [
+                    "summary",
+                    "research"
+                  ],
+                  "description": "summary (bounded registry facts) or research (complete source study including available sections; may exceed output byte budget)"
+                },
+                "preset": {
+                  "type": "string",
+                  "enum": [
+                    "phase3_interventional"
+                  ],
+                  "description": "Require approved Core-fixed Phase 3 interventional scope instead of constructing an Essie expression in Python"
+                }
+              },
+              "required": [
+                "operation"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "trial_result"
+          ],
+          "properties": {
+            "trial_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "clinical_trials_lookup.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "study_search"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "pagination": {
+                  "type": "object"
+                },
+                "provenance": {
+                  "type": "object"
+                },
+                "interpretation": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array"
+                },
+                "search_keys": {
+                  "type": "array"
+                },
+                "source_execution": {
+                  "type": "string"
+                },
+                "evidence_scope": {
+                  "type": "string"
+                },
+                "requested_ids": {
+                  "type": "array"
+                },
+                "returned_ids": {
+                  "type": "array"
+                },
+                "missing_ids": {
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                },
+                "results_state": {
+                  "type": "string",
+                  "description": "posted, not_posted or not_present_in_record; no clinical interpretation"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      }
+    },
+    "clinical_trials.study_get": {
+      "operation": "study_get",
+      "runtime_input_roles": [
+        "trials_detail_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "clinical_trials_get_study",
+        "description": "Fetch one exact NCT study and optional notebook-compatible protocol modules",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "study_get"
+                  ]
+                },
+                "nct_id": {
+                  "type": "string",
+                  "pattern": "^NCT[0-9]{8}$"
+                },
+                "view": {
+                  "type": "string",
+                  "enum": [
+                    "summary",
+                    "research"
+                  ],
+                  "description": "summary (bounded registry facts) or research (complete source study including available sections; may exceed output byte budget)"
+                }
+              },
+              "required": [
+                "operation",
+                "nct_id"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "trial_result"
+          ],
+          "properties": {
+            "trial_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "clinical_trials_lookup.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "study_get"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "pagination": {
+                  "type": "object"
+                },
+                "provenance": {
+                  "type": "object"
+                },
+                "interpretation": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array"
+                },
+                "search_keys": {
+                  "type": "array"
+                },
+                "source_execution": {
+                  "type": "string"
+                },
+                "evidence_scope": {
+                  "type": "string"
+                },
+                "requested_ids": {
+                  "type": "array"
+                },
+                "returned_ids": {
+                  "type": "array"
+                },
+                "missing_ids": {
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                },
+                "results_state": {
+                  "type": "string",
+                  "description": "posted, not_posted or not_present_in_record; no clinical interpretation"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      }
+    },
+    "clinical_trials.study_batch": {
+      "operation": "study_batch",
+      "runtime_input_roles": [
+        "trials_search_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "clinical_trials_get_batch",
+        "description": "Get one bounded study page for 1-25 NCT IDs with explicit missing-identifier reconciliation",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "study_batch"
+                  ]
+                },
+                "nct_ids": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 50,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^NCT[0-9]{8}$"
+                  }
+                },
+                "view": {
+                  "type": "string",
+                  "enum": [
+                    "summary",
+                    "research"
+                  ],
+                  "description": "summary (bounded registry facts) or research (complete source study including available sections; may exceed output byte budget)"
+                },
+                "page_token": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2048,
+                  "description": "Opaque token returned by the immediately preceding page for the same query. Worker admission for some tokens requires independent proof."
+                }
+              },
+              "required": [
+                "operation",
+                "nct_ids"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "trial_result"
+          ],
+          "properties": {
+            "trial_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "clinical_trials_lookup.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "study_batch"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "pagination": {
+                  "type": "object"
+                },
+                "provenance": {
+                  "type": "object"
+                },
+                "interpretation": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array"
+                },
+                "search_keys": {
+                  "type": "array"
+                },
+                "source_execution": {
+                  "type": "string"
+                },
+                "evidence_scope": {
+                  "type": "string"
+                },
+                "requested_ids": {
+                  "type": "array"
+                },
+                "returned_ids": {
+                  "type": "array"
+                },
+                "missing_ids": {
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                },
+                "results_state": {
+                  "type": "string",
+                  "description": "posted, not_posted or not_present_in_record; no clinical interpretation"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      }
+    },
+    "clinical_trials.results_get": {
+      "operation": "results_get",
+      "runtime_input_roles": [
+        "trials_detail_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "clinical_trials_get_results",
+        "description": "Retrieve source-reported study results, without efficacy or trial-outcome adjudication",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "results_get"
+                  ]
+                },
+                "nct_id": {
+                  "type": "string",
+                  "pattern": "^NCT[0-9]{8}$"
+                }
+              },
+              "required": [
+                "operation",
+                "nct_id"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "trial_result"
+          ],
+          "properties": {
+            "trial_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "clinical_trials_lookup.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "results_get"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "pagination": {
+                  "type": "object"
+                },
+                "provenance": {
+                  "type": "object"
+                },
+                "interpretation": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array"
+                },
+                "search_keys": {
+                  "type": "array"
+                },
+                "source_execution": {
+                  "type": "string"
+                },
+                "evidence_scope": {
+                  "type": "string"
+                },
+                "requested_ids": {
+                  "type": "array"
+                },
+                "returned_ids": {
+                  "type": "array"
+                },
+                "missing_ids": {
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                },
+                "results_state": {
+                  "type": "string",
+                  "description": "posted, not_posted or not_present_in_record; no clinical interpretation"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      }
+    },
+    "clinical_trials.arms_get": {
+      "operation": "arms_get",
+      "runtime_input_roles": [
+        "trials_detail_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "clinical_trials_get_arms",
+        "description": "Read exact ClinicalTrials.gov registered arm groups, labels, types, intervention names, and declared intervention-to-arm links for one NCT ID. Does not infer comparator or efficacy roles.",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "arms_get"
+                  ]
+                },
+                "nct_id": {
+                  "type": "string",
+                  "pattern": "^NCT[0-9]{8}$"
+                }
+              },
+              "required": [
+                "operation",
+                "nct_id"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "trial_result"
+          ],
+          "properties": {
+            "trial_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "clinical_trials_lookup.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "arms_get"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "pagination": {
+                  "type": "object"
+                },
+                "provenance": {
+                  "type": "object"
+                },
+                "interpretation": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array"
+                },
+                "search_keys": {
+                  "type": "array"
+                },
+                "source_execution": {
+                  "type": "string"
+                },
+                "evidence_scope": {
+                  "type": "string"
+                },
+                "requested_ids": {
+                  "type": "array"
+                },
+                "returned_ids": {
+                  "type": "array"
+                },
+                "missing_ids": {
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                },
+                "results_state": {
+                  "type": "string",
+                  "description": "posted, not_posted or not_present_in_record; no clinical interpretation"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      }
+    },
+    "clinical_trials.outcomes_get": {
+      "operation": "outcomes_get",
+      "runtime_input_roles": [
+        "trials_detail_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "clinical_trials_get_outcomes",
+        "description": "Read exact registered primary, secondary and other outcome measures for one NCT ID. Registry outcomes are not posted outcome results or regulatory conclusions.",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "outcomes_get"
+                  ]
+                },
+                "nct_id": {
+                  "type": "string",
+                  "pattern": "^NCT[0-9]{8}$"
+                }
+              },
+              "required": [
+                "operation",
+                "nct_id"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "trial_result"
+          ],
+          "properties": {
+            "trial_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "clinical_trials_lookup.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "outcomes_get"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "pagination": {
+                  "type": "object"
+                },
+                "provenance": {
+                  "type": "object"
+                },
+                "interpretation": {
+                  "type": "string"
+                },
+                "capabilities": {
+                  "type": "array"
+                },
+                "search_keys": {
+                  "type": "array"
+                },
+                "source_execution": {
+                  "type": "string"
+                },
+                "evidence_scope": {
+                  "type": "string"
+                },
+                "requested_ids": {
+                  "type": "array"
+                },
+                "returned_ids": {
+                  "type": "array"
+                },
+                "missing_ids": {
+                  "type": [
+                    "array",
+                    "null"
+                  ]
+                },
+                "results_state": {
+                  "type": "string",
+                  "description": "posted, not_posted or not_present_in_record; no clinical interpretation"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      }
+    }
+  }
+}
