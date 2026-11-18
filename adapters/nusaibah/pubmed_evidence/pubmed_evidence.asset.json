@@ -1,0 +1,278 @@
+{
+  "key": "nusaibah.pubmed_evidence",
+  "default": "0.1.0",
+  "allowed_surfaces": [
+    "v1_asset_execute"
+  ],
+  "allowed_modes": [
+    "balanced"
+  ],
+  "execution": {
+    "allowed_substrates": [
+      "local_worker",
+      "ecs"
+    ],
+    "default_substrate": "local_worker",
+    "timeout_seconds": 180
+  },
+  "versions": {
+    "0.1.0": {
+      "state": "active",
+      "allow_resume": false,
+      "inputs": {
+        "variables": {
+          "required": false,
+          "source": "direct",
+          "shape": "object"
+        },
+        "pubmed_search_runtime": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "contract": {
+            "source": {
+              "type": "api",
+              "authority": "dlm_core",
+              "reference": {
+                "service": "pubmed_esearch_json"
+              }
+            },
+            "schema": {
+              "source": "governed"
+            },
+            "partitioning": {
+              "mode": "none",
+              "source": "none",
+              "dimensions": []
+            },
+            "access": {
+              "mode": "service"
+            },
+            "execution": {
+              "strategy": "single_call",
+              "developer_hint": "Worker-approved lazy source role. Keep one JSON root object and let trusted execution own request targeting and authentication."
+            },
+            "explainability": {
+              "summary": "Search PubMed IDs and count using an approved ESearch JSON root response.",
+              "logic": "Trusted runtime retrieves bounded records; Python normalizes evidence and preserves provenance."
+            },
+            "capabilities": {
+              "preview": {
+                "supported": false,
+                "default_in_developer_env": false
+              }
+            }
+          }
+        },
+        "pubmed_summary_runtime": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "contract": {
+            "source": {
+              "type": "api",
+              "authority": "dlm_core",
+              "reference": {
+                "service": "pubmed_esummary_json"
+              }
+            },
+            "schema": {
+              "source": "governed"
+            },
+            "partitioning": {
+              "mode": "none",
+              "source": "none",
+              "dimensions": []
+            },
+            "access": {
+              "mode": "service"
+            },
+            "execution": {
+              "strategy": "single_call",
+              "developer_hint": "Worker-approved lazy source role. Keep one JSON root object and let trusted execution own request targeting and authentication."
+            },
+            "explainability": {
+              "summary": "Retrieve PubMed ESummary v2 JSON metadata for one or more exact PMIDs.",
+              "logic": "Trusted runtime retrieves bounded records; Python normalizes evidence and preserves provenance."
+            },
+            "capabilities": {
+              "preview": {
+                "supported": false,
+                "default_in_developer_env": false
+              }
+            }
+          }
+        },
+        "pubmed_abstract_runtime": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "contract": {
+            "source": {
+              "type": "api",
+              "authority": "dlm_core",
+              "reference": {
+                "service": "pubmed_bioc_json"
+              }
+            },
+            "schema": {
+              "source": "governed"
+            },
+            "partitioning": {
+              "mode": "none",
+              "source": "none",
+              "dimensions": []
+            },
+            "access": {
+              "mode": "service"
+            },
+            "execution": {
+              "strategy": "single_call",
+              "developer_hint": "Worker-approved lazy source role. Keep one JSON root object and let trusted execution own request targeting and authentication."
+            },
+            "explainability": {
+              "summary": "Retrieve one BioC PubMed JSON document by a governed PMID path value.",
+              "logic": "Trusted runtime retrieves bounded records; Python normalizes evidence and preserves provenance."
+            },
+            "capabilities": {
+              "preview": {
+                "supported": false,
+                "default_in_developer_env": false
+              }
+            }
+          }
+        },
+        "pubmed_link_runtime": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "contract": {
+            "source": {
+              "type": "api",
+              "authority": "dlm_core",
+              "reference": {
+                "service": "pubmed_elink_json"
+              }
+            },
+            "schema": {
+              "source": "governed"
+            },
+            "partitioning": {
+              "mode": "none",
+              "source": "none",
+              "dimensions": []
+            },
+            "access": {
+              "mode": "service"
+            },
+            "execution": {
+              "strategy": "single_call",
+              "developer_hint": "Worker-approved lazy source role. Keep one JSON root object and let trusted execution own request targeting and authentication."
+            },
+            "explainability": {
+              "summary": "Inspect named ELink relationships for one exact PMID.",
+              "logic": "Trusted runtime retrieves bounded records; Python normalizes evidence and preserves provenance."
+            },
+            "capabilities": {
+              "preview": {
+                "supported": false,
+                "default_in_developer_env": false
+              }
+            }
+          }
+        },
+        "pmc_identity_runtime": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "contract": {
+            "source": {
+              "type": "api",
+              "authority": "dlm_core",
+              "reference": {
+                "service": "pmc_id_converter_json"
+              }
+            },
+            "schema": {
+              "source": "governed"
+            },
+            "partitioning": {
+              "mode": "none",
+              "source": "none",
+              "dimensions": []
+            },
+            "access": {
+              "mode": "service"
+            },
+            "execution": {
+              "strategy": "single_call",
+              "developer_hint": "Worker-approved lazy source role. Keep one JSON root object and let trusted execution own request targeting and authentication."
+            },
+            "explainability": {
+              "summary": "Resolve IDs among PMC-linked records with a JSON root response.",
+              "logic": "Trusted runtime retrieves bounded records; Python normalizes evidence and preserves provenance."
+            },
+            "capabilities": {
+              "preview": {
+                "supported": false,
+                "default_in_developer_env": false
+              }
+            }
+          }
+        },
+        "pubmed_info_runtime": {
+          "required": false,
+          "source": "direct",
+          "shape": "object",
+          "contract": {
+            "source": {
+              "type": "api",
+              "authority": "dlm_core",
+              "reference": {
+                "service": "pubmed_einfo_json"
+              }
+            },
+            "schema": {
+              "source": "governed"
+            },
+            "partitioning": {
+              "mode": "none",
+              "source": "none",
+              "dimensions": []
+            },
+            "access": {
+              "mode": "service"
+            },
+            "execution": {
+              "strategy": "single_call",
+              "developer_hint": "Worker-approved lazy source role. Keep one JSON root object and let trusted execution own request targeting and authentication."
+            },
+            "explainability": {
+              "summary": "Read PubMed database field and link metadata from EInfo JSON.",
+              "logic": "Trusted runtime retrieves bounded records; Python normalizes evidence and preserves provenance."
+            },
+            "capabilities": {
+              "preview": {
+                "supported": false,
+                "default_in_developer_env": false
+              }
+            }
+          }
+        }
+      },
+      "outputs": {
+        "literature_result": {
+          "required": true,
+          "shape": "object"
+        }
+      },
+      "callable": {
+        "enabled": true,
+        "result_key": "literature_result",
+        "result_shape": "object",
+        "max_result_bytes": 262144,
+        "timeout_seconds": 120
+      }
+    }
+  }
+}

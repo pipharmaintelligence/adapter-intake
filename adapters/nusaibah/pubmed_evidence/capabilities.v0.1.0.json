@@ -1,0 +1,2264 @@
+{
+  "metadata_version": "pubmed_evidence_publication.v1",
+  "asset_key": "nusaibah.pubmed_evidence",
+  "asset_version": "0.1.0",
+  "publication_status": "templates_only",
+  "capabilities": {
+    "pubmed.describe": {
+      "operation": "describe",
+      "runtime_input_roles": [],
+      "remote_mcp": {
+        "tool_name": "pubmed_describe",
+        "description": "Explain available read-only operations without a source read",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "describe"
+                  ]
+                }
+              },
+              "required": [
+                "operation"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "literature_result"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "literature_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "provenance"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "pubmed_evidence.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "describe"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "provenance": {
+                  "type": "array",
+                  "maxItems": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pubmed.database_info": {
+      "operation": "database_info",
+      "runtime_input_roles": [
+        "pubmed_info_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "pubmed_database_info",
+        "description": "Inspect available PubMed field/link metadata",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "database_info"
+                  ]
+                }
+              },
+              "required": [
+                "operation"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "literature_result"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "literature_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "provenance"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "pubmed_evidence.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "database_info"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "provenance": {
+                  "type": "array",
+                  "maxItems": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pubmed.article_search": {
+      "operation": "article_search",
+      "runtime_input_roles": [
+        "pubmed_search_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "pubmed_article_search",
+        "description": "Find PubMed identifiers with truthful count, offset and query translation",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "article_search"
+                  ]
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Plain-language query or PubMed fielded expression; trusted transport must admit punctuation"
+                },
+                "drug": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Medicine, intervention or target term"
+                },
+                "condition": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Disease or indication term"
+                },
+                "outcome": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Efficacy or adverse event outcome term"
+                },
+                "author": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Author name or PubMed author query"
+                },
+                "journal": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Journal name"
+                },
+                "mesh": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "MeSH descriptor"
+                },
+                "publication_type": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Publication type"
+                },
+                "language": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Article language"
+                },
+                "nct_id": {
+                  "type": "string",
+                  "pattern": "^NCT[0-9]{8}$"
+                },
+                "aliases": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 8,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "description": "Alternate medicine/product name"
+                  }
+                },
+                "published_from": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "published_to": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "updated_from": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "updated_to": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "page_size": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 40
+                },
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9999
+                },
+                "sort": {
+                  "type": "string",
+                  "enum": [
+                    "relevance",
+                    "pub_date",
+                    "most_recent",
+                    "first_author",
+                    "journal"
+                  ]
+                },
+                "as_of_date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "view": {
+                  "type": "string",
+                  "enum": [
+                    "summary",
+                    "research"
+                  ]
+                }
+              },
+              "required": [
+                "operation"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "literature_result"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "literature_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "provenance"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "pubmed_evidence.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "article_search"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "provenance": {
+                  "type": "array",
+                  "maxItems": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pubmed.advanced_search": {
+      "operation": "advanced_search",
+      "runtime_input_roles": [
+        "pubmed_search_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "pubmed_advanced_search",
+        "description": "Express advanced PubMed query intent; governed expression admission required",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "advanced_search"
+                  ]
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Plain-language query or PubMed fielded expression; trusted transport must admit punctuation"
+                },
+                "drug": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Medicine, intervention or target term"
+                },
+                "condition": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Disease or indication term"
+                },
+                "outcome": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Efficacy or adverse event outcome term"
+                },
+                "author": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Author name or PubMed author query"
+                },
+                "journal": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Journal name"
+                },
+                "mesh": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "MeSH descriptor"
+                },
+                "publication_type": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Publication type"
+                },
+                "language": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Article language"
+                },
+                "nct_id": {
+                  "type": "string",
+                  "pattern": "^NCT[0-9]{8}$"
+                },
+                "aliases": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 8,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "description": "Alternate medicine/product name"
+                  }
+                },
+                "published_from": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "published_to": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "updated_from": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "updated_to": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "page_size": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 40
+                },
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9999
+                },
+                "sort": {
+                  "type": "string",
+                  "enum": [
+                    "relevance",
+                    "pub_date",
+                    "most_recent",
+                    "first_author",
+                    "journal"
+                  ]
+                },
+                "as_of_date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "view": {
+                  "type": "string",
+                  "enum": [
+                    "summary",
+                    "research"
+                  ]
+                },
+                "advanced_query": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "description": "Operator-reviewed fielded PubMed expression"
+                }
+              },
+              "required": [
+                "operation"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "literature_result"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "literature_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "provenance"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "pubmed_evidence.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "advanced_search"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "provenance": {
+                  "type": "array",
+                  "maxItems": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pubmed.article_count": {
+      "operation": "article_count",
+      "runtime_input_roles": [
+        "pubmed_search_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "pubmed_article_count",
+        "description": "Count source-reported matching publications without retrieving articles",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "article_count"
+                  ]
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Plain-language query or PubMed fielded expression; trusted transport must admit punctuation"
+                },
+                "drug": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Medicine, intervention or target term"
+                },
+                "condition": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Disease or indication term"
+                },
+                "outcome": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Efficacy or adverse event outcome term"
+                },
+                "author": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Author name or PubMed author query"
+                },
+                "journal": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Journal name"
+                },
+                "mesh": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "MeSH descriptor"
+                },
+                "publication_type": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Publication type"
+                },
+                "language": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Article language"
+                },
+                "nct_id": {
+                  "type": "string",
+                  "pattern": "^NCT[0-9]{8}$"
+                },
+                "aliases": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 8,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "description": "Alternate medicine/product name"
+                  }
+                },
+                "published_from": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "published_to": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "updated_from": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "updated_to": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "page_size": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 40
+                },
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9999
+                },
+                "sort": {
+                  "type": "string",
+                  "enum": [
+                    "relevance",
+                    "pub_date",
+                    "most_recent",
+                    "first_author",
+                    "journal"
+                  ]
+                },
+                "as_of_date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "view": {
+                  "type": "string",
+                  "enum": [
+                    "summary",
+                    "research"
+                  ]
+                }
+              },
+              "required": [
+                "operation"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "literature_result"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "literature_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "provenance"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "pubmed_evidence.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "article_count"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "provenance": {
+                  "type": "array",
+                  "maxItems": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pubmed.trial_publications": {
+      "operation": "trial_publications",
+      "runtime_input_roles": [
+        "pubmed_search_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "pubmed_trial_publications",
+        "description": "Find candidate publications containing the NCT search selector without inferring primary trial identity",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "trial_publications"
+                  ]
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Plain-language query or PubMed fielded expression; trusted transport must admit punctuation"
+                },
+                "drug": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Medicine, intervention or target term"
+                },
+                "condition": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Disease or indication term"
+                },
+                "outcome": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Efficacy or adverse event outcome term"
+                },
+                "author": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Author name or PubMed author query"
+                },
+                "journal": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Journal name"
+                },
+                "mesh": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "MeSH descriptor"
+                },
+                "publication_type": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Publication type"
+                },
+                "language": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "description": "Article language"
+                },
+                "nct_id": {
+                  "type": "string",
+                  "pattern": "^NCT[0-9]{8}$"
+                },
+                "aliases": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 8,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "description": "Alternate medicine/product name"
+                  }
+                },
+                "published_from": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "published_to": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "updated_from": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "updated_to": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "page_size": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 40
+                },
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9999
+                },
+                "sort": {
+                  "type": "string",
+                  "enum": [
+                    "relevance",
+                    "pub_date",
+                    "most_recent",
+                    "first_author",
+                    "journal"
+                  ]
+                },
+                "as_of_date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "view": {
+                  "type": "string",
+                  "enum": [
+                    "summary",
+                    "research"
+                  ]
+                }
+              },
+              "required": [
+                "operation",
+                "nct_id"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "literature_result"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "literature_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "provenance"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "pubmed_evidence.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "trial_publications"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "provenance": {
+                  "type": "array",
+                  "maxItems": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pubmed.article_get": {
+      "operation": "article_get",
+      "runtime_input_roles": [
+        "pubmed_summary_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "pubmed_article_get",
+        "description": "Retrieve exact PubMed summary and published date precision",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "article_get"
+                  ]
+                },
+                "pmid": {
+                  "type": "string",
+                  "pattern": "^[1-9][0-9]{0,11}$"
+                },
+                "view": {
+                  "type": "string",
+                  "enum": [
+                    "summary",
+                    "research"
+                  ]
+                },
+                "as_of_date": {
+                  "type": "string",
+                  "format": "date"
+                }
+              },
+              "required": [
+                "operation",
+                "pmid"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "literature_result"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "literature_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "provenance"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "pubmed_evidence.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "article_get"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "provenance": {
+                  "type": "array",
+                  "maxItems": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pubmed.article_batch": {
+      "operation": "article_batch",
+      "runtime_input_roles": [
+        "pubmed_summary_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "pubmed_article_batch",
+        "description": "Read bounded PMID batches with missing-ID reconciliation",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "article_batch"
+                  ]
+                },
+                "pmids": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 20,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,11}$"
+                  }
+                },
+                "view": {
+                  "type": "string",
+                  "enum": [
+                    "summary",
+                    "research"
+                  ]
+                },
+                "as_of_date": {
+                  "type": "string",
+                  "format": "date"
+                }
+              },
+              "required": [
+                "operation",
+                "pmids"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "literature_result"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "literature_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "provenance"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "pubmed_evidence.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "article_batch"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "provenance": {
+                  "type": "array",
+                  "maxItems": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pubmed.abstract_get": {
+      "operation": "abstract_get",
+      "runtime_input_roles": [
+        "pubmed_abstract_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "pubmed_abstract_get",
+        "description": "Inspect bounded BioC abstract passages and verified offsets",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "abstract_get"
+                  ]
+                },
+                "pmid": {
+                  "type": "string",
+                  "pattern": "^[1-9][0-9]{0,11}$"
+                },
+                "as_of_date": {
+                  "type": "string",
+                  "format": "date"
+                }
+              },
+              "required": [
+                "operation",
+                "pmid"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "literature_result"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "literature_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "provenance"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "pubmed_evidence.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "abstract_get"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "provenance": {
+                  "type": "array",
+                  "maxItems": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pubmed.publication_profile": {
+      "operation": "publication_profile",
+      "runtime_input_roles": [
+        "pubmed_summary_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "pubmed_publication_profile",
+        "description": "Inspect author, journal, article type and indexing metadata",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "publication_profile"
+                  ]
+                },
+                "pmid": {
+                  "type": "string",
+                  "pattern": "^[1-9][0-9]{0,11}$"
+                },
+                "view": {
+                  "type": "string",
+                  "enum": [
+                    "summary",
+                    "research"
+                  ]
+                },
+                "as_of_date": {
+                  "type": "string",
+                  "format": "date"
+                }
+              },
+              "required": [
+                "operation",
+                "pmid"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "literature_result"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "literature_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "provenance"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "pubmed_evidence.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "publication_profile"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "provenance": {
+                  "type": "array",
+                  "maxItems": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pubmed.publication_history": {
+      "operation": "publication_history",
+      "runtime_input_roles": [
+        "pubmed_summary_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "pubmed_publication_history",
+        "description": "Preserve reported date values and date precision; do not fabricate missing dates",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "publication_history"
+                  ]
+                },
+                "pmid": {
+                  "type": "string",
+                  "pattern": "^[1-9][0-9]{0,11}$"
+                },
+                "view": {
+                  "type": "string",
+                  "enum": [
+                    "summary",
+                    "research"
+                  ]
+                },
+                "as_of_date": {
+                  "type": "string",
+                  "format": "date"
+                }
+              },
+              "required": [
+                "operation",
+                "pmid"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "literature_result"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "literature_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "provenance"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "pubmed_evidence.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "publication_history"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "provenance": {
+                  "type": "array",
+                  "maxItems": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pubmed.integrity_get": {
+      "operation": "integrity_get",
+      "runtime_input_roles": [
+        "pubmed_summary_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "pubmed_integrity_get",
+        "description": "Read known publication-type notice signals; unknown is not clear",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "integrity_get"
+                  ]
+                },
+                "pmid": {
+                  "type": "string",
+                  "pattern": "^[1-9][0-9]{0,11}$"
+                },
+                "view": {
+                  "type": "string",
+                  "enum": [
+                    "summary",
+                    "research"
+                  ]
+                },
+                "as_of_date": {
+                  "type": "string",
+                  "format": "date"
+                }
+              },
+              "required": [
+                "operation",
+                "pmid"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "literature_result"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "literature_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "provenance"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "pubmed_evidence.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "integrity_get"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "provenance": {
+                  "type": "array",
+                  "maxItems": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pubmed.identifier_resolve": {
+      "operation": "identifier_resolve",
+      "runtime_input_roles": [
+        "pmc_identity_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "pubmed_identifier_resolve",
+        "description": "Map verified IDs only for PMC-linked records",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "identifier_resolve"
+                  ]
+                },
+                "pmid": {
+                  "type": "string",
+                  "pattern": "^[1-9][0-9]{0,11}$"
+                },
+                "pmcid": {
+                  "type": "string",
+                  "pattern": "^PMC[0-9]+(?:\\.[0-9]+)?$"
+                },
+                "doi": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 180,
+                  "description": "Exact DOI, only when governed request admission supports it"
+                }
+              },
+              "required": [
+                "operation"
+              ],
+              "oneOf": [
+                {
+                  "required": [
+                    "pmid"
+                  ]
+                },
+                {
+                  "required": [
+                    "pmcid"
+                  ]
+                },
+                {
+                  "required": [
+                    "doi"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "literature_result"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "literature_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "provenance"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "pubmed_evidence.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "identifier_resolve"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "provenance": {
+                  "type": "array",
+                  "maxItems": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pubmed.related_articles": {
+      "operation": "related_articles",
+      "runtime_input_roles": [
+        "pubmed_link_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "pubmed_related_articles",
+        "description": "Retrieve source-reported related publication IDs",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "related_articles"
+                  ]
+                },
+                "pmid": {
+                  "type": "string",
+                  "pattern": "^[1-9][0-9]{0,11}$"
+                },
+                "relationship": {
+                  "type": "string",
+                  "enum": [
+                    "related"
+                  ]
+                }
+              },
+              "required": [
+                "operation",
+                "pmid"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "literature_result"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "literature_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "provenance"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "pubmed_evidence.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "related_articles"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "provenance": {
+                  "type": "array",
+                  "maxItems": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pubmed.citation_links": {
+      "operation": "citation_links",
+      "runtime_input_roles": [
+        "pubmed_link_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "pubmed_citation_links",
+        "description": "Inspect named cited-by or reference relationships",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "citation_links"
+                  ]
+                },
+                "pmid": {
+                  "type": "string",
+                  "pattern": "^[1-9][0-9]{0,11}$"
+                },
+                "relationship": {
+                  "type": "string",
+                  "enum": [
+                    "cited_by",
+                    "references"
+                  ]
+                }
+              },
+              "required": [
+                "operation",
+                "pmid"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "literature_result"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "literature_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "provenance"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "pubmed_evidence.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "citation_links"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "provenance": {
+                  "type": "array",
+                  "maxItems": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pubmed.cross_database_links": {
+      "operation": "cross_database_links",
+      "runtime_input_roles": [
+        "pubmed_link_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "pubmed_cross_database_links",
+        "description": "Inspect explicitly named PubMed links to other NCBI databases",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "cross_database_links"
+                  ]
+                },
+                "pmid": {
+                  "type": "string",
+                  "pattern": "^[1-9][0-9]{0,11}$"
+                },
+                "relationship": {
+                  "type": "string",
+                  "enum": [
+                    "pmc",
+                    "gene",
+                    "clinvar",
+                    "gds"
+                  ]
+                }
+              },
+              "required": [
+                "operation",
+                "pmid"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "literature_result"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "literature_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "provenance"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "pubmed_evidence.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "cross_database_links"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "provenance": {
+                  "type": "array",
+                  "maxItems": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pubmed.export_citations": {
+      "operation": "export_citations",
+      "runtime_input_roles": [
+        "pubmed_summary_runtime"
+      ],
+      "remote_mcp": {
+        "tool_name": "pubmed_export_citations",
+        "description": "Produce bounded bibliographic citations from actual metadata",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "variables": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "export_citations"
+                  ]
+                },
+                "pmids": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 20,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[1-9][0-9]{0,11}$"
+                  }
+                },
+                "view": {
+                  "type": "string",
+                  "enum": [
+                    "summary",
+                    "research"
+                  ]
+                },
+                "as_of_date": {
+                  "type": "string",
+                  "format": "date"
+                }
+              },
+              "required": [
+                "operation",
+                "pmids"
+              ]
+            }
+          },
+          "required": [
+            "variables"
+          ]
+        },
+        "output_schema": {
+          "type": "object",
+          "required": [
+            "literature_result"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "literature_result": {
+              "type": "object",
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "provenance"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "pubmed_evidence.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "export_citations"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "no_match"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "provenance": {
+                  "type": "array",
+                  "maxItems": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
