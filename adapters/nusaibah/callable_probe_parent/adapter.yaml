@@ -1,0 +1,12 @@
+asset_key: nusaibah.callable_probe_parent
+asset_version: 0.1.0
+package_target: python_runtime/adapters/intake/nusaibah/callable_probe_parent
+manifest: callable_probe_parent.asset.json
+adapter_module: callable_probe_parent_adapter.py
+dependency_manifest: adapter.dependencies.json
+release_stage: development
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false

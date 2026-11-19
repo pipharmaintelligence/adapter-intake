@@ -1,0 +1,47 @@
+{
+  "key": "nusaibah.callable_probe_parent",
+  "default": "0.1.0",
+  "allowed_surfaces": [
+    "v1_asset_execute"
+  ],
+  "allowed_modes": [
+    "balanced"
+  ],
+  "execution": {
+    "allowed_substrates": [
+      "local_worker",
+      "ecs"
+    ],
+    "default_substrate": "local_worker",
+    "timeout_seconds": 120
+  },
+  "versions": {
+    "0.1.0": {
+      "state": "active",
+      "allow_resume": false,
+      "inputs": {
+        "variables": {
+          "required": false,
+          "source": "direct",
+          "shape": "object"
+        }
+      },
+      "outputs": {
+        "probe_summary": {
+          "required": true,
+          "shape": "object"
+        }
+      },
+      "callable_assets": {
+        "probe": {
+          "asset_key": "nusaibah.callable_probe_child",
+          "asset_version": "0.1.0",
+          "result_key": "probe_result",
+          "result_shape": "object",
+          "cache": false,
+          "on_error": "raise"
+        }
+      }
+    }
+  }
+}

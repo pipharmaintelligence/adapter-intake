@@ -14,6 +14,7 @@ on:
       - "tests/test_structured_review_toolkit.py"
       - "tests/test_structured_review_toolkit_substrates.py"
       - "tests/test_review_exact_spans.py"
+      - "tests/test_pi2064_generic_callable_live_probe.py"
       - "tests/prove_exact_span_worker.py"
       - "tests/prove_review_toolkit_worker.py"
       - ".github/workflows/adapter-intake-contract.yml"
@@ -31,6 +32,7 @@ on:
       - "tests/test_structured_review_toolkit.py"
       - "tests/test_structured_review_toolkit_substrates.py"
       - "tests/test_review_exact_spans.py"
+      - "tests/test_pi2064_generic_callable_live_probe.py"
       - "tests/prove_exact_span_worker.py"
       - "tests/prove_review_toolkit_worker.py"
       - ".github/workflows/adapter-intake-contract.yml"
@@ -58,6 +60,12 @@ jobs:
         run: |
           set -o pipefail
           python -m unittest discover -s tests -p "test_adapter_intake_contract.py" -v
+
+      - name: Verify generic callable live probes without providers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p "test_pi2064_generic_callable_live_probe.py" -v
 
       - name: Verify DLM MCP 0.1.1 read contract without providers
         shell: bash
