@@ -1,0 +1,82 @@
+{
+  "key": "nusaibah.dlm_lakes_search",
+  "default": "0.1.0",
+  "allowed_surfaces": [
+    "v1_asset_execute"
+  ],
+  "allowed_modes": [
+    "balanced"
+  ],
+  "execution": {
+    "default_substrate": "ecs",
+    "allowed_substrates": [
+      "ecs"
+    ],
+    "timeout_seconds": 120
+  },
+  "versions": {
+    "0.1.0": {
+      "state": "active",
+      "inputs": {
+        "tool_request": {
+          "required": true,
+          "shape": "object"
+        }
+      },
+      "callable": {
+        "enabled": true,
+        "result_key": "tool_results",
+        "result_shape": "object",
+        "max_result_bytes": 65536,
+        "timeout_seconds": 120
+      },
+      "outputs": {
+        "tool_results": {
+          "required": true,
+          "shape": "object"
+        }
+      },
+      "output_contracts": {
+        "tool_results": {
+          "target_kind": "diagnostic_json_output",
+          "write_mode": "dry_run",
+          "format_policy": {
+            "source": "developer_selected",
+            "developer_selected_format": "json",
+            "server_admission_required": false
+          },
+          "validation": {
+            "self_inspection": {
+              "enforce": true,
+              "on_fail": "fail"
+            }
+          }
+        }
+      },
+      "runtime_tools": {
+        "dlm_lakes_search": {
+          "tool_handle": "@tool.abstract_mcp_dlm",
+          "tool_server_ref": "mcp.abstract_dlm",
+          "capability_ref": "dlm.lakes.search",
+          "consumer_type": "agent_runtime",
+          "consumer_ref": "agent-run-dlm-lakes-search",
+          "allowed_api_handles": [
+            "@tool.abstract_mcp_dlm"
+          ],
+          "operation": "invoke",
+          "execution_mode": "enforced",
+          "cache": true,
+          "on_error": "raise"
+        }
+      },
+      "execution": {
+        "default_substrate": "ecs",
+        "allowed_substrates": [
+          "ecs"
+        ],
+        "timeout_seconds": 120,
+        "tool_execution": "core"
+      }
+    }
+  }
+}

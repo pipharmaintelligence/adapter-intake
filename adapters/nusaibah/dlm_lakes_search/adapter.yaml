@@ -1,0 +1,16 @@
+# New independent intake identity; do not modify abstract_mcp_dlm@0.1.2.
+asset_key: nusaibah.dlm_lakes_search
+asset_version: 0.1.0
+package_target: python_runtime/adapters/intake/nusaibah/dlm_lakes_search
+manifest: dlm_lakes_search.asset.json
+adapter_module: dlm_lakes_search_adapter.py
+reviewed_support_files:
+  - capabilities.v0.1.0.json
+optional_files:
+  - README.md
+release_stage: development
+forbidden:
+  allow_values: false
+  allow_raw_fixtures: false
+  allow_reports: false
+  allow_notebooks: false
