@@ -1,0 +1,147 @@
+{
+  "metadata_version": "dlm_discovery_publication.v1",
+  "asset_key": "nusaibah.dlm_lakes_search",
+  "asset_version": "0.1.0",
+  "publication_status": "templates_only",
+  "capabilities": {
+    "dlm.lakes.search": {
+      "operation": "lakes.search",
+      "tool_role": "dlm_lakes_search",
+      "remote_mcp": {
+        "tool_name": "dlm_search_lakes",
+        "title": "Search authorized DLM lakes",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "description": "Search authorized DLM lake names and IDs by one literal keyword. Use when the user asks to find, locate, or look up a specific lake. Pass the shortest relevant word or phrase in tool_request.q, not a full question. Case-insensitive literal matching, not semantic or content search. Return only authorized lake IDs/names. If empty, report no authorized name/ID match, not that the lake cannot exist. Do not invent IDs or treat partial results as exhaustive.",
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tool_request"
+          ],
+          "properties": {
+            "tool_request": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "operation",
+                "q"
+              ],
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "lakes.search"
+                  ],
+                  "description": "Fixed operation for independent lake search."
+                },
+                "q": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120,
+                  "description": "One literal lake name/ID keyword, not a natural-language semantic prompt."
+                },
+                "page_size": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 50,
+                  "default": 20
+                }
+              }
+            }
+          }
+        },
+        "output_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tool_results"
+          ],
+          "properties": {
+            "tool_results": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "schema_version",
+                "operation",
+                "status",
+                "records",
+                "record_count",
+                "page_size"
+              ],
+              "properties": {
+                "schema_version": {
+                  "type": "string",
+                  "enum": [
+                    "dlm_mcp_read.v1"
+                  ]
+                },
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "lakes.search"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed"
+                  ]
+                },
+                "records": {
+                  "type": "array",
+                  "maxItems": 50,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "lake_id",
+                      "name"
+                    ],
+                    "properties": {
+                      "lake_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      }
+                    }
+                  }
+                },
+                "record_count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 50
+                },
+                "page_size": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 50
+                },
+                "has_more": {
+                  "type": "boolean",
+                  "description": "Only when trusted Core pagination evidence exists; absence means unknown."
+                },
+                "truncated": {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
