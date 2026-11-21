@@ -65,6 +65,12 @@ jobs:
           set -euo pipefail
           python -m unittest discover -s tests -p "test_abstract_mcp_dlm_0_1_1.py" -v
 
+      - name: Verify independent DLM lake search asset without providers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p "test_dlm_lakes_search.py" -v
+
       - name: Verify generic read-only Skill projection without providers
         shell: bash
         run: |
