@@ -143,7 +143,8 @@ def _validated_records(result: Any, limit: int) -> list[dict[str, str]]:
             or _IDENTIFIER.fullmatch(lake_id) is None
             or lake_id in seen
             or not isinstance(name, str)
-            or not _KEYWORD.fullmatch(name.strip())
+            or not 1 <= len(name.strip()) <= 120
+            or not name.strip().isprintable()
         ):
             raise DlmLakesSearchError("dlm_search_record_invalid")
         seen.add(lake_id)
