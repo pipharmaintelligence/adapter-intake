@@ -1,0 +1,4 @@
+interface:
+  display_name: "DLM Lake Knowledge & Engineering"
+  short_description: "Read, plan and maintain scoped lake knowledge"
+  default_prompt: "Use the DLM Lake Knowledge & Engineering workflow to read this lake's current context, inspect existing plans, and propose the next evidence-backed update."
