@@ -715,7 +715,7 @@ class DiscoveryOrchestrationPackageTest(unittest.TestCase):
     def test_chatgpt_plugin_owns_a_contained_instruction_package(self):
         plugin = json.loads((self.PLUGIN_ROOT / "plugin.json").read_text(encoding="utf-8"))
         self.assertEqual("dms-dlm-discovery", plugin["name"])
-        self.assertEqual("1.2.0", plugin["version"])
+        self.assertEqual("1.3.0", plugin["version"])
         self.assertEqual(
             "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
             plugin["$schema"],
@@ -734,6 +734,7 @@ class DiscoveryOrchestrationPackageTest(unittest.TestCase):
         self.assertNotIn("references/capabilities.v0.1.1.json", markdown)
         self.assertEqual(
             {"README.md", "plugin.json", "skills/dlm-discovery-orchestration/SKILL.md",
+             "skills/dlm-discovery-orchestration/agents/openai.yaml",
              "skills/mcp-resource-discovery/SKILL.md", "skills/mcp-skill-guidance/SKILL.md"},
             {path.relative_to(self.PLUGIN_ROOT).as_posix()
              for path in self.PLUGIN_ROOT.rglob("*") if path.is_file()},
@@ -896,4 +897,3 @@ class DiscoveryOrchestrationPackageTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
